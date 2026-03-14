@@ -1,0 +1,23 @@
+{
+  "name": "knowz-marketplace",
+  "owner": { "name": "Alex Headscarf", "email": "alexheadscarf@gmail.com" },
+  "metadata": {
+    "description": "Official Knowz plugin marketplace — development methodology and knowledge management for AI coding assistants"
+  },
+  "plugins": [
+    {
+      "name": "knowzcode",
+      "source": "./knowzcode",
+      "description": "KnowzCode - Platform-agnostic AI development methodology with TDD, quality gates, and structured workflows",
+      "version": "0.7.3",
+      "author": { "name": "Alex Headscarf" }
+    },
+    {
+      "name": "knowz",
+      "source": "./knowz",
+      "description": "Frictionless knowledge management via the Knowz MCP server — search, save, and query knowledge across vaults",
+      "version": "0.2.0",
+      "author": { "name": "Alex Headscarf" }
+    }
+  ]
+}
