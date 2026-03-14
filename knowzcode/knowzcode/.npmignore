@@ -1,0 +1,6 @@
+# Exclude environment-specific files from npm package
+environment_context.md
+workgroups/
+*.local.md
+.scratch/
+.knowzcode-version

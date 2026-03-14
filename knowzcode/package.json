@@ -1,0 +1,52 @@
+{
+  "name": "knowzcode",
+  "version": "0.7.3",
+  "description": "Platform-agnostic AI development methodology with TDD, quality gates, and structured workflows",
+  "type": "module",
+  "bin": {
+    "knowzcode": "./bin/knowzcode.mjs"
+  },
+  "files": [
+    "bin/",
+    "knowzcode/",
+    "agents/",
+    "skills/",
+    ".claude-plugin/"
+  ],
+  "scripts": {
+    "prepublishOnly": "node bin/knowzcode.mjs --version"
+  },
+  "keywords": [
+    "ai",
+    "tdd",
+    "workflow",
+    "methodology",
+    "quality-gates",
+    "platform-agnostic",
+    "claude",
+    "codex",
+    "gemini",
+    "cursor",
+    "copilot",
+    "windsurf",
+    "development"
+  ],
+  "author": {
+    "name": "Alex Headscarf"
+  },
+  "homepage": "https://github.com/knowz-io/knowz-plugins",
+  "bugs": {
+    "url": "https://github.com/knowz-io/knowz-plugins/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/knowz-io/knowz-plugins.git"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  }
+}
