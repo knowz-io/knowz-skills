@@ -1,0 +1,6 @@
+# .gemini/commands/knowzcode/fix.toml
+description = "Quick targeted fix (micro-fix workflow)"
+prompt = """Read .gemini/skills/knowzcode-fix/SKILL.md for full instructions.
+Apply a targeted fix for: <ARGS/>
+Scope guard: single file, <50 lines, no architectural impact. If larger, suggest /knowzcode:work.
+Run tests, log a MicroFix entry in knowzcode/knowzcode_log.md, commit with fix: prefix."""

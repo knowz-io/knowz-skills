@@ -56,3 +56,6 @@ CLAUDE.local.md
 
 # Local test installer (output directory — not the scripts)
 .test-install/
+
+# Dev-only slash commands (not shipped)
+.claude/commands/

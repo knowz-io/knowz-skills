@@ -1,0 +1,7 @@
+# .gemini/commands/knowzcode/work.toml
+description = "Start a new KnowzCode development workflow"
+prompt = """Read .gemini/skills/knowzcode-work/SKILL.md for full instructions.
+Start a structured KnowzCode development workflow for: <ARGS/>
+Classify tier (Micro/Light/Full), create WorkGroup, run Phase 1A Impact Analysis.
+Read knowzcode/knowzcode_loop.md for methodology, knowzcode/knowzcode_project.md for context.
+STOP at each quality gate for user approval."""

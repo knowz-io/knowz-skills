@@ -24,8 +24,8 @@ if (-not (Test-NodeVersion)) {
     Write-Host "Install Node.js: https://nodejs.org/"
     Write-Host ""
     Write-Host "Alternative (no Node.js needed):"
-    Write-Host "  Claude Code plugin:  /plugin marketplace add knowz-io/knowz-plugins"
-    Write-Host "                       /plugin install knowzcode@knowz-plugins"
+    Write-Host "  Claude Code plugin:  /plugin marketplace add knowz-io/knowz-skills"
+    Write-Host "                       /plugin install knowzcode@knowz-skills"
     Write-Host ""
     exit 1
 }

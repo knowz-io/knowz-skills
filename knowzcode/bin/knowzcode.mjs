@@ -400,13 +400,14 @@ function setMarketplaceConfig(claudeDir) {
   }
 
   if (!settings.extraKnownMarketplaces) settings.extraKnownMarketplaces = {};
-  settings.extraKnownMarketplaces['knowz-plugins'] = {
-    source: { source: 'url', url: 'https://github.com/knowz-io/knowz-plugins.git' },
+  settings.extraKnownMarketplaces['knowz-skills'] = {
+    source: { source: 'url', url: 'https://github.com/knowz-io/knowz-skills.git' },
   };
   // Migrate old keys if present
   delete settings.extraKnownMarketplaces.knowzcode;
   delete settings.extraKnownMarketplaces['knowzcode-marketplace'];
   delete settings.extraKnownMarketplaces['knowz-marketplace'];
+  delete settings.extraKnownMarketplaces['knowz-plugins'];
 
   writeFileSync(settingsFile, JSON.stringify(settings, null, 2) + '\n');
 }
@@ -418,7 +419,8 @@ function removeMarketplaceConfig(claudeDir) {
   try {
     const settings = JSON.parse(readFileSync(settingsFile, 'utf8'));
     if (settings.extraKnownMarketplaces) {
-      delete settings.extraKnownMarketplaces['knowz-plugins'];
+      delete settings.extraKnownMarketplaces['knowz-skills'];
+      delete settings.extraKnownMarketplaces['knowz-plugins']; // clean up old key
       delete settings.extraKnownMarketplaces['knowzcode-marketplace']; // clean up old key
       delete settings.extraKnownMarketplaces.knowzcode; // clean up old key too
       writeFileSync(settingsFile, JSON.stringify(settings, null, 2) + '\n');
@@ -1313,7 +1315,7 @@ async function cmdInstall(opts) {
   if (selectedPlatforms.includes('claude')) {
     const step = isReinstall ? 1 : 3;
     console.log(`  ${step}. Install the KnowzCode plugin (recommended):`);
-    console.log('     /plugin install knowzcode@knowz-plugins');
+    console.log('     /plugin install knowzcode@knowz-skills');
     console.log(`  ${step + 1}. Start building:`);
     console.log('     /knowzcode:work "Your first feature"');
     console.log('');

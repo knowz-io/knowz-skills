@@ -1,0 +1,7 @@
+# .gemini/commands/knowzcode/audit.toml
+description = "Run quality audit against specs"
+prompt = """Read .gemini/skills/knowzcode-audit/SKILL.md for full instructions.
+Perform a READ-ONLY audit for: <ARGS/>
+Audit types: spec (VERIFY coverage), architecture (doc vs code), security (OWASP), integration (API contracts).
+Compare implementation against specs in knowzcode/specs/. Do NOT modify source files.
+Report completion percentage, gaps, and security concerns."""

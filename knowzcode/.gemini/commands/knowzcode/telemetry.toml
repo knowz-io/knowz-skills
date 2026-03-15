@@ -1,0 +1,9 @@
+# .gemini/commands/knowzcode/telemetry.toml
+description = "Investigate production telemetry"
+prompt = """Read .gemini/skills/knowzcode-telemetry/SKILL.md for full instructions.
+Investigate production telemetry to diagnose errors and trace issues.
+Parse query for environment, timeframe, error context: <ARGS/>
+Read knowzcode/knowzcode_telemetry.md for configured sources.
+Query Sentry/App Insights via MCP tools. Correlate findings across sources.
+Present timeline, root cause analysis, and recommended fixes.
+If no sources configured, suggest /knowzcode:telemetry-setup."""

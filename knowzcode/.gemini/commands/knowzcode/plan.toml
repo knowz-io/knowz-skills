@@ -1,0 +1,7 @@
+# .gemini/commands/knowzcode/plan.toml
+description = "Research before implementing"
+prompt = """Read .gemini/skills/knowzcode-plan/SKILL.md for full instructions.
+Investigate the codebase for: <ARGS/>
+Explore files, check specs, review architecture, scan workgroup history.
+Present findings with current state, patterns, options, and recommended approach.
+Say 'implement' to transition to /knowzcode:work."""

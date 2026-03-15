@@ -8,8 +8,8 @@ Search, save, and query knowledge across vaults — with automatic vault-aware r
 
 ```bash
 # From the marketplace
-/plugin marketplace add knowz-io/knowz-plugins
-/plugin install knowz@knowz-plugins
+/plugin marketplace add knowz-io/knowz-skills
+/plugin install knowz@knowz-skills
 
 # From local path
 claude plugin install /path/to/knowz

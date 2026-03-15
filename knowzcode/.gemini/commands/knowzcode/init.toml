@@ -1,0 +1,9 @@
+# .gemini/commands/knowzcode/init.toml
+description = "Initialize KnowzCode in this project"
+prompt = """Read .gemini/skills/knowzcode-init/SKILL.md for full instructions.
+Set up the KnowzCode framework in the current project.
+Check for existing knowzcode/ directory. If present, ask: Abort, Merge, or Overwrite.
+Create knowzcode/ with template files. Detect project stack.
+Generate platform adapter(s) as needed. Offer MCP configuration.
+Report generated files and suggest /knowzcode:work as next step.
+<ARGS/>"""
