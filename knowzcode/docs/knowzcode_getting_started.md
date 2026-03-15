@@ -44,7 +44,7 @@ This approach ensures KnowzCode documents what you ACTUALLY built, not just what
 
 ```bash
 /plugin marketplace add knowz-io/knowz-plugins
-/plugin install knowzcode@knowz-marketplace
+/plugin install knowzcode@knowz-plugins
 cd your-project/
 /knowzcode:init
 ```
@@ -55,7 +55,7 @@ cd your-project/
 npx knowzcode
 ```
 
-This auto-detects your AI platforms and walks you through setup interactively. Commands available as `/work`, `/plan`, `/fix` (without `kc:` prefix). For the `/knowzcode:` prefix, also run: `/plugin install knowzcode@knowz-marketplace`.
+This auto-detects your AI platforms and walks you through setup interactively. Commands available as `/work`, `/plan`, `/fix` (without `kc:` prefix). For the `/knowzcode:` prefix, also run: `/plugin install knowzcode@knowz-plugins`.
 
 ```bash
 npx knowzcode install --platforms claude,cursor   # Specific platforms
@@ -518,7 +518,7 @@ KnowzCode works identically without MCP — agents simply use traditional grep/g
 
 If you used KnowzCode during pre-release with `.claude/` directories:
 
-1. **Install the plugin**: `/plugin install knowzcode@knowz-marketplace`
+1. **Install the plugin**: `/plugin install knowzcode@knowz-plugins`
 2. **Your data is safe**: The `knowzcode/` directory is preserved automatically
 3. **Remove `.claude/`**: Commands now come from the plugin
 4. **Agents consolidated**: 24 → 10 (same functionality, less overhead)

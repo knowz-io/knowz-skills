@@ -81,7 +81,7 @@ Each gate requires your approval before proceeding. See the [Workflow Reference]
 
 ```bash
 /plugin marketplace add knowz-io/knowz-plugins
-/plugin install knowzcode@knowz-marketplace
+/plugin install knowzcode@knowz-plugins
 cd your-project/
 /knowzcode:init
 /knowzcode:work "Build user authentication"
@@ -96,7 +96,7 @@ npx knowzcode install --platforms all             # All 6 platforms
 ```
 
 Commands available as `/work`, `/plan`, `/fix` (without `kc:` prefix).
-For `/knowzcode:` prefix, also run: `/plugin install knowzcode@knowz-marketplace`.
+For `/knowzcode:` prefix, also run: `/plugin install knowzcode@knowz-plugins`.
 
 <details>
 <summary><strong>Supported Platforms</strong></summary>

@@ -6,8 +6,8 @@ Official plugin marketplace for [Claude Code](https://code.claude.com/) — deve
 
 | Plugin | Description | Install |
 |:-------|:------------|:--------|
-| [knowzcode](./knowzcode/) | Platform-agnostic AI development methodology with TDD, quality gates, and structured workflows | `/plugin install knowzcode@knowz-marketplace` |
-| [knowz](./knowz/) | Frictionless knowledge management via the Knowz MCP server — search, save, and query knowledge across vaults | `/plugin install knowz@knowz-marketplace` |
+| [knowzcode](./knowzcode/) | Platform-agnostic AI development methodology with TDD, quality gates, and structured workflows | `/plugin install knowzcode@knowz-plugins` |
+| [knowz](./knowz/) | Frictionless knowledge management via the Knowz MCP server — search, save, and query knowledge across vaults | `/plugin install knowz@knowz-plugins` |
 
 ## Installation
 
@@ -20,8 +20,8 @@ Official plugin marketplace for [Claude Code](https://code.claude.com/) — deve
 ### 2. Install plugins
 
 ```bash
-/plugin install knowzcode@knowz-marketplace   # Development methodology
-/plugin install knowz@knowz-marketplace       # Knowledge management
+/plugin install knowzcode@knowz-plugins   # Development methodology
+/plugin install knowz@knowz-plugins       # Knowledge management
 ```
 
 ### 3. Get started
