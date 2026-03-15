@@ -1,5 +1,5 @@
 {
-  "name": "knowz-marketplace",
+  "name": "knowz-plugins",
   "owner": { "name": "Alex Headscarf", "email": "alexheadscarf@gmail.com" },
   "metadata": {
     "description": "Official Knowz plugin marketplace — development methodology and knowledge management for AI coding assistants"
