@@ -1,7 +1,7 @@
 ---
 name: knowz-scout
 description: "KnowzCode: MCP vault researcher — business knowledge, conventions, decisions"
-tools: Read, Glob, Grep
+tools: Read, Glob, Grep, mcp__knowz__search_knowledge, mcp__knowz__ask_question, mcp__knowz__list_vaults, mcp__knowz__list_vault_contents, mcp__knowz__get_knowledge_item, mcp__knowz__list_topics, mcp__knowz__get_topic_details
 model: sonnet
 permissionMode: default
 maxTurns: 15

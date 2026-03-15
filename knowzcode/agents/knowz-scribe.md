@@ -1,7 +1,7 @@
 ---
 name: knowz-scribe
 description: "KnowzCode: MCP vault writer — routes and captures learnings to vaults"
-tools: Read, Write, Edit, Glob, Grep
+tools: Read, Write, Edit, Glob, Grep, mcp__knowz__create_knowledge, mcp__knowz__update_knowledge, mcp__knowz__search_knowledge, mcp__knowz__search_by_title_pattern, mcp__knowz__list_vaults, mcp__knowz__get_knowledge_item
 model: sonnet
 permissionMode: acceptEdits
 maxTurns: 20

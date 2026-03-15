@@ -1,0 +1,9 @@
+# .gemini/commands/knowzcode/telemetry-setup.toml
+description = "Configure telemetry sources for /knowzcode:telemetry"
+prompt = """Read .gemini/skills/knowzcode-telemetry-setup/SKILL.md for full instructions.
+Configure telemetry sources for /knowzcode:telemetry investigations.
+Detect available telemetry MCP tools (Sentry, App Insights).
+For each source: verify connectivity, test auth, detect projects.
+Write config to knowzcode/knowzcode_telemetry.md.
+Run a test query to verify end-to-end connectivity.
+<ARGS/>"""

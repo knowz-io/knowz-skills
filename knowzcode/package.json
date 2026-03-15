@@ -1,6 +1,6 @@
 {
   "name": "knowzcode",
-  "version": "0.7.3",
+  "version": "0.7.4",
   "description": "Platform-agnostic AI development methodology with TDD, quality gates, and structured workflows",
   "type": "module",
   "bin": {
@@ -34,13 +34,13 @@
   "author": {
     "name": "Alex Headscarf"
   },
-  "homepage": "https://github.com/knowz-io/knowz-plugins",
+  "homepage": "https://github.com/knowz-io/knowz-skills",
   "bugs": {
-    "url": "https://github.com/knowz-io/knowz-plugins/issues"
+    "url": "https://github.com/knowz-io/knowz-skills/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/knowz-io/knowz-plugins.git"
+    "url": "git+https://github.com/knowz-io/knowz-skills.git"
   },
   "publishConfig": {
     "access": "public"

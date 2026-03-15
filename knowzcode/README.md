@@ -5,8 +5,8 @@
 **A structured development methodology for AI coding assistants.**
 
 [![License: MIT + Commons Clause](https://img.shields.io/badge/License-MIT_+_Commons_Clause-yellow.svg)](LICENSE)
-[![Claude Code Plugin](https://img.shields.io/badge/Claude_Code-Plugin-purple)](https://github.com/knowz-io/knowz-plugins)
-[![Version](https://img.shields.io/badge/version-0.7.3-blue)](https://github.com/knowz-io/knowz-plugins/releases)
+[![Claude Code Plugin](https://img.shields.io/badge/Claude_Code-Plugin-purple)](https://github.com/knowz-io/knowz-skills)
+[![Version](https://img.shields.io/badge/version-0.7.4-blue)](https://github.com/knowz-io/knowz-skills/releases)
 
 [Installation](#installation) · [Quick Start](#quick-start) · [When to Use It](#when-to-use-knowzcode) · [How It Works](#how-it-works) · [Commands](#commands) · [Docs](#documentation)
 
@@ -80,8 +80,8 @@ Each gate requires your approval before proceeding. See the [Workflow Reference]
 ### Claude Code (Recommended)
 
 ```bash
-/plugin marketplace add knowz-io/knowz-plugins
-/plugin install knowzcode@knowz-plugins
+/plugin marketplace add knowz-io/knowz-skills
+/plugin install knowzcode@knowz-skills
 cd your-project/
 /knowzcode:init
 /knowzcode:work "Build user authentication"
@@ -96,7 +96,7 @@ npx knowzcode install --platforms all             # All 6 platforms
 ```
 
 Commands available as `/work`, `/plan`, `/fix` (without `kc:` prefix).
-For `/knowzcode:` prefix, also run: `/plugin install knowzcode@knowz-plugins`.
+For `/knowzcode:` prefix, also run: `/plugin install knowzcode@knowz-skills`.
 
 <details>
 <summary><strong>Supported Platforms</strong></summary>
@@ -122,7 +122,7 @@ For `/knowzcode:` prefix, also run: `/plugin install knowzcode@knowz-plugins`.
 ### Manual (Repo Clone)
 
 ```bash
-git clone https://github.com/knowz-io/knowz-plugins.git
+git clone https://github.com/knowz-io/knowz-skills.git
 cd KnowzCode
 ./install.sh install --target /path/to/your/project   # Linux/macOS
 .\install.ps1 install --target C:\path\to\your\project # Windows

@@ -26,8 +26,8 @@ if ! check_node; then
   echo "Install Node.js: https://nodejs.org/"
   echo ""
   echo "Alternative (no Node.js needed):"
-  echo "  Claude Code plugin:  /plugin marketplace add knowz-io/knowz-plugins"
-  echo "                       /plugin install knowzcode@knowz-plugins"
+  echo "  Claude Code plugin:  /plugin marketplace add knowz-io/knowz-skills"
+  echo "                       /plugin install knowzcode@knowz-skills"
   echo ""
   exit 1
 fi

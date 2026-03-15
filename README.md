@@ -1,4 +1,4 @@
-# Knowz Plugins
+# Knowz Skills
 
 Official plugin marketplace for [Claude Code](https://code.claude.com/) — development methodology and knowledge management for AI coding assistants.
 
@@ -6,22 +6,22 @@ Official plugin marketplace for [Claude Code](https://code.claude.com/) — deve
 
 | Plugin | Description | Install |
 |:-------|:------------|:--------|
-| [knowzcode](./knowzcode/) | Platform-agnostic AI development methodology with TDD, quality gates, and structured workflows | `/plugin install knowzcode@knowz-plugins` |
-| [knowz](./knowz/) | Frictionless knowledge management via the Knowz MCP server — search, save, and query knowledge across vaults | `/plugin install knowz@knowz-plugins` |
+| [knowzcode](./knowzcode/) | Platform-agnostic AI development methodology with TDD, quality gates, and structured workflows | `/plugin install knowzcode@knowz-skills` |
+| [knowz](./knowz/) | Frictionless knowledge management via the Knowz MCP server — search, save, and query knowledge across vaults | `/plugin install knowz@knowz-skills` |
 
 ## Installation
 
 ### 1. Add the marketplace
 
 ```bash
-/plugin marketplace add knowz-io/knowz-plugins
+/plugin marketplace add knowz-io/knowz-skills
 ```
 
 ### 2. Install plugins
 
 ```bash
-/plugin install knowzcode@knowz-plugins   # Development methodology
-/plugin install knowz@knowz-plugins       # Knowledge management
+/plugin install knowzcode@knowz-skills   # Development methodology
+/plugin install knowz@knowz-skills       # Knowledge management
 ```
 
 ### 3. Get started

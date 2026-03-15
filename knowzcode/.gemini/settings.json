@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "knowz": {
+      "httpUrl": "https://mcp.knowz.io/mcp",
+      "authProviderType": "dynamic_discovery"
+    }
+  }
+}
