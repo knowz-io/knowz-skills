@@ -50,7 +50,7 @@ This is equivalent to the "Sequential Execution Protocol" described in `knowzcod
 | Prompt | Use Case |
 |--------|----------|
 | `#prompt:knowzcode-fix "description"` | Single-file, <50 line fixes — skip the full loop |
-| `#prompt:knowzcode-plan "topic"` | Research and investigation before implementing |
+| `#prompt:knowzcode-explore "topic"` | Research, investigation, or planning before implementing |
 | `#prompt:knowzcode-continue` | Resume interrupted work or advance to next phase |
 | `#prompt:knowzcode-analyze` | Re-run Phase 1A on an existing WorkGroup |
 
@@ -189,7 +189,7 @@ VS Code allows model selection per chat session. For complex features, prefer st
 | Limitation | Impact | Workaround |
 |-----------|--------|------------|
 | No multi-agent orchestration | Cannot run parallel analysis/implementation | Sequential phase execution via prompt files |
-| No inter-agent messaging | No scout/scribe delegation | Single agent reads all context directly |
+| No inter-agent messaging | No scout/liaison delegation | Single agent reads all context directly |
 | No task dependency tracking | No automated phase progression | User manually invokes next prompt |
 | No persistent agents | Context reloaded each prompt invocation | WorkGroup files carry state between invocations |
 | No dynamic agent spawning | Cannot create specialized agents at runtime | Prompt files encode all phase specialization |

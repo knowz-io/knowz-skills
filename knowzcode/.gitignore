@@ -57,6 +57,7 @@ CLAUDE.local.md
 # Local test installer (output directory — not the scripts)
 .test-install/
 
-# Dev-only slash commands (not shipped)
+# Dev-only slash commands and settings (not shipped)
 .claude/commands/bump-version.md
 .claude/commands/deploy.md
+.claude/settings.json

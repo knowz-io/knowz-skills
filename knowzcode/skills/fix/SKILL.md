@@ -16,7 +16,7 @@ Execute a targeted micro-fix within the KnowzCode framework.
 ## When NOT to Trigger
 
 - Change spans **multiple files** or **>50 lines** → use `/knowzcode:work`
-- Change needs **exploration first** before fixing → use `/knowzcode:plan`
+- Change needs **exploration first** before fixing → use `/knowzcode:explore`
 - User wants a **codebase audit**, not a targeted fix → use `/knowzcode:audit`
 - User is asking "how to fix" (question, not action) → answer directly, don't invoke skill
 
@@ -119,5 +119,5 @@ Delegate to the **microfix-specialist** agent via `Task()` with these parameters
 ## Related Skills
 
 - `/knowzcode:work` — Full workflow for multi-file or >50 line changes
-- `/knowzcode:plan` — Research before deciding on a fix approach
+- `/knowzcode:explore` — Research before deciding on a fix approach
 - `/knowzcode:audit` — Read-only scan to find issues

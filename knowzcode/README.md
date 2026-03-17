@@ -6,7 +6,7 @@
 
 [![License: MIT + Commons Clause](https://img.shields.io/badge/License-MIT_+_Commons_Clause-yellow.svg)](LICENSE)
 [![Claude Code Plugin](https://img.shields.io/badge/Claude_Code-Plugin-purple)](https://github.com/knowz-io/knowz-skills)
-[![Version](https://img.shields.io/badge/version-0.7.4-blue)](https://github.com/knowz-io/knowz-skills/releases)
+[![Version](https://img.shields.io/badge/version-0.8.0-blue)](https://github.com/knowz-io/knowz-skills/releases)
 
 [Installation](#installation) · [Quick Start](#quick-start) · [When to Use It](#when-to-use-knowzcode) · [How It Works](#how-it-works) · [Commands](#commands) · [Docs](#documentation)
 
@@ -147,7 +147,7 @@ Runs the full loop: impact analysis → specs → TDD → audit → finalize, wi
 ### Research First
 
 ```bash
-/knowzcode:plan "how is authentication implemented?"
+/knowzcode:explore "how is authentication implemented?"
 ```
 
 Explores your codebase first. Say "implement" to transition into `/knowzcode:work` with findings pre-loaded.
@@ -166,7 +166,7 @@ Targeted fixes that skip the full loop — for typos, small bugs, and CSS tweaks
 |:--------|:------------|
 | `/knowzcode:init` | Initialize KnowzCode in project |
 | `/knowzcode:work <goal>` | Start feature workflow |
-| `/knowzcode:plan <topic>` | Research before implementing |
+| `/knowzcode:explore <topic>` | Research before implementing |
 | `/knowzcode:audit [type]` | Run quality audits |
 | `/knowzcode:fix <target>` | Quick targeted fix |
 | `/knowzcode:status` | Check MCP connection |
@@ -221,8 +221,6 @@ Or ask Claude Code: _"Enable Agent Teams in my settings."_ Then restart. Without
 | Agent | Role | Phase |
 |-------|------|-------|
 | `context-scout` | Local context research (specs, tracker, history) | Discovery |
-| `knowz-scout` | MCP vault research (conventions, decisions) | Discovery |
-| `knowz-scribe` | MCP vault writes (learning capture, audit trails) | All phases |
 | `analyst` | Impact analysis, Change Set proposals | 1A |
 | `architect` | Specification drafting, architecture review | 1B |
 | `builder` | TDD implementation, verification loops | 2A |
@@ -264,7 +262,7 @@ Codex users get discoverable skills via `.agents/skills/knowzcode-*/`:
 
 ```bash
 /knowzcode:work "Build user authentication"  # Start feature workflow
-/knowzcode:plan "how is auth implemented?"   # Research first
+/knowzcode:explore "how is auth implemented?"   # Research first
 /knowzcode:fix "Fix login bug"               # Quick fix
 /knowzcode:audit                             # Quality audit
 ```
@@ -282,7 +280,7 @@ Gemini users get native `/knowzcode:` commands via TOML files, discoverable skil
 
 ```bash
 /knowzcode:work "Build JWT authentication"   # Start feature workflow
-/knowzcode:plan "how is auth implemented?"   # Research first
+/knowzcode:explore "how is auth implemented?"   # Research first
 /knowzcode:fix "Fix login redirect bug"      # Quick fix
 /knowzcode:audit                             # Quality audit
 /knowzcode:continue                          # Resume where you left off

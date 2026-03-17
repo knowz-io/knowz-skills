@@ -776,7 +776,7 @@ These documents contain:
 
 **Step 1: Raw Ideas → Structured Analysis**
 
-Use `/knowzcode:plan "your ideas"` (Claude Code) or start a planning conversation with your AI:
+Use `/knowzcode:explore "your ideas"` (Claude Code) or start a planning conversation with your AI:
 
 ```
 You: "Here are my ideas:
@@ -845,7 +845,7 @@ Start with API Rate Limiting - high security impact, low effort.
 
 #### Planning Workflows
 
-- **`/knowzcode:plan "deep dive into feature X"`** — Focused investigation of a specific feature before building
+- **`/knowzcode:explore "deep dive into feature X"`** — Focused investigation of a specific feature before building
 - **`/knowzcode:work "add major feature to existing project"`** — The standard workflow handles both new features and additions to existing projects
 
 #### Why Planning Matters

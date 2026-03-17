@@ -99,10 +99,10 @@ The team lead manages the full lifecycle of a team. Teammates never create or cl
 
 ### Creation
 
-At the start of a workflow (`/knowzcode:work`, `/knowzcode:plan`, `/knowzcode:audit`), the lead creates a team before spawning any teammates:
+At the start of a workflow (`/knowzcode:work`, `/knowzcode:explore`, `/knowzcode:audit`), the lead creates a team before spawning any teammates:
 
 - **`/knowzcode:work`**: Team name `kc-{wgid}` (matches the WorkGroup ID)
-- **`/knowzcode:plan`**: Team name `kc-plan-{slug}` (from the research topic)
+- **`/knowzcode:explore`**: Team name `kc-explore-{slug}` (from the research topic)
 - **`/knowzcode:audit`**: Team name `kc-audit-{timestamp}`
 
 Creating a team establishes:
@@ -156,8 +156,11 @@ Use mailbox messaging for coordination between teammates:
 | reviewer | lead | Gap reports per partition (structured format via task summaries) |
 | lead | builder | Gap fix assignments with context (task creation + DM) |
 | lead | reviewer | Re-audit requests after gap fixes (task creation + DM) |
-| lead | knowz-scribe | Capture messages at quality gates (`"Capture Phase 1A: {wgid}"`, etc.) |
-| closer | knowz-scribe | Phase 3 learning capture (`"Capture Phase 3: {wgid}"`) |
+| lead | knowledge-liaison | Capture DMs at quality gates: `"Capture Phase {N}: {wgid}"` |
+| knowledge-liaison | knowz:writer dispatch | Dispatch writer with self-contained extraction prompts |
+| knowledge-liaison | knowz:reader dispatch | Dispatch reader for vault queries |
+| closer | knowledge-liaison | Phase 3 capture DM: `"Capture Phase 3: {wgid}"` |
+| any agent | knowledge-liaison | `"Log: ..."`, `"Consider: ..."`, `"VaultQuery: ..."` |
 | closer | analyst | Change scope for log entry accuracy |
 | closer | architect | Spec format and legacy migration |
 | security-officer | lead | Structured finding reports at gates (with `[SECURITY-BLOCK]` for CRITICAL/HIGH) |
@@ -169,7 +172,7 @@ Use mailbox messaging for coordination between teammates:
 | test-advisor | builder | Specific test improvement feedback (max 2 DMs per builder) |
 | test-advisor | security-officer | Cross-cutting: security scenarios needing test coverage (max 2 inter-specialist DMs) |
 | project-advisor | lead | Backlog context (Stage 0) and proposals (late Stage 2) |
-| project-advisor | knowz-scribe | Idea captures for vault storage |
+| project-advisor | knowledge-liaison | Idea captures: `"Consider: {idea}"` (knowledge-liaison dispatches knowz:writer if warranted) |
 
 ### Gap Communication Flow
 In Parallel Teams mode, gap communication goes through the lead:
@@ -199,7 +202,7 @@ This section defines conventions specific to Parallel Teams mode in `/knowzcode:
 - Lead creates the task graph progressively (not all upfront) based on dependency map
 - Lead mediates gap flow: reviewer → lead → builder (not direct reviewer → builder for actionable gaps)
 - Lead uses DM messages alongside task creation to provide context and coordinate
-- Lead owns progress documentation — at every quality gate, the lead creates scribe capture tasks and sends capture messages (e.g., "Capture Phase 1A: {wgid}"). No other agent initiates gate captures. If the scribe is unavailable, the lead ensures the closer is briefed to handle vault writes at Phase 3.
+- Lead owns progress documentation — at every quality gate, the lead DMs the knowledge-liaison with capture requests (e.g., `"Capture Phase 1A: {wgid}. Your task: #{task-id}"`). No other agent initiates gate captures. If the knowledge-liaison is unavailable, the lead ensures the closer handles vault writes at Phase 3.
 
 ### Task Assignment Protocol
 
@@ -221,8 +224,6 @@ Agents must NOT create new tasks for work already assigned to them via task ID.
 | context-scout-backlog | Stage 0 | After Gate #2 | Tracker/log/architecture lookups |
 | scanner-direct | Stage 0 (conditional) | After Stage 1 (analyst done) | Source code scanning — broadcasts affected files and code paths |
 | scanner-tests | Stage 0 (conditional) | After Stage 1 (analyst done) | Test discovery — broadcasts test patterns and coverage shape |
-| knowz-scout | Stage 0 | After Phase 3 capture | Vault queries (read-only) throughout workflow |
-| knowz-scribe | Stage 0 | After Phase 3 capture | Vault writes — receives capture messages, handles all `create_knowledge` calls |
 | analyst | Stage 0 | Early Stage 2 | Scope questions from builders |
 | architect | Stage 0 (pre-load + speculative research) | After Gate #3 | Pre-load → speculative research on `[PRELIMINARY]` NodeIDs → spec drafting (+ parallel coordination for 3+ NodeIDs) → design guidance for builders |
 | spec-drafter(s) | Stage 1 (Path B, 3+ NodeIDs) | After architect consistency review | Draft specs for assigned NodeID partition |
@@ -231,6 +232,7 @@ Agents must NOT create new tasks for work already assigned to them via task ID.
 | security-officer | Stage 0 (Group C) | After Gate #3 | Threat modeling + vulnerability scanning (officer — can block gates) |
 | test-advisor | Stage 0 (Group C) | After Gate #3 | TDD enforcement + test quality review (advisor — informational) |
 | project-advisor | Stage 0 (Group C) | Mid-Stage 2 | Backlog curation + idea capture (advisor — informational) |
+| knowledge-liaison | Stage 0 (Group B) | After Phase 3 writer completion | Persistent vault I/O coordinator — routes captures and queries to knowz agents |
 | closer | Stage 3 | End of workflow | Finalization |
 
 ### Task Dependency Usage
@@ -242,7 +244,7 @@ All tasks in a workflow use `addBlockedBy` to express the dependency chain:
 
 ### Task Graph Patterns
 
-- Stage 0 tasks: scout + scanner + knowz-scribe + analysis tasks (no deps)
+- Stage 0 tasks: scout + scanner + analysis tasks (no deps, knowz:writer dispatched at gates)
 - Stage 1 tasks: spec drafting tasks (blocked by gate approval — lead creates after gate). Path B (3+ NodeIDs): spec-drafter tasks + architect consistency review task
 - Stage 2 tasks: implementation subtasks (blocked by spec approval), audit subtasks (blocked by implementation)
 - Stage 3 tasks: finalization (blocked by audit approval)
@@ -256,7 +258,7 @@ Team sizing defaults are configurable via `knowzcode/knowzcode_orchestration.md`
 | `max_builders` | 5 | `--max-builders=N` | Cap concurrent builders (1-5) |
 | `scout_mode` | full | `--no-scouts` | full (3 scouts), minimal (1 scout), none (lead reads context) |
 | `default_specialists` | [] | `--specialists`, `--no-specialists` | Project-level specialist defaults |
-| `mcp_agents_enabled` | true | `--no-mcp` | Toggle vault agents (knowz-scout, knowz-scribe) |
+| `mcp_agents_enabled` | true | `--no-mcp` | Toggle vault agents (knowz:reader, knowz:writer dispatches) |
 | `codebase_scanner_enabled` | true | `--no-scanners` | Toggle codebase scanner agents (scanner-direct, scanner-tests) |
 | `parallel_spec_threshold` | 3 | `--no-parallel-specs` | NodeID count threshold for parallel spec drafting (Path B) |
 
@@ -315,11 +317,11 @@ When specialists are enabled, three additional agents spawn at Stage 0 alongside
 ```
 Group A (always):           3 context-scouts + analyst + architect       (5 agents)
 Group A (if scanners):      + scanner-direct + scanner-tests            (+2 agents)
-Group B (if MCP):           knowz-scout + knowz-scribe                  (2 agents)
+Group B (if MCP):           knowledge-liaison                           (1 persistent agent)
 Group C (if --specialists): security-officer + test-advisor + project-advisor  (3 agents)
 ```
 
-Max Stage 0 concurrent: 5-12 agents depending on orchestration config (scouts, scanners, MCP agents, specialists). Scouts shut down after Gate #2, scanners shut down after Stage 1, so Stage 2 peak is manageable.
+Max Stage 0 concurrent: 5-11 agents depending on orchestration config (scouts, scanners, MCP agents, specialists). Scouts shut down after Gate #2, scanners shut down after Stage 1, so Stage 2 peak is manageable.
 
 ##### Officer vs Advisor Authority
 
@@ -336,7 +338,7 @@ Specialists communicate directly with builders, architect, and each other — no
 - **security-officer → builder-N**: Security guidance for sensitive partitions (max 2 DMs per builder)
 - **test-advisor → architect**: VERIFY criteria testability concerns during Phase 1B
 - **test-advisor → builder-N**: Specific test improvement feedback (max 2 DMs per builder)
-- **project-advisor → knowz-scribe**: Idea captures for vault storage
+- **project-advisor → knowledge-liaison**: Idea captures (`"Consider: {idea}"` — knowledge-liaison dispatches knowz:writer if warranted)
 - **security-officer ↔ test-advisor**: Cross-cutting test gaps in security paths (max 2 inter-specialist DMs total)
 
 ##### Communication Discipline
@@ -352,9 +354,9 @@ Specialists communicate directly with builders, architect, and each other — no
 
 Regardless of execution mode (Parallel Teams, Sequential Teams, Subagent Delegation), the lead/outer orchestrator is responsible for:
 
-1. **Progress documentation via knowz-scribe**: At every quality gate, the lead triggers knowledge capture. In Parallel Teams, this means creating scribe capture tasks and sending DMs. In Sequential/Subagent modes where the scribe is not spawned, the lead passes MCP status and vault config to the closer's spawn prompt so Phase 3 captures are handled via Direct Write Fallback.
+1. **Progress documentation via knowz:writer**: At every quality gate, the lead triggers knowledge capture. In Parallel Teams, this means dispatching knowz:writer with self-contained prompts. In Sequential/Subagent modes where vault agents are not dispatched, the lead passes MCP status and vault config to the closer's spawn prompt so Phase 3 captures are handled via Direct Write Fallback.
 2. **MCP status handoff**: The lead performs the MCP probe and communicates the result downstream — either by spawning vault agents (Parallel) or by including `MCP_ACTIVE` and `VAULTS_CONFIGURED` status in the closer's spawn prompt (Sequential/Subagent).
-3. **Capture completeness verification**: The lead confirms all gate captures completed before shutting down the scribe or proceeding to the next stage.
+3. **Capture completeness verification**: The lead confirms all gate captures completed before shutting down the writer or proceeding to the next stage.
 
 ---
 

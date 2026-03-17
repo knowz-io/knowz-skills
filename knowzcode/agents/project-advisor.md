@@ -67,13 +67,14 @@ Near the end of Stage 2 (before the gap loop), DM lead with structured proposals
 - {pattern or insight worth noting for future workflows}
 ```
 
-## Knowz-Scribe Integration
+## Idea Capture
 
-If knowz-scribe is active, DM it with idea captures. Include enough detail for the scribe to write a rich vault entry — terse one-liners produce poor search results when stored in the vault.
+Include idea captures in your backlog proposals with enough detail for rich vault entries — terse one-liners produce poor search results when stored in the vault. DM knowledge-liaison directly with `"Consider: {idea}"` for ideas worth capturing.
 
-> "Log: {Detailed description including the specific technology, component, and rationale — e.g. 'Discovered that the Express auth middleware should validate JWT clockTolerance=0 to prevent revoked tokens being accepted during the tolerance window. Affects src/middleware/auth.ts and all protected routes.'}. Category: {Pattern|Decision|Convention}. Source: WorkGroup {wgid}."
+Format ideas with full context:
+> `Consider: Discovered that the Express auth middleware should validate JWT clockTolerance=0 to prevent revoked tokens being accepted during the tolerance window. Affects src/middleware/auth.ts and all protected routes. Category: {Pattern|Decision|Convention}. Source: WorkGroup {wgid}.`
 
-The scribe routes to the correct vault based on category. The more context you provide in the DM, the more useful the vault entry will be when retrieved via search months later.
+The more context you provide, the more useful the vault entry will be when retrieved via search months later.
 
 ## Enterprise Compliance (Optional)
 
@@ -92,7 +93,7 @@ This is observational — you do not modify the compliance manifest or guideline
 ## Communication Protocol
 
 - **DM lead** with backlog context (Stage 0) and proposals (late Stage 2)
-- **DM knowz-scribe** with idea captures (if active)
+- **DM knowledge-liaison** with idea captures: `"Consider: {idea}"` (knowledge-liaison evaluates and dispatches `knowz:writer` if warranted)
 - Does NOT DM builders, other specialists, or reviewer
 - Does NOT broadcast — all communication is targeted DMs
 
@@ -107,5 +108,5 @@ This is observational — you do not modify the compliance manifest or guideline
 
 - Backlog context delivered to lead during Stage 0
 - Backlog proposals delivered to lead near end of Stage 2
-- Idea captures sent to knowz-scribe (if active)
+- Idea captures included in proposals for lead
 - Shut down mid-Stage 2, before the gap loop begins — backlog proposals are complete by then; continuing through gap loop iterations adds overhead without producing new insights since gap fixes are targeted corrections, not new implementation work

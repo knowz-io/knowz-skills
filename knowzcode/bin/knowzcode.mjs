@@ -1319,7 +1319,7 @@ async function cmdInstall(opts) {
     console.log(`  ${step + 1}. Start building:`);
     console.log('     /knowzcode:work "Your first feature"');
     console.log('');
-    console.log('  Note: Commands also work without plugin as /work, /plan, /fix, etc.');
+    console.log('  Note: Commands also work without plugin as /work, /explore, /fix, etc.');
   } else if (!isReinstall) {
     console.log('  3. Start building: use knowzcode/prompts/[LOOP_1A]__Propose_Change_Set.md');
   }

@@ -15,7 +15,9 @@ knowz-skill/
 │   │       └── mcp-setup.md     # MCP server config details
 │   └── knowz-auto/SKILL.md     # Trigger: auto-activates on vault-relevant conversations
 ├── agents/
-│   └── knowledge-worker.md      # Agent for multi-step research/capture
+│   ├── knowledge-worker.md      # Agent for user-dispatched multi-step research/capture
+│   ├── writer.md                # Generic vault write executor (dispatched by other plugins)
+│   └── reader.md                # Generic vault query agent (dispatched by other plugins)
 ├── knowz-vaults.example.md      # Template for user's vault config file
 ├── knowz-pending.example.md     # Template for pending captures queue
 ├── CLAUDE.md                    # This file
@@ -26,7 +28,9 @@ knowz-skill/
 
 1. The `/knowz` skill is the primary interface — handles ask, save, search, browse, setup, status, register, and flush
 2. The `knowz-auto` trigger skill auto-activates when users ask vault-relevant questions or share insights
-3. The `knowledge-worker` agent handles complex multi-step research tasks
+3. The `knowledge-worker` agent handles complex user-dispatched multi-step research tasks
+3b. The `writer` agent is a generic vault write executor dispatched by other plugins (e.g., KnowzCode) at quality gates
+3c. The `reader` agent is a generic vault query agent dispatched by other plugins for vault research
 4. All operations read `knowz-vaults.md` (in the user's project root) for vault routing rules
 5. `/knowz status` provides diagnostics — MCP health, vault validation, configuration state
 6. `/knowz setup` configures MCP server connection and creates vault config file
@@ -42,14 +46,17 @@ knowz-skill/
 - **`skills/knowz/references/registration.md`** — Registration API endpoints, error codes, response format.
 - **`skills/knowz/references/mcp-setup.md`** — MCP server configuration: `claude mcp add` format, OAuth vs API key, scope options.
 - **`skills/knowz-auto/SKILL.md`** — The trigger skill. Lightweight — reads vault file, matches rules, does a quick search or offers to save.
-- **`agents/knowledge-worker.md`** — Dispatched for complex multi-step operations only.
+- **`agents/knowledge-worker.md`** — Dispatched for complex user-initiated multi-step operations.
+- **`agents/writer.md`** — Generic vault write executor. Dispatched by other plugins (e.g., KnowzCode at quality gates) with self-contained extraction prompts.
+- **`agents/reader.md`** — Generic vault query agent. Dispatched by other plugins for vault research with self-contained query prompts.
 
 ## KnowzCode Interop
 
 When the knowz plugin is used alongside the KnowzCode plugin (`knowzcode`):
 
 - **Vault file interop:** `/knowz setup` and `/knowz register` check for `knowzcode/knowzcode_vaults.md` and update vault IDs there when both files exist.
-- **No plugin dependency:** KnowzCode agents check for MCP tools directly — they don't require the knowz plugin. The knowz plugin is recommended for MCP setup but not required.
+- **Vault agent dispatch:** KnowzCode dispatches `knowz:writer` at quality gates and `knowz:reader` at Stage 0 for vault operations. These agents live in the knowz plugin.
+- **No plugin dependency for setup:** KnowzCode agents check for MCP tools directly — they don't require the knowz plugin. The knowz plugin is recommended for MCP setup but not required.
 - **Two vault file formats:**
   - `knowz-vaults.md` — knowz plugin format. Plain English routing rules.
   - `knowzcode/knowzcode_vaults.md` — KnowzCode format. Structured vault types and category routing.

@@ -1,6 +1,6 @@
 # KnowzCode: Investigate Codebase
 
-> **Automation Path:** On Claude Code, run `/knowzcode:plan "your question"` to orchestrate this automatically.
+> **Automation Path:** On Claude Code, run `/knowzcode:explore "your question"` to orchestrate this automatically.
 
 ## Your Mission
 

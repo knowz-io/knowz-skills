@@ -321,8 +321,8 @@ Refactoring Goal: Optimize database queries to reduce N+1 problem
 ### Planning Features
 Before building, research your approach:
 ```bash
-/knowzcode:plan "Add social login with Google and GitHub OAuth"
-/knowzcode:plan "Email notification system architecture"
+/knowzcode:explore "Add social login with Google and GitHub OAuth"
+/knowzcode:explore "Email notification system architecture"
 ```
 
 ---
@@ -334,7 +334,7 @@ Before building, research your approach:
 |:--------|:--------|:------------|
 | `/knowzcode:init` | Initialize KnowzCode in project | Once, at project setup |
 | `/knowzcode:work <goal>` | Start feature workflow | Every new feature or fix |
-| `/knowzcode:plan <topic>` | Research before implementing | When investigating options |
+| `/knowzcode:explore <topic>` | Research before implementing | When investigating options |
 | `/knowzcode:audit [type]` | Run quality audits | Periodic quality checks |
 | `/knowzcode:fix <target>` | Quick targeted fix | Typos, small bugs |
 | `/knowz save` | Capture learnings to vault | After discoveries |

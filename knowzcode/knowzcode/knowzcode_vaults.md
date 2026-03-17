@@ -42,9 +42,9 @@ Multi-vault routing configuration for intelligent vault selection based on query
 
 | Type | Purpose | Read By | Written By | Example Queries |
 |------|---------|---------|------------|-----------------|
-| **code** | Implementation patterns, workarounds, performance | knowz-scout, knowz-scribe, agents | knowz-scribe | "Find auth middleware pattern", "Retry logic workaround" |
-| **ecosystem** | Decisions, conventions, security, integrations, business rules | knowz-scout, knowz-scribe, agents | knowz-scribe | "Error handling conventions", "Why Redis over Memcached?" |
-| **finalizations** | WorkGroup completion summaries, outcome records | knowz-scout, knowz-scribe | knowz-scribe | "What happened in WG-feat-auth?", "Recent completions" |
+| **code** | Implementation patterns, workarounds, performance | knowz:reader, agents | knowz:writer | "Find auth middleware pattern", "Retry logic workaround" |
+| **ecosystem** | Decisions, conventions, security, integrations, business rules | knowz:reader, agents | knowz:writer | "Error handling conventions", "Why Redis over Memcached?" |
+| **finalizations** | WorkGroup completion summaries, outcome records | knowz:reader, agents | knowz:writer | "What happened in WG-feat-auth?", "Recent completions" |
 
 > **Types are user-configurable labels, not framework constants.** Users can add, rename, or create custom vault types freely. The 3 defaults above cover common needs. For example, teams needing compliance tracking can add an `enterprise` type.
 >
@@ -54,7 +54,7 @@ Multi-vault routing configuration for intelligent vault selection based on query
 
 ## Vault Routing Rules
 
-### Read Routing (knowz-scout + agents)
+### Read Routing (knowz:reader + agents)
 
 | Query Type | Description | Target Vault Type |
 |------------|-------------|-------------------|
@@ -64,7 +64,7 @@ Multi-vault routing configuration for intelligent vault selection based on query
 | **Standards / compliance** | Team standards, audit results | user's enterprise vault (if configured) |
 | **Session history** | Past WorkGroups, outcomes | `finalizations` |
 
-### Write Routing (knowz-scribe)
+### Write Routing (knowz:writer)
 
 | Learning Category | Target Vault Type | Title Prefix |
 |-------------------|-------------------|--------------|
@@ -81,8 +81,8 @@ Multi-vault routing configuration for intelligent vault selection based on query
 
 ### How Routing Works
 
-1. **For reads**: Agent reads vault descriptions and matches query intent to vault type
-2. **For writes**: Knowz-scribe matches learning category to vault type using the write routing table, then applies the vault's content filter to format the payload
+1. **For reads**: Reader agent reads vault descriptions and matches query intent to vault type
+2. **For writes**: Writer agent matches learning category to vault type using the write routing table, then applies the vault's content filter to format the payload
 3. **Fallback**: If no specific match, use the first vault of type `ecosystem`. If only one vault exists, use it for everything
 
 ---
@@ -96,7 +96,7 @@ Default vault entries ship with an empty **ID** field (null GUID), indicating "n
 Uncreated vaults are detected at multiple points in the workflow:
 
 1. **`/knowz register` and `/knowz setup`** — detect empty IDs during initial setup and prompt to create vaults
-2. **`/knowzcode:work`, `/knowzcode:plan`, and `/knowzcode:audit`** — detect empty IDs during the MCP Probe at workflow start. These commands always call `list_vaults()` regardless of whether vault IDs exist, then present a Vault Setup table showing each uncreated vault's name, type, description, and which phases write to it. The user can create all, select specific vaults, or skip (proceeding without knowledge capture).
+2. **`/knowzcode:work`, `/knowzcode:explore`, and `/knowzcode:audit`** — detect empty IDs during the MCP Probe at workflow start. These commands always call `list_vaults()` regardless of whether vault IDs exist, then present a Vault Setup table showing each uncreated vault's name, type, description, and which phases write to it. The user can create all, select specific vaults, or skip (proceeding without knowledge capture).
 
 ### Creation Flow
 
@@ -196,8 +196,8 @@ KnowzCode works with a single vault. If only one vault is configured (regardless
 │                   KnowzCode Vault                    │
 │                                                      │
 │  Purpose: All learnings, decisions, patterns, etc.   │
-│  Read by: knowz-scout, knowz-scribe, all agents       │
-│  Written by: knowz-scribe, /knowz save                       │
+│  Read by: knowz:reader, all agents                     │
+│  Written by: knowz:writer, /knowz save                       │
 │  Code search: Uses local grep/glob (no code vault)   │
 │                                                      │
 └──────────────────────────────────────────────────────┘
@@ -221,7 +221,7 @@ You can manually add vaults by editing this file. Use this format:
 - **ID**: {vault-id}
 - **Type**: code | ecosystem | finalizations | {custom}
 - **Description**: {Detailed description of what this vault contains. Be specific about what types of questions should be routed here. Include example queries.}
-- **Write Conditions**: {When knowz-scribe should write to this vault}
+- **Write Conditions**: {When knowz:writer should write to this vault}
 - **Content Filter**: {Format template for create_knowledge content}
 ```
 
@@ -237,13 +237,14 @@ You can manually add vaults by editing this file. Use this format:
 
 | Agent | Vault Interaction | Purpose |
 |-------|-------------------|---------|
-| `knowz-scout` | Read all configured vaults | Find past decisions, conventions, patterns |
-| `knowz-scribe` | Read and write to matching vaults | Route and capture learnings |
-| `analyst` | Read via knowz-scout | Past decisions + affected code patterns |
-| `architect` | Read via knowz-scout | Conventions + implementation examples |
-| `builder` | Read via knowz-scout | Best practices + similar patterns |
-| `reviewer` | Read via knowz-scout | Standards + precedent checks |
-| `closer` | Triggers knowz-scribe captures | Finalization learnings |
+| `knowledge-liaison` | Routes captures and queries to knowz agents | Single point of vault I/O coordination across all phases |
+| `knowz:reader` | Read all configured vaults | Find past decisions, conventions, patterns (dispatched by knowledge-liaison) |
+| `knowz:writer` | Write to matching vaults | Route and capture learnings (dispatched by knowledge-liaison) |
+| `analyst` | Read via knowz:reader | Past decisions + affected code patterns |
+| `architect` | Read via knowz:reader | Conventions + implementation examples |
+| `builder` | Read via knowz:reader | Best practices + similar patterns |
+| `reviewer` | Read via knowz:reader | Standards + precedent checks |
+| `closer` | DMs knowledge-liaison for Phase 3 capture | Finalization learnings |
 
 **Fallback behavior**: If vault routing cannot determine the best vault, agents use the first `ecosystem`-type vault or prompt the user.
 
@@ -254,4 +255,4 @@ You can manually add vaults by editing this file. Use this format:
 - `/knowz register` - Create account and auto-configure first vault
 - `/knowz setup` - Interactive vault setup
 - `/knowzcode:status` - Check vault connection status
-- `/knowz save "insight"` - Manually create learning (routes via knowz-scribe if available, direct write otherwise)
+- `/knowz save "insight"` - Manually create learning (routes via knowz:writer if available, direct write otherwise)

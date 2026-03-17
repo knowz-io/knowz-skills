@@ -33,11 +33,9 @@ If `AUTONOMOUS_MODE = false`: If rejected — re-run analyst with user feedback.
 
 ### Lead Responsibility: Progress Capture (Gate #1)
 
-**Lead responsibility.** After gate approval, the lead triggers progress capture. If knowz-scribe is active (Parallel Teams with vaults configured):
-- Create capture task: `TaskCreate("Scribe: Capture Phase 1A")` → `TaskUpdate(owner: "knowz-scribe")`
-- Send message to **knowz-scribe** with task ID: `"Capture Phase 1A: {wgid}. Your task: #{task-id}"` — the scribe reads the WorkGroup file, extracts scope/risk/decision data, and writes to the appropriate vault
-- `search_knowledge({resolved_domain_vault_id}, "patterns for {domain}")` — pull relevant past learnings to inform specification
-- Share any relevant findings with the architect in the Phase 1B prompt
+**Lead responsibility.** After gate approval, the lead triggers progress capture. If vaults are configured and knowledge-liaison is active:
+- DM knowledge-liaison: `"Capture Phase 1A: {wgid}. Your task: #{task-id}"`
+- The knowledge-liaison owns extraction, vault routing, and writer dispatch (see `agents/knowledge-liaison.md` — Phase Extraction Guide)
 
 ---
 
@@ -77,9 +75,9 @@ When complete, present implementation summary including files changed, tests wri
 
 ### Lead Responsibility: Progress Capture (Phase 2A)
 
-**Lead responsibility.** After gate approval, the lead triggers progress capture. If knowz-scribe is active (Parallel Teams with vaults configured):
-- Create capture task: `TaskCreate("Scribe: Capture Phase 2A")` → `TaskUpdate(owner: "knowz-scribe")`
-- Send message to **knowz-scribe** with task ID: `"Capture Phase 2A: {wgid}. Your task: #{task-id}"` — the scribe reads implementation results from the WorkGroup file and captures patterns, workarounds, and performance optimizations to the `code` vault
+**Lead responsibility.** After Phase 2A completion, the lead triggers progress capture. If vaults are configured and knowledge-liaison is active:
+- DM knowledge-liaison: `"Capture Phase 2A: {wgid}. Your task: #{task-id}"`
+- The knowledge-liaison owns extraction, vault routing, and writer dispatch (see `agents/knowledge-liaison.md` — Phase Extraction Guide)
 
 ---
 
@@ -142,16 +140,16 @@ Launch parallel `Task()` calls — one for gap fix (builder), then one for re-au
 
 ### Lead Responsibility: Progress Capture (Phase 2B)
 
-**Lead responsibility.** After gate approval, the lead triggers progress capture. If knowz-scribe is active (Parallel Teams with vaults configured):
-- Create capture task: `TaskCreate("Scribe: Capture Phase 2B")` → `TaskUpdate(owner: "knowz-scribe")`
-- Send message to **knowz-scribe** with task ID: `"Capture Phase 2B: {wgid}. Your task: #{task-id}"` — the scribe reads audit results from the WorkGroup file and writes findings to the appropriate vault
+**Lead responsibility.** After gate approval, the lead triggers progress capture. If vaults are configured and knowledge-liaison is active:
+- DM knowledge-liaison: `"Capture Phase 2B: {wgid}. Your task: #{task-id}"`
+- The knowledge-liaison owns extraction, vault routing, and writer dispatch (see `agents/knowledge-liaison.md` — Phase Extraction Guide)
 
 ---
 
 ## Phase 3 Output
 
-When complete, if MCP is configured and knowz-scribe is active:
-- The closer creates a capture task (`TaskCreate("Scribe: Capture Phase 3")` → `TaskUpdate(owner: "knowz-scribe")`) and sends a message with the task ID: `"Capture Phase 3: {wgid}. Your task: #{task-id}"`. The lead waits for the scribe's capture task to complete before shutdown.
+When complete, if MCP is configured, vaults are available, and knowledge-liaison is active:
+- The closer DMs knowledge-liaison: `"Capture Phase 3: {wgid}. Your task: #{task-id}"`. The knowledge-liaison dispatches `knowz:writer` for Phase 3 capture. The lead waits for the writer task to complete before shutdown.
 
 Update workgroup to "Closed" and report:
 

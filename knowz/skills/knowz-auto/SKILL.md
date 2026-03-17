@@ -1,9 +1,8 @@
 ---
 name: knowz-auto
 description: "Auto-detect when the user is asking knowledge questions or sharing insights that match Knowz vault rules. Triggers when user asks about past decisions, conventions, patterns, or shares learnings worth capturing — e.g. 'why did we...', 'what's our convention for...', 'we decided to...', 'I learned that...'"
-user-invocable: true
+user-invocable: false
 allowed-tools: Read, Glob, Grep
-argument-hint: "(typically auto-triggered, or /knowz-auto to force a vault check)"
 ---
 
 # Knowz Auto — Frictionless Vault Awareness
@@ -12,15 +11,12 @@ You are the **Knowz Auto** trigger skill. You make vault interaction truly frict
 
 ## When This Skill Activates
 
-This skill activates in two ways:
+This skill activates automatically when Claude detects the user's message matches this skill's description:
 
-1. **Semantic trigger** — Claude detects the user's message matches this skill's description:
-   - Questions about past decisions: "why did we...", "what's our convention for...", "how did we build..."
-   - Questions about patterns/standards: "what's the pattern for...", "do we have a standard for..."
-   - Sharing insights/decisions: "we decided to...", "I learned that...", "the workaround is..."
-   - Knowledge lookups: "check if we've done this before", "any prior art for..."
-
-2. **Manual invocation** — User runs `/knowz-auto` to force a vault-awareness check
+- Questions about past decisions: "why did we...", "what's our convention for...", "how did we build..."
+- Questions about patterns/standards: "what's the pattern for...", "do we have a standard for..."
+- Sharing insights/decisions: "we decided to...", "I learned that...", "the workaround is..."
+- Knowledge lookups: "check if we've done this before", "any prior art for..."
 
 ## Prerequisites (ALL must be true)
 

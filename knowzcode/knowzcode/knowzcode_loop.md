@@ -294,7 +294,7 @@ environment variable to enable automatic MCP authentication on any platform.
 | **ecosystem** | Business rules, conventions, decisions, integrations, platform knowledge | `"checkout flow rules"`, `"pricing constraints"`, `"Stripe webhook setup"` |
 | **finalizations** | WorkGroup completion summaries, outcome records | `"past decisions about {component}"`, `"similar WorkGroups"` |
 
-A project may configure one vault covering all types (common for small teams) or multiple specialized vaults. Knowz-scribe (or direct MCP calls) writes to vaults; knowz-scout has read access only. The scribe is the primary capture agent that routes writes to the correct vault based on content type.
+A project may configure one vault covering all types (common for small teams) or multiple specialized vaults. `knowz:writer` (or direct MCP calls) writes to vaults; `knowz:reader` has read-only access. The writer is dispatched at quality gates to route writes to the correct vault based on content type.
 
 ### Phase-Specific Usage
 
@@ -304,16 +304,15 @@ A project may configure one vault covering all types (common for small teams) or
 | **1B (Spec)** | `ask_question({vault matching "ecosystem" type}, "conventions for {component_type}?")` | Check team conventions before drafting |
 | **2A (Build)** | `search_knowledge({vault matching "code" type}, "{similar_feature} implementation")` | Find reference implementations |
 | **2B (Audit)** | `ask_question({vault matching "ecosystem" type}, "standards for {domain}", researchMode=true)` | Comprehensive standards check |
-| **3 (Close)** | Delegate to knowz-scribe (or `create_knowledge` directly if no scribe) | Capture patterns, decisions, workarounds |
+| **3 (Close)** | Dispatch `knowz:writer` (or `create_knowledge` directly if no writer) | Capture patterns, decisions, workarounds |
 
-### Knowz-Scribe (Multi-Agent Platforms)
+### Knowz Vault Agents (Multi-Agent Platforms)
 
-On platforms with multi-agent orchestration (e.g., Claude Code Agent Teams), **knowz-scribe** has full read/write access to MCP vaults, and **knowz-scout** has read access to MCP vaults. Both have read/write access to local knowzcode files:
+On platforms with multi-agent orchestration (e.g., Claude Code Agent Teams), **`knowz:reader`** has read-only access to MCP vaults, and **`knowz:writer`** has full read/write access to MCP vaults. Both have read/write access to local knowzcode files:
 
-- Both spawned at workflow start (persistent agents, Stage 0 through Phase 3)
-- **Knowz-scribe** is the primary capture agent — receives capture messages from teammates at each quality gate (e.g., `"Capture Phase 1A: {wgid}"`), reads the WorkGroup file, extracts learnings, and writes to the appropriate vault. Handles deduplication, formatting, and routing to the correct vault by type.
-- **Knowz-scout** is the primary research agent — queries vaults for business context, conventions, and past decisions.
-- Both stay alive through the entire workflow, shut down after Phase 3 capture
+- **`knowz:reader`** is dispatched at Stage 0 — queries vaults for business context, conventions, and past decisions. Broadcasts findings to inform analyst and architect work.
+- **`knowz:writer`** is dispatched at each quality gate — receives a self-contained prompt with the phase identifier and WorkGroup ID, reads the WorkGroup file, extracts learnings, and writes to the appropriate vault. Handles deduplication, formatting, and routing to the correct vault by type.
+- Writers are short-lived (dispatched per gate, not persistent); readers are dispatched at Stage 0 for upfront context gathering.
 
 On platforms without multi-agent orchestration, the closer handles vault writes directly (see Section 7).
 
@@ -349,29 +348,29 @@ During finalization, scan the WorkGroup for insight-worthy patterns:
 
 ### Auto-Capture Triggers
 
-Learning candidates are detected at each quality gate. **The lead/outer orchestrator is responsible for triggering capture** — delegating to the knowz-scribe on multi-agent platforms, or ensuring the closer handles it via Direct Write Fallback on single-agent/sequential platforms.
+Learning candidates are detected at each quality gate. **The lead/outer orchestrator is responsible for triggering capture** — dispatching `knowz:writer` on multi-agent platforms, or ensuring the closer handles it via Direct Write Fallback on single-agent/sequential platforms.
 
-**Multi-agent platforms (knowz-scribe active):**
+**Multi-agent platforms (knowledge-liaison dispatches):**
 
-At each quality gate, send a message to the knowz-scribe with the phase identifier:
-- After Phase 1A approval: `"Capture Phase 1A: {wgid}"`
-- After Phase 2A completion: `"Capture Phase 2A: {wgid}"`
-- After Phase 2B audit: `"Capture Phase 2B: {wgid}"`
-- After Phase 3 finalization: `"Capture Phase 3: {wgid}"`
+The lead DMs the knowledge-liaison at each quality gate. The knowledge-liaison dispatches `knowz:writer` with a self-contained prompt:
+- After Phase 1A approval: DM knowledge-liaison: `"Capture Phase 1A: {wgid}. Your task: #{task-id}"`
+- After Phase 2A completion: DM knowledge-liaison: `"Capture Phase 2A: {wgid}. Your task: #{task-id}"`
+- After Phase 2B audit: DM knowledge-liaison: `"Capture Phase 2B: {wgid}. Your task: #{task-id}"`
+- After Phase 3 finalization: Closer DMs knowledge-liaison: `"Capture Phase 3: {wgid}. Your task: #{task-id}"`
 
-The knowz-scribe reads the WorkGroup file, extracts relevant data, checks for duplicates, and writes to the appropriate vault. No other agent should call `create_knowledge` when the scribe is active.
+The knowledge-liaison owns extraction, vault routing, and writer dispatch. No other agent dispatches `knowz:writer` or calls `create_knowledge` directly.
 
 **Ad-hoc captures (any agent, any time):**
 
-Any agent can send knowledge to the knowz-scribe outside phase boundaries:
-- `"Log: {description}"` — explicit capture, scribe must write it (decides vault routing)
-- `"Consider: {description}"` — soft capture, scribe evaluates whether to log and where
+Any agent can DM the knowledge-liaison directly:
+- `"Log: {description}"` — explicit capture, knowledge-liaison dispatches writer (writer must write it)
+- `"Consider: {description}"` — soft capture, knowledge-liaison dispatches writer (writer evaluates whether to log)
 
-The scribe handles routing, dedup, and formatting for both modes. If MCP is unavailable, captures are queued to `knowzcode/pending_captures.md` for later sync.
+The knowledge-liaison handles routing and dispatch. If MCP is unavailable, captures are queued to `knowzcode/pending_captures.md` for later sync.
 
-**Single-agent / no scribe (direct MCP writes):**
+**Single-agent / no writer (direct MCP writes):**
 
-If MCP is available but no knowz-scribe, resolve vault IDs from `knowzcode/knowzcode_vaults.md` before writing:
+If MCP is available but no `knowz:writer`, resolve vault IDs from `knowzcode/knowzcode_vaults.md` before writing:
 
 - After Phase 1A: `create_knowledge({ecosystem_vault}, title="Scope: {descriptive goal summary}", content="[CONTEXT] {problem description, what prompted this work, constraints}\n[INSIGHT] {scope decisions — what's included/excluded and why}\n[RATIONALE] {risk assessment with full reasoning, affected files, mitigation}\n[TAGS] scope, {domain}", tags=["scope", "{domain}"])`
 - After Phase 2A: Capture implementation patterns and workarounds discovered during TDD cycles — include specific file paths, code examples, and the problem each pattern solves
@@ -381,12 +380,12 @@ If MCP is available but no knowz-scribe, resolve vault IDs from `knowzcode/knowz
 
 ### Capture Protocol
 
-**When knowz-scribe is active (multi-agent platforms):**
-1. Send capture message to knowz-scribe with phase identifier and WorkGroup ID
-2. The scribe handles: vault ID resolution, duplicate checking, user approval prompting, and writing
+**When knowz:writer is available (multi-agent platforms):**
+1. Dispatch `knowz:writer` with self-contained prompt including phase identifier and WorkGroup ID
+2. The writer handles: vault ID resolution, duplicate checking, user approval prompting, and writing
 3. No other agent should call `create_knowledge` directly
 
-**When no knowz-scribe (single-agent / sequential):**
+**When no knowz:writer (single-agent / sequential):**
 1. Read `knowzcode/knowzcode_vaults.md` to resolve vault IDs by type
 2. Detect learning candidates from WorkGroup file content
 3. Check for duplicates via `search_knowledge` — skip if substantially similar exists
@@ -459,7 +458,7 @@ The reviewer can audit completed NodeIDs before all implementation finishes. Gap
 #### Context Scouts
 Dedicated context-gathering agents can run in parallel with core analysis:
 - Local context scout: reads project history, specs, workgroups
-- Knowz scout: queries and writes to knowledge management vaults for business context (full read/write access)
+- Knowz reader: queries knowledge management vaults for business context (read-only access)
 Both broadcast findings to inform analyst and architect work.
 
 ### Sequential Execution Protocol (for platforms without orchestration)

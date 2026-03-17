@@ -65,7 +65,27 @@ Before every action, regardless of intent:
 Before any MCP operation, verify the Knowz MCP tools are available:
 
 1. Check that `mcp__knowz__list_vaults` exists in your available tools
-2. **If NOT available:**
+
+2. **If NOT available** → run `CLAUDECODE= claude mcp get knowz` to distinguish:
+
+   **a) Configured but not active** (command succeeds — MCP entry exists):
+   The server was configured in this session but Claude Code hasn't loaded it yet.
+   ```
+   ┌─────────────────────────────────────────────────────┐
+   │  RESTART REQUIRED                                   │
+   │                                                     │
+   │  Knowz MCP server is configured but not yet active. │
+   │                                                     │
+   │  Claude Code only loads MCP servers at startup —    │
+   │  this is a platform limitation, not a bug.          │
+   │                                                     │
+   │  → Close and reopen Claude Code                     │
+   │  → Then run: /knowz status                          │
+   └─────────────────────────────────────────────────────┘
+   ```
+   STOP here — do not attempt any MCP operations.
+
+   **b) Not configured** (command fails — no MCP entry found):
    ```
    Knowz MCP server is not connected.
 
@@ -83,20 +103,40 @@ Before any MCP operation, verify the Knowz MCP tools are available:
 
 3. **If available:** Call `mcp__knowz__list_vaults()` as a connectivity smoke test
    - If it succeeds → MCP is connected, proceed to the action
-   - If it fails → report the error with troubleshooting guidance:
+   - If it fails with **401/unauthorized or OAuth error** → authentication issue:
+     ```
+     ┌─────────────────────────────────────────────────────┐
+     │  AUTHENTICATION FAILED                              │
+     │                                                     │
+     │  The Knowz MCP server returned an auth error.       │
+     │                                                     │
+     │  If using OAuth:                                    │
+     │    → Restart Claude Code — browser will open for    │
+     │      login on the next MCP call                     │
+     │    → If this keeps happening, switch to API Key:    │
+     │      /knowz setup <your-api-key>                    │
+     │      (no browser login or token refresh needed)  │
+     │                                                     │
+     │  If using API Key:                                  │
+     │    → Your key may be invalid or expired             │
+     │    → Get a new key at: https://knowz.io/api-keys    │
+     │    → Reconfigure: /knowz setup <new-key>            │
+     └─────────────────────────────────────────────────────┘
+     ```
+   - If it fails with **other error** → report with troubleshooting:
      ```
      Knowz MCP server is configured but returned an error:
        {error message}
 
      This usually means:
-       - Your API key is invalid or expired
-       - The Knowz server is unreachable
-       - Your account needs to be re-authenticated
+       - The Knowz server is temporarily unreachable
+       - There's a network connectivity issue
 
      Try:
-       - Check your API key in the MCP configuration
        - Verify network connectivity to the Knowz server
        - Run "claude mcp list" to inspect server status
+       - If using OAuth and errors persist, consider switching to API Key
+         for more resilient connections: /knowz setup <api-key>
      ```
 
 ---
@@ -218,8 +258,8 @@ Ask auth method:
 ```
 How would you like to authenticate with the MCP server?
 
-  OAuth (recommended) — log in via browser, no key stored locally
-  API Key — use the key from registration
+  OAuth (recommended) — authenticate via browser, tokens auto-managed
+  API Key — use the key from registration, no browser step needed
 ```
 
 Configure per [references/mcp-setup.md](references/mcp-setup.md).
@@ -250,15 +290,27 @@ Vault:
   Name: {vault_name}
   ID: {vault_id prefix...}
   File: knowz-vaults.md
+```
 
-Please restart Claude Code to activate MCP features.
-{If OAuth: "On first tool call, your browser will open for authentication."}
+Then display the restart box:
+```
+┌─────────────────────────────────────────────────────┐
+│  RESTART REQUIRED                                   │
+│                                                     │
+│  Claude Code must be restarted to load the new      │
+│  MCP server — this is a platform limitation.        │
+│                                                     │
+│  → Close and reopen Claude Code                     │
+│  → Then run: /knowz status                          │
+│                                                     │
+│  {If OAuth: "Your browser will open for login on    │
+│   the first MCP call after restart."}               │
+└─────────────────────────────────────────────────────┘
 
-Next Steps:
-  1. Restart Claude Code
-  2. Verify connection: /knowz status
-  3. Try: /knowz ask "your first question"
-  4. Save knowledge: /knowz save "your first insight"
+After restart:
+  1. Verify connection: /knowz status
+  2. Try: /knowz ask "your first question"
+  3. Save knowledge: /knowz save "your first insight"
 ```
 
 ---
@@ -299,8 +351,8 @@ If no auth found from any source:
 ```
 No API key found. How would you like to authenticate?
 
-  OAuth (recommended) — log in via browser, no key stored locally
-  API Key — enter a Knowz API key
+  OAuth (recommended) — authenticate via browser, tokens auto-managed
+  API Key — enter a Knowz API key, no browser step needed
   Register — create a new account (/knowz register)
 ```
 
@@ -321,8 +373,17 @@ If user chooses "Register" → advise running `/knowz register` and STOP.
    Scope: {scope}
    Endpoint: {endpoint}
 
-   Please restart Claude Code to activate, then run /knowz setup again
-   to create your vault configuration file.
+   ┌─────────────────────────────────────────────────────┐
+   │  RESTART REQUIRED                                   │
+   │                                                     │
+   │  Claude Code must be restarted to load the new      │
+   │  MCP server — this is a platform limitation.        │
+   │  MCP servers only connect at session startup.       │
+   │                                                     │
+   │  → Close and reopen Claude Code                     │
+   │  → Then run: /knowz setup                           │
+   │    (to create your vault configuration file)        │
+   └─────────────────────────────────────────────────────┘
    ```
    STOP here — restart required before vault discovery.
 
@@ -756,7 +817,7 @@ For complex, multi-step research tasks, dispatch the `knowledge-worker` agent in
 
 **How to dispatch:**
 ```
-Use the Agent tool with subagent_type "kc:knowz-scout" style — pass the user's query
+Use the Agent tool with subagent_type "knowledge-worker" — pass the user's query
 and let the agent handle multi-step vault operations.
 ```
 

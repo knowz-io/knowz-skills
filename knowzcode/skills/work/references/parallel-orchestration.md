@@ -67,14 +67,10 @@ When Parallel Teams mode is active, follow these 4 stages instead of spawning on
      - `TaskCreate("Scanner: direct codebase scan for {goal}")` → `TaskUpdate(owner: "scanner-direct")`
      - `TaskCreate("Scanner: test coverage scan for {goal}")` → `TaskUpdate(owner: "scanner-tests")`
    Spawn all Group A agents with their `{task-id}` in the spawn prompt (use spawn prompts from [spawn-prompts.md](spawn-prompts.md)).
-5. **Spawn Group B** (MCP agents — same turn as Group A): If `VAULTS_CONFIGURED = true` AND `MCP_AGENTS_ENABLED = true`:
-   Create tasks first, pre-assign, then spawn with task IDs:
-   - `TaskCreate("Knowz-scout: vault queries")` → `TaskUpdate(owner: "knowz-scout")`
-   - `TaskCreate("Knowz-scribe: listen")` → `TaskUpdate(owner: "knowz-scribe")`
-   Spawn both agents with their `{task-id}` in the spawn prompt.
-   **Pending captures check**: After Group B spawn, check if `knowzcode/pending_captures.md` exists and contains `---`-delimited capture blocks. If non-empty:
-   - If knowz-scribe was just spawned: the scribe's Startup Verification includes pending flush — no extra action needed (scribe handles it automatically)
-   - If knowz-scribe was NOT spawned (Group B skipped): inform the user: `"Note: {N} pending captures exist from previous sessions. Run /knowz flush to sync them to the vault."`
+5. **Spawn Group B** (vault liaison — same turn as Group A): If `VAULTS_CONFIGURED = true` AND `MCP_AGENTS_ENABLED = true`:
+   Spawn `knowledge-liaison` (persistent) with task ID and goal:
+   - `TaskCreate("Knowledge liaison: vault coordination")` → `TaskUpdate(owner: "knowledge-liaison")`
+   - Spawn with spawn prompt from [spawn-prompts.md](spawn-prompts.md). The knowledge-liaison handles initial `knowz:reader` dispatch, pending captures check, and all subsequent vault I/O.
    If `VAULTS_CONFIGURED = false` or `MCP_AGENTS_ENABLED = false`, skip Group B and log: `Vault agents skipped — no vaults configured` or `Vault agents skipped — MCP agents disabled in orchestration config.`
 6. **Spawn Group C** (specialist agents — same turn as Groups A and B): If `SPECIALISTS_ENABLED` is non-empty:
    Create tasks first, pre-assign, then spawn with task IDs:
@@ -83,8 +79,8 @@ When Parallel Teams mode is active, follow these 4 stages instead of spawning on
    - If `project-advisor` in list: `TaskCreate("Project advisor: backlog context")` → `TaskUpdate(owner: "project-advisor")`
    Spawn each enabled specialist with its `{task-id}` in the spawn prompt (use spawn prompts from [spawn-prompts.md](spawn-prompts.md)).
    If `SPECIALISTS_ENABLED` is empty, skip Group C.
-7. **Roster confirmation** — lead lists every spawned agent by name to the user. Include scanners and Group C specialists if active. If `VAULTS_CONFIGURED` was true but knowz-scout or knowz-scribe is missing from the roster, STOP and re-spawn the missing agent(s) before continuing.
-8. All spawned agents work immediately in parallel (context scouts are cheap Sonnet read-only agents; scanners are lightweight general-purpose agents; knowz-scribe is a cheap Haiku agent; specialists are Sonnet read-only agents). Agent count depends on orchestration config: 2-12 agents at Stage 0.
+7. **Roster confirmation** — lead lists every spawned agent by name to the user. Include scanners and Group C specialists if active. If `VAULTS_CONFIGURED` was true but the knowz reader task is missing from the roster, STOP and re-dispatch before continuing.
+8. All spawned agents work immediately in parallel (context scouts are cheap Sonnet read-only agents; scanners are lightweight general-purpose agents; specialists are Sonnet read-only agents). Agent count depends on orchestration config: 2-11 agents at Stage 0.
 9. Scouts broadcast findings → analyst and architect consume as messages. Specialists work independently on their Stage 0 tasks.
 
 **Key**: The analyst does NOT wait for scouts, scanners, or specialists to finish. It starts scanning the codebase immediately. Scout and scanner findings arrive as messages and enrich the analyst's work as they arrive. The analyst also streams `[PRELIMINARY]` NodeID findings to the architect as it discovers them (see Preliminary Findings Protocol). Specialist findings are consumed by the lead at gates.
@@ -131,7 +127,7 @@ When Parallel Teams mode is active, follow these 4 stages instead of spawning on
 10. Lead presents **Quality Gate #2** to user (see [quality-gates.md](quality-gates.md))
 11. User approves (or rejects → architect revises)
 12. Pre-implementation commit: `git add knowzcode/ && git commit -m "KnowzCode: Specs approved for {wgid}"`
-13. Shut down context-scouts (no longer needed after specs approved). Keep knowz-scout alive for vault queries during implementation.
+13. Shut down context-scouts (no longer needed after specs approved).
 14. Keep analyst alive briefly (available for scope questions during early implementation)
 15. Keep architect alive through Stage 2 (consultative role — spec clarifications for builders, no code or spec edits)
 
@@ -197,7 +193,7 @@ When Parallel Teams mode is active, follow these 4 stages instead of spawning on
 
 8. Enterprise compliance (if enabled):
    - Lead creates parallel compliance task for each reviewer (scoped to their partition)
-   - Reviewer checks compliance requirements from knowz-scout findings
+   - Reviewer checks compliance requirements from vault research findings
    - Runs alongside ARC audits
 
 9. Inter-agent communication during Stage 2:
@@ -211,7 +207,7 @@ When Parallel Teams mode is active, follow these 4 stages instead of spawning on
    - security-officer → builder-N: Security guidance for sensitive partitions (max 2 DMs per builder)
    - test-advisor → builder-N: Test improvement feedback (max 2 DMs per builder)
    - security-officer ↔ test-advisor: Cross-cutting test gaps in security paths (max 2 inter-specialist DMs)
-   - project-advisor → knowz-scribe: Idea captures for vault storage
+   - project-advisor → knowledge-liaison: Idea captures (`"Consider: {idea}"` — knowledge-liaison dispatches `knowz:writer` if warranted)
    - project-advisor → lead: Backlog proposals (before gap loop)
 
 10. After all NodeIDs implemented + audited across all partitions:
@@ -235,15 +231,13 @@ When Parallel Teams mode is active, follow these 4 stages instead of spawning on
    - Write ARC-Completion log entry
    - Review architecture docs for discrepancies
    - Schedule REFACTOR tasks for tech debt
-   - Create capture task for knowz-scribe (if active): `TaskCreate("Scribe: Capture Phase 3")` → `TaskUpdate(owner: "knowz-scribe")`, then send DM with task ID: `"Capture Phase 3: {wgid}. Your task: #{task-id}"`. Knowz-scout remains available for vault queries during finalization.
+   - DM knowledge-liaison for Phase 3 capture (if vaults configured): `"Capture Phase 3: {wgid}. Your task: #{task-id}"` — knowledge-liaison dispatches writer
    - Create final atomic commit
 4. Lead presents completion summary
-5. **Wait for scribe Phase 3 capture** (if knowz-scribe is active):
-   - Check scribe capture task via `TaskGet(task-id)` — wait until status is `completed`
-   - Also wait for scribe's Phase 3 confirmation DM
-   - **Timeout**: If >2 minutes after closer completes and scribe task still not complete → DM scribe: `"Status check: Phase 3 capture for {wgid}?"`
-   - **Hard timeout**: If another minute passes with no completion → proceed with shutdown and log `WARNING: Scribe Phase 3 capture did not complete for {wgid}. Vault writes may be incomplete.`
-6. Shutdown order: knowz-scout, knowz-scribe, closer, remaining agents
+5. **Wait for writer Phase 3 capture** (if knowledge-liaison dispatched a writer):
+   - Check writer task via `TaskGet(task-id)` — wait until status is `completed`
+   - **Timeout**: If >2 minutes after closer completes and writer task still not complete → proceed with shutdown and log `WARNING: Writer Phase 3 capture did not complete for {wgid}. Vault writes may be incomplete.`
+6. Shutdown order: closer, knowledge-liaison (after Phase 3 writer completion), remaining agents
 7. Delete team
 
 ---
@@ -278,8 +272,7 @@ When creating tasks, model the dependency chain with `addBlockedBy` and pre-assi
 | Scout: specs context | (none) | context-scout-specs |
 | Scout: workgroups context | (none) | context-scout-workgroups |
 | Scout: backlog context | (none) | context-scout-backlog |
-| Knowz-scout: vault queries | (none — persistent) | knowz-scout |
-| Knowz-scribe: listen | (none — persistent) | knowz-scribe |
+| Knowledge liaison: vault coordination | (none) | knowledge-liaison |
 | Scanner: direct codebase scan | (none) | scanner-direct |
 | Scanner: test coverage scan | (none) | scanner-tests |
 | Phase 1A analysis | (none — scouts + scanners enrich via broadcast) | analyst |
@@ -300,10 +293,11 @@ When creating tasks, model the dependency chain with `addBlockedBy` and pre-assi
 | Fix gaps: NodeID-X round N | Audit: NodeID-X (or re-audit N-1) | builder-N |
 | Re-audit: NodeID-X round N | Fix gaps round N | reviewer-N |
 | Phase 3 finalization | All audits approved | closer |
-| Scribe: Capture Phase 1A | Phase 1A (gate approval) | knowz-scribe |
-| Scribe: Capture Phase 2A | Implement: NodeID-X | knowz-scribe |
-| Scribe: Capture Phase 2B | All audits approved | knowz-scribe |
-| Scribe: Capture Phase 3 | Phase 3 finalization | knowz-scribe |
+| Reader: vault queries | (none — dispatched by knowledge-liaison) | knowz:reader |
+| Writer: Capture Phase 1A | Phase 1A (gate approval — dispatched by knowledge-liaison) | knowz:writer |
+| Writer: Capture Phase 2A | Implement: NodeID-X (dispatched by knowledge-liaison) | knowz:writer |
+| Writer: Capture Phase 2B | All audits approved (dispatched by knowledge-liaison) | knowz:writer |
+| Writer: Capture Phase 3 | Phase 3 finalization (dispatched by knowledge-liaison) | knowz:writer |
 
 ---
 

@@ -108,7 +108,7 @@ claude plugin install knowz
 /knowz register            # configure MCP
 # restart
 /knowzcode:init            # initialize KC project
-/knowzcode:work "feature"  # KC agents use MCP automatically (scout/scribe)
+/knowzcode:work "feature"  # KC agents use MCP automatically (knowledge-liaison/reader/writer)
 /knowz save "insight"      # manual capture via knowz
 ```
 

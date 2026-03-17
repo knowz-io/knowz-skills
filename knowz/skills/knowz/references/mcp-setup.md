@@ -136,13 +136,17 @@ This is expected if:
   - First-time setup — you haven't completed browser login yet
   - Token expired — your OAuth session needs renewal
 
+Important: MCP servers only connect at session startup. A restart is
+required before Claude Code can use a newly configured or re-authenticated
+MCP server — this is a platform limitation, not a bug.
+
 To authenticate:
   Claude Code: Restart Claude Code — browser will open on first tool call
   Gemini CLI: Run /mcp auth knowz to re-authenticate via browser
 
 If the problem persists:
   - Re-configure: /knowz setup --oauth
-  - Or switch to API key: /knowz setup <api-key>
+  - Or switch to API key (no browser login or token refresh needed): /knowz setup <api-key>
 ```
 
 ### API Key Invalid
