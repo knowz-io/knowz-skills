@@ -143,7 +143,7 @@ When Codex is selected, generate skill files in addition to `AGENTS.md`:
 2. Generate 12 skill files from platform_adapters.md "Codex Skill Files" section.
    Each generated SKILL.md should include `allowed-tools:` in frontmatter matching the platform's available tools.
    - .agents/skills/knowzcode-work/SKILL.md
-   - .agents/skills/knowzcode-plan/SKILL.md
+   - .agents/skills/knowzcode-explore/SKILL.md
    - .agents/skills/knowzcode-fix/SKILL.md
    - .agents/skills/knowzcode-audit/SKILL.md
    - .agents/skills/knowzcode-learn/SKILL.md
@@ -162,7 +162,7 @@ When Codex is selected, generate skill files in addition to `AGENTS.md`:
 OpenAI Codex adapter generated:
   AGENTS.md                                       (primary instructions)
   .agents/skills/knowzcode-work/SKILL.md                (/knowzcode:work — start workflow)
-  .agents/skills/knowzcode-plan/SKILL.md                (/knowzcode:plan — research)
+  .agents/skills/knowzcode-explore/SKILL.md                (/knowzcode:explore — research)
   .agents/skills/knowzcode-fix/SKILL.md                 (/knowzcode:fix — quick fix)
   .agents/skills/knowzcode-audit/SKILL.md               (/knowzcode:audit — quality audit)
   .agents/skills/knowzcode-continue/SKILL.md            (/knowzcode:continue — resume workflow)
@@ -220,7 +220,7 @@ When Gemini is selected, generate TOML command files, skill files, and subagent 
 1. Create .gemini/commands/knowzcode/ directory
 2. Generate 12 TOML files from platform_adapters.md "Native Commands" section:
    - .gemini/commands/knowzcode/work.toml
-   - .gemini/commands/knowzcode/plan.toml
+   - .gemini/commands/knowzcode/explore.toml
    - .gemini/commands/knowzcode/fix.toml
    - .gemini/commands/knowzcode/audit.toml
    - .gemini/commands/knowzcode/learn.toml
@@ -234,7 +234,7 @@ When Gemini is selected, generate TOML command files, skill files, and subagent 
 3. Create .gemini/skills/ directory
 4. Generate 12 skill files from platform_adapters.md "Gemini Skill Files" section:
    - .gemini/skills/knowzcode-work/SKILL.md
-   - .gemini/skills/knowzcode-plan/SKILL.md
+   - .gemini/skills/knowzcode-explore/SKILL.md
    - .gemini/skills/knowzcode-fix/SKILL.md
    - .gemini/skills/knowzcode-audit/SKILL.md
    - .gemini/skills/knowzcode-learn/SKILL.md
@@ -255,15 +255,13 @@ Ask user: "Would you like to generate Gemini subagent definitions? (experimental
 If yes:
 ```
 1. Create .gemini/agents/ directory
-2. Generate 14 subagent files from platform_adapters.md "Gemini Subagents" section:
+2. Generate 12 subagent files from platform_adapters.md "Gemini Subagents" section:
    - .gemini/agents/knowzcode-analyst.md
    - .gemini/agents/knowzcode-architect.md
    - .gemini/agents/knowzcode-builder.md
    - .gemini/agents/knowzcode-reviewer.md
    - .gemini/agents/knowzcode-closer.md
    - .gemini/agents/knowzcode-context-scout.md
-   - .gemini/agents/knowzcode-knowz-scout.md
-   - .gemini/agents/knowzcode-knowz-scribe.md
    - .gemini/agents/knowzcode-microfix.md
    - .gemini/agents/knowzcode-knowledge-migrator.md
    - .gemini/agents/knowzcode-update-coordinator.md
@@ -278,7 +276,7 @@ If yes:
 Gemini CLI adapter generated:
   GEMINI.md                                       (primary instructions)
   .gemini/commands/knowzcode/work.toml                  (/knowzcode:work — start workflow)
-  .gemini/commands/knowzcode/plan.toml                  (/knowzcode:plan — research)
+  .gemini/commands/knowzcode/explore.toml                  (/knowzcode:explore — research)
   .gemini/commands/knowzcode/fix.toml                   (/knowzcode:fix — quick fix)
   .gemini/commands/knowzcode/audit.toml                 (/knowzcode:audit — quality audit)
   .gemini/commands/knowzcode/status.toml                (/knowzcode:status — connection status)
@@ -287,7 +285,7 @@ Gemini CLI adapter generated:
   .gemini/commands/knowzcode/telemetry.toml             (/knowzcode:telemetry — investigate errors)
   .gemini/commands/knowzcode/telemetry-setup.toml       (/knowzcode:telemetry-setup — configure sources)
   .gemini/skills/knowzcode-work/SKILL.md                (discoverable skill)
-  .gemini/skills/knowzcode-plan/SKILL.md                (discoverable skill)
+  .gemini/skills/knowzcode-explore/SKILL.md                (discoverable skill)
   .gemini/skills/knowzcode-fix/SKILL.md                 (discoverable skill)
   .gemini/skills/knowzcode-audit/SKILL.md               (discoverable skill)
   .gemini/skills/knowzcode-continue/SKILL.md            (discoverable skill)
@@ -329,7 +327,7 @@ When Copilot is selected, generate the full prompt file suite in addition to the
    - .github/prompts/knowzcode-audit.prompt.md
    - .github/prompts/knowzcode-finalize.prompt.md
    - .github/prompts/knowzcode-fix.prompt.md
-   - .github/prompts/knowzcode-plan.prompt.md
+   - .github/prompts/knowzcode-explore.prompt.md
    - .github/prompts/knowzcode-continue.prompt.md
 5. Replace "vX.Y.Z" in generated files with the current KnowzCode version
 6. Optionally create .vscode/mcp.json skeleton from template Section C
@@ -349,7 +347,7 @@ GitHub Copilot adapter generated:
   .github/prompts/knowzcode-audit.prompt.md
   .github/prompts/knowzcode-finalize.prompt.md
   .github/prompts/knowzcode-fix.prompt.md    (quick fix: #prompt:knowzcode-fix)
-  .github/prompts/knowzcode-plan.prompt.md   (research: #prompt:knowzcode-plan)
+  .github/prompts/knowzcode-explore.prompt.md   (research: #prompt:knowzcode-explore)
   .github/prompts/knowzcode-continue.prompt.md (resume: #prompt:knowzcode-continue)
 
 Usage in VS Code:
@@ -445,7 +443,7 @@ Agent Teams: [Enabled (.claude/settings.local.json) | Not enabled (subagent fall
 Next steps:
   1. Review knowzcode/knowzcode_project.md and add project details
   2. Start your first feature: /knowzcode:work "your feature description"
-  3. Research first: /knowzcode:plan "your question"
+  3. Research first: /knowzcode:explore "your question"
 ```
 
 ---
@@ -461,7 +459,7 @@ Templates included: `knowzcode_project.md`, `knowzcode_tracker.md`, `knowzcode_l
 ## Related Skills
 
 - `/knowzcode:work` — Start first feature after initialization
-- `/knowzcode:plan` — Research the codebase after initialization
+- `/knowzcode:explore` — Research the codebase after initialization
 - `/knowz setup` — Configure MCP and vaults
 - `/knowzcode:status` — Verify setup
 

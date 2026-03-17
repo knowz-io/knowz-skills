@@ -15,7 +15,7 @@ For product overview, see [README.md](README.md). For detailed docs, see `docs/`
 │   └── plugin.json              # Plugin manifest
 ├── skills/                      # Skills (10 — 8 user-invocable + 2 trigger)
 │   ├── work/SKILL.md
-│   ├── plan/SKILL.md
+│   ├── explore/SKILL.md
 │   ├── fix/SKILL.md
 │   ├── audit/SKILL.md
 │   ├── init/SKILL.md
@@ -25,18 +25,20 @@ For product overview, see [README.md](README.md). For detailed docs, see `docs/`
 │   ├── continue/SKILL.md        # Trigger skill
 │   ├── start-work/SKILL.md      # Trigger skill
 │   └── *.json                   # JSON skill definitions
-├── agents/                      # Agent definitions (14)
-│   ├── analyst.md               # Phase 1A
-│   ├── architect.md             # Phase 1B
-│   ├── builder.md               # Phase 2A
-│   ├── reviewer.md              # Phase 2B
-│   ├── closer.md                # Phase 3
-│   ├── context-scout.md         # Stage 0 (local context)
-│   ├── knowz-scout.md           # Stage 0 (MCP vault)
-│   ├── knowz-scribe.md          # Stage 0 (MCP vault writes)
-│   ├── microfix-specialist.md
-│   ├── knowledge-migrator.md
-│   └── update-coordinator.md
+├── agents/                      # Agent definitions (13)
+│   ├── analyst.md               # Phase 1A — impact analysis
+│   ├── architect.md             # Phase 1B — specification drafting
+│   ├── builder.md               # Phase 2A — TDD implementation
+│   ├── reviewer.md              # Phase 2B — completeness audit
+│   ├── closer.md                # Phase 3 — finalization
+│   ├── context-scout.md         # Stage 0 — local context discovery
+│   ├── knowledge-liaison.md     # Persistent — vault I/O routing via knowz:reader/writer
+│   ├── microfix-specialist.md   # Utility — single-file fixes
+│   ├── knowledge-migrator.md    # Utility — vault migration
+│   ├── update-coordinator.md    # Utility — plugin update coordination
+│   ├── project-advisor.md       # Specialist (opt-in) — backlog curation
+│   ├── security-officer.md      # Specialist (opt-in) — threat modeling
+│   └── test-advisor.md          # Specialist (opt-in) — TDD enforcement
 ├── knowzcode/                   # Template files (copied into user projects on /knowzcode:init)
 │   ├── knowzcode_loop.md        # Core methodology (platform-neutral)
 │   ├── platform_adapters.md     # Templates for all 6 platform instruction files

@@ -46,7 +46,7 @@ When using the KnowzCode plugin with Claude Code, these commands orchestrate the
 | Command | Description |
 |:--------|:------------|
 | `/knowzcode:work <goal>` | Start feature workflow (runs all loop phases) |
-| `/knowzcode:plan <topic>` | Research before implementing |
+| `/knowzcode:explore <topic>` | Research before implementing |
 | `/knowzcode:audit [type]` | Run quality audits (spec, architecture, security, integration, compliance) |
 | `/knowzcode:fix <target>` | Quick targeted fix |
 | `/knowzcode:init` | Initialize KnowzCode in project + generate platform adapters |
@@ -63,7 +63,7 @@ When using the KnowzCode plugin with Claude Code, these commands orchestrate the
 
 *   **Starting a new project?** -> `/knowzcode:init` (or copy `knowzcode/` directory)
 *   **Starting a feature?** -> `/knowzcode:work "goal"` (or Loop 1A prompt)
-*   **Have a question about the codebase?** -> `/knowzcode:plan "question"` (or Investigate prompt)
+*   **Have a question about the codebase?** -> `/knowzcode:explore "question"` (or Investigate prompt)
 *   **Large Change Set (10+ NodeIDs)?** -> Run `Spec_Verification_Checkpoint` after Loop 1B
 *   **Finished with Loop 2A?** -> Always run `[LOOP_2B]__Verify_Implementation` audit
 *   **Found a small typo?** -> `/knowzcode:fix "target"` (or `Execute_Micro_Fix` prompt)
@@ -75,6 +75,6 @@ When using the KnowzCode plugin with Claude Code, these commands orchestrate the
 ## Best Practices
 
 1. **The loop must be followed completely** - don't skip steps, they ensure quality at each phase
-2. **Use `/knowzcode:plan` before diving into code** - research saves time by thinking through complexity upfront
+2. **Use `/knowzcode:explore` before diving into code** - research saves time by thinking through complexity upfront
 3. **Regular audits** (`/knowzcode:audit`) prevent technical debt accumulation
 4. **Maintain the WorkGroup todo file** (`knowzcode/workgroups/<WorkGroupID>.md`) and prefix every entry with `KnowzCode:` so automation keeps tasks on-screen

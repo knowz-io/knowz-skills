@@ -85,7 +85,7 @@ Search for context in this priority order:
 2. If found: Extract full plan content as context
 
 #### Priority B: Recent Investigation
-1. Check `knowzcode/planning/investigation-*.md` for files < 30 min old
+1. Check `knowzcode/planning/*.md` for files < 30 min old
 2. If found: Extract top recommendation and key findings
 3. Handle "option N" phrases by extracting that specific option
 
@@ -212,7 +212,7 @@ Log skill activation in `knowzcode/knowzcode_log.md`:
 ## Related Skills
 
 - `/knowzcode:work` — The workflow this skill invokes
-- `/knowzcode:plan` — Research before implementing
+- `/knowzcode:explore` — Research before implementing
 - `/knowzcode:continue` — Resume an active WorkGroup instead
 
 ## Skill Configuration

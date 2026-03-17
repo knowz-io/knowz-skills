@@ -104,43 +104,37 @@ Two temporary agents that scan the codebase in parallel with the analyst, broadc
 
 ---
 
-## Stage 0: Knowz Scout
+## Stage 0: Vault Liaison (Persistent)
 
-**Agent**: `knowz-scout` | MCP vault researcher and knowledge agent
+**Agent**: `knowledge-liaison` | Persistent vault coordination agent
 
 **Spawn prompt**:
-> You are the **knowz-scout** for WorkGroup `{wgid}`.
-> Read `agents/knowz-scout.md` for your full role definition.
-> **Your Task**: #{task-id} — claim immediately (`TaskUpdate(status: "in_progress")`). Mark completed with summary when done.
+> You are the **knowledge-liaison** for WorkGroup `{wgid}`.
+> Read `agents/knowledge-liaison.md` for your full role definition.
+> **Your Task**: #{task-id} — claim immediately (`TaskUpdate(status: "in_progress")`).
 > **Goal**: {goal}
-> **Step 1**: Read `knowzcode/knowzcode_vaults.md` to discover configured vaults — their IDs, types, descriptions, and what knowledge each contains.
-> **Step 2**: For each configured vault, construct goal-relevant queries using the vault's description to guide what to ask. If a single vault covers all knowledge, consolidate queries there.
-> **Deliverable**: Broadcast vault knowledge findings to all teammates.
+> **Vault config**: `knowzcode/knowzcode_vaults.md`
+> **Lifecycle**: You persist from Stage 0 through Phase 3 writer completion. You outlive the closer.
+> **Startup**: Read vault config, check/flush pending captures, dispatch `knowz:reader` for Stage 0 vault research.
+> **Ongoing**: Accept capture DMs from the lead (at quality gates) and closer (Phase 3). Accept `"Log: ..."` and `"Consider: ..."` from any agent. Accept `"VaultQuery: ..."` from any agent. Dispatch `knowz:writer` and `knowz:reader` as needed.
 
 **Dispatch**:
-- *Parallel Teams*: **Group B** — spawned at Stage 0 if `VAULTS_CONFIGURED = true`, no blockedBy. Persistent — stays alive through the entire workflow. Shut down after Phase 3 capture is complete.
-- *Sequential Teams*: Not applicable (scouts are Parallel Teams only).
-- *Subagent*: `Task(subagent_type="knowz-scout", description="Query vault for domain knowledge", prompt=<above>)` (only if MCP Probe passes)
+- *Parallel Teams*: **Group B** — spawned at Stage 0 if `VAULTS_CONFIGURED = true`. Persistent — stays alive through Phase 3.
+- *Sequential Teams*: Not applicable (vault coordination handled by closer directly).
+- *Subagent*: Not applicable (vault writes handled by closer directly).
 
 ---
 
-## Stage 0: Knowz Scribe
+## Quality Gate Writer Dispatches
 
-**Agent**: `knowz-scribe` | Persistent vault write agent (Haiku)
+**Agent**: `knowz:writer` | Dispatched by knowledge-liaison at each quality gate
 
-**Spawn prompt**:
-> You are the **knowz-scribe** for WorkGroup `{wgid}`.
-> Read `agents/knowz-scribe.md` for your full role definition.
-> **Your Task**: #{task-id} — claim immediately (`TaskUpdate(status: "in_progress")`). Mark completed with summary when done.
-> **WorkGroup file**: `knowzcode/workgroups/{wgid}.md`
-> **Vault config**: Read `knowzcode/knowzcode_vaults.md` to discover configured vaults and resolve vault IDs by type.
-> **You are a message-driven agent.** Wait for capture messages from teammates (e.g., "Capture Phase 1A: {wgid}"). On each message, read the WorkGroup file, extract relevant learnings, and write to the appropriate vault.
-> **Do NOT read or modify source code.** You only read knowzcode/ files and write to MCP vaults.
+Writers are dispatched by the knowledge-liaison at each quality gate. The lead DMs knowledge-liaison with capture requests (see [quality-gates.md](quality-gates.md)); knowledge-liaison constructs self-contained writer prompts and dispatches. Writers are non-persistent — each dispatch completes its writes and exits.
 
 **Dispatch**:
-- *Parallel Teams*: **Group B** — spawned at Stage 0 if `VAULTS_CONFIGURED = true`, no blockedBy. Persistent — stays alive through the entire workflow. Shut down after Phase 3 capture is complete.
-- *Sequential Teams*: Not applicable (knowz-scribe is Parallel Teams only).
-- *Subagent*: Not applicable — vault writes in subagent mode are handled by the closer during Phase 3 finalization (see Direct Write Fallback in `agents/closer.md`).
+- *Parallel Teams*: Lead DMs knowledge-liaison at Gates #1, Phase 2A, Phase 2B. Closer DMs knowledge-liaison at Phase 3. Knowledge-liaison dispatches `knowz:writer` for each.
+- *Sequential Teams*: Not applicable — vault writes are handled by the closer during Phase 3 finalization (see Learning Capture in `agents/closer.md`).
+- *Subagent*: `Task(subagent_type="knowz:writer", description="Capture Phase {N} learnings", prompt=<gate-specific prompt>)`
 
 ---
 
@@ -194,7 +188,7 @@ The spawn prompts below are used when `SPECIALISTS_ENABLED` is non-empty. Specia
 > **READ-ONLY.** Do NOT modify any files.
 > **Stage 0 Deliverable**: Read tracker for existing REFACTOR tasks and backlog context. DM lead with context summary.
 > **Lifecycle**: You shut down mid-Stage 2 after delivering backlog proposals — before the gap loop.
-> **Communication**: DM lead with backlog context and proposals. DM knowz-scribe with idea captures (if active). Do NOT DM builders or other specialists.
+> **Communication**: DM lead with backlog context and proposals. Include idea captures in your proposals — the lead dispatches `knowz:writer` if warranted. Do NOT DM builders or other specialists.
 > **Enterprise Compliance**: If `knowzcode/enterprise/compliance_manifest.md` exists, note compliance configuration gaps in backlog proposals.
 
 ---
@@ -360,8 +354,8 @@ After Gate #1, the lead sends the approved Change Set via DM and creates spec-dr
 >
 > **Your Task**: #{task-id} — claim immediately (`TaskUpdate(status: "in_progress")`). Mark completed with summary when done.
 > **Conventions**: Update WorkGroup file with results (prefix entries with `KnowzCode:`). If blocked, report blocker and notify lead.
-> **Vault writes**: Knowz-scribe is active. Create a capture task (`TaskCreate("Scribe: Capture Phase 3")` → `TaskUpdate(owner: "knowz-scribe")`), then send `"Capture Phase 3: {wgid}. Your task: #{task-id}"` to delegate learning capture and audit trail writes. Do NOT call `create_knowledge` directly.
-> **Deliverable**: Atomic finalization — update specs to FINAL, update tracker, write log entry, update architecture if needed, delegate learning capture to knowz-scribe, and create final commit.
+> **Vault writes**: DM knowledge-liaison for Phase 3 capture: `"Capture Phase 3: {wgid}. Your task: #{task-id}"`. The knowledge-liaison dispatches `knowz:writer`. Do NOT call `create_knowledge` directly.
+> **Deliverable**: Atomic finalization — update specs to FINAL, update tracker, write log entry, update architecture if needed, dispatch learning capture to `knowz:writer`, and create final commit.
 
 **Spawn prompt (Sequential Teams / Subagent)**:
 > You are the **closer** for WorkGroup `{wgid}`.
@@ -375,11 +369,11 @@ After Gate #1, the lead sends the approved Change Set via DM and creates spec-dr
 >
 > **Your Task**: #{task-id} — claim immediately (`TaskUpdate(status: "in_progress")`). Mark completed with summary when done.
 > **Conventions**: Update WorkGroup file with results (prefix entries with `KnowzCode:`). If blocked, report blocker and notify lead.
-> **Vault writes**: No knowz-scribe — you own all vault writes. Follow the Direct Write Fallback in `agents/closer.md`.
+> **Vault writes**: You own all vault writes directly. Follow the Learning Capture instructions in `agents/closer.md`.
 > **MCP Status**: {MCP_ACTIVE} — Vaults configured: {VAULTS_CONFIGURED}. Vault config: `knowzcode/knowzcode_vaults.md`.
 > **Deliverable**: Atomic finalization — update specs to FINAL, update tracker, write log entry, update architecture if needed, write learnings to vaults, and create final commit.
 
 **Dispatch**:
-- *Parallel Teams*: Spawned at Stage 3 (`addBlockedBy`: last audit/re-audit task). Use the **Parallel Teams** spawn prompt. All other agents shut down before closer starts, except knowz-scout and knowz-scribe (stay alive for Phase 3 capture).
+- *Parallel Teams*: Spawned at Stage 3 (`addBlockedBy`: last audit/re-audit task). Use the **Parallel Teams** spawn prompt. All other agents shut down before closer starts.
 - *Sequential Teams*: Spawn teammate `closer`, create task `Phase 3: Finalize WorkGroup {wgid}`, wait for completion. Use the **Sequential Teams / Subagent** spawn prompt.
 - *Subagent*: `Task(subagent_type="closer", description="Phase 3 finalization", prompt=<Sequential/Subagent spawn prompt above>)`

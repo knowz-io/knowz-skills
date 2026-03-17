@@ -47,8 +47,8 @@ default_specialists: []
 ## MCP Agent Configuration
 
 ```yaml
-# Enable MCP agents (knowz-scout, knowz-scribe) when vaults are configured (default: true)
-# Set to false to skip vault agents even when vaults exist — reduces agent count.
+# Enable MCP vault agents (knowz:reader dispatch, knowz:writer dispatches) when vaults are configured (default: true)
+# Set to false to skip vault operations even when vaults exist — reduces agent count.
 mcp_agents_enabled: true
 ```
 

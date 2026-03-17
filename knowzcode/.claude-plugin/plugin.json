@@ -5,5 +5,32 @@
   "keywords": ["tdd", "development-methodology", "quality-gates", "agents", "code-review"],
   "author": {
     "name": "Alex Headscarf"
-  }
+  },
+  "skills": [
+    "./skills/work/SKILL.md",
+    "./skills/explore/SKILL.md",
+    "./skills/fix/SKILL.md",
+    "./skills/audit/SKILL.md",
+    "./skills/init/SKILL.md",
+    "./skills/status/SKILL.md",
+    "./skills/telemetry/SKILL.md",
+    "./skills/telemetry-setup/SKILL.md",
+    "./skills/continue/SKILL.md",
+    "./skills/start-work/SKILL.md"
+  ],
+  "agents": [
+    "./agents/analyst.md",
+    "./agents/architect.md",
+    "./agents/builder.md",
+    "./agents/reviewer.md",
+    "./agents/closer.md",
+    "./agents/context-scout.md",
+    "./agents/knowledge-liaison.md",
+    "./agents/microfix-specialist.md",
+    "./agents/knowledge-migrator.md",
+    "./agents/update-coordinator.md",
+    "./agents/project-advisor.md",
+    "./agents/security-officer.md",
+    "./agents/test-advisor.md"
+  ]
 }

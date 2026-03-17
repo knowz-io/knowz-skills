@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.4] - 2026-03-16
+
+### Added
+- `knowledge-liaison` agent — persistent vault coordinator that routes all vault I/O by dispatching `knowz:writer` and `knowz:reader`
+- `/knowzcode:explore` skill — investigate topics, research codebases, produce structured implementation plans (replaces `/knowzcode:plan`)
+- Gemini CLI `explore` command and skill
+- `reader` and `writer` generic agents in knowz plugin — stateless vault I/O agents reusable by any plugin
+
+### Changed
+- Vault agent architecture: persistent `knowz-scout`/`knowz-scribe` pair replaced with `knowledge-liaison` → `knowz:reader`/`knowz:writer` dispatch model
+- `/knowzcode:plan` renamed to `/knowzcode:explore` for clearer intent signaling
+- Repository renamed from `knowz-marketplace` to `knowz-skills`
+- All orchestration, quality gate, and spawn prompt docs updated for new agent model
+
+### Removed
+- `knowz-scout` and `knowz-scribe` agents (replaced by knowledge-liaison + knowz:reader/writer)
+- `/knowzcode:plan` skill (renamed to `/knowzcode:explore`)
+- Gemini scout/scribe agent definitions and plan command/skill
+
 ## [0.7.3] - 2026-03-14
 
 ### Added

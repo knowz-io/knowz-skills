@@ -7,7 +7,7 @@ This manifest describes the resources that support the KnowzCode workflow.
 | Command | Purpose |
 | --- | --- |
 | `/knowzcode:work` | Start feature workflow with TDD, quality gates, and structured phases |
-| `/knowzcode:plan` | Research and investigate using parallel agents before implementing |
+| `/knowzcode:explore` | Research and investigate using parallel agents before implementing |
 | `/knowzcode:audit` | Run quality audits (spec, architecture, security, integration) |
 | `/knowzcode:fix` | Execute targeted micro-fix workflow |
 | `/knowzcode:init` | Initialize KnowzCode in current project + generate platform adapters |

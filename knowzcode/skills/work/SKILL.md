@@ -18,7 +18,7 @@ Start a new KnowzCode development workflow session.
 
 ## When NOT to Trigger
 
-- User wants to **research or explore** without implementing → use `/knowzcode:plan`
+- User wants to **research or explore** without implementing → use `/knowzcode:explore`
 - User wants a **single-file micro-fix** (<50 lines, no ripple effects) → use `/knowzcode:fix`
 - User wants to **audit or scan** existing code quality → use `/knowzcode:audit`
 - User is **asking a question** (starts with how/why/what/should, contains `?`)
@@ -192,7 +192,7 @@ Create `knowzcode/workgroups/{WorkGroupID}.md`:
 
 ## Step 5: Input Classification
 
-**Question indicators** (suggest `/knowzcode:plan` instead): starts with is/does/how/why/what/should, contains `?`, phrased as inquiry.
+**Question indicators** (suggest `/knowzcode:explore` instead): starts with is/does/how/why/what/should, contains `?`, phrased as inquiry.
 
 **Implementation indicators** (proceed): starts with build/add/create/implement/fix/refactor, action-oriented verbs.
 
@@ -333,13 +333,13 @@ Scan `knowzcode/knowzcode_tracker.md` for outstanding `REFACTOR_` tasks that ove
 - **Stage 0**: Create team, MCP probe, spawn scout/analyst/architect/scanner/MCP/specialist agents in parallel
 - **Stage 1**: Analyst completes Change Set → Gate #1 → Architect drafts specs → Gate #2
 - **Stage 2**: Parallel builders (1 per independent partition) + paired reviewers + gap loop
-- **Stage 3**: Closer finalizes, scribe captures, shutdown
+- **Stage 3**: Closer finalizes, dispatches writer for captures, shutdown
 
 ---
 
 ## Phase Prompt Reference
 
-**Spawn Prompts**: Read [references/spawn-prompts.md](references/spawn-prompts.md) before spawning any agent. Contains spawn prompts for all phases: context scouts, codebase scanners, knowz-scout, knowz-scribe, specialists (security-officer, test-advisor, project-advisor), analyst (Phase 1A), architect (Phase 1B), builder (Phase 2A), reviewer (Phase 2B), and closer (Phase 3).
+**Spawn Prompts**: Read [references/spawn-prompts.md](references/spawn-prompts.md) before spawning any agent. Contains spawn/dispatch prompts for all phases: context scouts, codebase scanners, knowz:reader, knowz:writer dispatches, specialists (security-officer, test-advisor, project-advisor), analyst (Phase 1A), architect (Phase 1B), builder (Phase 2A), reviewer (Phase 2B), and closer (Phase 3).
 
 **Quality Gates**: Read [references/quality-gates.md](references/quality-gates.md) at quality gate checkpoints. Contains gate templates (#1 Change Set, #2 Specifications, #3 Audit Results), autonomous mode handling, specialist report sections, gap loop mechanics, and progress capture instructions.
 
@@ -392,7 +392,7 @@ The WorkGroup file remains in `knowzcode/workgroups/` for reference. It can be r
 
 ## Related Skills
 
-- `/knowzcode:plan` — Research and explore before implementing
+- `/knowzcode:explore` — Research and explore before implementing
 - `/knowzcode:fix` — Single-file micro-fix (<50 lines)
 - `/knowzcode:audit` — Read-only quality and security scan
 - `/knowz save` — Capture learnings to vault

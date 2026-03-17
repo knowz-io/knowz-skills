@@ -20,7 +20,7 @@ Run specialized audit workflows.
 
 - User wants to **build or implement** a new feature → use `/knowzcode:work`
 - User wants a **single-file fix** → use `/knowzcode:fix`
-- User wants to **research or explore** a topic → use `/knowzcode:plan`
+- User wants to **research or explore** a topic → use `/knowzcode:explore`
 - User wants to **save a learning** → use `/knowz save`
 
 ## Common Invocation Patterns
@@ -155,7 +155,7 @@ Create tasks first, pre-assign, then spawn with task IDs:
 - `TaskCreate("Audit: spec + architecture")` → `TaskUpdate(owner: "reviewer-spec-arch")`
 - `TaskCreate("Audit: security + integration")` → `TaskUpdate(owner: "reviewer-sec-int")`
 - (Optional) `TaskCreate("Audit: compliance")` → `TaskUpdate(owner: "reviewer-compliance")` (if enterprise configured)
-- `TaskCreate("Scout: vault standards")` → `TaskUpdate(owner: "knowz-scout")` (if `VAULTS_CONFIGURED = true`)
+- Dispatch `knowz:reader` for vault standards (if `VAULTS_CONFIGURED = true`)
 
 Spawn reviewers with their task IDs:
 
@@ -190,9 +190,10 @@ Spawn reviewers with their task IDs:
    > **Audit scope**: Enterprise compliance ONLY.
    > Check against guidelines in `knowzcode/enterprise/compliance_manifest.md`.
 
-4. If `VAULTS_CONFIGURED = true` AND `MCP_AGENTS_ENABLED = true`, spawn `knowz-scout` for standards lookup in parallel with reviewers:
-   > **Your Task**: #{task-id} — claim immediately (`TaskUpdate(status: "in_progress")`). Mark completed with summary when done.
-   > Read `knowzcode/knowzcode_vaults.md` to resolve vault IDs by type. Query for team standards: `ask_question({vault matching "ecosystem" type}, "standards for {project_type}", researchMode=true)`
+4. If `VAULTS_CONFIGURED = true` AND `MCP_AGENTS_ENABLED = true`, dispatch `knowz:reader` for standards lookup in parallel with reviewers:
+   > Read `knowzcode/knowzcode_vaults.md` to discover configured vaults — their IDs, types, descriptions.
+   > Query for team standards: search ecosystem-type vaults for standards, conventions, and past audit decisions.
+   > Return synthesized findings.
 
 Wait for all to complete.
 
@@ -254,8 +255,8 @@ Launch scouts + reviewer in parallel via `Task()`:
    - `SCOUT_MODE = "minimal"`: 1 combined instance:
      - `Task(subagent_type="context-scout", name="context-scout", description="Scout: combined context", prompt="Research audit scope: {audit_type}. Focus: ALL local context — knowzcode/specs/*.md, knowzcode/workgroups/*.md, knowzcode/knowzcode_tracker.md, knowzcode/knowzcode_log.md, knowzcode/knowzcode_architecture.md. Max 10 tool calls. Write findings to a concise summary.")`
 
-2. **knowz-scout** — MCP knowledge (if `VAULTS_CONFIGURED = true` AND `MCP_AGENTS_ENABLED = true`):
-   - `Task(subagent_type="knowz-scout", description="Scout: vault standards", prompt="Research audit scope: {audit_type}. Read knowzcode/knowzcode_vaults.md to discover configured vaults. Query for team standards, conventions, and past audit decisions. Max 10 tool calls. Write findings to a concise summary.")`
+2. **knowz:reader** — MCP knowledge (if `VAULTS_CONFIGURED = true` AND `MCP_AGENTS_ENABLED = true`):
+   - `Task(subagent_type="knowz:reader", description="Reader: vault standards", prompt="Research audit scope: {audit_type}. Read knowzcode/knowzcode_vaults.md to discover configured vaults. Query for team standards, conventions, and past audit decisions. Max 10 tool calls. Write findings to a concise summary.")`
 
 3. **reviewer** — The audit itself:
    - `subagent_type`: `"reviewer"`
@@ -281,8 +282,8 @@ Launch scouts + parallel reviewers via `Task()`:
    - `SCOUT_MODE = "minimal"`: 1 combined instance:
      - `Task(subagent_type="context-scout", name="context-scout", description="Scout: combined context", prompt="Research for comprehensive audit. Focus: ALL local context — knowzcode/specs/*.md, knowzcode/workgroups/*.md, knowzcode/knowzcode_tracker.md, knowzcode/knowzcode_log.md, knowzcode/knowzcode_architecture.md. Max 10 tool calls. Write findings to a concise summary.")`
 
-2. **knowz-scout** — MCP knowledge (if `VAULTS_CONFIGURED = true` AND `MCP_AGENTS_ENABLED = true`):
-   - `Task(subagent_type="knowz-scout", description="Scout: vault standards", prompt="Research for comprehensive audit. Read knowzcode/knowzcode_vaults.md to discover configured vaults. Query for team standards, conventions, security policies, and compliance requirements. Max 10 tool calls. Write findings to a concise summary.")`
+2. **knowz:reader** — MCP knowledge (if `VAULTS_CONFIGURED = true` AND `MCP_AGENTS_ENABLED = true`):
+   - `Task(subagent_type="knowz:reader", description="Reader: vault standards", prompt="Research for comprehensive audit. Read knowzcode/knowzcode_vaults.md to discover configured vaults. Query for team standards, conventions, security policies, and compliance requirements. Max 10 tool calls. Write findings to a concise summary.")`
 
 3. **Parallel reviewers**:
    - `Task(subagent_type="reviewer", description="Audit: spec + architecture", prompt="Audit scope: Specification quality AND architecture health ONLY. ...")`

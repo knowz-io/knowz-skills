@@ -1,6 +1,6 @@
 # KnowzCode Workflow Reference
 
-> **Note**: This document describes the KnowzCode orchestration workflow. The orchestration logic is embedded directly in commands (`/knowzcode:work`, `/knowzcode:plan`) rather than implemented as a spawnable agent. This file serves as **reference documentation** for the workflow phases and patterns.
+> **Note**: This document describes the KnowzCode orchestration workflow. The orchestration logic is embedded directly in commands (`/knowzcode:work`, `/knowzcode:explore`) rather than implemented as a spawnable agent. This file serves as **reference documentation** for the workflow phases and patterns.
 
 ---
 
@@ -350,7 +350,6 @@ The KnowzCode workflow is orchestrated by **commands** (not a spawnable agent) t
 | `reviewer` | 2B | Quality audit, security review |
 | `closer` | 3 | Finalization, learning capture |
 | `context-scout` | 0 | Local context research |
-| `knowz-scout` | 0 | MCP vault research (read-only) |
 | `microfix-specialist` | utility | Quick targeted fixes |
 | `knowledge-migrator` | utility | Knowledge import/migration |
 | `update-coordinator` | utility | Coordinated updates |

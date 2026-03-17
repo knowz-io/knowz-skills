@@ -30,21 +30,17 @@ On spawn, verify MCP connectivity before beginning finalization:
 
 Before beginning finalization, ensure no captures are stuck from earlier phases:
 
-1. **If knowz-scribe is active** (Parallel Teams mode):
-   - DM scribe: `"Flush pending captures before Phase 3 finalization"`
-   - Wait for scribe confirmation before proceeding to Step 1
-2. **If knowz-scribe is NOT active** (Sequential/Subagent mode):
-   - Check if `knowzcode/pending_captures.md` exists and contains `---`-delimited capture blocks
-   - If non-empty AND MCP is available (verified at startup): attempt to flush each block via `create_knowledge`
-     - On success: remove the block from the file
-     - On failure: leave the block, continue to finalization
-   - If non-empty AND MCP is NOT available: print explicit warning:
-     ```
-     WARNING: {N} pending captures from earlier phases cannot be flushed — MCP unavailable.
-     These captures are preserved in knowzcode/pending_captures.md.
-     Run /knowz flush when MCP is available.
-     ```
-3. **Never silently skip** — if pending captures exist and cannot be flushed, the user MUST be informed
+1. Check if `knowzcode/pending_captures.md` exists and contains `---`-delimited capture blocks
+2. If non-empty AND MCP is available (verified at startup): attempt to flush each block via `create_knowledge`
+   - On success: remove the block from the file
+   - On failure: leave the block, continue to finalization
+3. If non-empty AND MCP is NOT available: print explicit warning:
+   ```
+   WARNING: {N} pending captures from earlier phases cannot be flushed — MCP unavailable.
+   These captures are preserved in knowzcode/pending_captures.md.
+   Run /knowz flush when MCP is available.
+   ```
+4. **Never silently skip** — if pending captures exist and cannot be flushed, the user MUST be informed
 
 ## Finalization Protocol
 
@@ -88,17 +84,17 @@ During finalization:
 
 Scan the WorkGroup for insight-worthy patterns using the signal types from `knowzcode_loop.md` section 7 (Pattern, Decision, Workaround, Performance, Security, Convention, Integration, Scope).
 
-### Knowz-Scribe Delegation (Parallel Teams)
+### Writer Dispatch (Parallel Teams)
 
-If knowz-scribe is active (Parallel Teams mode with MCP connected):
-- Create capture task: `TaskCreate("Scribe: Capture Phase 3")` → `TaskUpdate(owner: "knowz-scribe")`
-- Send DM to **knowz-scribe** with task ID: `"Capture Phase 3: {wgid}. Your task: #{task-id}"`
-- Do NOT call `create_knowledge` directly — the scribe owns all vault writes
-- Note: The lead waits for the scribe's capture task to complete before shutdown. The closer does NOT wait — create the task, send the DM, and continue finalization.
+If in Parallel Teams mode with MCP connected, vaults configured, and knowledge-liaison active:
+- DM knowledge-liaison: `"Capture Phase 3: {wgid}. Your task: #{task-id}"`
+- The knowledge-liaison owns extraction, vault routing, and writer dispatch (see `agents/knowledge-liaison.md` — Phase Extraction Guide)
+- Do NOT call `create_knowledge` directly — the knowledge-liaison dispatches `knowz:writer` for all vault writes
+- Note: The lead waits for the writer task to complete before shutdown. The closer does NOT wait — send the DM and continue finalization.
 
-### Direct Write Fallback (Sequential/Subagent)
+### Direct Write (Sequential/Subagent)
 
-If knowz-scribe is NOT active but MCP is available (verified at startup):
+If in Sequential/Subagent mode and MCP is available (verified at startup):
 
 > **Content Detail Principle**: Vault entries are retrieved via semantic search — write detailed, self-contained content with full reasoning, technology names, and code examples. See `knowzcode/knowzcode_vaults.md` (canonical source for content filters).
 
@@ -156,7 +152,7 @@ When scanning the WorkGroup for learnings, extract:
 - **Architectural learnings**: Structural discoveries, component relationships that were not obvious, integration patterns that emerged during implementation
 - **Convention patterns established**: New team conventions with full rationale and examples
 - **Consolidation decisions**: What was merged or refactored during finalization and why
-- **Implementation patterns**: Any Pattern/Workaround/Performance insights captured in the WorkGroup during Phase 2A that were not already written by a scribe
+- **Implementation patterns**: Any Pattern/Workaround/Performance insights captured in the WorkGroup during Phase 2A that were not already written by a writer
 - **Scope decisions**: What was included/excluded and the rationale (from Phase 1A)
 - **Security findings**: From Phase 2B audit, with severity and remediation
 
@@ -182,7 +178,7 @@ If MCP calls fail during vault writes (or MCP was unavailable at startup):
    ```
 2. Log the MCP failure in the WorkGroup file: `"KnowzCode: MCP unavailable — queued {N} capture(s) to pending_captures.md"`
 3. Note in the finalization report that captures were queued locally
-4. The pending file can be flushed later via `/knowz flush` or by a future scribe instance
+4. The pending file can be flushed later via `/knowz flush` or by a future knowledge-liaison instance
 
 **Never drop knowledge.** If MCP is down, queue it. All other finalization steps (specs, tracker, log, architecture, commit) proceed normally regardless of MCP status.
 
@@ -196,7 +192,7 @@ Error: {error message}
 Queued to pending_captures.md. Run /knowz flush when MCP is available.
 ```
 
-This applies to both direct writes (Sequential/Subagent mode) and scribe-delegated writes (if scribe reports failure). The user must always know when vault captures are incomplete.
+This applies to both direct writes (Sequential/Subagent mode) and writer-dispatched writes (if writer reports failure). The user must always know when vault captures are incomplete.
 
 ## Exit Expectations
 
