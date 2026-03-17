@@ -3,14 +3,5 @@
   "description": "Frictionless knowledge management via the Knowz MCP server — search, save, and query knowledge across vaults",
   "version": "0.3.0",
   "keywords": ["knowledge", "knowz", "mcp", "vaults"],
-  "author": { "name": "Alex Headscarf" },
-  "skills": [
-    "./skills/knowz/SKILL.md",
-    "./skills/knowz-auto/SKILL.md"
-  ],
-  "agents": [
-    "./agents/knowledge-worker.md",
-    "./agents/writer.md",
-    "./agents/reader.md"
-  ]
+  "author": { "name": "Alex Headscarf" }
 }
