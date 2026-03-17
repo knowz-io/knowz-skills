@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-03-17
+
+### Fixed
+- Removed explicit `skills` and `agents` arrays from `plugin.json` — lets Claude Code auto-discover from directory structure (was causing manifest mismatch)
+
 ## [0.8.0] - 2026-03-16
 
 ### Added
