@@ -135,6 +135,8 @@ Before spawning agents, determine vault availability:
    - `VAULTS_CONFIGURED = true` if at least 1 vault now has a valid ID, else `false`
    - Announce: `**MCP Status: Connected — N vault(s) available**` or `**MCP Status: Connected — no vaults configured (knowledge capture disabled)**`
 
+> **Vault research is mandatory when available.** If `VAULTS_CONFIGURED = true` and `MCP_AGENTS_ENABLED = true`, the `knowz:reader` dispatch MUST execute in both Exploration and Planning modes. The 10-tool-call budget in Exploration Mode is a scope limit, not a reason to skip. Only skip when MCP is genuinely unavailable (`MCP_ACTIVE = false`).
+
 ### Agent Teams Mode (with scouts)
 
 Create tasks first, pre-assign, then spawn with task IDs:
@@ -403,6 +405,24 @@ Save to `knowzcode/planning/{slug}.md` where slug is derived from the topic (2-4
 ---
 Ready to implement? Say "implement" or "go ahead".
 ```
+
+## Step 5.5: Vault Capture Prompt
+
+If `VAULTS_CONFIGURED = true` AND `MCP_ACTIVE = true`, present after findings:
+
+```markdown
+**Save to vault?** These findings can be captured to Knowz for future reference.
+  **A) Save all findings** (analysis + architecture + discoveries)
+  **B) Select which to save**
+  **C) Skip**
+```
+
+**Handling**:
+- **A**: Dispatch `knowz:writer` with a self-contained prompt summarizing all findings, tagged with the topic. Read `knowzcode/knowzcode_vaults.md` to resolve the target vault (use ecosystem-type vault). Check for duplicates via `search_knowledge` before writing.
+- **B**: Ask user which sections to save, then dispatch `knowz:writer` with selected content.
+- **C**: Proceed to Step 6.
+
+If `VAULTS_CONFIGURED = false` or `MCP_ACTIVE = false`, skip this step silently.
 
 ## Step 6: Listen for Implementation Intent
 

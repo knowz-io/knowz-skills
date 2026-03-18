@@ -122,6 +122,8 @@ Before spawning agents, determine vault availability:
    - `VAULTS_CONFIGURED = true` if at least 1 vault now has a valid ID, else `false`
    - Announce: `**MCP Status: Connected — N vault(s) available**` or `**MCP Status: Connected — no vaults configured (knowledge capture disabled)**`
 
+> **Vault research is mandatory when available.** If `VAULTS_CONFIGURED = true` and `MCP_AGENTS_ENABLED = true`, the `knowz:reader` dispatch MUST execute in both Exploration and Planning modes. The 10-tool-call budget in Exploration Mode is a scope limit, not a reason to skip. Only skip when MCP is genuinely unavailable (`MCP_ACTIVE = false`).
+
 ### Agent Teams Mode
 
 #### Specific Audit Type (argument provided)
@@ -337,6 +339,24 @@ Synthesize specialist findings alongside reviewer results.
 **Security Officer**: {finding count, severity breakdown, SECURITY-BLOCK tags}
 **Test Advisor**: {coverage %, TDD compliance, quality assessment}
 ```
+
+## Step 4.5: Vault Capture Prompt
+
+If `VAULTS_CONFIGURED = true` AND `MCP_ACTIVE = true`, present after audit results:
+
+```markdown
+**Save to vault?** These audit findings can be captured to Knowz for future reference.
+  **A) Save all findings** (scores + issues + recommendations)
+  **B) Select which to save**
+  **C) Skip**
+```
+
+**Handling**:
+- **A**: Dispatch `knowz:writer` with a self-contained prompt summarizing all findings, tagged with the topic. Read `knowzcode/knowzcode_vaults.md` to resolve the target vault (use ecosystem-type vault). Check for duplicates via `search_knowledge` before writing.
+- **B**: Ask user which sections to save, then dispatch `knowz:writer` with selected content.
+- **C**: Proceed to Step 5.
+
+If `VAULTS_CONFIGURED = false` or `MCP_ACTIVE = false`, skip this step silently.
 
 ## Step 5: Log Audit
 
