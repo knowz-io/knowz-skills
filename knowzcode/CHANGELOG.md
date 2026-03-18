@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.2] - 2026-03-18
+
+### Added
+- Mandatory vault research callout in explore and audit skills — `knowz:reader` dispatch cannot be skipped when MCP is connected and vaults are configured
+- Vault capture prompt (Step 5.5) in explore skill — offers to save findings to Knowz vaults after synthesis
+- Vault capture prompt (Step 4.5) in audit skill — offers to save audit results to Knowz vaults after presentation
+
 ## [0.8.1] - 2026-03-17
 
 ### Fixed
