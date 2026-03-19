@@ -53,7 +53,7 @@ Read `knowzcode/workgroups/{WorkGroupID}.md` to determine:
 - Change Set
 - Outstanding todos
 - **Autonomous Mode**: If the WorkGroup file contains `**Autonomous Mode**: Active`, restore `AUTONOMOUS_MODE = true` and announce: `> **Autonomous Mode: RESTORED** — continuing with auto-approved gates.`
-- **Orchestration Config**: If `knowzcode/knowzcode_orchestration.md` exists, parse and restore `MAX_BUILDERS`, `SCOUT_MODE`, `MCP_AGENTS_ENABLED`, `DEFAULT_SPECIALISTS` (same logic as work.md Step 2.4). Defaults apply if file is absent.
+- **Orchestration Config**: If `knowzcode/knowzcode_orchestration.md` exists, parse and restore `MAX_BUILDERS`, `MCP_AGENTS_ENABLED`, `DEFAULT_SPECIALISTS` (same logic as work.md Step 2.4). Defaults apply if file is absent.
 
 ### Step 3: Resume at Current Phase
 
@@ -65,7 +65,7 @@ If the WorkGroup file contains a `## Current Stage` section (instead of `Current
 - This is a **parallel-mode WorkGroup**
 - Read the per-NodeID phase table to determine what's in progress
 - Resume by recreating the team and spawning agents appropriate for the current stage:
-  - **Stage 0/1**: Spawn analyst + architect. If `SCOUT_MODE != "none"` and context is stale, re-spawn scout(s) per SCOUT_MODE.
+  - **Stage 0/1**: Spawn analyst + architect. If context is stale, spawn knowledge-liaison to refresh local + vault context.
   - **Stage 2**: Spawn builder(s) per the dependency map + reviewer if any NodeIDs are past implementation
   - **Stage 3**: Spawn closer
 - Builders and reviewer persist through gap loops (don't respawn per iteration)

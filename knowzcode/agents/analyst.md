@@ -50,14 +50,15 @@ Before analyzing impact:
 - Read only files directly in the change path
 - Max ~20 tool calls, ~10 deep-read files
 
-## MCP Integration (Optional)
+## Context & Vault Knowledge
 
-If MCP is configured:
-- Read `knowzcode/knowzcode_vaults.md` to resolve vault IDs by type
-- `search_knowledge({vault matching "ecosystem" type}, "past decisions about {domain}")` — find relevant architectural decisions
-- `search_knowledge({vault matching "code" type}, "{affected_component} implementation")` — find related code patterns
+The knowledge-liaison provides both local project context and vault knowledge. At startup, it DMs you a **Context Briefing** with relevant specs, prior WorkGroups, and vault findings.
 
-If MCP is not available, use standard grep/glob. All analysis works without MCP.
+Before finalizing your Change Set, request additional vault context if needed:
+- DM knowledge-liaison: `"VaultQuery: past decisions about {domain area}"`
+- DM knowledge-liaison: `"VaultQuery: {affected_component} implementation patterns"`
+
+Incorporate vault findings into your risk assessment and Change Set rationale.
 
 ## Preliminary Findings Protocol (Parallel Teams Only)
 

@@ -349,7 +349,7 @@ The KnowzCode workflow is orchestrated by **commands** (not a spawnable agent) t
 | `builder` | 2A | TDD implementation, verification loops |
 | `reviewer` | 2B | Quality audit, security review |
 | `closer` | 3 | Finalization, learning capture |
-| `context-scout` | 0 | Local context research |
+| `knowledge-liaison` | 0 | Context & vault coordination |
 | `microfix-specialist` | utility | Quick targeted fixes |
 | `knowledge-migrator` | utility | Knowledge import/migration |
 | `update-coordinator` | utility | Coordinated updates |

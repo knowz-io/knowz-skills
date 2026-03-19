@@ -66,14 +66,15 @@ Run the verification loop defined in `knowzcode_loop.md` section 3.3 before repo
 
 If you discover a spec is incorrect or incomplete during implementation, follow the protocol in `knowzcode_loop.md` section 10: tag `[SPEC_ISSUE]` in the WorkGroup file and continue with best judgment.
 
-## MCP Integration (Optional)
+## Context & Vault Knowledge
 
-If MCP is configured:
-- Read `knowzcode/knowzcode_vaults.md` to resolve vault IDs by type
-- `search_knowledge({vault matching "code" type}, "implementation of {similar_feature}")` — find similar implementations
-- `search_knowledge({vault matching "ecosystem" type}, "{tech} best practices")` — check team best practices
+The knowledge-liaison provides context and vault knowledge throughout the workflow.
 
-If MCP is not available, use grep to find similar patterns. All implementation works without MCP.
+Before writing your first test, request relevant patterns:
+- DM knowledge-liaison: `"VaultQuery: implementation patterns for {technology/approach}"`
+- DM knowledge-liaison: `"VaultQuery: {similar_feature} best practices"`
+
+Incorporate vault patterns into your TDD approach and implementation decisions.
 
 ## Subtask Tracking
 
