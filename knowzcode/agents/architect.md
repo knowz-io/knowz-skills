@@ -179,15 +179,15 @@ If `knowzcode/enterprise/compliance_manifest.md` exists and `compliance_enabled:
 - Merge guideline criteria into Verification Criteria as `VERIFY:` statements
 - Flag blocking vs advisory compliance issues
 
-## MCP Integration (Optional)
+## Context & Vault Knowledge
 
-If MCP is configured:
-- Read `knowzcode/knowzcode_vaults.md` to resolve vault IDs by type
-- `ask_question({vault matching "ecosystem" type}, "conventions for {component_type}?")` — check team conventions
-- `search_knowledge({vault matching "ecosystem" type}, "{NodeID_domain} patterns")` — find related patterns
-- `search_knowledge({vault matching "ecosystem" type}, "{component_type} integration context")` — find integration patterns
+The knowledge-liaison provides both local project context and vault knowledge. At startup, it DMs you a **Context Briefing** with relevant specs, prior WorkGroups, and vault findings.
 
-If MCP is not available, use grep/glob. All spec drafting works without MCP.
+Before drafting specs, request additional vault context if needed:
+- DM knowledge-liaison: `"VaultQuery: conventions for {component_type}"`
+- DM knowledge-liaison: `"VaultQuery: {NodeID_domain} patterns"`
+
+Incorporate vault conventions into VERIFY criteria and design decisions.
 
 ## Startup Expectations
 

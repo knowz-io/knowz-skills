@@ -255,13 +255,12 @@ Ask user: "Would you like to generate Gemini subagent definitions? (experimental
 If yes:
 ```
 1. Create .gemini/agents/ directory
-2. Generate 12 subagent files from platform_adapters.md "Gemini Subagents" section:
+2. Generate 11 subagent files from platform_adapters.md "Gemini Subagents" section:
    - .gemini/agents/knowzcode-analyst.md
    - .gemini/agents/knowzcode-architect.md
    - .gemini/agents/knowzcode-builder.md
    - .gemini/agents/knowzcode-reviewer.md
    - .gemini/agents/knowzcode-closer.md
-   - .gemini/agents/knowzcode-context-scout.md
    - .gemini/agents/knowzcode-microfix.md
    - .gemini/agents/knowzcode-knowledge-migrator.md
    - .gemini/agents/knowzcode-update-coordinator.md
