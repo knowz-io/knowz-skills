@@ -14,7 +14,7 @@ When Parallel Teams mode is active, follow these 4 stages instead of spawning on
    c. If `list_vaults()` fails:
       - Check if `knowzcode/knowzcode_vaults.md` has any CONFIGURED entries (non-empty ID)
       - **If CONFIGURED entries exist**: Set `MCP_ACTIVE = true`, `VAULTS_CONFIGURED = true` — vault agents will verify connectivity independently via their Startup Verification. Announce `**MCP Status: Lead probe failed — delegating verification to vault agents**`. Proceed to Step 4.
-      - **If no CONFIGURED entries** (all empty IDs or no file): Set `MCP_ACTIVE = false`, announce `**MCP Status: Not connected**`, skip Group B spawn
+      - **If no CONFIGURED entries** (all empty IDs or no file): Set `MCP_ACTIVE = false`, `VAULTS_CONFIGURED = false`, announce `**MCP Status: Not connected**`. Knowledge-liaison still spawns (Group A, unconditional) but provides local context only.
    d. If `list_vaults()` succeeds AND UNCREATED list is non-empty → present the **Vault Creation Prompt**:
 
       ```markdown
@@ -50,13 +50,8 @@ When Parallel Teams mode is active, follow these 4 stages instead of spawning on
       - Announce: `**MCP Status: Connected — N vault(s) available**` or `**MCP Status: Connected — no vaults configured (knowledge capture disabled)**`
 4. **Spawn Group A**:
    Create tasks first, pre-assign, then spawn with task IDs:
-   - If `SCOUT_MODE = "full"` (default): spawn 3 context scouts (specs, workgroups, backlog) + analyst + architect (5 agents):
-     - `TaskCreate("Scout: specs context")` → `TaskUpdate(owner: "context-scout-specs")`
-     - `TaskCreate("Scout: workgroups context")` → `TaskUpdate(owner: "context-scout-workgroups")`
-     - `TaskCreate("Scout: backlog context")` → `TaskUpdate(owner: "context-scout-backlog")`
-   - If `SCOUT_MODE = "minimal"`: spawn 1 context-scout (combined scan) + analyst + architect (3 agents):
-     - `TaskCreate("Scout: combined context")` → `TaskUpdate(owner: "context-scout")`
-   - If `SCOUT_MODE = "none"`: spawn analyst + architect only (2 agents). Analyst and architect scan the codebase independently without pre-loaded scout context.
+   - Always (knowledge-liaison is unconditional — first agent spawned):
+     - `TaskCreate("Knowledge liaison: context & vault coordination")` → `TaskUpdate(owner: "knowledge-liaison")`
    - Always:
      - `TaskCreate("Phase 1A: Impact analysis for {goal}")` → `TaskUpdate(owner: "analyst")`
      - `TaskCreate("Pre-load architecture context and speculative research")` → `TaskUpdate(owner: "architect")`
@@ -67,23 +62,20 @@ When Parallel Teams mode is active, follow these 4 stages instead of spawning on
      - `TaskCreate("Scanner: direct codebase scan for {goal}")` → `TaskUpdate(owner: "scanner-direct")`
      - `TaskCreate("Scanner: test coverage scan for {goal}")` → `TaskUpdate(owner: "scanner-tests")`
    Spawn all Group A agents with their `{task-id}` in the spawn prompt (use spawn prompts from [spawn-prompts.md](spawn-prompts.md)).
-5. **Spawn Group B** (vault liaison — same turn as Group A): If `VAULTS_CONFIGURED = true` AND `MCP_AGENTS_ENABLED = true`:
-   Spawn `knowledge-liaison` (persistent) with task ID and goal:
-   - `TaskCreate("Knowledge liaison: vault coordination")` → `TaskUpdate(owner: "knowledge-liaison")`
-   - Spawn with spawn prompt from [spawn-prompts.md](spawn-prompts.md). The knowledge-liaison handles initial `knowz:reader` dispatch, pending captures check, and all subsequent vault I/O.
-   If `VAULTS_CONFIGURED = false` or `MCP_AGENTS_ENABLED = false`, skip Group B and log: `Vault agents skipped — no vaults configured` or `Vault agents skipped — MCP agents disabled in orchestration config.`
-6. **Spawn Group C** (specialist agents — same turn as Groups A and B): If `SPECIALISTS_ENABLED` is non-empty:
+   The knowledge-liaison internally dispatches local context scouts and vault reader as subagents — no separate scout agents needed.
+5. **Vault status note**: The knowledge-liaison handles vault availability internally. If `VAULTS_CONFIGURED = true`, it dispatches `knowz:reader` for vault research. If `VAULTS_CONFIGURED = false`, it still provides local context (scout subagents only). No separate Group B spawn needed.
+6. **Spawn Group C** (specialist agents — same turn as Group A): If `SPECIALISTS_ENABLED` is non-empty:
    Create tasks first, pre-assign, then spawn with task IDs:
    - If `security-officer` in list: `TaskCreate("Security officer: initial threat scan")` → `TaskUpdate(owner: "security-officer")`
    - If `test-advisor` in list: `TaskCreate("Test advisor: coverage baseline")` → `TaskUpdate(owner: "test-advisor")`
    - If `project-advisor` in list: `TaskCreate("Project advisor: backlog context")` → `TaskUpdate(owner: "project-advisor")`
    Spawn each enabled specialist with its `{task-id}` in the spawn prompt (use spawn prompts from [spawn-prompts.md](spawn-prompts.md)).
    If `SPECIALISTS_ENABLED` is empty, skip Group C.
-7. **Roster confirmation** — lead lists every spawned agent by name to the user. Include scanners and Group C specialists if active. If `VAULTS_CONFIGURED` was true but the knowz reader task is missing from the roster, STOP and re-dispatch before continuing.
-8. All spawned agents work immediately in parallel (context scouts are cheap Sonnet read-only agents; scanners are lightweight general-purpose agents; specialists are Sonnet read-only agents). Agent count depends on orchestration config: 2-11 agents at Stage 0.
-9. Scouts broadcast findings → analyst and architect consume as messages. Specialists work independently on their Stage 0 tasks.
+7. **Roster confirmation** — lead lists every spawned agent by name to the user. Include scanners and Group C specialists if active.
+8. All spawned agents work immediately in parallel (knowledge-liaison dispatches scouts and vault reader as subagents; scanners are lightweight general-purpose agents; specialists are Sonnet read-only agents). Agent count depends on orchestration config: 2-8 agents at Stage 0.
+9. Knowledge-liaison pushes Context Briefings to analyst and architect as results arrive. Specialists work independently on their Stage 0 tasks.
 
-**Key**: The analyst does NOT wait for scouts, scanners, or specialists to finish. It starts scanning the codebase immediately. Scout and scanner findings arrive as messages and enrich the analyst's work as they arrive. The analyst also streams `[PRELIMINARY]` NodeID findings to the architect as it discovers them (see Preliminary Findings Protocol). Specialist findings are consumed by the lead at gates.
+**Key**: The analyst does NOT wait for the knowledge-liaison, scanners, or specialists to finish. It starts scanning the codebase immediately. The knowledge-liaison pushes Context Briefings to analyst and architect as local context and vault results arrive. Scanner findings arrive as broadcasts. The analyst streams `[PRELIMINARY]` NodeID findings to the architect as it discovers them (see Preliminary Findings Protocol). Specialist findings are consumed by the lead at gates.
 
 ---
 
@@ -92,7 +84,7 @@ When Parallel Teams mode is active, follow these 4 stages instead of spawning on
 1. Analyst completes Change Set (includes dependency map — see `agents/analyst.md`)
 2. Lead reads analyst's task summary
 3. Shut down scanners (scanner-direct, scanner-tests) if they were spawned — no longer needed after analysis
-3. **Specialist Change Set reviews** (if `SPECIALISTS_ENABLED` non-empty): Create review tasks blocked on analysis:
+4. **Specialist Change Set reviews** (if `SPECIALISTS_ENABLED` non-empty): Create review tasks blocked on analysis:
    - If `security-officer` active: `TaskCreate("Security officer: Change Set review", addBlockedBy: [analysis-task-id])` → `TaskUpdate(owner: "security-officer")`. DM security-officer: `"**New Task**: #{task-id} — Review Change Set for security risk. Rate each NodeID."`
    - If `test-advisor` active: `TaskCreate("Test advisor: Change Set test strategy", addBlockedBy: [analysis-task-id])` → `TaskUpdate(owner: "test-advisor")`. DM test-advisor: `"**New Task**: #{task-id} — Recommend test types per NodeID."`
 4. Lead presents **Quality Gate #1** to user (see [quality-gates.md](quality-gates.md))
@@ -127,9 +119,8 @@ When Parallel Teams mode is active, follow these 4 stages instead of spawning on
 10. Lead presents **Quality Gate #2** to user (see [quality-gates.md](quality-gates.md))
 11. User approves (or rejects → architect revises)
 12. Pre-implementation commit: `git add knowzcode/ && git commit -m "KnowzCode: Specs approved for {wgid}"`
-13. Shut down context-scouts (no longer needed after specs approved).
-14. Keep analyst alive briefly (available for scope questions during early implementation)
-15. Keep architect alive through Stage 2 (consultative role — spec clarifications for builders, no code or spec edits)
+13. Keep analyst alive briefly (available for scope questions during early implementation)
+14. Keep architect alive through Stage 2 (consultative role — spec clarifications for builders, no code or spec edits)
 
 ---
 
@@ -237,7 +228,7 @@ When Parallel Teams mode is active, follow these 4 stages instead of spawning on
 5. **Wait for writer Phase 3 capture** (if knowledge-liaison dispatched a writer):
    - Check writer task via `TaskGet(task-id)` — wait until status is `completed`
    - **Timeout**: If >2 minutes after closer completes and writer task still not complete → proceed with shutdown and log `WARNING: Writer Phase 3 capture did not complete for {wgid}. Vault writes may be incomplete.`
-6. Shutdown order: closer, knowledge-liaison (after Phase 3 writer completion), remaining agents
+6. Shutdown order: closer first, then knowledge-liaison (last agent before team cleanup)
 7. Delete team
 
 ---
@@ -269,13 +260,10 @@ When creating tasks, model the dependency chain with `addBlockedBy` and pre-assi
 
 | Task | Blocked By | Owner |
 |------|-----------|-------|
-| Scout: specs context | (none) | context-scout-specs |
-| Scout: workgroups context | (none) | context-scout-workgroups |
-| Scout: backlog context | (none) | context-scout-backlog |
-| Knowledge liaison: vault coordination | (none) | knowledge-liaison |
+| Knowledge liaison: context & vault coordination | (none — Group A, unconditional) | knowledge-liaison |
 | Scanner: direct codebase scan | (none) | scanner-direct |
 | Scanner: test coverage scan | (none) | scanner-tests |
-| Phase 1A analysis | (none — scouts + scanners enrich via broadcast) | analyst |
+| Phase 1A analysis | (none — knowledge-liaison pushes context via DM, scanners enrich via broadcast) | analyst |
 | Architect pre-load + speculative research | (none — receives [PRELIMINARY] DMs from analyst) | architect |
 | Security officer: initial threat scan | (none — Group C) | security-officer |
 | Test advisor: coverage baseline | (none — Group C) | test-advisor |
@@ -320,3 +308,15 @@ Determine vault availability before Phase 1A:
    - No configured vaults: `**MCP Status: Not configured**`
 
 The closer agent independently verifies MCP at Phase 3 regardless of this result (see `agents/closer.md` — Startup MCP Verification). This probe is for the user announcement and vault creation opportunity only.
+
+### Pre-Phase: Context & Knowledge Research (Sequential/Subagent)
+
+Before spawning the analyst, dispatch the knowledge-liaison for local + vault context:
+
+1. Dispatch knowledge-liaison:
+   - *Sequential Teams*: Spawn as first teammate. Create task `"Context & knowledge: research for {goal}"`. Wait for completion.
+   - *Subagent*: `Task(subagent_type="knowzcode:knowledge-liaison", description="Context & knowledge research", prompt=<liaison spawn prompt from spawn-prompts.md>)`.
+2. Collect findings from the knowledge-liaison's task summary.
+3. Inject into the analyst spawn prompt as: `> **Context Briefing**: {liaison findings}`.
+
+This ensures the analyst and architect receive local project context and vault knowledge even without persistent teammate messaging.

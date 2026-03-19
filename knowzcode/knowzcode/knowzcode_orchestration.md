@@ -15,18 +15,6 @@ max_builders: 5
 
 ---
 
-## Scout Configuration
-
-```yaml
-# Scout mode controls context-scout spawning at Stage 0 (default: full)
-#   full    — 3 scouts: specs, workgroups, backlog (default)
-#   minimal — 1 scout: combined scan of all local context
-#   none    — skip scouts entirely (lead loads context inline)
-scout_mode: full
-```
-
----
-
 ## Specialist Defaults
 
 ```yaml
@@ -59,7 +47,6 @@ mcp_agents_enabled: true
 | Setting | Config Default | Flag Override |
 |---------|---------------|--------------|
 | max_builders | `max_builders:` | `--max-builders=N` |
-| scout_mode | `scout_mode:` | `--no-scouts` |
 | default_specialists | `default_specialists:` | `--specialists`, `--no-specialists` |
 | mcp_agents_enabled | `mcp_agents_enabled:` | `--no-mcp` |
 

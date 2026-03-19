@@ -4,61 +4,6 @@ These spawn prompts are shared by all execution modes. In Parallel Teams mode, t
 
 ---
 
-## Stage 0: Context Scouts (3 instances)
-
-**Agent**: `context-scout` (x3) | Read-only local context researchers
-
-Three instances of the same agent, each focused on a different local folder group:
-
-**context-scout-specs spawn prompt**:
-> You are `context-scout-specs` for WorkGroup `{wgid}`.
-> Read `agents/context-scout.md` for your full role definition.
-> **Your Task**: #{task-id} — claim immediately (`TaskUpdate(status: "in_progress")`). Mark completed with summary when done.
-> **Focus area**: `knowzcode/specs/*.md` — scan existing specifications.
-> **Goal**: {goal}
-> **READ-ONLY.** Do NOT modify any files.
-> **Deliverable**: Broadcast relevant spec findings (NodeIDs, status, VERIFY criteria overlapping with goal).
-
-**context-scout-workgroups spawn prompt**:
-> You are `context-scout-workgroups` for WorkGroup `{wgid}`.
-> Read `agents/context-scout.md` for your full role definition.
-> **Your Task**: #{task-id} — claim immediately (`TaskUpdate(status: "in_progress")`). Mark completed with summary when done.
-> **Focus area**: `knowzcode/workgroups/*.md` — scan previous WorkGroups for similar goals.
-> **Goal**: {goal}
-> **READ-ONLY.** Do NOT modify any files.
-> **Deliverable**: Broadcast prior WorkGroup context (what was tried, what succeeded/failed, patterns).
-
-**context-scout-backlog spawn prompt**:
-> You are `context-scout-backlog` for WorkGroup `{wgid}`.
-> Read `agents/context-scout.md` for your full role definition.
-> **Your Task**: #{task-id} — claim immediately (`TaskUpdate(status: "in_progress")`). Mark completed with summary when done.
-> **Focus area**: `knowzcode/knowzcode_tracker.md`, `knowzcode/knowzcode_log.md`, `knowzcode/knowzcode_architecture.md`, `knowzcode/knowzcode_project.md`
-> **Goal**: {goal}
-> **READ-ONLY.** Do NOT modify any files.
-> **Deliverable**: Broadcast active WIP, REFACTOR tasks, architecture summary, and recent log patterns relevant to goal.
-
-**context-scout (combined) spawn prompt** (used when `SCOUT_MODE = "minimal"`):
-> You are `context-scout` for WorkGroup `{wgid}`.
-> Read `agents/context-scout.md` for your full role definition.
-> **Your Task**: #{task-id} — claim immediately. Mark completed with summary when done.
-> **Focus area**: ALL local context — `knowzcode/specs/*.md`, `knowzcode/workgroups/*.md`, `knowzcode/knowzcode_tracker.md`, `knowzcode/knowzcode_log.md`, `knowzcode/knowzcode_architecture.md`, `knowzcode/knowzcode_project.md`
-> **Goal**: {goal}
-> **READ-ONLY.** Do NOT modify any files.
-> **Deliverable**: Broadcast consolidated findings covering specs, prior workgroups, active WIP, REFACTOR tasks, and architecture context.
-
-**Dispatch**:
-- *Parallel Teams*:
-  - `SCOUT_MODE = "full"`: 3 context scouts spawned at Stage 0. Shut down after Gate #2.
-  - `SCOUT_MODE = "minimal"`: 1 context-scout (combined) spawned at Stage 0. Shut down after Gate #2.
-  - `SCOUT_MODE = "none"`: No scouts spawned.
-- *Sequential Teams*: Not applicable (scouts are Parallel Teams only).
-- *Subagent*:
-  - `SCOUT_MODE = "full"`: 3 parallel `Task()` calls (specs, workgroups, backlog).
-  - `SCOUT_MODE = "minimal"`: 1 `Task()` call with combined prompt.
-  - `SCOUT_MODE = "none"`: Skip scout tasks.
-
----
-
 ## Stage 0: Codebase Scanners (2 instances — conditional)
 
 **Agent**: `general-purpose` (x2) | Lightweight codebase searchers (no agent definition file)
@@ -104,9 +49,9 @@ Two temporary agents that scan the codebase in parallel with the analyst, broadc
 
 ---
 
-## Stage 0: Vault Liaison (Persistent)
+## Stage 0: Context & Knowledge Liaison (Persistent)
 
-**Agent**: `knowledge-liaison` | Persistent vault coordination agent
+**Agent**: `knowledge-liaison` | Persistent context and vault coordination agent
 
 **Spawn prompt**:
 > You are the **knowledge-liaison** for WorkGroup `{wgid}`.
@@ -114,14 +59,14 @@ Two temporary agents that scan the codebase in parallel with the analyst, broadc
 > **Your Task**: #{task-id} — claim immediately (`TaskUpdate(status: "in_progress")`).
 > **Goal**: {goal}
 > **Vault config**: `knowzcode/knowzcode_vaults.md`
-> **Lifecycle**: You persist from Stage 0 through Phase 3 writer completion. You outlive the closer.
-> **Startup**: Read vault config, check/flush pending captures, dispatch `knowz:reader` for Stage 0 vault research.
+> **Lifecycle**: You persist from Stage 0 through team shutdown. You are the last agent shut down before team cleanup.
+> **Parallel dispatch**: At startup, dispatch scout and reader subagents in parallel (see `agents/knowledge-liaison.md` Startup). Push Context Briefing to analyst and architect.
 > **Ongoing**: Accept capture DMs from the lead (at quality gates) and closer (Phase 3). Accept `"Log: ..."` and `"Consider: ..."` from any agent. Accept `"VaultQuery: ..."` from any agent. Dispatch `knowz:writer` and `knowz:reader` as needed.
 
 **Dispatch**:
-- *Parallel Teams*: **Group B** — spawned at Stage 0 if `VAULTS_CONFIGURED = true`. Persistent — stays alive through Phase 3.
-- *Sequential Teams*: Not applicable (vault coordination handled by closer directly).
-- *Subagent*: Not applicable (vault writes handled by closer directly).
+- *Parallel Teams*: **Group A** — always spawned at Stage 0. Persistent — last agent shut down before team cleanup.
+- *Sequential Teams*: Spawn as first teammate. Create task `"Context & knowledge: research for {goal}"`. Wait for completion. Include findings in analyst spawn prompt as `> **Context Briefing**: {liaison findings}`.
+- *Subagent*: `Task(subagent_type="knowzcode:knowledge-liaison", description="Context & knowledge research", prompt=<spawn prompt>)`. Include results in analyst spawn prompt.
 
 ---
 
@@ -207,12 +152,13 @@ The spawn prompts below are used when `SPECIALISTS_ENABLED` is non-empty. Specia
 >
 > **Your Task**: #{task-id} — claim immediately (`TaskUpdate(status: "in_progress")`). Mark completed with summary when done.
 > **Conventions**: Update WorkGroup file with results (prefix entries with `KnowzCode:`). If blocked, report blocker and notify lead.
+> **Context**: The knowledge-liaison will DM you a Context Briefing with local project context and vault knowledge. Incorporate its findings into your analysis. For additional queries, DM: `"VaultQuery: {question}"`.
 > **Codebase scanners**: Scanner agents are running in parallel — their findings will arrive as broadcast messages. Incorporate them into your analysis but do NOT wait for them.
 > **Preliminary Findings Protocol**: As you discover high-confidence NodeIDs, DM the architect with `[PRELIMINARY]` messages (max 3 — see `agents/analyst.md` for format). This lets the architect start speculative research early.
 > **Deliverable**: Change Set proposal written to the WorkGroup file. Include NodeIDs, descriptions, affected files, risk assessment, and dependency map (for Parallel Teams mode).
 
 **Dispatch**:
-- *Parallel Teams*: Spawned at Stage 0 alongside scouts, scanners, and architect. Starts immediately (no blockedBy).
+- *Parallel Teams*: Spawned at Stage 0 alongside knowledge-liaison, scanners, and architect. Starts immediately (no blockedBy).
 - *Sequential Teams*: Spawn teammate `analyst`, create task `Phase 1A: Impact analysis for "{goal}"`, wait for completion.
 - *Subagent*: `Task(subagent_type="analyst", description="Phase 1A impact analysis", prompt=<above>)`
 
@@ -234,6 +180,7 @@ In Parallel Teams mode, the architect is spawned at Stage 0 (not at Phase 1B). I
 > **Specs directory**: `knowzcode/specs/`
 >
 > **Your Task**: #{task-id} — claim immediately (`TaskUpdate(status: "in_progress")`). Mark completed with summary when done.
+> **Context**: The knowledge-liaison will DM you a Context Briefing with local project context and vault knowledge. Incorporate its findings into speculative research. For additional queries, DM: `"VaultQuery: {question}"`.
 > **Stage 0 Role**: Pre-load architecture context, then perform speculative research on any `[PRELIMINARY]` NodeID messages from the analyst (see Speculative Research Protocol in `agents/architect.md`). READ-ONLY research — do NOT write specs yet.
 > **Lifecycle**: You persist through the entire workflow. After Gate #1, you will receive spec-drafting tasks via DM. After Gate #2, you shift to consultative role for builders.
 
@@ -301,6 +248,7 @@ After Gate #1, the lead sends the approved Change Set via DM and creates spec-dr
 >
 > **Your Task**: #{task-id} — claim immediately (`TaskUpdate(status: "in_progress")`). Mark completed with summary when done.
 > **Conventions**: Update WorkGroup file with results (prefix entries with `KnowzCode:`). If blocked, report blocker and notify lead.
+> **Context**: The knowledge-liaison can provide vault knowledge. DM: `"VaultQuery: {question}"` for patterns and best practices before writing tests.
 > **TDD mandatory**: Write failing tests first, then implement, then refactor. Every NodeID must have tests.
 > **Blocker protocol**: If you hit a blocker, document it as a Blocker Report in the WorkGroup file (see loop.md Section 11 format) and report to the lead immediately instead of guessing.
 > **Deliverable**: All NodeIDs implemented with passing tests.

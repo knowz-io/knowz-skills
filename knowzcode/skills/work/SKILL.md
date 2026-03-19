@@ -82,15 +82,13 @@ The user MUST see the execution mode announcement before any phase work begins. 
 If `knowzcode/knowzcode_orchestration.md` exists, parse its YAML blocks:
 
 1. `MAX_BUILDERS` = `max_builders` value (default: 5, clamp to 1-5)
-2. `SCOUT_MODE` = `scout_mode` value (default: "full")
-3. `DEFAULT_SPECIALISTS` = `default_specialists` value (default: [])
-4. `MCP_AGENTS_ENABLED` = `mcp_agents_enabled` value (default: true)
-5. `CODEBASE_SCANNER_ENABLED` = `codebase_scanner_enabled` value (default: true)
-6. `PARALLEL_SPEC_THRESHOLD` = `parallel_spec_threshold` value (default: 3, clamp to 2-10)
+2. `DEFAULT_SPECIALISTS` = `default_specialists` value (default: [])
+3. `MCP_AGENTS_ENABLED` = `mcp_agents_enabled` value (default: true)
+4. `CODEBASE_SCANNER_ENABLED` = `codebase_scanner_enabled` value (default: true)
+5. `PARALLEL_SPEC_THRESHOLD` = `parallel_spec_threshold` value (default: 3, clamp to 2-10)
 
 Apply flag overrides (flags win over config):
 - `--max-builders=N` in `$ARGUMENTS` → override `MAX_BUILDERS`
-- `--no-scouts` in `$ARGUMENTS` → override `SCOUT_MODE = "none"`
 - `--no-mcp` in `$ARGUMENTS` → override `MCP_AGENTS_ENABLED = false`
 - `--no-scanners` in `$ARGUMENTS` → override `CODEBASE_SCANNER_ENABLED = false`
 - `--no-parallel-specs` in `$ARGUMENTS` → override `PARALLEL_SPEC_THRESHOLD = 999` (effectively disabled)
@@ -330,7 +328,7 @@ Scan `knowzcode/knowzcode_tracker.md` for outstanding `REFACTOR_` tasks that ove
 >
 > **Vault Creation Failure Recovery:** If BOTH `create_vault()` and name-matching fallback fail: log failure, set `VAULTS_CONFIGURED = false`, continue without vault. Report: `"⚠️ Vault creation failed — proceeding without knowledge capture. Run /knowz setup to retry."`
 
-- **Stage 0**: Create team, MCP probe, spawn scout/analyst/architect/scanner/MCP/specialist agents in parallel
+- **Stage 0**: Create team, MCP probe, spawn knowledge-liaison/analyst/architect/scanner/specialist agents in parallel
 - **Stage 1**: Analyst completes Change Set → Gate #1 → Architect drafts specs → Gate #2
 - **Stage 2**: Parallel builders (1 per independent partition) + paired reviewers + gap loop
 - **Stage 3**: Closer finalizes, dispatches writer for captures, shutdown
@@ -339,7 +337,7 @@ Scan `knowzcode/knowzcode_tracker.md` for outstanding `REFACTOR_` tasks that ove
 
 ## Phase Prompt Reference
 
-**Spawn Prompts**: Read [references/spawn-prompts.md](references/spawn-prompts.md) before spawning any agent. Contains spawn/dispatch prompts for all phases: context scouts, codebase scanners, knowz:reader, knowz:writer dispatches, specialists (security-officer, test-advisor, project-advisor), analyst (Phase 1A), architect (Phase 1B), builder (Phase 2A), reviewer (Phase 2B), and closer (Phase 3).
+**Spawn Prompts**: Read [references/spawn-prompts.md](references/spawn-prompts.md) before spawning any agent. Contains spawn/dispatch prompts for all phases: knowledge-liaison, codebase scanners, knowz:reader, knowz:writer dispatches, specialists (security-officer, test-advisor, project-advisor), analyst (Phase 1A), architect (Phase 1B), builder (Phase 2A), reviewer (Phase 2B), and closer (Phase 3).
 
 **Quality Gates**: Read [references/quality-gates.md](references/quality-gates.md) at quality gate checkpoints. Contains gate templates (#1 Change Set, #2 Specifications, #3 Audit Results), autonomous mode handling, specialist report sections, gap loop mechanics, and progress capture instructions.
 

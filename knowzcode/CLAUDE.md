@@ -25,14 +25,13 @@ For product overview, see [README.md](README.md). For detailed docs, see `docs/`
 │   ├── continue/SKILL.md        # Trigger skill
 │   ├── start-work/SKILL.md      # Trigger skill
 │   └── *.json                   # JSON skill definitions
-├── agents/                      # Agent definitions (13)
+├── agents/                      # Agent definitions (12)
 │   ├── analyst.md               # Phase 1A — impact analysis
 │   ├── architect.md             # Phase 1B — specification drafting
 │   ├── builder.md               # Phase 2A — TDD implementation
 │   ├── reviewer.md              # Phase 2B — completeness audit
 │   ├── closer.md                # Phase 3 — finalization
-│   ├── context-scout.md         # Stage 0 — local context discovery
-│   ├── knowledge-liaison.md     # Persistent — vault I/O routing via knowz:reader/writer
+│   ├── knowledge-liaison.md     # Persistent — context & vault coordinator via knowz:reader/writer
 │   ├── microfix-specialist.md   # Utility — single-file fixes
 │   ├── knowledge-migrator.md    # Utility — vault migration
 │   ├── update-coordinator.md    # Utility — plugin update coordination
