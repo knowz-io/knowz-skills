@@ -203,7 +203,7 @@ When using Claude Code, `/knowzcode:work` automatically selects an execution str
 
 | Mode | When Used | How It Works |
 |------|-----------|-------------|
-| **Parallel Teams** | Complex features (default for >3 files) | Multiple agents work concurrently — scouts gather context, builders implement in parallel, reviewer audits incrementally |
+| **Parallel Teams** | Complex features (default for >3 files) | Multiple agents work concurrently — knowledge-liaison gathers context, builders implement in parallel, reviewer audits incrementally |
 | **Sequential Teams** | Lighter features or `--sequential` flag | One agent per phase with persistent team context |
 | **Subagent Delegation** | Agent Teams not enabled | One agent spawned per phase via fallback — works on all Claude Code instances |
 
@@ -220,7 +220,7 @@ Or ask Claude Code: _"Enable Agent Teams in my settings."_ Then restart. Without
 
 | Agent | Role | Phase |
 |-------|------|-------|
-| `context-scout` | Local context research (specs, tracker, history) | Discovery |
+| `knowledge-liaison` | Context & vault coordination (specs, tracker, history, vault queries) | Discovery |
 | `analyst` | Impact analysis, Change Set proposals | 1A |
 | `architect` | Specification drafting, architecture review | 1B |
 | `builder` | TDD implementation, verification loops | 2A |

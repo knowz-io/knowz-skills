@@ -54,7 +54,7 @@ Triggers on: questions ("how does X work?", "is X correct?", "analyze X"), "what
 
 - Keep 10-tool-call-per-agent behavior
 - Output: inline findings report (no file saved)
-- Agents: scout + reader + analyst + architect + reviewer (standard behavior)
+- Agents: knowledge-liaison + analyst + architect + reviewer (standard behavior)
 
 ### Planning Mode (deep)
 Triggers on: "plan X", "explore adding X", "design X", "prepare for X", action verbs + feature nouns, "evaluate options for X", any phrasing that implies building or changing something.
@@ -63,7 +63,7 @@ Triggers on: "plan X", "explore adding X", "design X", "prepare for X", action v
 - Add project management research angle
 - Add structured vault queries
 - Output: plan document saved to `knowzcode/planning/{slug}.md`
-- Agents: scout + reader + analyst + architect + reviewer + lead project analysis
+- Agents: knowledge-liaison + analyst + architect + reviewer + lead project analysis
 
 Announce the detected mode: `**Mode: Exploration** (lightweight research)` or `**Mode: Planning** (deep research with plan output)`
 
@@ -88,10 +88,9 @@ The user MUST see the execution mode announcement before investigation begins.
 ## Step 3.5: Load Orchestration Config (Optional)
 
 If `knowzcode/knowzcode_orchestration.md` exists, parse:
-1. `SCOUT_MODE` = `scout_mode` value (default: "full")
-2. `MCP_AGENTS_ENABLED` = `mcp_agents_enabled` value (default: true)
+1. `MCP_AGENTS_ENABLED` = `mcp_agents_enabled` value (default: true)
 
-Flag overrides: `--no-scouts` -> `SCOUT_MODE = "none"`, `--no-mcp` -> `MCP_AGENTS_ENABLED = false`
+Flag overrides: `--no-mcp` -> `MCP_AGENTS_ENABLED = false`
 
 If file doesn't exist, use defaults. Other config settings (`max_builders`, `default_specialists`) are not applicable to `/knowzcode:explore`.
 
@@ -135,50 +134,29 @@ Before spawning agents, determine vault availability:
    - `VAULTS_CONFIGURED = true` if at least 1 vault now has a valid ID, else `false`
    - Announce: `**MCP Status: Connected — N vault(s) available**` or `**MCP Status: Connected — no vaults configured (knowledge capture disabled)**`
 
-> **Vault research is mandatory when available.** If `VAULTS_CONFIGURED = true` and `MCP_AGENTS_ENABLED = true`, the `knowz:reader` dispatch MUST execute in both Exploration and Planning modes. The 10-tool-call budget in Exploration Mode is a scope limit, not a reason to skip. Only skip when MCP is genuinely unavailable (`MCP_ACTIVE = false`).
+> **Vault research is mandatory when available.** If `VAULTS_CONFIGURED = true` and `MCP_AGENTS_ENABLED = true`, the knowledge-liaison MUST dispatch vault reader subagents in both Exploration and Planning modes. Only skip vault queries when MCP is genuinely unavailable (`MCP_ACTIVE = false`).
 
-### Agent Teams Mode (with scouts)
+### Agent Teams Mode
 
 Create tasks first, pre-assign, then spawn with task IDs:
 
-1. If `SCOUT_MODE != "none"`: `TaskCreate("Scout: local context for {topic}")` -> `TaskUpdate(owner: "context-scout")`
-2. `TaskCreate("Reader: vault knowledge for {topic}")` — dispatch `knowz:reader` (if `VAULTS_CONFIGURED = true` AND `MCP_AGENTS_ENABLED = true`)
-3. `TaskCreate("Research: code exploration")` -> `TaskUpdate(owner: "analyst")`
-4. `TaskCreate("Research: architecture")` -> `TaskUpdate(owner: "architect")`
-5. `TaskCreate("Research: security + quality")` -> `TaskUpdate(owner: "reviewer")`
+1. `TaskCreate("Knowledge liaison: context & vault research for {topic}")` -> `TaskUpdate(owner: "knowledge-liaison")`
+2. `TaskCreate("Research: code exploration")` -> `TaskUpdate(owner: "analyst")`
+3. `TaskCreate("Research: architecture")` -> `TaskUpdate(owner: "architect")`
+4. `TaskCreate("Research: security + quality")` -> `TaskUpdate(owner: "reviewer")`
 
-Spawn teammates with their task IDs (count depends on SCOUT_MODE and MCP settings):
+Spawn teammates with their task IDs:
 
-1. If `SCOUT_MODE != "none"`, spawn `context-scout` teammate:
+1. Spawn `knowledge-liaison` teammate:
    > **Your Task**: #{task-id} — claim immediately (`TaskUpdate(status: "in_progress")`). Mark completed with summary when done.
-   > You are researching "{topic}" from a **knowzcode history** angle.
-   > Read `agents/context-scout.md` for your role definition.
+   > Read `agents/knowledge-liaison.md` for your full role definition.
    > Read `knowzcode/claude_code_execution.md` for team conventions.
-   > Find: existing specs, prior WorkGroups, tracker entries relevant to this topic.
-   > Broadcast findings to all teammates.
+   > **Goal**: Research "{topic}" — gather local context and vault knowledge.
+   > **Vault config**: `knowzcode/knowzcode_vaults.md`
+   > **Parallel dispatch**: Dispatch scout and reader subagents to gather local context (specs, workgroups, tracker, architecture) and vault knowledge (past decisions, conventions, patterns).
+   > **Deliverable**: Push Context Briefing to analyst and architect with local + vault findings.
 
-2. If `VAULTS_CONFIGURED = true` AND `MCP_AGENTS_ENABLED = true`, dispatch `knowz:reader`:
-
-   **Exploration mode** prompt:
-   > **Your Task**: #{task-id}
-   > You are researching "{topic}" from a **vault knowledge** angle.
-   > Read `knowzcode/knowzcode_vaults.md` to discover configured vaults — their IDs, types, descriptions.
-   > Query: team conventions, past decisions, similar implementations.
-   > Max 10 tool calls. Return synthesized findings.
-
-   **Planning mode** prompt:
-   > **Your Task**: #{task-id}
-   > You are researching "{topic}" from a **vault knowledge** angle.
-   > Read `knowzcode/knowzcode_vaults.md` to discover configured vaults — their IDs, types, descriptions.
-   > Execute these structured queries:
-   > 1. **Past approaches**: Search for prior implementations of similar features
-   > 2. **Conventions**: Search for conventions that apply to {domain area}
-   > 3. **Past decisions**: Search for decisions that constrain {architecture area}
-   > 4. **Reusable patterns**: Search for patterns relevant to {technology/approach}
-   > 5. **Prior failures**: Search for workarounds or issues in similar areas
-   > Return synthesized findings organized by query type.
-
-3. Spawn `analyst` teammate:
+2. Spawn `analyst` teammate:
 
    **Exploration mode** prompt:
    > **Your Task**: #{task-id} — claim immediately (`TaskUpdate(status: "in_progress")`). Mark completed with summary when done.
@@ -201,7 +179,7 @@ Spawn teammates with their task IDs (count depends on SCOUT_MODE and MCP setting
    > - Risk assessment with rationale
    > Write findings to a detailed summary.
 
-4. Spawn `architect` teammate:
+3. Spawn `architect` teammate:
 
    **Exploration mode** prompt:
    > **Your Task**: #{task-id} — claim immediately (`TaskUpdate(status: "in_progress")`). Mark completed with summary when done.
@@ -224,7 +202,7 @@ Spawn teammates with their task IDs (count depends on SCOUT_MODE and MCP setting
    > - Spec consolidation opportunities (check existing specs for overlap)
    > Write findings to a detailed summary.
 
-5. Spawn `reviewer` teammate:
+4. Spawn `reviewer` teammate:
 
    **Exploration mode** prompt:
    > **Your Task**: #{task-id} — claim immediately (`TaskUpdate(status: "in_progress")`). Mark completed with summary when done.
@@ -242,30 +220,17 @@ Spawn teammates with their task IDs (count depends on SCOUT_MODE and MCP setting
    > Investigate: risks, performance concerns, quality gaps.
    > Write findings to a detailed summary.
 
-Scouts broadcast findings; all core researchers consume them.
+Knowledge-liaison pushes Context Briefings to analyst and architect; all core researchers consume them.
 Wait for all to complete, then synthesize in Step 5.
 
 ### Subagent Mode
 
-Delegate to up to five agents in parallel via `Task()`:
+Delegate to up to four agents in parallel via `Task()`:
 
-1. **context-scout** — Local context (if `SCOUT_MODE != "none"`):
-   - `SCOUT_MODE = "full"` (default): 3 parallel instances:
-     - `Task(subagent_type="context-scout", name="context-scout-specs", description="Scout: specs context", prompt="Research \"{topic}\". Focus: knowzcode/specs/*.md — scan existing specifications for relevant NodeIDs, status, VERIFY criteria. Max 10 tool calls. Write findings to a concise summary.")`
-     - `Task(subagent_type="context-scout", name="context-scout-workgroups", description="Scout: workgroups context", prompt="Research \"{topic}\". Focus: knowzcode/workgroups/*.md — scan previous WorkGroups for similar goals, what was tried, what succeeded/failed. Max 10 tool calls. Write findings to a concise summary.")`
-     - `Task(subagent_type="context-scout", name="context-scout-backlog", description="Scout: backlog context", prompt="Research \"{topic}\". Focus: knowzcode/knowzcode_tracker.md, knowzcode/knowzcode_log.md, knowzcode/knowzcode_architecture.md, knowzcode/knowzcode_project.md — scan for active WIP, REFACTOR tasks, architecture summary, recent log patterns. Max 10 tool calls. Write findings to a concise summary.")`
-   - `SCOUT_MODE = "minimal"`: 1 combined instance:
-     - `Task(subagent_type="context-scout", name="context-scout", description="Scout: combined context", prompt="Research \"{topic}\". Focus: ALL local context — knowzcode/specs/*.md, knowzcode/workgroups/*.md, knowzcode/knowzcode_tracker.md, knowzcode/knowzcode_log.md, knowzcode/knowzcode_architecture.md, knowzcode/knowzcode_project.md. Max 10 tool calls. Write findings to a concise summary.")`
+1. **knowledge-liaison** — Local context + vault knowledge:
+   - `Task(subagent_type="knowzcode:knowledge-liaison", description="Context & vault research for {topic}", prompt="Read agents/knowledge-liaison.md for your full role definition. Goal: Research \"{topic}\" — gather local context and vault knowledge. Vault config: knowzcode/knowzcode_vaults.md. Dispatch scout and reader subagents to gather local context (specs, workgroups, tracker, architecture) and vault knowledge (past decisions, conventions, patterns). Return consolidated Context Briefing with local + vault findings.")`
 
-2. **knowz:reader** — MCP knowledge (if `VAULTS_CONFIGURED = true` AND `MCP_AGENTS_ENABLED = true`):
-
-   **Exploration mode**:
-   - `Task(subagent_type="knowz:reader", description="Reader: vault knowledge", prompt="Research \"{topic}\". Read knowzcode/knowzcode_vaults.md to discover configured vaults. Query each for relevant knowledge: team conventions, past decisions, similar implementations. Max 10 tool calls. Write findings to a concise summary.")`
-
-   **Planning mode**:
-   - `Task(subagent_type="knowz:reader", description="Reader: vault knowledge (deep)", prompt="Research \"{topic}\". Read knowzcode/knowzcode_vaults.md to discover configured vaults. Execute these structured queries against each vault: 1) Past approaches — search for prior implementations of similar features. 2) Conventions — search for conventions that apply to {domain area}. 3) Past decisions — search for decisions that constrain {architecture area}. 4) Reusable patterns — search for patterns relevant to {technology/approach}. 5) Prior failures — search for workarounds or issues in similar areas. Return synthesized findings organized by query type.")`
-
-3. **analyst** — Code exploration / Impact analysis:
+2. **analyst** — Code exploration / Impact analysis:
    - `subagent_type`: `"analyst"`
 
    **Exploration mode**:
@@ -276,7 +241,7 @@ Delegate to up to five agents in parallel via `Task()`:
    - `prompt`: Research "{topic}" from an **impact analysis** angle. Read `agents/analyst.md` for your full role definition. Investigate: affected files, dependencies, existing patterns. Produce a preliminary Change Set estimate: Potential NodeIDs with descriptions, Affected files list with change types (new/modify), Dependency map (which NodeIDs share files), Risk assessment with rationale. Write findings to a detailed summary.
    - `description`: `"Explore research: impact analysis"`
 
-4. **architect** — Architecture assessment / Design:
+3. **architect** — Architecture assessment / Design:
    - `subagent_type`: `"architect"`
 
    **Exploration mode**:
@@ -287,7 +252,7 @@ Delegate to up to five agents in parallel via `Task()`:
    - `prompt`: Research "{topic}" from an **architecture and design** angle. Read `agents/architect.md` for your full role definition. Investigate: layer analysis, design implications, pattern fit. Propose an implementation approach: Recommended design with rationale, Alternatives considered and why rejected, Constraints from architecture docs, Spec consolidation opportunities (check existing specs for overlap). Write findings to a detailed summary.
    - `description`: `"Explore research: architecture and design"`
 
-5. **reviewer** — Security and quality:
+4. **reviewer** — Security and quality:
    - `subagent_type`: `"reviewer"`
 
    **Exploration mode**:
@@ -327,7 +292,7 @@ Present findings inline (no file saved):
 ### Security & Quality
 {summarized findings from reviewer}
 
-### Existing Knowledge (from scouts)
+### Existing Knowledge (from knowledge-liaison)
 - **Relevant Specs**: {list or "None found"}
 - **Prior WorkGroups**: {list or "None found"}
 - **Vault Knowledge**: {list or "N/A — MCP not configured"}

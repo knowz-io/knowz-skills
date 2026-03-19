@@ -139,13 +139,13 @@ When running as teammates in a Claude Code Agent Teams workflow, all agents foll
 
 ### Inter-Agent Communication
 
-> **Note:** In `/knowzcode:work` Parallel Teams mode, teammates coexist within stages: scouts run alongside analysts, builders and reviewers persist through the gap loop. The messaging patterns below are actively used. In Sequential Teams mode (`--sequential`), teammates are spawned one at a time — inter-phase communication goes through the lead via WorkGroup files.
+> **Note:** In `/knowzcode:work` Parallel Teams mode, teammates coexist within stages: knowledge-liaison pushes context to analysts, builders and reviewers persist through the gap loop. The messaging patterns below are actively used. In Sequential Teams mode (`--sequential`), teammates are spawned one at a time — inter-phase communication goes through the lead via WorkGroup files.
 
 Use mailbox messaging for coordination between teammates:
 
 | From | To | When |
 |------|-----|------|
-| scout | all | Initial context/vault findings (broadcast) |
+| knowledge-liaison | analyst, architect | Context Briefing with local + vault findings (DM) |
 | scanner | all | Codebase scan findings — affected files, test patterns (broadcast) |
 | analyst | architect | `[PRELIMINARY]` NodeID findings during Stage 0 (max 3 DMs), scope clarifications, NodeID overlap with existing specs |
 | architect | analyst | Scope adjustments needed |
@@ -219,9 +219,6 @@ Agents must NOT create new tasks for work already assigned to them via task ID.
 
 | Agent | Spawn At | Shut Down At | Purpose While Alive |
 |-------|----------|-------------|---------------------|
-| context-scout-specs | Stage 0 | After Gate #2 | Spec context lookups |
-| context-scout-workgroups | Stage 0 | After Gate #2 | WorkGroup history lookups |
-| context-scout-backlog | Stage 0 | After Gate #2 | Tracker/log/architecture lookups |
 | scanner-direct | Stage 0 (conditional) | After Stage 1 (analyst done) | Source code scanning — broadcasts affected files and code paths |
 | scanner-tests | Stage 0 (conditional) | After Stage 1 (analyst done) | Test discovery — broadcasts test patterns and coverage shape |
 | analyst | Stage 0 | Early Stage 2 | Scope questions from builders |
@@ -232,7 +229,7 @@ Agents must NOT create new tasks for work already assigned to them via task ID.
 | security-officer | Stage 0 (Group C) | After Gate #3 | Threat modeling + vulnerability scanning (officer — can block gates) |
 | test-advisor | Stage 0 (Group C) | After Gate #3 | TDD enforcement + test quality review (advisor — informational) |
 | project-advisor | Stage 0 (Group C) | Mid-Stage 2 | Backlog curation + idea capture (advisor — informational) |
-| knowledge-liaison | Stage 0 (Group B) | After Phase 3 writer completion | Persistent vault I/O coordinator — routes captures and queries to knowz agents |
+| knowledge-liaison | Stage 0 (Group A) | Last before team cleanup | Persistent context & vault coordinator — dispatches scouts, pushes context, routes vault I/O |
 | closer | Stage 3 | End of workflow | Finalization |
 
 ### Task Dependency Usage
@@ -244,7 +241,7 @@ All tasks in a workflow use `addBlockedBy` to express the dependency chain:
 
 ### Task Graph Patterns
 
-- Stage 0 tasks: scout + scanner + analysis tasks (no deps, knowz:writer dispatched at gates)
+- Stage 0 tasks: scanner + analysis tasks (no deps, knowz:writer dispatched at gates)
 - Stage 1 tasks: spec drafting tasks (blocked by gate approval — lead creates after gate). Path B (3+ NodeIDs): spec-drafter tasks + architect consistency review task
 - Stage 2 tasks: implementation subtasks (blocked by spec approval), audit subtasks (blocked by implementation)
 - Stage 3 tasks: finalization (blocked by audit approval)
@@ -256,7 +253,6 @@ Team sizing defaults are configurable via `knowzcode/knowzcode_orchestration.md`
 | Parameter | Default | Flag Override | Effect |
 |-----------|---------|--------------|--------|
 | `max_builders` | 5 | `--max-builders=N` | Cap concurrent builders (1-5) |
-| `scout_mode` | full | `--no-scouts` | full (3 scouts), minimal (1 scout), none (lead reads context) |
 | `default_specialists` | [] | `--specialists`, `--no-specialists` | Project-level specialist defaults |
 | `mcp_agents_enabled` | true | `--no-mcp` | Toggle vault agents (knowz:reader, knowz:writer dispatches) |
 | `codebase_scanner_enabled` | true | `--no-scanners` | Toggle codebase scanner agents (scanner-direct, scanner-tests) |
@@ -312,16 +308,15 @@ When the approved Change Set contains 3+ NodeIDs (configurable via `PARALLEL_SPE
 
 #### Specialist Agents (Group C — opt-in via `--specialists`)
 
-When specialists are enabled, three additional agents spawn at Stage 0 alongside Groups A and B:
+When specialists are enabled, three additional agents spawn at Stage 0 alongside Group A:
 
 ```
-Group A (always):           3 context-scouts + analyst + architect       (5 agents)
+Group A (always):           knowledge-liaison + analyst + architect      (3 agents)
 Group A (if scanners):      + scanner-direct + scanner-tests            (+2 agents)
-Group B (if MCP):           knowledge-liaison                           (1 persistent agent)
 Group C (if --specialists): security-officer + test-advisor + project-advisor  (3 agents)
 ```
 
-Max Stage 0 concurrent: 5-11 agents depending on orchestration config (scouts, scanners, MCP agents, specialists). Scouts shut down after Gate #2, scanners shut down after Stage 1, so Stage 2 peak is manageable.
+Max Stage 0 concurrent: 3-8 agents depending on orchestration config (scanners, specialists). Scanners shut down after Stage 1, so Stage 2 peak is manageable.
 
 ##### Officer vs Advisor Authority
 

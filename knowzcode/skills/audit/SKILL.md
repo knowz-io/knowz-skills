@@ -57,12 +57,10 @@ Read:
 
 If `knowzcode/knowzcode_orchestration.md` exists, parse its YAML blocks:
 
-1. `SCOUT_MODE` = `scout_mode` value (default: "full")
-2. `DEFAULT_SPECIALISTS` = `default_specialists` value (default: [])
-3. `MCP_AGENTS_ENABLED` = `mcp_agents_enabled` value (default: true)
+1. `DEFAULT_SPECIALISTS` = `default_specialists` value (default: [])
+2. `MCP_AGENTS_ENABLED` = `mcp_agents_enabled` value (default: true)
 
 Apply flag overrides (flags win over config):
-- `--no-scouts` in `$ARGUMENTS` → override `SCOUT_MODE = "none"`
 - `--no-specialists` in `$ARGUMENTS` → override `DEFAULT_SPECIALISTS = []`
 - `--no-mcp` in `$ARGUMENTS` → override `MCP_AGENTS_ENABLED = false`
 
@@ -247,20 +245,12 @@ Wait for all reviewers and specialists to complete. Synthesize results in Step 4
 
 #### Specific Audit Type
 
-Launch scouts + reviewer in parallel via `Task()`:
+Launch knowledge-liaison + reviewer in parallel via `Task()`:
 
-1. **context-scout** — Local context (if `SCOUT_MODE != "none"`):
-   - `SCOUT_MODE = "full"` (default): 3 parallel instances:
-     - `Task(subagent_type="context-scout", name="context-scout-specs", description="Scout: specs context", prompt="Research audit scope: {audit_type}. Focus: knowzcode/specs/*.md — scan existing specifications for relevant NodeIDs, status, VERIFY criteria. Max 10 tool calls. Write findings to a concise summary.")`
-     - `Task(subagent_type="context-scout", name="context-scout-workgroups", description="Scout: workgroups context", prompt="Research audit scope: {audit_type}. Focus: knowzcode/workgroups/*.md — scan previous WorkGroups for related audit findings. Max 10 tool calls. Write findings to a concise summary.")`
-     - `Task(subagent_type="context-scout", name="context-scout-backlog", description="Scout: backlog context", prompt="Research audit scope: {audit_type}. Focus: knowzcode/knowzcode_tracker.md, knowzcode/knowzcode_log.md, knowzcode/knowzcode_architecture.md — scan for active WIP, prior audit results, architecture health. Max 10 tool calls. Write findings to a concise summary.")`
-   - `SCOUT_MODE = "minimal"`: 1 combined instance:
-     - `Task(subagent_type="context-scout", name="context-scout", description="Scout: combined context", prompt="Research audit scope: {audit_type}. Focus: ALL local context — knowzcode/specs/*.md, knowzcode/workgroups/*.md, knowzcode/knowzcode_tracker.md, knowzcode/knowzcode_log.md, knowzcode/knowzcode_architecture.md. Max 10 tool calls. Write findings to a concise summary.")`
+1. **knowledge-liaison** — Local context + vault knowledge:
+   - `Task(subagent_type="knowzcode:knowledge-liaison", description="Liaison: audit context", prompt="Research audit scope: {audit_type}. Gather local context (specs, workgroups, tracker, log, architecture) and vault knowledge (standards, conventions, past audit decisions). Push Context Briefing with findings. Max 15 tool calls. Write findings to a concise summary.")`
 
-2. **knowz:reader** — MCP knowledge (if `VAULTS_CONFIGURED = true` AND `MCP_AGENTS_ENABLED = true`):
-   - `Task(subagent_type="knowz:reader", description="Reader: vault standards", prompt="Research audit scope: {audit_type}. Read knowzcode/knowzcode_vaults.md to discover configured vaults. Query for team standards, conventions, and past audit decisions. Max 10 tool calls. Write findings to a concise summary.")`
-
-3. **reviewer** — The audit itself:
+2. **reviewer** — The audit itself:
    - `subagent_type`: `"reviewer"`
    - `prompt`: Task-specific context only (role definition is auto-loaded from `agents/reviewer.md`):
      > **Audit scope**: {audit_type}
@@ -270,29 +260,21 @@ Launch scouts + reviewer in parallel via `Task()`:
      > Deliverable: Audit report with health scores, critical issues, recommendations.
    - `description`: `"Audit: {audit_type}"`
 
-All launched in parallel. Synthesize scout findings alongside reviewer results.
+All launched in parallel. Synthesize knowledge-liaison context alongside reviewer results.
 
 #### Full Audit
 
-Launch scouts + parallel reviewers via `Task()`:
+Launch knowledge-liaison + parallel reviewers via `Task()`:
 
-1. **context-scout** — Local context (if `SCOUT_MODE != "none"`):
-   - `SCOUT_MODE = "full"` (default): 3 parallel instances:
-     - `Task(subagent_type="context-scout", name="context-scout-specs", description="Scout: specs context", prompt="Research for comprehensive audit. Focus: knowzcode/specs/*.md — scan all specifications for quality, completeness, VERIFY criteria. Max 10 tool calls. Write findings to a concise summary.")`
-     - `Task(subagent_type="context-scout", name="context-scout-workgroups", description="Scout: workgroups context", prompt="Research for comprehensive audit. Focus: knowzcode/workgroups/*.md — scan all WorkGroups for patterns, recurring issues, audit history. Max 10 tool calls. Write findings to a concise summary.")`
-     - `Task(subagent_type="context-scout", name="context-scout-backlog", description="Scout: backlog context", prompt="Research for comprehensive audit. Focus: knowzcode/knowzcode_tracker.md, knowzcode/knowzcode_log.md, knowzcode/knowzcode_architecture.md — scan for WIP status, prior audit results, architecture health. Max 10 tool calls. Write findings to a concise summary.")`
-   - `SCOUT_MODE = "minimal"`: 1 combined instance:
-     - `Task(subagent_type="context-scout", name="context-scout", description="Scout: combined context", prompt="Research for comprehensive audit. Focus: ALL local context — knowzcode/specs/*.md, knowzcode/workgroups/*.md, knowzcode/knowzcode_tracker.md, knowzcode/knowzcode_log.md, knowzcode/knowzcode_architecture.md. Max 10 tool calls. Write findings to a concise summary.")`
+1. **knowledge-liaison** — Local context + vault knowledge:
+   - `Task(subagent_type="knowzcode:knowledge-liaison", description="Liaison: audit context", prompt="Research for comprehensive audit. Gather local context (specs, workgroups, tracker, log, architecture) and vault knowledge (standards, conventions, security policies, compliance requirements). Push Context Briefing with findings. Max 15 tool calls. Write findings to a concise summary.")`
 
-2. **knowz:reader** — MCP knowledge (if `VAULTS_CONFIGURED = true` AND `MCP_AGENTS_ENABLED = true`):
-   - `Task(subagent_type="knowz:reader", description="Reader: vault standards", prompt="Research for comprehensive audit. Read knowzcode/knowzcode_vaults.md to discover configured vaults. Query for team standards, conventions, security policies, and compliance requirements. Max 10 tool calls. Write findings to a concise summary.")`
-
-3. **Parallel reviewers**:
+2. **Parallel reviewers**:
    - `Task(subagent_type="reviewer", description="Audit: spec + architecture", prompt="Audit scope: Specification quality AND architecture health ONLY. ...")`
    - `Task(subagent_type="reviewer", description="Audit: security + integration", prompt="Audit scope: Security vulnerability scan AND integration consistency ONLY. ...")`
    - `Task(subagent_type="reviewer", description="Audit: compliance", prompt="Audit scope: Enterprise compliance ONLY. ...")` (if enterprise configured)
 
-Synthesize scout context alongside reviewer results.
+Synthesize knowledge-liaison context alongside reviewer results.
 
 #### Specialist Integration (Subagent Mode — Optional)
 
