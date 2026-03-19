@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.3] - 2026-03-19
+
+### Removed
+- `context-scout` agent — duties fully absorbed by `knowledge-liaison` (dispatches local context scouts as subagents)
+
+### Changed
+- Streamlined agent spawn prompts, audit skill, explore skill, and orchestration docs
+
 ## [0.8.2] - 2026-03-18
 
 ### Added
