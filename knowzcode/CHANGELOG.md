@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.4] - 2026-03-20
+
+### Changed
+- Knowledge-liaison reads local context directly using Read/Glob/Grep tools instead of dispatching scout subagents, and dispatches vault readers in parallel (one per vault)
+
 ## [0.8.3] - 2026-03-19
 
 ### Removed

@@ -6,7 +6,7 @@
 
 [![License: MIT + Commons Clause](https://img.shields.io/badge/License-MIT_+_Commons_Clause-yellow.svg)](LICENSE)
 [![Claude Code Plugin](https://img.shields.io/badge/Claude_Code-Plugin-purple)](https://github.com/knowz-io/knowz-skills)
-[![Version](https://img.shields.io/badge/version-0.8.3-blue)](https://github.com/knowz-io/knowz-skills/releases)
+[![Version](https://img.shields.io/badge/version-0.8.4-blue)](https://github.com/knowz-io/knowz-skills/releases)
 
 [Installation](#installation) · [Quick Start](#quick-start) · [When to Use It](#when-to-use-knowzcode) · [How It Works](#how-it-works) · [Commands](#commands) · [Docs](#documentation)
 
