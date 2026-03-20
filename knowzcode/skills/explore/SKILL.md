@@ -153,7 +153,7 @@ Spawn teammates with their task IDs:
    > Read `knowzcode/claude_code_execution.md` for team conventions.
    > **Goal**: Research "{topic}" — gather local context and vault knowledge.
    > **Vault config**: `knowzcode/knowzcode_vaults.md`
-   > **Parallel dispatch**: Dispatch scout and reader subagents to gather local context (specs, workgroups, tracker, architecture) and vault knowledge (past decisions, conventions, patterns).
+   > **Context gathering**: Read local context directly (specs, workgroups, tracker, architecture) using Read/Glob tools. Dispatch vault reader subagents in parallel for vault knowledge (past decisions, conventions, patterns).
    > **Deliverable**: Push Context Briefing to analyst and architect with local + vault findings.
 
 2. Spawn `analyst` teammate:
@@ -228,7 +228,7 @@ Wait for all to complete, then synthesize in Step 5.
 Delegate to up to four agents in parallel via `Task()`:
 
 1. **knowledge-liaison** — Local context + vault knowledge:
-   - `Task(subagent_type="knowzcode:knowledge-liaison", description="Context & vault research for {topic}", prompt="Read agents/knowledge-liaison.md for your full role definition. Goal: Research \"{topic}\" — gather local context and vault knowledge. Vault config: knowzcode/knowzcode_vaults.md. Dispatch scout and reader subagents to gather local context (specs, workgroups, tracker, architecture) and vault knowledge (past decisions, conventions, patterns). Return consolidated Context Briefing with local + vault findings.")`
+   - `Task(subagent_type="knowzcode:knowledge-liaison", description="Context & vault research for {topic}", prompt="Read agents/knowledge-liaison.md for your full role definition. Goal: Research \"{topic}\" — gather local context and vault knowledge. Vault config: knowzcode/knowzcode_vaults.md. Read local context files directly (specs, workgroups, tracker, architecture) using Read and Glob tools. Dispatch vault reader subagents in parallel for vault knowledge (past decisions, conventions, patterns). Return consolidated Context Briefing with local + vault findings.")`
 
 2. **analyst** — Code exploration / Impact analysis:
    - `subagent_type`: `"analyst"`

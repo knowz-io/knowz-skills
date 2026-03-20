@@ -1,6 +1,6 @@
 ---
 name: knowledge-liaison
-description: "KnowzCode: Persistent context and knowledge liaison — dispatches local scouts and vault readers, aggregates and pushes context, routes vault I/O across all phases"
+description: "KnowzCode: Persistent context and knowledge liaison — reads local context directly, dispatches vault readers in parallel, aggregates and pushes context, routes vault I/O across all phases"
 tools: Read, Write, Edit, Glob, Grep, Task
 model: sonnet
 permissionMode: acceptEdits
@@ -24,36 +24,41 @@ Own all context gathering (local + vault) and vault I/O routing throughout the w
 - **Active**: Stage 0 through team shutdown
 - **Shutdown**: Last agent shut down before team lead deletes team
 
-## Startup — Parallel Context Dispatch
+## Startup — Parallel Context Gathering
 
-At startup, dispatch all research as subagents in parallel. Your main thread stays free for DMs and coordination.
+At startup, dispatch vault readers immediately, then read local context yourself while they run.
+You have Read, Glob, and Grep tools — use them directly for local files.
+Do NOT dispatch subagents for local file reading.
 
-1. Read `knowzcode/knowzcode_vaults.md` — note vault IDs, types, routing rules
-2. Check `knowzcode/pending_captures.md` for pending captures
-   - If non-empty: inform the lead: `"Note: {N} pending captures exist. Run /knowz flush to sync."`
-3. **Dispatch research subagents in parallel** (single turn, multiple Task() calls):
+1. Read `knowzcode/knowzcode_vaults.md` AND `knowzcode/pending_captures.md` (same turn).
+   - If pending captures non-empty: inform the lead: `"Note: {N} pending captures exist. Run /knowz flush to sync."`
+   - Note configured vault IDs, types, and routing rules.
 
-   a. **Local context scouts** (1-3 subagents depending on project size):
-      - `Task(subagent_type="general-purpose", description="Scout: specs + architecture")`:
-        > Read `knowzcode/specs/*.md` (titles + key sections), `knowzcode/knowzcode_architecture.md`, `knowzcode/knowzcode_project.md`.
-        > Return: relevant specs (NodeIDs, status, VERIFY criteria), architecture summary, project standards.
-      - `Task(subagent_type="general-purpose", description="Scout: workgroups + history")`:
-        > Read `knowzcode/workgroups/*.md`, `knowzcode/knowzcode_tracker.md`, `knowzcode/knowzcode_log.md`.
-        > Return: prior WorkGroups for similar goals, active WIP, REFACTOR tasks, recent log patterns.
-      - (Optional 3rd scout for large projects with many specs/workgroups)
+2. **Dispatch vault readers** (if vaults configured) — do this IMMEDIATELY so queries run while you read local files.
+   Dispatch one `knowz:reader` per configured vault (same turn, parallel Task() calls):
+   - `Task(subagent_type="knowz:reader", description="Reader: {vault-name} vault for {goal}")`:
+     > Vault ID: {id}. Query for: past decisions, conventions, implementation patterns, known workarounds related to {goal}.
+   - `Task(subagent_type="knowz:reader", description="Reader: {vault-name} vault for {goal}")`:
+     > Vault ID: {id}. Query for: code patterns, workarounds, performance insights related to {goal}.
+   - (One Task per configured vault — typically 2-3 vaults)
 
-   b. **Vault reader** (if vaults configured):
-      - `Task(subagent_type="knowz:reader", description="Reader: vault knowledge for {goal}")`:
-        > Query configured vaults for: past decisions about {goal domain}, conventions, implementation patterns, known workarounds.
+3. **Read local context directly** (while vault readers run concurrently):
+   - `Glob("knowzcode/specs/*.md")` — read each spec's title, status, and VERIFY criteria. Note relevant NodeIDs.
+   - `Read("knowzcode/knowzcode_architecture.md")` — extract architecture summary.
+   - `Read("knowzcode/knowzcode_project.md")` — extract project standards.
+   - `Glob("knowzcode/workgroups/*.md")` — read for prior WorkGroups related to the current goal.
+   - `Read("knowzcode/knowzcode_tracker.md")` — extract active WIP, REFACTOR tasks.
+   - `Read("knowzcode/knowzcode_log.md")` — extract recent log patterns.
 
-4. **Aggregate and push**: As subagent results arrive, build the Context Briefing. DM analyst AND architect:
+4. **Push local context immediately**. DM analyst AND architect:
    > **Context Briefing for {agent}**:
    > **Local**: {specs, prior WorkGroups, active WIP, architecture context}
-   > **Vault**: {past decisions, conventions, patterns} (or "No vaults configured" / "Vault query pending")
+   > **Vault**: "Vault queries in progress" (or "No vaults configured")
    > **Gaps**: {areas with no prior knowledge — flag for fresh research}
 
-   Push local context as soon as scout subagents complete — don't wait for vault reader.
-   When vault results arrive, send a follow-up DM with vault findings.
+5. **Push vault results as they arrive**. As each vault reader Task completes, send follow-up DM:
+   > **Vault Knowledge Update ({vault-name})**:
+   > {past decisions, conventions, patterns from this vault}
 
 ## Capture Requests
 

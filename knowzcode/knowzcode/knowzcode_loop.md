@@ -455,10 +455,10 @@ The analyst produces a dependency map alongside the Change Set, identifying:
 #### Incremental Review
 The reviewer can audit completed NodeIDs before all implementation finishes. Gap findings are routed back to the implementer for targeted fixes, then re-audited. Agents persist through this gap loop — no respawning.
 
-#### Context Scouts
-Dedicated context-gathering agents can run in parallel with core analysis:
-- Local context scout: reads project history, specs, workgroups
-- Knowz reader: queries knowledge management vaults for business context (read-only access)
+#### Context Gathering
+Dedicated context-gathering runs in parallel with core analysis:
+- Knowledge liaison: reads local project history, specs, workgroups directly
+- Knowz readers: query knowledge management vaults for business context (one per vault, dispatched by liaison)
 Both broadcast findings to inform analyst and architect work.
 
 ### Sequential Execution Protocol (for platforms without orchestration)
