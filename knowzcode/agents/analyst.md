@@ -67,7 +67,7 @@ When running in Parallel Teams mode and the architect is alive during Stage 0, s
 ### Rules
 - Max **3** `[PRELIMINARY]` DMs to the architect
 - Send each DM as soon as you have high-confidence evidence for a NodeID — don't batch
-- Do NOT wait for scouts to finish; send findings from your own scanning
+- Do NOT wait for the knowledge-liaison context briefing; send findings from your own scanning
 - If the change is clearly a 1-NodeID micro-change, skip this protocol (no DMs needed)
 - Sequential mode: skip this protocol entirely (no architect to DM)
 
