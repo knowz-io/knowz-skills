@@ -60,7 +60,7 @@ Two temporary agents that scan the codebase in parallel with the analyst, broadc
 > **Goal**: {goal}
 > **Vault config**: `knowzcode/knowzcode_vaults.md`
 > **Lifecycle**: You persist from Stage 0 through team shutdown. You are the last agent shut down before team cleanup.
-> **Parallel dispatch**: At startup, dispatch scout and reader subagents in parallel (see `agents/knowledge-liaison.md` Startup). Push Context Briefing to analyst and architect.
+> **Context gathering**: At startup, read local context directly and dispatch vault reader subagents in parallel (see `agents/knowledge-liaison.md` Startup). Push Context Briefing to analyst and architect.
 > **Ongoing**: Accept capture DMs from the lead (at quality gates) and closer (Phase 3). Accept `"Log: ..."` and `"Consider: ..."` from any agent. Accept `"VaultQuery: ..."` from any agent. Dispatch `knowz:writer` and `knowz:reader` as needed.
 
 **Dispatch**:

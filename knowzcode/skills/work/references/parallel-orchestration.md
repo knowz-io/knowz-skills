@@ -62,8 +62,8 @@ When Parallel Teams mode is active, follow these 4 stages instead of spawning on
      - `TaskCreate("Scanner: direct codebase scan for {goal}")` → `TaskUpdate(owner: "scanner-direct")`
      - `TaskCreate("Scanner: test coverage scan for {goal}")` → `TaskUpdate(owner: "scanner-tests")`
    Spawn all Group A agents with their `{task-id}` in the spawn prompt (use spawn prompts from [spawn-prompts.md](spawn-prompts.md)).
-   The knowledge-liaison internally dispatches local context scouts and vault reader as subagents — no separate scout agents needed.
-5. **Vault status note**: The knowledge-liaison handles vault availability internally. If `VAULTS_CONFIGURED = true`, it dispatches `knowz:reader` for vault research. If `VAULTS_CONFIGURED = false`, it still provides local context (scout subagents only). No separate Group B spawn needed.
+   The knowledge-liaison reads local context directly and dispatches vault reader subagents in parallel — no separate scout agents needed.
+5. **Vault status note**: The knowledge-liaison handles vault availability internally. If `VAULTS_CONFIGURED = true`, it dispatches `knowz:reader` for vault research. If `VAULTS_CONFIGURED = false`, it still provides local context (direct reads only). No separate Group B spawn needed.
 6. **Spawn Group C** (specialist agents — same turn as Group A): If `SPECIALISTS_ENABLED` is non-empty:
    Create tasks first, pre-assign, then spawn with task IDs:
    - If `security-officer` in list: `TaskCreate("Security officer: initial threat scan")` → `TaskUpdate(owner: "security-officer")`
@@ -72,7 +72,7 @@ When Parallel Teams mode is active, follow these 4 stages instead of spawning on
    Spawn each enabled specialist with its `{task-id}` in the spawn prompt (use spawn prompts from [spawn-prompts.md](spawn-prompts.md)).
    If `SPECIALISTS_ENABLED` is empty, skip Group C.
 7. **Roster confirmation** — lead lists every spawned agent by name to the user. Include scanners and Group C specialists if active.
-8. All spawned agents work immediately in parallel (knowledge-liaison dispatches scouts and vault reader as subagents; scanners are lightweight general-purpose agents; specialists are Sonnet read-only agents). Agent count depends on orchestration config: 2-8 agents at Stage 0.
+8. All spawned agents work immediately in parallel (knowledge-liaison reads local context directly and dispatches vault readers as subagents; scanners are lightweight general-purpose agents; specialists are Sonnet read-only agents). Agent count depends on orchestration config: 2-8 agents at Stage 0.
 9. Knowledge-liaison pushes Context Briefings to analyst and architect as results arrive. Specialists work independently on their Stage 0 tasks.
 
 **Key**: The analyst does NOT wait for the knowledge-liaison, scanners, or specialists to finish. It starts scanning the codebase immediately. The knowledge-liaison pushes Context Briefings to analyst and architect as local context and vault results arrive. Scanner findings arrive as broadcasts. The analyst streams `[PRELIMINARY]` NodeID findings to the architect as it discovers them (see Preliminary Findings Protocol). Specialist findings are consumed by the lead at gates.

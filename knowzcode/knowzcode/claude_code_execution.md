@@ -229,7 +229,7 @@ Agents must NOT create new tasks for work already assigned to them via task ID.
 | security-officer | Stage 0 (Group C) | After Gate #3 | Threat modeling + vulnerability scanning (officer — can block gates) |
 | test-advisor | Stage 0 (Group C) | After Gate #3 | TDD enforcement + test quality review (advisor — informational) |
 | project-advisor | Stage 0 (Group C) | Mid-Stage 2 | Backlog curation + idea capture (advisor — informational) |
-| knowledge-liaison | Stage 0 (Group A) | Last before team cleanup | Persistent context & vault coordinator — dispatches scouts, pushes context, routes vault I/O |
+| knowledge-liaison | Stage 0 (Group A) | Last before team cleanup | Persistent context & vault coordinator — reads local context, dispatches vault readers, routes vault I/O |
 | closer | Stage 3 | End of workflow | Finalization |
 
 ### Task Dependency Usage

@@ -189,7 +189,7 @@ VS Code allows model selection per chat session. For complex features, prefer st
 | Limitation | Impact | Workaround |
 |-----------|--------|------------|
 | No multi-agent orchestration | Cannot run parallel analysis/implementation | Sequential phase execution via prompt files |
-| No inter-agent messaging | No scout/liaison delegation | Single agent reads all context directly |
+| No inter-agent messaging | No liaison/vault delegation | Single agent reads all context directly |
 | No task dependency tracking | No automated phase progression | User manually invokes next prompt |
 | No persistent agents | Context reloaded each prompt invocation | WorkGroup files carry state between invocations |
 | No dynamic agent spawning | Cannot create specialized agents at runtime | Prompt files encode all phase specialization |
