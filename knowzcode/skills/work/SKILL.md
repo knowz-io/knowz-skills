@@ -163,6 +163,71 @@ If MCP is configured and enterprise compliance is enabled:
 
 If MCP is not configured or enterprise is not enabled, skip this step.
 
+## Step 3.6: MCP Probe + Baseline Vault Query (Non-Skippable)
+
+If `MCP_AGENTS_ENABLED = false` (from Step 2.4, e.g. `--no-mcp`), skip this entire step. Set `MCP_ACTIVE = false`, `VAULTS_CONFIGURED = false`, `VAULT_BASELINE = null`.
+
+Otherwise:
+
+### MCP Probe
+
+1. Read `knowzcode/knowzcode_vaults.md` — partition entries into CONFIGURED (non-empty ID) and UNCREATED (empty ID).
+2. Call `list_vaults(includeStats=true)` **always** — regardless of whether any IDs exist in the file.
+3. If `list_vaults()` fails:
+   - Check if `knowzcode/knowzcode_vaults.md` has any CONFIGURED entries (non-empty ID).
+   - **If CONFIGURED entries exist**: Set `MCP_ACTIVE = true`, `VAULTS_CONFIGURED = true`. Announce: `**MCP Status: Lead probe failed — vault agents will verify independently**`
+   - **If no CONFIGURED entries**: Set `MCP_ACTIVE = false`, `VAULTS_CONFIGURED = false`. Announce: `**MCP Status: Not connected**`
+4. If `list_vaults()` succeeds AND UNCREATED list is non-empty → present the **Vault Creation Prompt**:
+
+   ```markdown
+   ## Vault Setup
+
+   Your Knowz API key is valid and MCP is connected, but {N} default vault(s) haven't been created yet.
+   Creating vaults enables knowledge capture throughout the workflow:
+
+   | Vault | Type | Description | Written During |
+   |-------|------|-------------|----------------|
+   ```
+
+   Build table rows dynamically from the UNCREATED entries only. Derive "Written During" from each vault's Write Conditions field in `knowzcode_vaults.md`.
+
+   Then present options:
+   ```
+   Options:
+     **A) Create all {N} vaults** (recommended)
+     **B) Select which to create**
+     **C) Skip** — proceed without vaults (can create later with `/knowz setup`)
+   ```
+
+5. Handle user selection:
+   - **A**: For each UNCREATED entry, call MCP `create_vault(name, description)`. If `create_vault` is not available, fall back to matching by name against `list_vaults()` results. Update `knowzcode_vaults.md`: fill ID field, change H3 heading from `(not created)` to vault ID. Report any failures.
+   - **B**: Ask which vaults to create, then create only selected ones.
+   - **C**: Log `"Vault creation skipped — knowledge capture disabled."` Continue.
+   - If BOTH `create_vault()` and name-matching fail: log failure, set `VAULTS_CONFIGURED = false`, continue. Report: `"Vault creation failed — proceeding without knowledge capture. Run /knowz setup to retry."`
+6. After resolution, set:
+   - `MCP_ACTIVE = true` (MCP works regardless of vault creation outcome)
+   - `VAULTS_CONFIGURED = true` if at least 1 vault now has a valid ID, else `false`
+   - Announce: `**MCP Status: Connected — N vault(s) available**` or `**MCP Status: Connected — no vaults configured (knowledge capture disabled)**`
+
+### Baseline Vault Query
+
+If `VAULTS_CONFIGURED = true` AND `MCP_ACTIVE = true`:
+
+1. For each configured vault, call `search_knowledge({vault_id}, "past decisions, patterns, conventions related to {goal}")`.
+   - For `finalizations`-type vaults: `search_knowledge({vault_id}, "past work related to {goal}")`.
+   - One broad query per vault — the goal is baseline coverage, not exhaustive research.
+2. Store all results as `VAULT_BASELINE`:
+   ```
+   VAULT_BASELINE:
+   - {vault_name} ({vault_type}): {summary of results, or "No relevant results found"}
+   ```
+3. **Failure handling**: If `search_knowledge` fails for a vault, log failure and continue with remaining vaults. If ALL queries fail, set `VAULT_BASELINE = "Vault queries failed — MCP may be degraded"` and continue.
+4. Announce: `**Vault Baseline: {N} vault(s) queried — {M} results found**`
+
+If `VAULTS_CONFIGURED = false` OR `MCP_ACTIVE = false`, set `VAULT_BASELINE = null` and skip the baseline query.
+
+> **This step runs for ALL tiers (2 and 3) when MCP is available.** It does not depend on agent availability. The baseline provides guaranteed vault context before any phase work begins.
+
 ## Step 4: Create WorkGroup File
 
 Create `knowzcode/workgroups/{WorkGroupID}.md`:
@@ -238,7 +303,7 @@ When Tier 2 is selected, execute this streamlined workflow instead of the 5-phas
 ### Light Phase 1 (Inline — lead does this, no agent)
 
 1. Quick impact scan: grep for related files, check existing specs
-2. **MCP context check** (if MCP is configured): `search_knowledge(vault, "past decisions about {affected_component}")`. If relevant results found, factor them into the Change Set. Skip if MCP is not configured.
+2. **Vault context**: Reference `VAULT_BASELINE` from Step 3.6 (already available). If baseline results are relevant to the affected component, factor them into the Change Set. If deeper component-specific queries are needed, call `search_knowledge({vault_id}, "past decisions about {affected_component}")` for targeted follow-up.
 3. Propose a Change Set (typically 1 NodeID)
 4. Draft a lightweight spec (or reference existing spec if found) — use the 4-section format from `knowzcode_loop.md` section 3.2. Minimum: 1 Rule, 1 Interface, 2 `VERIFY:` statements.
 5. Present combined Change Set + Spec for approval:
@@ -329,7 +394,7 @@ Scan `knowzcode/knowzcode_tracker.md` for outstanding `REFACTOR_` tasks that ove
 >
 > **Vault Creation Failure Recovery:** If BOTH `create_vault()` and name-matching fallback fail: log failure, set `VAULTS_CONFIGURED = false`, continue without vault. Report: `"⚠️ Vault creation failed — proceeding without knowledge capture. Run /knowz setup to retry."`
 
-- **Stage 0**: Create team, MCP probe, spawn knowledge-liaison/analyst/architect/scanner/specialist agents in parallel
+- **Stage 0**: Create team, use MCP/vault baseline from Step 3.6, spawn knowledge-liaison/analyst/architect/scanner/specialist agents in parallel
 - **Stage 1**: Analyst completes Change Set → Gate #1 → Architect drafts specs → Gate #2
 - **Stage 2**: Parallel builders (1 per independent partition) + paired reviewers + gap loop
 - **Stage 3**: Closer finalizes, dispatches writer for captures, shutdown

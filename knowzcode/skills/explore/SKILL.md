@@ -98,6 +98,8 @@ If file doesn't exist, use defaults. Other config settings (`max_builders`, `def
 
 ### MCP Probe
 
+If `MCP_AGENTS_ENABLED = false` (from Step 3.5, e.g. `--no-mcp`), skip the MCP Probe and Step 4.1 entirely. Set `MCP_ACTIVE = false`, `VAULTS_CONFIGURED = false`, `VAULT_BASELINE = null`.
+
 Before spawning agents, determine vault availability:
 1. Read `knowzcode/knowzcode_vaults.md` — partition entries into CONFIGURED (non-empty ID) and UNCREATED (empty ID)
 2. Call `list_vaults(includeStats=true)` **always** — regardless of whether any IDs exist in the file
@@ -134,7 +136,27 @@ Before spawning agents, determine vault availability:
    - `VAULTS_CONFIGURED = true` if at least 1 vault now has a valid ID, else `false`
    - Announce: `**MCP Status: Connected — N vault(s) available**` or `**MCP Status: Connected — no vaults configured (knowledge capture disabled)**`
 
-> **Vault research is mandatory when available.** If `VAULTS_CONFIGURED = true` and `MCP_AGENTS_ENABLED = true`, the knowledge-liaison MUST dispatch vault reader subagents in both Exploration and Planning modes. Only skip vault queries when MCP is genuinely unavailable (`MCP_ACTIVE = false`).
+> **Vault research is mandatory when available.** The lead performs baseline vault queries directly (Step 4.1) whenever `VAULTS_CONFIGURED = true` and `MCP_ACTIVE = true` — this is the guaranteed minimum. When agents are available, the knowledge-liaison performs deeper targeted queries beyond the baseline. Only skip all vault queries when MCP is genuinely unavailable (`MCP_ACTIVE = false`).
+
+### Step 4.1: Baseline Vault Query (Lead-Direct)
+
+If `VAULTS_CONFIGURED = true` AND `MCP_ACTIVE = true`, the lead performs baseline vault queries directly BEFORE spawning any agents. This ensures vault context is available regardless of agent availability.
+
+1. Using vault configuration from the MCP Probe above (already loaded), resolve configured vault IDs and types.
+2. For each configured vault, call `search_knowledge({vault_id}, "past decisions, conventions, patterns related to {topic}")`.
+   - For `finalizations`-type vaults: `search_knowledge({vault_id}, "past work related to {topic}")`.
+   - One broad query per vault — the goal is baseline coverage, not exhaustive research.
+3. Store all results as `VAULT_BASELINE`:
+   ```
+   VAULT_BASELINE:
+   - {vault_name} ({vault_type}): {summary of results, or "No relevant results found"}
+   ```
+4. **Failure handling**: If `search_knowledge` fails for a vault, log the failure and continue with remaining vaults. A partial baseline is better than none. If ALL queries fail, set `VAULT_BASELINE = "Vault queries failed — MCP may be degraded"` and continue.
+5. Announce: `**Vault Baseline: {N} vault(s) queried — {M} results found**`
+
+If `VAULTS_CONFIGURED = false` OR `MCP_ACTIVE = false`, set `VAULT_BASELINE = null` and skip this step.
+
+> **This step is non-skippable when MCP is available.** It runs before agent spawning and does not depend on agent availability.
 
 ### Agent Teams Mode
 
@@ -153,7 +175,8 @@ Spawn teammates with their task IDs:
    > Read `knowzcode/claude_code_execution.md` for team conventions.
    > **Goal**: Research "{topic}" — gather local context and vault knowledge.
    > **Vault config**: `knowzcode/knowzcode_vaults.md`
-   > **Context gathering**: Read local context directly (specs, workgroups, tracker, architecture) using Read/Glob tools. Dispatch vault reader subagents in parallel for vault knowledge (past decisions, conventions, patterns).
+   > **Lead Vault Baseline**: {VAULT_BASELINE or "No baseline — MCP not available or no vaults configured"}
+   > **Context gathering**: Read local context directly (specs, workgroups, tracker, architecture) using Read/Glob tools. If baseline results are provided above, skip broad vault queries and dispatch deeper targeted research instead. If no baseline, perform full vault queries per your startup sequence.
    > **Deliverable**: Push Context Briefing to analyst and architect with local + vault findings.
 
 2. Spawn `analyst` teammate:
@@ -228,7 +251,7 @@ Wait for all to complete, then synthesize in Step 5.
 Delegate to up to four agents in parallel via `Task()`:
 
 1. **knowledge-liaison** — Local context + vault knowledge:
-   - `Task(subagent_type="knowzcode:knowledge-liaison", description="Context & vault research for {topic}", prompt="Read agents/knowledge-liaison.md for your full role definition. Goal: Research \"{topic}\" — gather local context and vault knowledge. Vault config: knowzcode/knowzcode_vaults.md. Read local context files directly (specs, workgroups, tracker, architecture) using Read and Glob tools. Dispatch vault reader subagents in parallel for vault knowledge (past decisions, conventions, patterns). Return consolidated Context Briefing with local + vault findings.")`
+   - `Task(subagent_type="knowzcode:knowledge-liaison", description="Context & vault research for {topic}", prompt="Read agents/knowledge-liaison.md for your full role definition. Goal: Research \"{topic}\" — gather local context and vault knowledge. Vault config: knowzcode/knowzcode_vaults.md. Lead Vault Baseline: {VAULT_BASELINE or 'No baseline — MCP not available or no vaults configured'}. Read local context files directly (specs, workgroups, tracker, architecture) using Read and Glob tools. If baseline results are provided, skip broad vault queries and dispatch deeper targeted research instead. If no baseline, perform full vault queries per your startup sequence. Return consolidated Context Briefing with local + vault findings.")`
 
 2. **analyst** — Code exploration / Impact analysis:
    - `subagent_type`: `"analyst"`
@@ -263,9 +286,33 @@ Delegate to up to four agents in parallel via `Task()`:
    - `prompt`: Research "{topic}" from a **security and quality** angle. Read `agents/reviewer.md` for your full role definition. Investigate: risks, performance concerns, quality gaps. Write findings to a detailed summary.
    - `description`: `"Explore research: security and quality"`
 
+### Solo Mode (No Agents Available)
+
+If BOTH TeamCreate fails AND Task() is unavailable or fails, the lead performs all research directly:
+
+1. Announce: `**Execution Mode: Solo** — Agent Teams and Subagent Delegation not available, lead performing research directly`
+
+2. **Vault knowledge**: Already available from Step 4.1 (`VAULT_BASELINE`). If deeper vault queries are needed for specific aspects:
+   - Call `search_knowledge({vault_id}, "{specific_aspect_of_topic}")` for targeted follow-ups.
+   - Call `ask_question({vault_id}, "{question_about_topic}")` for synthesized answers.
+
+3. **Local context** (lead reads directly):
+   - `Glob("knowzcode/specs/*.md")` — scan for related specs
+   - `Read("knowzcode/knowzcode_architecture.md")` — architecture context
+   - `Read("knowzcode/knowzcode_project.md")` — project standards
+   - `Glob("knowzcode/workgroups/*.md")` — prior WorkGroups
+   - `Read("knowzcode/knowzcode_tracker.md")` — active WIP, REFACTOR tasks
+
+4. **Codebase exploration** (lead reads directly):
+   - Grep for topic-related keywords across source files
+   - Read top affected files to understand patterns and dependencies
+   - Check test coverage for the topic area
+
+5. Proceed to Step 5 (Synthesis) with `VAULT_BASELINE` + local findings + codebase findings.
+
 ### Project Management Analysis (Planning Mode Only)
 
-**After** spawning agents and **before** synthesizing findings, the lead performs project management research directly:
+**After** spawning agents (or completing Solo Mode research) and **before** synthesizing findings, the lead performs project management research directly:
 
 1. Read `knowzcode/knowzcode_tracker.md` for WIP conflicts (overlapping NodeIDs/files)
 2. Read `knowzcode/knowzcode_tracker.md` for related REFACTOR tasks to bundle
@@ -292,10 +339,11 @@ Present findings inline (no file saved):
 ### Security & Quality
 {summarized findings from reviewer}
 
-### Existing Knowledge (from knowledge-liaison)
+### Existing Knowledge
 - **Relevant Specs**: {list or "None found"}
 - **Prior WorkGroups**: {list or "None found"}
-- **Vault Knowledge**: {list or "N/A — MCP not configured"}
+- **Vault Knowledge (Baseline)**: {VAULT_BASELINE results or "N/A — MCP not configured"}
+- **Vault Knowledge (Deep)**: {knowledge-liaison findings beyond baseline, or "N/A — agents not available" or "N/A — MCP not configured"}
 
 ### Recommended Approaches
 
@@ -339,7 +387,8 @@ Save to `knowzcode/planning/{slug}.md` where slug is derived from the topic (2-4
 {clear statement of what will be built}
 
 ## Prior Knowledge (from vaults)
-{relevant past decisions, conventions, patterns, prior failures}
+**Baseline** (lead-direct): {VAULT_BASELINE results or "N/A — MCP not configured"}
+**Deep research** (knowledge-liaison): {liaison findings beyond baseline, or "N/A — agents not available"}
 
 ## Impact Analysis
 - **Estimated NodeIDs**: {list with descriptions}

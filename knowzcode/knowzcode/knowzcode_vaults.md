@@ -301,7 +301,8 @@ Each architectural entry should include file paths, code references, and enough 
 
 | Agent | Vault Interaction | Purpose |
 |-------|-------------------|---------|
-| `knowledge-liaison` | Routes captures and queries to knowz agents | Single point of vault I/O coordination across all phases |
+| `lead (skill)` | Direct `search_knowledge` calls | Baseline vault queries — guaranteed minimum vault context before agents spawn |
+| `knowledge-liaison` | Routes captures and deep queries to knowz agents | Deeper vault research beyond the baseline and all vault write coordination |
 | `knowz:reader` | Read all configured vaults | Find past decisions, conventions, patterns (dispatched by knowledge-liaison) |
 | `knowz:writer` | Write to matching vaults | Route and capture learnings (dispatched by knowledge-liaison) |
 | `analyst` | Read via knowz:reader | Past decisions + affected code patterns |
@@ -311,6 +312,16 @@ Each architectural entry should include file paths, code references, and enough 
 | `closer` | DMs knowledge-liaison for Phase 3 capture | Finalization learnings |
 
 **Fallback behavior**: If vault routing cannot determine the best vault, agents use the first `ecosystem`-type vault or prompt the user.
+
+### Two-Tier Vault Read Model
+
+Vault reads use a two-tier model to ensure vault context is always available when MCP is connected:
+
+1. **Baseline (lead-direct)**: The lead calls `search_knowledge` directly after the MCP probe, before any agents are spawned. One broad query per configured vault. This provides a guaranteed minimum of vault context for all execution modes — Agent Teams, Subagent Delegation, and Solo Mode.
+
+2. **Deep research (knowledge-liaison)**: When agents are available, the knowledge-liaison dispatches `knowz:reader` subagents for targeted deep-dive queries that build on the baseline. The liaison receives the baseline results in its spawn prompt and focuses on areas the baseline didn't cover.
+
+Vault **writes** remain single-tier — the knowledge-liaison coordinates all writes via `knowz:writer` dispatches.
 
 ---
 
