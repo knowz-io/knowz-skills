@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.6] - 2026-03-28
+
+### Added
+- Mandatory lead-direct baseline vault queries in explore and work skills — lead calls `search_knowledge` per configured vault after MCP probe, before agent spawning
+- Solo Mode fallback in explore skill for when Agent Teams and Subagent Delegation are both unavailable
+- Two-tier vault read model documentation in vault configuration template
+- `--no-mcp` skip guard in explore skill's MCP probe
+- MCP probe and vault creation prompt in work skill's main flow (Step 3.6) covering all tiers
+
+### Changed
+- Knowledge-liaison accepts lead's baseline and performs deeper targeted research instead of repeating broad queries
+- Tier 2 Light Phase 1 references pre-loaded vault baseline instead of optional inline MCP query
+- Consolidated duplicate MCP probes in parallel-orchestration into single Step 3.6 reference
+
 ## [0.8.5] - 2026-03-28
 
 ### Added
