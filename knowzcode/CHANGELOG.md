@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.5] - 2026-03-28
+
+### Added
+- Structured capture requirements, mid-work discovery signals, and architecture documentation depth guidance in vault configuration
+- Ready-to-use single vault entry template for simplified onboarding
+- MCP context check step in Light Mode workflow
+
+### Changed
+- Improved progress capture in Light Mode with duplicate detection via `search_by_title_pattern`
+
 ## [0.8.4] - 2026-03-20
 
 ### Changed

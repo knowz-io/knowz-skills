@@ -9,7 +9,7 @@
       "name": "knowzcode",
       "source": "./knowzcode",
       "description": "KnowzCode - Platform-agnostic AI development methodology with TDD, quality gates, and structured workflows",
-      "version": "0.8.4",
+      "version": "0.8.5",
       "author": { "name": "Alex Headscarf" }
     },
     {
