@@ -238,9 +238,10 @@ When Tier 2 is selected, execute this streamlined workflow instead of the 5-phas
 ### Light Phase 1 (Inline — lead does this, no agent)
 
 1. Quick impact scan: grep for related files, check existing specs
-2. Propose a Change Set (typically 1 NodeID)
-3. Draft a lightweight spec (or reference existing spec if found) — use the 4-section format from `knowzcode_loop.md` section 3.2. Minimum: 1 Rule, 1 Interface, 2 `VERIFY:` statements.
-4. Present combined Change Set + Spec for approval:
+2. **MCP context check** (if MCP is configured): `search_knowledge(vault, "past decisions about {affected_component}")`. If relevant results found, factor them into the Change Set. Skip if MCP is not configured.
+3. Propose a Change Set (typically 1 NodeID)
+4. Draft a lightweight spec (or reference existing spec if found) — use the 4-section format from `knowzcode_loop.md` section 3.2. Minimum: 1 Rule, 1 Interface, 2 `VERIFY:` statements.
+5. Present combined Change Set + Spec for approval:
 
 ```markdown
 ## Light Mode: Change Set + Spec Approval
@@ -258,7 +259,7 @@ When Tier 2 is selected, execute this streamlined workflow instead of the 5-phas
 Approve Change Set and spec to proceed to implementation?
 ```
 
-5. **Autonomous Mode**: If `AUTONOMOUS_MODE = true`, log `[AUTO-APPROVED] Light mode gate` and proceed directly to implementation.
+6. **Autonomous Mode**: If `AUTONOMOUS_MODE = true`, log `[AUTO-APPROVED] Light mode gate` and proceed directly to implementation.
    If `AUTONOMOUS_MODE = false`: If rejected — adjust based on feedback and re-present. If approved:
    - Update `knowzcode_tracker.md` with NodeID status `[WIP]`
    - Pre-implementation commit: `git add knowzcode/ && git commit -m "KnowzCode: Light spec approved for {wgid}"`
@@ -287,7 +288,7 @@ After builder completes successfully:
    ```
 4. Final commit: `git add knowzcode/ <changed files> && git commit -m "feat: {goal} (WorkGroup {wgid})"`
 5. Report completion.
-6. **Progress capture** (if MCP is configured): Read `knowzcode/knowzcode_vaults.md`, resolve vault IDs. Write a brief scope-and-outcome learning to the ecosystem vault via `create_knowledge`. Check for duplicates first via `search_knowledge`.
+6. **Progress capture** (if MCP is configured): Read `knowzcode/knowzcode_vaults.md`, resolve vault IDs. Check for existing entry via `search_by_title_pattern("WorkGroup: {wgid}*")` — update if found, create if not. Then write a WorkGroup completion record to the vault via `create_knowledge` (or `update_knowledge` if entry exists). Also check for duplicates via `search_knowledge` before creating.
 
 **DONE** — 3 agents skipped (analyst, architect, reviewer, closer).
 

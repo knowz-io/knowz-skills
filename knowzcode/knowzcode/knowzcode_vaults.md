@@ -4,6 +4,10 @@ Multi-vault routing configuration for intelligent vault selection based on query
 
 ---
 
+> **REQUIRED STRUCTURE — DO NOT REMOVE**
+>
+> Agents parse the fields below (`**Name**:`, `**ID**:`, `**Type**:`, `**Write Conditions**:`, `**Content Filter**:`) by exact format. Removing or restructuring these fields breaks automated knowledge capture at quality gates. Add supplementary guidance in separate sections below the structured fields — never replace them with prose.
+
 ## Connected Vaults
 
 ### (not created)
@@ -189,19 +193,27 @@ Write vault content as if the reader has no project context — they will find t
 
 ## Single Vault Model
 
-KnowzCode works with a single vault. If only one vault is configured (regardless of its declared type), all reads and writes route to it. This is the recommended starting point:
+KnowzCode works with a single vault. If only one vault is configured (regardless of its declared type), all reads and writes route to it. This is the recommended starting point.
 
-```
-┌──────────────────────────────────────────────────────┐
-│                   KnowzCode Vault                    │
-│                                                      │
-│  Purpose: All learnings, decisions, patterns, etc.   │
-│  Read by: knowz:reader, all agents                     │
-│  Written by: knowz:writer, /knowz save                       │
-│  Code search: Uses local grep/glob (no code vault)   │
-│                                                      │
-└──────────────────────────────────────────────────────┘
-```
+### Ready-to-Use Single Vault Entry
+
+To use a single vault, replace the three default entries in "Connected Vaults" above with this single entry:
+
+````markdown
+### (not created)
+- **Name**: Project Knowledge
+- **ID**:
+- **Type**: ecosystem
+- **Description**: All project learnings — patterns, decisions, conventions, workarounds, security findings, integration details, and completion records. Single vault for all knowledge capture.
+- **Write Conditions**:
+  - After Phase 1A: scope decisions, risk assessment
+  - After Phase 2A: implementation patterns, workarounds, performance insights
+  - After Phase 2B: security findings, quality decisions, audit results
+  - After Phase 3: all learnings — architectural discoveries, conventions, consolidation decisions, completion record
+- **Content Filter**: Pattern:, Workaround:, Performance:, Decision:, Convention:, Security:, Integration:, Scope:, Completion:
+````
+
+> When using a single vault, the Write Routing table still applies for title prefixes and content formatting — agents use the `ecosystem` content filter (`[CONTEXT]/[INSIGHT]/[RATIONALE]/[TAGS]`) for all entries. The `finalizations` content filter (`[GOAL]/[OUTCOME]/[NODES]/[DURATION]/[SUMMARY]/[TAGS]`) is used only for completion records.
 
 **Why start with one vault?**
 - Simpler onboarding — no vault type decisions needed
@@ -230,6 +242,58 @@ You can manually add vaults by editing this file. Use this format:
 - Include example queries that should route to this vault
 - Mention key topics or domains covered
 - Write conditions should reference learning categories from the routing table
+
+> **Customization safety**: When adapting this file for your project:
+> 1. Never remove `**Write Conditions**:` and `**Content Filter**:` fields — agents parse them by exact label
+> 2. Never remove the Write Routing table — it maps learning categories to vault types
+> 3. Add supplementary guidance in new sections below, not by replacing structured fields
+> 4. For single-vault setups, use the ready-to-use entry in "Single Vault Model" above
+
+---
+
+## Supplementary Capture Guidance
+
+> These sections enrich agent capture behavior. They are supplementary — the required structured fields above (`Write Conditions`, `Content Filter`, Write Routing table) must remain intact for automated captures to function.
+
+### Minimum Capture Requirements
+
+Agents MUST capture these categories at quality gates:
+
+| Category | When | What |
+|----------|------|------|
+| Scope decisions | Phase 1A gate | What included/excluded, risk reasoning |
+| Implementation patterns | Phase 2A | Patterns, workarounds, performance from TDD |
+| Security & audit findings | Phase 2B gate | Vulnerabilities, audit gaps, remediation |
+| Conventions established | Phase 3 | New conventions with rationale and examples |
+| Architecture discoveries | Phase 3 | Structural insights, component relationships |
+| Completion record | Phase 3 | Goal, outcome, NodeIDs, duration, learnings |
+
+### Mid-Work Discovery Signals
+
+Agents should watch for these during any phase and queue via knowledge-liaison (`"Consider: {description}"`):
+
+| Signal | Examples |
+|--------|----------|
+| Corrected assumption | "It turns out...", unexpected behavior |
+| Undocumented dependency | Hidden coupling, implicit ordering |
+| Workaround applied | Limitation-driven alternatives |
+| Configuration gotcha | Non-obvious defaults, env-specific settings |
+| Performance finding | Before/after measurements |
+| API quirk | Undocumented behavior, version differences |
+
+When detected, capture immediately — do not defer to finalization. Sessions can end unexpectedly.
+
+### Architecture Documentation Depth
+
+When capturing architectural knowledge, include:
+1. **Component relationships** — how modules interact, dependency direction, data flow
+2. **Design rationale** — why this structure was chosen over alternatives
+3. **Boundary definitions** — what belongs in each layer/module, what does not
+4. **Integration contracts** — API surfaces, event schemas, shared data structures
+5. **Error propagation** — how failures cascade, circuit breaker locations
+6. **Configuration surface** — what is configurable, default values, environment differences
+
+Each architectural entry should include file paths, code references, and enough context to be understood without access to the codebase.
 
 ---
 
