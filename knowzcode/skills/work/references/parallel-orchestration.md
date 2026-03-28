@@ -8,46 +8,7 @@ When Parallel Teams mode is active, follow these 4 stages instead of spawning on
 
 1. Create team `kc-{wgid}`
 2. Read knowzcode context files (lead does initial load for spawn prompts)
-3. **MCP Probe** — determine vault availability BEFORE spawning:
-   a. Read `knowzcode/knowzcode_vaults.md` — partition entries into CONFIGURED (non-empty ID) and UNCREATED (empty ID)
-   b. Call `list_vaults(includeStats=true)` **always** — regardless of whether any IDs exist in the file
-   c. If `list_vaults()` fails:
-      - Check if `knowzcode/knowzcode_vaults.md` has any CONFIGURED entries (non-empty ID)
-      - **If CONFIGURED entries exist**: Set `MCP_ACTIVE = true`, `VAULTS_CONFIGURED = true` — vault agents will verify connectivity independently via their Startup Verification. Announce `**MCP Status: Lead probe failed — delegating verification to vault agents**`. Proceed to Step 4.
-      - **If no CONFIGURED entries** (all empty IDs or no file): Set `MCP_ACTIVE = false`, `VAULTS_CONFIGURED = false`, announce `**MCP Status: Not connected**`. Knowledge-liaison still spawns (Group A, unconditional) but provides local context only.
-   d. If `list_vaults()` succeeds AND UNCREATED list is non-empty → present the **Vault Creation Prompt**:
-
-      ```markdown
-      ## Vault Setup
-
-      Your Knowz API key is valid and MCP is connected, but {N} default vault(s) haven't been created yet.
-      Creating vaults enables knowledge capture throughout the workflow:
-
-      | Vault | Type | Description | Written During |
-      |-------|------|-------------|----------------|
-      ```
-
-      Build table rows dynamically from the UNCREATED entries only. For each uncreated vault, derive the "Written During" column from its Write Conditions field in `knowzcode_vaults.md`. Example rows:
-      - `| Code Patterns | code | Learnings, gotchas, and architecture insights from the codebase | Phase 2A (implementation patterns), Phase 3 (workarounds, performance) |`
-      - `| Ecosystem Knowledge | ecosystem | Business rules, conventions, decisions, and cross-system details | Phase 1A (scope decisions), Phase 2B (security, quality), Phase 3 (conventions) |`
-      - `| Finalizations | finalizations | Final summaries documenting complete execution and outcomes | Phase 3 (completion record) |`
-
-      Then present options:
-      ```
-      Options:
-        **A) Create all {N} vaults** (recommended)
-        **B) Select which to create**
-        **C) Skip** — proceed without vaults (can create later with `/knowz setup`)
-      ```
-
-   e. Handle user selection:
-      - **A**: For each UNCREATED entry, call MCP `create_vault(name, description)`. If `create_vault` is not available, fall back to matching by name against `list_vaults()` results. Update `knowzcode_vaults.md`: fill the ID field with the server-returned vault ID and change the H3 heading from `(not created)` to the vault ID. If creation fails for some vaults, update only successful ones, report failures, and let user decide.
-      - **B**: Ask which vaults to create, then create only selected ones using the same process as A.
-      - **C**: Log `"Vault creation skipped — knowledge capture disabled."` Continue.
-   f. After resolution, set:
-      - `MCP_ACTIVE = true` (MCP works regardless of vault creation outcome)
-      - `VAULTS_CONFIGURED = true` if at least 1 vault now has a valid ID, else `false`
-      - Announce: `**MCP Status: Connected — N vault(s) available**` or `**MCP Status: Connected — no vaults configured (knowledge capture disabled)**`
+3. **MCP & Vault Baseline** — use `MCP_ACTIVE`, `VAULTS_CONFIGURED`, and `VAULT_BASELINE` from Step 3.6 in `work/SKILL.md`. The lead has already completed the MCP probe, vault creation, and baseline vault queries before reaching Stage 0. Do NOT re-run the MCP probe or baseline queries here.
 4. **Spawn Group A**:
    Create tasks first, pre-assign, then spawn with task IDs:
    - Always (knowledge-liaison is unconditional — first agent spawned):
@@ -62,8 +23,8 @@ When Parallel Teams mode is active, follow these 4 stages instead of spawning on
      - `TaskCreate("Scanner: direct codebase scan for {goal}")` → `TaskUpdate(owner: "scanner-direct")`
      - `TaskCreate("Scanner: test coverage scan for {goal}")` → `TaskUpdate(owner: "scanner-tests")`
    Spawn all Group A agents with their `{task-id}` in the spawn prompt (use spawn prompts from [spawn-prompts.md](spawn-prompts.md)).
-   The knowledge-liaison reads local context directly and dispatches vault reader subagents in parallel — no separate scout agents needed.
-5. **Vault status note**: The knowledge-liaison handles vault availability internally. If `VAULTS_CONFIGURED = true`, it dispatches `knowz:reader` for vault research. If `VAULTS_CONFIGURED = false`, it still provides local context (direct reads only). No separate Group B spawn needed.
+   The knowledge-liaison reads local context directly and dispatches vault reader subagents for deeper targeted research (building on the lead's `VAULT_BASELINE`) — no separate scout agents needed.
+5. **Vault status note**: The lead has already performed baseline vault queries (`VAULT_BASELINE`). The knowledge-liaison performs deeper targeted research beyond the baseline. If `VAULTS_CONFIGURED = true`, it dispatches `knowz:reader` for deep-dive queries. If `VAULTS_CONFIGURED = false`, it still provides local context (direct reads only). No separate Group B spawn needed.
 6. **Spawn Group C** (specialist agents — same turn as Group A): If `SPECIALISTS_ENABLED` is non-empty:
    Create tasks first, pre-assign, then spawn with task IDs:
    - If `security-officer` in list: `TaskCreate("Security officer: initial threat scan")` → `TaskUpdate(owner: "security-officer")`
@@ -295,27 +256,19 @@ When creating tasks, model the dependency chain with `addBlockedBy` and pre-assi
 
 When using Sequential Teams (`--sequential`) or Subagent Delegation, follow the traditional one-agent-per-phase flow. For each phase: spawn the agent, create a task, wait for completion, present quality gate, shut down agent, proceed to next phase.
 
-### MCP Probe (Sequential/Subagent)
+### MCP & Vault Baseline (Sequential/Subagent)
 
-Determine vault availability before Phase 1A:
+Use `MCP_ACTIVE`, `VAULTS_CONFIGURED`, and `VAULT_BASELINE` from Step 3.6 in `work/SKILL.md`. The lead has already completed the MCP probe, vault creation, and baseline vault queries before reaching this point. Do NOT re-run the MCP probe or baseline queries here.
 
-1. Read `knowzcode/knowzcode_vaults.md` — check for CONFIGURED entries (non-empty ID)
-2. Attempt `list_vaults(includeStats=true)`
-3. If succeeds AND UNCREATED entries exist → present the **Vault Creation Prompt** (same as Parallel Teams Step 3d). Handle selection identically.
-4. After resolution, announce MCP status to the user:
-   - `list_vaults()` succeeded: `**MCP Status: Connected — N vault(s) available**`
-   - `list_vaults()` failed but configured vaults exist: `**MCP Status: Lead probe failed — closer will verify at Phase 3**`
-   - No configured vaults: `**MCP Status: Not configured**`
-
-The closer agent independently verifies MCP at Phase 3 regardless of this result (see `agents/closer.md` — Startup MCP Verification). This probe is for the user announcement and vault creation opportunity only.
+The closer agent independently verifies MCP at Phase 3 regardless of the lead's probe result (see `agents/closer.md` — Startup MCP Verification).
 
 ### Pre-Phase: Context & Knowledge Research (Sequential/Subagent)
 
 Before spawning the analyst, dispatch the knowledge-liaison for local + vault context:
 
-1. Dispatch knowledge-liaison:
-   - *Sequential Teams*: Spawn as first teammate. Create task `"Context & knowledge: research for {goal}"`. Wait for completion.
-   - *Subagent*: `Task(subagent_type="knowzcode:knowledge-liaison", description="Context & knowledge research", prompt=<liaison spawn prompt from spawn-prompts.md>)`.
+1. Dispatch knowledge-liaison (include `VAULT_BASELINE` in spawn/dispatch prompt):
+   - *Sequential Teams*: Spawn as first teammate. Create task `"Context & knowledge: research for {goal}"`. Wait for completion. Include `VAULT_BASELINE` in the spawn prompt.
+   - *Subagent*: `Task(subagent_type="knowzcode:knowledge-liaison", description="Context & knowledge research", prompt=<liaison spawn prompt from spawn-prompts.md, with VAULT_BASELINE included>)`.
 2. Collect findings from the knowledge-liaison's task summary.
 3. Inject into the analyst spawn prompt as: `> **Context Briefing**: {liaison findings}`.
 
