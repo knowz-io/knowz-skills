@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "knowz": {
+      "type": "http",
+      "url": "https://mcp.knowz.io/mcp",
+      "bearer_token_env_var": "KNOWZ_API_KEY",
+      "note": "Use /knowz-setup or shared Codex MCP config to set X-Project-Path for the current workspace before relying on Knowz tools in a session."
+    }
+  }
+}

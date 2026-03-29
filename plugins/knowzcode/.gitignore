@@ -1,0 +1,63 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+.Trash-*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.tgz
+
+# Logs
+logs/
+*.log
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Coverage
+coverage/
+
+# Build artifacts
+dist/
+build/
+*.min.js
+*.min.css
+
+# AI-generated temporary artifacts
+RELEASE_NOTES_*.md
+*_DRAFT.md
+*_PLANNING.md
+*.scratch.md
+.scratch/
+
+# Local development notes
+CLAUDE.local.md
+
+# Local test installer (output directory — not the scripts)
+.test-install/
+
+# Dev-only slash commands and settings (not shipped)
+.claude/commands/bump-version.md
+.claude/commands/deploy.md
+.claude/settings.json

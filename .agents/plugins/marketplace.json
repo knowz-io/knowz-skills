@@ -1,0 +1,32 @@
+{
+  "name": "knowz-skills",
+  "interface": {
+    "displayName": "Knowz Skills"
+  },
+  "plugins": [
+    {
+      "name": "knowzcode",
+      "source": {
+        "source": "local",
+        "path": "./plugins/knowzcode"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Coding"
+    },
+    {
+      "name": "knowz",
+      "source": {
+        "source": "local",
+        "path": "./plugins/knowz"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

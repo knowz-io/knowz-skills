@@ -28,6 +28,7 @@ const IS_ENTERPRISE = Object.keys(ENTERPRISE_CONFIG).filter(k => !k.startsWith('
 const BRAND = ENTERPRISE_CONFIG.brand || 'Knowz';
 const MCP_ENDPOINT = ENTERPRISE_CONFIG.mcp_endpoint || 'https://mcp.knowz.io/mcp';
 const MCP_DEV_ENDPOINT = IS_ENTERPRISE ? MCP_ENDPOINT : 'https://mcp.dev.knowz.io/mcp';
+const CODEX_BEARER_TOKEN_ENV_VAR = 'KNOWZ_API_KEY';
 
 // ─── Colors ──────────────────────────────────────────────────────────────────
 
@@ -128,6 +129,14 @@ function detectPlatforms(dir) {
 
 function ensureDir(dir) {
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function escapeTomlString(value) {
+  return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 }
 
 function copyDirContents(src, dst) {
@@ -358,45 +367,113 @@ function hasGeminiMcpConfig(settingsPath) {
   } catch { return false; }
 }
 
-// Codex: .mcp.json with servers.knowz
-function writeCodexMcpConfig(mcpJsonPath, apiKey, projectPath, endpoint) {
-  endpoint = endpoint || MCP_ENDPOINT;
-  ensureDir(dirname(mcpJsonPath));
-  let config = {};
-  if (existsSync(mcpJsonPath)) {
-    try { config = JSON.parse(readFileSync(mcpJsonPath, 'utf8')); } catch { config = {}; }
-  }
-  if (!config.servers) config.servers = {};
-  config.servers.knowz = {
-    url: endpoint,
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'X-Project-Path': projectPath,
-    },
-  };
-  writeFileSync(mcpJsonPath, JSON.stringify(config, null, 2) + '\n');
+function getHomeDir() {
+  return process.env.HOME || process.env.USERPROFILE || '~';
 }
 
-function removeCodexMcpConfig(mcpJsonPath) {
-  if (!existsSync(mcpJsonPath)) return false;
+function getCodexConfigPath() {
+  return join(getHomeDir(), '.codex', 'config.toml');
+}
+
+function getTomlTableRegex(tableName) {
+  return new RegExp(
+    `^\\[${escapeRegExp(tableName)}\\]\\r?\\n(?:^(?!\\[).*(?:\\r?\\n|$))*`,
+    'm'
+  );
+}
+
+function upsertTomlTable(content, tableName, block) {
+  const regex = getTomlTableRegex(tableName);
+  if (regex.test(content)) {
+    return content.replace(regex, block);
+  }
+  const trimmed = content.trimEnd();
+  return trimmed ? `${trimmed}\n\n${block}` : block;
+}
+
+function removeTomlTable(content, tableName) {
+  const regex = getTomlTableRegex(tableName);
+  const next = content.replace(regex, '').replace(/\n{3,}/g, '\n\n').trimEnd();
+  return next ? `${next}\n` : '';
+}
+
+function parseCodexMcpConfig(configPath) {
+  if (!existsSync(configPath)) return null;
   try {
-    const config = JSON.parse(readFileSync(mcpJsonPath, 'utf8'));
-    if (config.servers && config.servers.knowz) {
+    const content = readFileSync(configPath, 'utf8');
+    const match = content.match(getTomlTableRegex('mcp_servers.knowz'));
+    if (!match) return null;
+    const block = match[0];
+    return {
+      url: block.match(/^\s*url\s*=\s*"([^"]+)"/m)?.[1] || null,
+      bearerTokenEnvVar: block.match(/^\s*bearer_token_env_var\s*=\s*"([^"]+)"/m)?.[1] || null,
+      projectPath: block.match(/^\s*http_headers\s*=\s*\{[^}]*X-Project-Path\s*=\s*"([^"]+)"[^}]*\}/m)?.[1] || null,
+      rawBlock: block,
+    };
+  } catch {
+    return null;
+  }
+}
+
+// Codex: shared ~/.codex/config.toml entry under [mcp_servers.knowz]
+function writeCodexMcpConfig(configPath, projectPath, endpoint, tokenEnvVar = CODEX_BEARER_TOKEN_ENV_VAR) {
+  endpoint = endpoint || MCP_ENDPOINT;
+  ensureDir(dirname(configPath));
+  const existing = existsSync(configPath) ? readFileSync(configPath, 'utf8') : '';
+  const block = [
+    '[mcp_servers.knowz]',
+    `url = "${escapeTomlString(endpoint)}"`,
+    `bearer_token_env_var = "${escapeTomlString(tokenEnvVar)}"`,
+    `http_headers = { X-Project-Path = "${escapeTomlString(projectPath)}" }`,
+    '',
+  ].join('\n');
+  writeFileSync(configPath, upsertTomlTable(existing, 'mcp_servers.knowz', block));
+}
+
+function removeCodexMcpConfig(configPath) {
+  if (!existsSync(configPath)) return false;
+  const existing = readFileSync(configPath, 'utf8');
+  const next = removeTomlTable(existing, 'mcp_servers.knowz');
+  if (existing === next) return false;
+  writeFileSync(configPath, next);
+  return true;
+}
+
+function hasCodexMcpConfig(configPath) {
+  return !!parseCodexMcpConfig(configPath);
+}
+
+function hasLegacyProjectCodexMcpConfig(configPath) {
+  if (!existsSync(configPath)) return false;
+  try {
+    const config = JSON.parse(readFileSync(configPath, 'utf8'));
+    return !!(config.servers?.knowz || config.mcpServers?.knowz);
+  } catch {
+    return false;
+  }
+}
+
+function removeLegacyProjectCodexMcpConfig(configPath) {
+  if (!existsSync(configPath)) return false;
+  try {
+    const config = JSON.parse(readFileSync(configPath, 'utf8'));
+    let changed = false;
+    if (config.servers?.knowz) {
       delete config.servers.knowz;
       if (Object.keys(config.servers).length === 0) delete config.servers;
-      writeFileSync(mcpJsonPath, JSON.stringify(config, null, 2) + '\n');
+      changed = true;
+    }
+    if (config.mcpServers?.knowz) {
+      delete config.mcpServers.knowz;
+      if (Object.keys(config.mcpServers).length === 0) delete config.mcpServers;
+      changed = true;
+    }
+    if (changed) {
+      writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n');
       return true;
     }
   } catch { /* ignore */ }
   return false;
-}
-
-function hasCodexMcpConfig(mcpJsonPath) {
-  if (!existsSync(mcpJsonPath)) return false;
-  try {
-    const config = JSON.parse(readFileSync(mcpJsonPath, 'utf8'));
-    return !!(config.servers && config.servers.knowz);
-  } catch { return false; }
 }
 
 // Cross-format API key extraction — checks both mcpServers.knowz and servers.knowz
@@ -429,6 +506,18 @@ function discoverApiKey(dir) {
   // 2. KNOWZ_API_KEY env var
   const envKey = process.env.KNOWZ_API_KEY?.trim();
   if (envKey) return { key: envKey, source: 'KNOWZ_API_KEY environment variable' };
+
+  // 2.5 Existing Codex shared config paired with an environment variable
+  const codexConfig = parseCodexMcpConfig(getCodexConfigPath());
+  if (codexConfig?.bearerTokenEnvVar) {
+    const configuredEnvKey = process.env[codexConfig.bearerTokenEnvVar]?.trim();
+    if (configuredEnvKey) {
+      return {
+        key: configuredEnvKey,
+        source: `Codex shared config (${codexConfig.bearerTokenEnvVar})`,
+      };
+    }
+  }
 
   // 3. Cross-platform configs
   const crossPlatformSources = [
@@ -602,10 +691,10 @@ async function configureMcp(dir, selectedPlatforms, opts) {
 
   // Check for existing config
   const geminiSettingsPath = join(dir, '.gemini', 'settings.json');
-  const mcpJsonPath = join(dir, '.mcp.json');
+  const codexConfigPath = getCodexConfigPath();
 
   const geminiConfigured = needsGemini && hasGeminiMcpConfig(geminiSettingsPath);
-  const codexConfigured = needsCodex && hasCodexMcpConfig(mcpJsonPath);
+  const codexConfigured = needsCodex && hasCodexMcpConfig(codexConfigPath);
 
   if (geminiConfigured && codexConfigured) {
     log.info('MCP already configured for all selected platforms');
@@ -624,8 +713,10 @@ async function configureMcp(dir, selectedPlatforms, opts) {
   if (opts.mcpKey) {
     const endpoint = opts.mcpEndpoint || MCP_ENDPOINT;
     if (needsCodex && !codexConfigured) {
-      writeCodexMcpConfig(mcpJsonPath, opts.mcpKey, dir, endpoint);
-      log.ok(`Codex MCP configured with API key in .mcp.json (${endpoint})`);
+      process.env[CODEX_BEARER_TOKEN_ENV_VAR] = opts.mcpKey;
+      writeCodexMcpConfig(codexConfigPath, dir, endpoint);
+      log.ok(`Codex MCP configured in ${codexConfigPath} (${endpoint})`);
+      log.info(`Persist ${CODEX_BEARER_TOKEN_ENV_VAR} in your shell before starting Codex.`);
     }
     if (needsGemini && !geminiConfigured) {
       writeGeminiMcpConfig(geminiSettingsPath, opts.mcpKey, dir, endpoint);
@@ -653,8 +744,9 @@ async function configureMcp(dir, selectedPlatforms, opts) {
     if (reuse) {
       const endpoint = opts.mcpEndpoint || MCP_ENDPOINT;
       if (needsCodex && !codexConfigured) {
-        writeCodexMcpConfig(mcpJsonPath, discovered.key, dir, endpoint);
-        log.ok(`Codex MCP configured with API key in .mcp.json (${endpoint})`);
+        writeCodexMcpConfig(codexConfigPath, dir, endpoint);
+        log.ok(`Codex MCP configured in ${codexConfigPath} (${endpoint})`);
+        log.info(`Ensure ${CODEX_BEARER_TOKEN_ENV_VAR} is set before starting Codex.`);
       }
       if (needsGemini && !geminiConfigured) {
         writeGeminiMcpConfig(geminiSettingsPath, discovered.key, dir, endpoint);
@@ -689,8 +781,10 @@ async function configureMcp(dir, selectedPlatforms, opts) {
 
       const endpoint = opts.mcpEndpoint || MCP_ENDPOINT;
       if (needsCodex && !codexConfigured) {
-        writeCodexMcpConfig(mcpJsonPath, key, dir, endpoint);
-        log.ok(`Codex MCP configured with API key in .mcp.json (${endpoint})`);
+        process.env[CODEX_BEARER_TOKEN_ENV_VAR] = key;
+        writeCodexMcpConfig(codexConfigPath, dir, endpoint);
+        log.ok(`Codex MCP configured in ${codexConfigPath} (${endpoint})`);
+        log.info(`Persist ${CODEX_BEARER_TOKEN_ENV_VAR} in your shell before starting Codex.`);
       }
       if (needsGemini && !geminiConfigured) {
         writeGeminiMcpConfig(geminiSettingsPath, key, dir, endpoint);
@@ -701,12 +795,13 @@ async function configureMcp(dir, selectedPlatforms, opts) {
       log.ok(`Gemini MCP configured with OAuth in .gemini/settings.json (${opts.mcpEndpoint || MCP_ENDPOINT})`);
       log.info('Run /mcp auth knowz in Gemini CLI to complete authentication.');
       if (needsCodex) {
-        log.warn('Codex requires an API key for MCP — skipping Codex MCP config');
+        log.warn('Codex shared config is API-key based in this installer; skipping Codex MCP config');
         log.info('Run: npx knowz-mcp install --mcp-key <key> --platforms codex');
       }
     } else {
       log.info('Skipping MCP configuration. Configure later with:');
-      log.info('  npx knowz-mcp install --mcp-key <key> --platforms codex,gemini');
+      log.info(`  codex mcp add knowz --url ${opts.mcpEndpoint || MCP_ENDPOINT} --bearer-token-env-var ${CODEX_BEARER_TOKEN_ENV_VAR}`);
+      log.info('  npx knowz-mcp install --mcp-key <key> --platforms gemini');
     }
   }
 
@@ -742,9 +837,20 @@ function cmdDetect(opts) {
   console.log('');
   console.log(`  ${c.bold}MCP Config:${c.reset}`);
   const geminiPath = join(dir, '.gemini', 'settings.json');
-  const mcpJsonPath = join(dir, '.mcp.json');
+  const codexConfigPath = getCodexConfigPath();
+  const legacyCodexProjectPath = join(dir, '.mcp.json');
+  const codexConfig = parseCodexMcpConfig(codexConfigPath);
   console.log(`  Gemini (.gemini/settings.json): ${hasGeminiMcpConfig(geminiPath) ? c.green + 'configured' + c.reset : c.dim + 'not configured' + c.reset}`);
-  console.log(`  Codex (.mcp.json):              ${hasCodexMcpConfig(mcpJsonPath) ? c.green + 'configured' + c.reset : c.dim + 'not configured' + c.reset}`);
+  console.log(`  Codex (${codexConfigPath}): ${codexConfig ? c.green + 'configured' + c.reset : c.dim + 'not configured' + c.reset}`);
+  if (codexConfig?.bearerTokenEnvVar) {
+    const envStatus = process.env[codexConfig.bearerTokenEnvVar]?.trim()
+      ? c.green + 'set' + c.reset
+      : c.yellow + 'not set' + c.reset;
+    console.log(`  Codex token env (${codexConfig.bearerTokenEnvVar}): ${envStatus}`);
+  }
+  if (hasLegacyProjectCodexMcpConfig(legacyCodexProjectPath)) {
+    console.log(`  Legacy Codex (.mcp.json):      ${c.yellow}detected${c.reset}`);
+  }
 
   if (hasKnowzCode(dir)) {
     console.log('');
@@ -831,7 +937,8 @@ async function cmdInstall(opts) {
     console.log('    Claude Code: /knowz register  or  /knowz setup <api-key>');
   }
   if (selectedPlatforms.includes('codex')) {
-    console.log('    Codex:       /knowz-setup  or  set KNOWZ_API_KEY env var');
+    console.log(`    Codex:       codex mcp add knowz --url ${opts.mcpEndpoint || MCP_ENDPOINT} --bearer-token-env-var ${CODEX_BEARER_TOKEN_ENV_VAR}`);
+    console.log(`                  then set ${CODEX_BEARER_TOKEN_ENV_VAR} and restart Codex`);
   }
   if (selectedPlatforms.includes('gemini')) {
     console.log('    Gemini:      /knowz-setup  or  /mcp auth knowz');
@@ -907,9 +1014,13 @@ async function cmdUninstall(opts) {
   if (removeGeminiMcpConfig(geminiSettingsProject)) {
     removed.push('Gemini MCP config (.gemini/settings.json)');
   }
-  const mcpJsonPath = join(dir, '.mcp.json');
-  if (removeCodexMcpConfig(mcpJsonPath)) {
-    removed.push('Codex MCP config (.mcp.json)');
+  const codexConfigPath = getCodexConfigPath();
+  if (removeCodexMcpConfig(codexConfigPath)) {
+    removed.push(`Codex MCP config (${codexConfigPath})`);
+  }
+  const legacyCodexProjectPath = join(dir, '.mcp.json');
+  if (removeLegacyProjectCodexMcpConfig(legacyCodexProjectPath)) {
+    removed.push('Legacy Codex MCP config (.mcp.json)');
   }
 
   if (removed.length === 0) {
@@ -1010,6 +1121,22 @@ async function cmdUpgrade(opts) {
       } catch { /* ignore */ }
     }
   }
+  const codexConfigPath = getCodexConfigPath();
+  if (hasCodexMcpConfig(codexConfigPath)) {
+    log.info(`Preserved: Codex MCP config (${codexConfigPath})`);
+    if (opts.mcpEndpoint) {
+      const codexConfig = parseCodexMcpConfig(codexConfigPath);
+      if (codexConfig?.url && codexConfig.url !== opts.mcpEndpoint) {
+        writeCodexMcpConfig(
+          codexConfigPath,
+          codexConfig.projectPath || dir,
+          opts.mcpEndpoint,
+          codexConfig.bearerTokenEnvVar || CODEX_BEARER_TOKEN_ENV_VAR
+        );
+        log.ok(`Updated Codex MCP endpoint to ${opts.mcpEndpoint}`);
+      }
+    }
+  }
 
   console.log('');
   console.log(`${c.green}${c.bold}${BRAND} MCP upgraded to v${VERSION}${c.reset}`);
@@ -1025,7 +1152,7 @@ ${c.bold}Usage:${c.reset}
   npx knowz-mcp <command> [options]
 
 ${c.bold}Commands:${c.reset}
-  install       Install skills, agents, and MCP config for detected platforms
+  install       Install skills plus shared/project MCP config for detected platforms
   uninstall     Remove all installed components (preserves user data)
   upgrade       Update skills/agents to latest version (preserves MCP config)
   detect        Show detected platforms and installation status
@@ -1035,7 +1162,7 @@ ${c.bold}Options:${c.reset}
   --platforms <list>   Comma-separated: claude,codex,gemini,all
   --mcp-key <key>      API key for MCP server configuration
   --mcp-endpoint <url> Custom MCP server endpoint
-  --global             Install to user-level dirs (~/.claude/, ~/.agents/skills/, ~/.gemini/skills/)
+  --global             Install to user-level dirs (~/.claude/, ~/.agents/skills/, ~/.gemini/commands/)
   --force              Overwrite existing installation without prompting
   --version, -v        Show version
   --help, -h           Show this help
@@ -1050,7 +1177,8 @@ ${c.bold}Examples:${c.reset}
 
 ${c.bold}After installation:${c.reset}
   Claude Code:  /knowz register  or  /knowz setup <api-key>
-  Codex:        /knowz-setup     or  set KNOWZ_API_KEY env var
+  Codex:        codex mcp add knowz --url ${MCP_ENDPOINT} --bearer-token-env-var ${CODEX_BEARER_TOKEN_ENV_VAR}
+                set ${CODEX_BEARER_TOKEN_ENV_VAR} and restart Codex
   Gemini:       /knowz-setup     or  /mcp auth knowz
 `);
 }
@@ -1092,3 +1220,4 @@ main().catch((err) => {
   log.err(err.message);
   process.exit(1);
 });
+

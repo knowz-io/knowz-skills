@@ -1,0 +1,42 @@
+{
+  "name": "knowz",
+  "version": "0.6.0",
+  "description": "Frictionless knowledge management via the Knowz MCP server for Codex.",
+  "author": {
+    "name": "Alex Headscarf",
+    "email": "alexheadscarf@gmail.com",
+    "url": "https://github.com/knowz-io"
+  },
+  "homepage": "https://github.com/knowz-io/knowz-skills/tree/main/knowz",
+  "repository": "https://github.com/knowz-io/knowz-skills",
+  "license": "MIT",
+  "keywords": [
+    "knowledge",
+    "knowz",
+    "mcp",
+    "vaults",
+    "semantic-search",
+    "codex"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Knowz",
+    "shortDescription": "Query and capture knowledge across Knowz vaults",
+    "longDescription": "Bring Knowz knowledge management into Codex with vault-aware skills for asking questions, searching prior art, capturing decisions, browsing topics, and configuring shared Codex MCP access.",
+    "developerName": "Knowz",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/knowz-io/knowz-skills",
+    "defaultPrompt": [
+      "Search our Knowz vaults for prior art on this feature",
+      "Save this implementation decision to the right Knowz vault",
+      "Help configure the Knowz MCP connection for Codex"
+    ],
+    "screenshots": [],
+    "brandColor": "#0F766E"
+  }
+}
