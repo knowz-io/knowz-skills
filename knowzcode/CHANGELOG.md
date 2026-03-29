@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-03-28
+
+### Added
+- Enterprise white-label configuration via optional `enterprise.json` — self-hosted deployments can customize MCP endpoints, API endpoints, and brand name
+- Enterprise config support in CLI installer with automatic environment selection bypass
+
 ## [0.8.6] - 2026-03-28
 
 ### Added
