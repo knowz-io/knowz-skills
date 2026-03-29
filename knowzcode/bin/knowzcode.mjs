@@ -13,6 +13,23 @@ const __dirname = dirname(__filename);
 const PKG_ROOT = resolve(__dirname, '..');
 const VERSION = JSON.parse(readFileSync(join(PKG_ROOT, 'package.json'), 'utf8')).version;
 
+// ─── Enterprise Configuration ────────────────────────────────────────────────
+
+const ENTERPRISE_CONFIG = (() => {
+  const configPath = join(PKG_ROOT, 'enterprise.json');
+  if (existsSync(configPath)) {
+    try { return JSON.parse(readFileSync(configPath, 'utf8')); }
+    catch { return {}; }
+  }
+  return {};
+})();
+
+const IS_ENTERPRISE = Object.keys(ENTERPRISE_CONFIG).filter(k => !k.startsWith('_')).length > 0;
+const BRAND = ENTERPRISE_CONFIG.brand || 'Knowz';
+const MCP_ENDPOINT = ENTERPRISE_CONFIG.mcp_endpoint || 'https://mcp.knowz.io/mcp';
+// In enterprise mode, dev endpoint collapses to the enterprise endpoint (single environment)
+const MCP_DEV_ENDPOINT = IS_ENTERPRISE ? MCP_ENDPOINT : 'https://mcp.dev.knowz.io/mcp';
+
 // ─── Colors ──────────────────────────────────────────────────────────────────
 
 const c = {
@@ -433,7 +450,7 @@ function removeMarketplaceConfig(claudeDir) {
 // ─── Gemini MCP Config Helpers ────────────────────────────────────────────────
 
 function writeGeminiMcpConfig(settingsPath, apiKey, projectPath, endpoint) {
-  endpoint = endpoint || 'https://mcp.knowz.io/mcp';
+  endpoint = endpoint || MCP_ENDPOINT;
   ensureDir(dirname(settingsPath));
   let settings = {};
   if (existsSync(settingsPath)) {
@@ -455,7 +472,7 @@ function writeGeminiMcpConfig(settingsPath, apiKey, projectPath, endpoint) {
 }
 
 function writeGeminiMcpOAuthConfig(settingsPath, endpoint) {
-  endpoint = endpoint || 'https://mcp.knowz.io/mcp';
+  endpoint = endpoint || MCP_ENDPOINT;
   ensureDir(dirname(settingsPath));
   let settings = {};
   if (existsSync(settingsPath)) {
@@ -1004,11 +1021,11 @@ async function generateAdapters(dir, selectedPlatforms, opts) {
     if (opts.mcpKey) {
       // --mcp-key flag: explicit API key mode, skip prompts
       writeGeminiMcpConfig(settingsPath, opts.mcpKey, dir, opts.mcpEndpoint);
-      log.ok(`Gemini MCP configured with API key in .gemini/settings.json (${opts.mcpEndpoint || 'https://mcp.knowz.io/mcp'})`);
+      log.ok(`Gemini MCP configured with API key in .gemini/settings.json (${opts.mcpEndpoint || MCP_ENDPOINT})`);
     } else if (opts.force) {
       // --force without --mcp-key: write OAuth config (default)
       writeGeminiMcpOAuthConfig(settingsPath, opts.mcpEndpoint);
-      log.ok(`Gemini MCP configured with OAuth in .gemini/settings.json (${opts.mcpEndpoint || 'https://mcp.knowz.io/mcp'})`);
+      log.ok(`Gemini MCP configured with OAuth in .gemini/settings.json (${opts.mcpEndpoint || MCP_ENDPOINT})`);
       log.info('Run /mcp auth knowz in Gemini CLI to complete authentication.');
     } else {
       // Interactive flow (OAuth-first)
@@ -1057,7 +1074,7 @@ async function generateAdapters(dir, selectedPlatforms, opts) {
         const useOAuth = await promptConfirm('Use OAuth? (recommended)', true);
         if (useOAuth) {
           writeGeminiMcpOAuthConfig(settingsPath, opts.mcpEndpoint);
-          log.ok(`Gemini MCP configured with OAuth (${opts.mcpEndpoint || 'https://mcp.knowz.io/mcp'})`);
+          log.ok(`Gemini MCP configured with OAuth (${opts.mcpEndpoint || MCP_ENDPOINT})`);
           log.info('Run /mcp auth knowz in Gemini CLI to complete authentication.');
         } else {
           // Fall back to API key entry
@@ -1068,17 +1085,17 @@ async function generateAdapters(dir, selectedPlatforms, opts) {
             const useIt = await promptConfirm('Use this key?', true);
             if (useIt) {
               writeGeminiMcpConfig(settingsPath, discovered.key, dir, opts.mcpEndpoint);
-              log.ok(`Gemini MCP configured with API key in .gemini/settings.json (${opts.mcpEndpoint || 'https://mcp.knowz.io/mcp'})`);
+              log.ok(`Gemini MCP configured with API key in .gemini/settings.json (${opts.mcpEndpoint || MCP_ENDPOINT})`);
               keyDone = true;
             }
           }
           if (!keyDone) {
             const rl = createInterface({ input: process.stdin, output: process.stdout });
-            const apiKey = await rl.question('Enter your KnowzCode API key (or press Enter to skip): ');
+            const apiKey = await rl.question(`Enter your ${BRAND} API key (or press Enter to skip): `);
             rl.close();
             if (apiKey.trim()) {
               writeGeminiMcpConfig(settingsPath, apiKey.trim(), dir, opts.mcpEndpoint);
-              log.ok(`Gemini MCP configured with API key in .gemini/settings.json (${opts.mcpEndpoint || 'https://mcp.knowz.io/mcp'})`);
+              log.ok(`Gemini MCP configured with API key in .gemini/settings.json (${opts.mcpEndpoint || MCP_ENDPOINT})`);
             } else {
               log.warn('No key provided — configure later with /knowz setup.');
             }
@@ -2022,29 +2039,35 @@ async function cmdInteractive(opts) {
   }
 
   if (!opts.mcpEndpoint) {
-    console.log('');
-    console.log(`  ${c.bold}MCP Server Environment${c.reset}`);
-    console.log(`  1) Knowz Production  ${c.dim}(https://mcp.knowz.io/mcp)${c.reset}`);
-    console.log(`  2) Knowz Development ${c.dim}(https://mcp.dev.knowz.io/mcp)${c.reset}`);
-    console.log(`  3) Self-hosted       ${c.dim}(enter custom URL)${c.reset}`);
-    const rl = createInterface({ input: process.stdin, output: process.stdout });
-    const envAnswer = await rl.question(`\n  Select environment ${c.dim}[1]${c.reset}: `);
-    rl.close();
-    const envChoice = envAnswer.trim();
-    if (envChoice === '2') {
-      opts.mcpEndpoint = 'https://mcp.dev.knowz.io/mcp';
-    } else if (envChoice === '3') {
-      const rl2 = createInterface({ input: process.stdin, output: process.stdout });
-      const customUrl = await rl2.question('  Enter MCP server URL: ');
-      rl2.close();
-      if (customUrl.trim()) {
-        opts.mcpEndpoint = customUrl.trim();
-      } else {
-        opts.mcpEndpoint = 'https://mcp.knowz.io/mcp';
-        log.warn('No URL provided — defaulting to production.');
-      }
+    if (IS_ENTERPRISE) {
+      // Enterprise config provides the canonical endpoint — skip environment selection
+      opts.mcpEndpoint = MCP_ENDPOINT;
+      log.info(`Using ${BRAND} MCP endpoint: ${MCP_ENDPOINT}`);
     } else {
-      opts.mcpEndpoint = 'https://mcp.knowz.io/mcp';
+      console.log('');
+      console.log(`  ${c.bold}MCP Server Environment${c.reset}`);
+      console.log(`  1) ${BRAND} Production  ${c.dim}(${MCP_ENDPOINT})${c.reset}`);
+      console.log(`  2) ${BRAND} Development ${c.dim}(${MCP_DEV_ENDPOINT})${c.reset}`);
+      console.log(`  3) Self-hosted       ${c.dim}(enter custom URL)${c.reset}`);
+      const rl = createInterface({ input: process.stdin, output: process.stdout });
+      const envAnswer = await rl.question(`\n  Select environment ${c.dim}[1]${c.reset}: `);
+      rl.close();
+      const envChoice = envAnswer.trim();
+      if (envChoice === '2') {
+        opts.mcpEndpoint = MCP_DEV_ENDPOINT;
+      } else if (envChoice === '3') {
+        const rl2 = createInterface({ input: process.stdin, output: process.stdout });
+        const customUrl = await rl2.question('  Enter MCP server URL: ');
+        rl2.close();
+        if (customUrl.trim()) {
+          opts.mcpEndpoint = customUrl.trim();
+        } else {
+          opts.mcpEndpoint = MCP_ENDPOINT;
+          log.warn('No URL provided — defaulting to production.');
+        }
+      } else {
+        opts.mcpEndpoint = MCP_ENDPOINT;
+      }
     }
     log.ok(`MCP endpoint: ${opts.mcpEndpoint}`);
     console.log('');
