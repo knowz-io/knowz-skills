@@ -107,7 +107,7 @@ Any agent can DM the knowledge-liaison at any time. The knowledge-liaison dispat
 
 ## OpenAI Codex (AGENTS.md)
 
-Create `AGENTS.md` in project root when the repository wants a project-level methodology summary. Notes: `AGENTS.override.md` can be used for user-local overrides. 32KB file size limit. Plain text format (no YAML frontmatter). Codex (2026) also supports `SKILL.md` files for discoverable skills — each skill is a directory containing `SKILL.md` with YAML frontmatter (`name` and `description`). Skills are the command surface; `AGENTS.md` is optional supporting context, not a requirement for Codex packaging.
+Create `AGENTS.md` in project root. Notes: `AGENTS.override.md` can be used for user-local overrides. 32KB file size limit. Plain text format (no YAML frontmatter). Codex (2026) also supports `SKILL.md` files for discoverable skills — each skill is a directory containing `SKILL.md` with YAML frontmatter (`name` and `description`). Skills go in `.agents/skills/` (repo-level) or `~/.agents/skills/` (user-level). `AGENTS.md` remains the primary instruction mechanism for KnowzCode methodology.
 
 ```markdown
 # KnowzCode Development Methodology
@@ -588,32 +588,45 @@ Report configured sources and their status.
 
 ### Codex MCP Configuration
 
-For Codex, prefer shared MCP configuration instead of project-local `.mcp.json`.
+To configure MCP for Codex, add a `.mcp.json` file in the project root (or set the `KNOWZ_API_KEY` environment variable):
 
-Preferred command:
-
-```bash
-codex mcp add knowz --url https://mcp.knowz.io/mcp --bearer-token-env-var KNOWZ_API_KEY
+```json
+{
+  "servers": {
+    "knowz": {
+      "url": "https://mcp.knowz.io/mcp",
+      "headers": {
+        "Authorization": "Bearer <api-key>",
+        "X-Project-Path": "<project-path>"
+      }
+    }
+  }
+}
 ```
 
-Equivalent `~/.codex/config.toml` block:
-
-```toml
-[mcp_servers.knowz]
-url = "https://mcp.knowz.io/mcp"
-bearer_token_env_var = "KNOWZ_API_KEY"
-http_headers = { X-Project-Path = "<absolute-project-path>" }
-```
-
-`/knowz setup` should discover existing shared Codex config, `KNOWZ_API_KEY`, and legacy platform configs automatically. Do not invent unverified Codex auth fields.
+If `KNOWZ_API_KEY` is set as an environment variable, `/knowz setup` will discover it automatically. Run `/knowz register` to create an account and configure MCP in one step.
 
 ### Codex Agent Definitions (`.agents/agents/`)
 
-Do not treat `.agents/agents/` as part of the supported Codex package surface for KnowzCode.
+Codex (2026) supports agent definitions in `.agents/agents/`. Each agent is an `.md` file with YAML frontmatter (`name`, `description`). These mirror the Gemini subagent structure.
 
-If a future Codex surface needs agent definitions, add them intentionally and validate them separately. Until then, keep Codex packaging focused on discoverable skills plus the `knowzcode/` support files those skills read.
+> **Note:** Codex agent support is experimental and may vary by platform version. If agents are not supported, the `AGENTS.md` methodology instructions serve as the primary guidance.
 
-When Codex workflows need parallel or delegated execution, use the Codex runtime's native delegation model instead of assuming Claude-style team APIs.
+Agent definitions follow the same structure as [Gemini Subagents](#gemini-subagents-geminiagents--experimental) — generate with the same file content but place in `.agents/agents/knowzcode-*.md` instead of `.gemini/agents/knowzcode-*.md`. The 14 agent files are:
+
+```
+.agents/agents/knowzcode-analyst.md
+.agents/agents/knowzcode-architect.md
+.agents/agents/knowzcode-builder.md
+.agents/agents/knowzcode-reviewer.md
+.agents/agents/knowzcode-closer.md
+.agents/agents/knowzcode-microfix.md
+.agents/agents/knowzcode-knowledge-migrator.md
+.agents/agents/knowzcode-update-coordinator.md
+.agents/agents/knowzcode-security-officer.md
+.agents/agents/knowzcode-test-advisor.md
+.agents/agents/knowzcode-project-advisor.md
+```
 
 ---
 
