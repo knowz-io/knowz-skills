@@ -52,6 +52,7 @@ Determine if the user's message is a **query** or a **save candidate**:
 - "The workaround is...", "The trick is...", "Important: ..."
 - "Going forward, we should...", "The convention is..."
 - Sharing a lesson learned, a decision rationale, or a useful pattern
+- **Explicit vault-write requests**: "save this to vault", "capture this in knowz", "document this as {type}", "add this to the vault", "put this in knowz", "save as guidelines/decision/pattern", "store this in the vault"
 
 ### Step 3: Match Against Vault Rules
 
@@ -120,3 +121,4 @@ If no vault rules match the message, **do nothing** — this isn't vault-relevan
 - **Don't announce yourself.** Don't say "I'm checking your vaults..." — just include findings naturally or offer to save.
 - **Don't trigger during `/knowz`.** If the user is already using the explicit skill, stay out of the way.
 - **Don't trigger on code instructions.** "Fix this bug", "add a test", "refactor this" are not vault-relevant.
+- **Trigger after skill completions.** This skill SHOULD activate on follow-up messages after other skills (like `/knowzcode:explore`) complete, if the user's message matches save/query signals. The prerequisite "NOT during an explicit `/knowz` command" only excludes active `/knowz` invocations, not other skills.

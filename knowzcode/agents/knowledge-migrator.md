@@ -190,6 +190,7 @@ Generated specs must follow the lean 4-section structure:
 
 **Updated:** {timestamp}
 **Status:** Migrated
+**KnowledgeId:**
 
 ## Rules & Decisions
 - [Extracted decisions, constraints, and purpose from source]

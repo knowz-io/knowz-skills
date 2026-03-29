@@ -53,6 +53,7 @@ For EACH NodeID, update `knowzcode/specs/[NodeID].md`:
 - Update all sections to match actual implementation
 - Always use the 4-section format
 - If migrating from legacy format, rewrite completely
+- **Preserve the `**KnowledgeId:**` field if present** — do not remove or modify it
 
 ### Step 2: Architecture Check
 

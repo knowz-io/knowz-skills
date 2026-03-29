@@ -35,6 +35,7 @@ If `AUTONOMOUS_MODE = false`: If rejected — re-run analyst with user feedback.
 
 **Lead responsibility.** After gate approval, the lead triggers progress capture. If vaults are configured and knowledge-liaison is active:
 - DM knowledge-liaison: `"Capture Phase 1A: {wgid}. Your task: #{task-id}"`
+- Include the WorkGroup file's `**KnowledgeId:**` value (if present) so knowledge-liaison can pass it to knowz:writer for update mode
 - The knowledge-liaison owns extraction, vault routing, and writer dispatch (see `agents/knowledge-liaison.md` — Phase Extraction Guide)
 
 ---
@@ -77,6 +78,7 @@ When complete, present implementation summary including files changed, tests wri
 
 **Lead responsibility.** After Phase 2A completion, the lead triggers progress capture. If vaults are configured and knowledge-liaison is active:
 - DM knowledge-liaison: `"Capture Phase 2A: {wgid}. Your task: #{task-id}"`
+- Include the WorkGroup file's `**KnowledgeId:**` value (if present) so knowledge-liaison can pass it to knowz:writer for update mode
 - The knowledge-liaison owns extraction, vault routing, and writer dispatch (see `agents/knowledge-liaison.md` — Phase Extraction Guide)
 
 ---
@@ -142,6 +144,7 @@ Launch parallel `Task()` calls — one for gap fix (builder), then one for re-au
 
 **Lead responsibility.** After gate approval, the lead triggers progress capture. If vaults are configured and knowledge-liaison is active:
 - DM knowledge-liaison: `"Capture Phase 2B: {wgid}. Your task: #{task-id}"`
+- Include the WorkGroup file's `**KnowledgeId:**` value (if present) so knowledge-liaison can pass it to knowz:writer for update mode
 - The knowledge-liaison owns extraction, vault routing, and writer dispatch (see `agents/knowledge-liaison.md` — Phase Extraction Guide)
 
 ---
@@ -149,7 +152,7 @@ Launch parallel `Task()` calls — one for gap fix (builder), then one for re-au
 ## Phase 3 Output
 
 When complete, if MCP is configured, vaults are available, and knowledge-liaison is active:
-- The closer DMs knowledge-liaison: `"Capture Phase 3: {wgid}. Your task: #{task-id}"`. The knowledge-liaison dispatches `knowz:writer` for Phase 3 capture. The lead waits for the writer task to complete before shutdown.
+- The closer DMs knowledge-liaison: `"Capture Phase 3: {wgid}. Your task: #{task-id}"`. Include the WorkGroup and spec files' `**KnowledgeId:**` values if present. The knowledge-liaison dispatches `knowz:writer` for Phase 3 capture. The lead waits for the writer task to complete before shutdown.
 
 Update workgroup to "Closed" and report:
 

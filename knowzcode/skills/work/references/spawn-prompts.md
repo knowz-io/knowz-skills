@@ -63,6 +63,7 @@ Two temporary agents that scan the codebase in parallel with the analyst, broadc
 > **Lifecycle**: You persist from Stage 0 through team shutdown. You are the last agent shut down before team cleanup.
 > **Context gathering**: At startup, read local context directly and dispatch vault reader subagents in parallel (see `agents/knowledge-liaison.md` Startup). If baseline results are provided above, skip broad vault queries and dispatch deeper targeted research instead. If no baseline, perform full vault queries per your startup sequence. Push Context Briefing to analyst and architect.
 > **Ongoing**: Accept capture DMs from the lead (at quality gates) and closer (Phase 3). Accept `"Log: ..."` and `"Consider: ..."` from any agent. Accept `"VaultQuery: ..."` from any agent. Dispatch `knowz:writer` and `knowz:reader` as needed.
+> **KnowledgeId sync**: When dispatching `knowz:writer`, check source files (specs, workgroups) for `**KnowledgeId:**` values and include them in dispatch prompts. After writer completes, parse output for `CREATED_KNOWLEDGE_ID`/`REMOVED_KNOWLEDGE_ID` signals and edit source files accordingly.
 
 **Dispatch**:
 - *Parallel Teams*: **Group A** — always spawned at Stage 0. Persistent — last agent shut down before team cleanup.

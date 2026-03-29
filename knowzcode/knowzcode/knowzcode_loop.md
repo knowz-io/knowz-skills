@@ -89,6 +89,7 @@ Draft or refine `knowzcode/specs/[NodeID].md` for all nodes in the Change Set.
 
 **Updated:** [timestamp]
 **Status:** Draft | Approved | As-Built
+**KnowledgeId:** [optional — set automatically when synced to vault]
 
 ## Rules & Decisions
 Key architectural decisions, business rules, constraints, and purpose.
@@ -111,6 +112,8 @@ Known limitations and future work.
 ```
 
 **Minimum valid spec:** 1+ Rules item, 1+ Interface item, 2+ `VERIFY:` statements.
+
+> **KnowledgeId** is optional and managed automatically by vault sync. Do not set manually. When present, vault captures update the existing cloud item instead of creating duplicates. If the cloud item is deleted, the field is automatically removed.
 
 **Backward compatibility:** Old numbered-section specs remain valid until naturally touched. When finalizing, rewrite in the new format.
 

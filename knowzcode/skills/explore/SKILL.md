@@ -438,6 +438,27 @@ If `VAULTS_CONFIGURED = true` AND `MCP_ACTIVE = true`, present after findings:
 
 If `VAULTS_CONFIGURED = false` or `MCP_ACTIVE = false`, skip this step silently.
 
+### Vault Write Continuation
+
+After Step 5.5 resolves (including if the user chose C/Skip), remain responsive to vault-write intent in follow-up messages. Watch for:
+
+- "save this to vault", "capture this", "document this in the vault"
+- "save as {type}" (e.g., "save as Guidelines", "save as a Decision")
+- "put this in knowz", "add this to the vault"
+- Any follow-up referencing vault/knowz + save/capture/document intent
+
+When detected:
+1. Ask the user what content to save (or confirm if they specified)
+2. Resolve target vault from `knowzcode/knowzcode_vaults.md`
+3. Dispatch `knowz:writer` via Task() with a self-contained prompt:
+   - Content to save (from exploration findings or user-specified content)
+   - Target vault ID
+   - Title and tags derived from the content
+   - Category hint if the user specified one (e.g., "Guidelines")
+4. Report success/failure to the user
+
+This ensures vault writes work even after the structured A/B/C window closes.
+
 ## Step 6: Listen for Implementation Intent
 
 Watch for: "implement", "do it", "go ahead", "option N", "start work", "build this"

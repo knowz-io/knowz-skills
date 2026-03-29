@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.2] - 2026-03-29
+
+### Added
+- Optional `**KnowledgeId:**` field on specs and workgroups for automatic cloud sync — vault captures update existing items instead of creating duplicates
+- KnowledgeId writeback in knowledge-liaison — parses writer output signals and edits source files
+- Update mode in knowz:writer — supports `update_knowledge` when knowledgeId is provided, with graceful handling of deleted cloud items
+
+### Changed
+- Quality gate progress captures now pass KnowledgeId values to knowledge-liaison for update mode
+- Architect and closer agents preserve KnowledgeId fields when modifying specs
+
+## [0.9.1] - 2026-03-29
+
+### Added
+- Vault write continuation in explore skill — remains responsive to vault-save requests in follow-up messages after Step 5.5 resolves
+
 ## [0.9.0] - 2026-03-28
 
 ### Added
