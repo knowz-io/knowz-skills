@@ -27,7 +27,7 @@ Perform Phase 1B: Specification. Draft component specs for all NodeIDs in the ap
    - **Interfaces**: Public API, data shapes, contracts
    - **Verification Criteria**: 2+ VERIFY statements per spec
    - **Debt & Gaps**: Known limitations, future work
-4. Write specs to `knowzcode/specs/{NodeID}.md`
+4. Write specs to `knowzcode/specs/{NodeID}.md` — include `**KnowledgeId:**` (empty) after `**Status:**` on new specs; preserve existing `**KnowledgeId:**` values on updates
 5. Review `knowzcode/knowzcode_architecture.md` for consistency
 
 **STOP** after presenting specs — wait for user approval before Phase 2A begins. Commit approved specs.

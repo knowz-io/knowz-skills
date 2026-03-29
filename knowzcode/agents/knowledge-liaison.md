@@ -99,8 +99,19 @@ When you receive a capture request:
    - What to extract (phase-specific extraction targets)
    - Target vault IDs (resolved, not types)
    - Content format templates (from vault config)
-   - Source file path (WorkGroup file)
+   - Source file path (WorkGroup or spec file)
+   - **KnowledgeId** — if the source file has a `**KnowledgeId:**` value (non-empty), include it in the prompt as `knowledgeId: {value}`. If absent or empty, omit it.
 5. **Create task and dispatch**: `TaskCreate("Writer: Capture Phase {N}: {wgid}")` → dispatch `knowz:writer` with the prompt
+
+### KnowledgeId Writeback
+
+When a `knowz:writer` task completes, parse its output for structured ID lines:
+
+- `CREATED_KNOWLEDGE_ID: {id} (source: {path})` — A new cloud item was created. Use `Edit` to add or update `**KnowledgeId:** {id}` in the source file at `{path}`. Place it after `**Status:**` for specs, after `**Autonomous Mode:**` for workgroups.
+- `UPDATED_KNOWLEDGE_ID: {id} (source: {path})` — Existing cloud item was updated. No file edit needed (ID already present).
+- `REMOVED_KNOWLEDGE_ID: {id} (source: {path})` — Cloud item no longer exists (user deleted it). Use `Edit` to remove the `**KnowledgeId:** {id}` line from the source file at `{path}`.
+
+**Failure handling:** If the Edit fails, log a warning and continue — the next sync will create a new cloud item.
 
 ### Reader Dispatch
 

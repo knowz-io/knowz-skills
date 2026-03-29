@@ -1,35 +1,35 @@
 {
-  "name": "knowzcode",
-  "version": "0.9.2",
-  "description": "Platform-agnostic AI development methodology with TDD, quality gates, and structured workflows",
+  "name": "knowz-mcp",
+  "version": "0.4.2",
+  "description": "Frictionless knowledge management via the Knowz MCP server -- search, save, and query knowledge across vaults",
   "type": "module",
   "bin": {
-    "knowzcode": "./bin/knowzcode.mjs"
+    "knowz-mcp": "./bin/knowz-mcp.mjs"
   },
   "files": [
     "bin/",
-    "knowzcode/",
     "agents/",
     "skills/",
-    ".claude-plugin/"
+    ".claude-plugin/",
+    "platform_adapters.md",
+    "knowz-vaults.example.md",
+    "knowz-pending.example.md",
+    "enterprise.example.json"
   ],
   "scripts": {
-    "prepublishOnly": "node bin/knowzcode.mjs --version"
+    "prepublishOnly": "node bin/knowz-mcp.mjs --version"
   },
   "keywords": [
     "ai",
-    "tdd",
-    "workflow",
-    "methodology",
-    "quality-gates",
-    "platform-agnostic",
+    "knowledge",
+    "knowz",
+    "mcp",
+    "vaults",
     "claude",
     "codex",
     "gemini",
-    "cursor",
-    "copilot",
-    "windsurf",
-    "development"
+    "knowledge-management",
+    "semantic-search"
   ],
   "author": {
     "name": "Alex Headscarf"
