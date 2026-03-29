@@ -359,6 +359,28 @@ your-project/
 
 KnowzCode works without companion plugins. The knowz plugin adds `/knowz setup`, `/knowz register`, `/knowz save`, and `/knowz flush` for MCP vault management.
 
+## Enterprise Configuration
+
+Enterprises that self-host the Knowz platform can customize endpoints and branding by creating an `enterprise.json` file in the plugin root:
+
+```json
+{
+  "brand": "Acme Corp",
+  "mcp_endpoint": "https://mcp.acme.internal/mcp",
+  "api_endpoint": "https://api.acme.internal/api/v1"
+}
+```
+
+All fields are optional. When absent, the plugin defaults to the Knowz cloud platform (`knowz.io`). See `enterprise.example.json` for the template.
+
+When `enterprise.json` is present:
+- The CLI installer (`npx knowzcode`) uses the configured endpoints and skips the dev/prod environment selection
+- Initialization and platform adapter generation use the configured values
+- User-facing messages use the configured brand name
+- The `--dev` flag is ignored (enterprise manages its own environments)
+
+Enterprise forks should commit this file so it distributes to all team members via the marketplace.
+
 ## Contributing
 
 Fork → branch → PR. See **[CLAUDE.md](CLAUDE.md)** for developer docs.

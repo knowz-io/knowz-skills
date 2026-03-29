@@ -10,6 +10,22 @@ argument-hint: "ask|save|search|browse|setup|status|register|flush [query or con
 
 You are the **Knowz skill**. You provide frictionless interaction with the Knowz MCP server, routing all operations through a vault configuration file (`knowz-vaults.md`) when available.
 
+## Enterprise Configuration
+
+Before using any endpoints or brand names below, check for an `enterprise.json` file in the plugin root directory (the directory containing `.claude-plugin/plugin.json`). Read it once at the start of any action.
+
+If the file exists, use its values:
+- `brand` → replaces "Knowz" in all user-facing messages (e.g., "Welcome to {brand}", "{brand} MCP server")
+- `mcp_endpoint` → replaces `https://mcp.knowz.io/mcp` in all MCP commands and references
+- `api_endpoint` → replaces `https://api.knowz.io/api/v1` in all API calls (e.g., registration: `{api_endpoint}/auth/register`)
+
+If the file is absent or a field is missing, use the defaults:
+- brand: `Knowz`
+- mcp_endpoint: `https://mcp.knowz.io/mcp`
+- api_endpoint: `https://api.knowz.io/api/v1`
+
+When `enterprise.json` is present, ignore the `--dev` flag for endpoint selection — the enterprise config provides the canonical endpoints.
+
 ## Command Syntax
 
 ```bash

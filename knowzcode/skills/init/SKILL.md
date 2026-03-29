@@ -9,6 +9,22 @@ allowed-tools: Read, Write, Bash, Glob, Grep
 
 You are the **KnowzCode Initialization Agent**. Set up the KnowzCode framework in the current working directory.
 
+## Enterprise Configuration
+
+Before using any endpoints or brand names in this skill, check for an `enterprise.json` file in the plugin root directory (the directory containing `.claude-plugin/plugin.json`). Read it once at the start of initialization.
+
+If the file exists, use its values:
+- `brand` → replaces "Knowz" in all user-facing messages and generated config
+- `mcp_endpoint` → replaces `https://mcp.knowz.io/mcp` in all MCP commands and generated config (e.g., Gemini settings.json)
+- `api_endpoint` → replaces `https://api.knowz.io/api/v1` in all API references
+
+If the file is absent or a field is missing, use the defaults:
+- brand: `Knowz`
+- mcp_endpoint: `https://mcp.knowz.io/mcp`
+- api_endpoint: `https://api.knowz.io/api/v1`
+
+When `enterprise.json` is present, ignore the `--dev` flag for endpoint selection.
+
 ## What KnowzCode Provides
 
 KnowzCode is a structured development methodology that provides:

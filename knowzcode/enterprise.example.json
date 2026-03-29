@@ -1,0 +1,6 @@
+{
+  "_comment": "Enterprise configuration - rename to enterprise.json to activate. All fields optional.",
+  "brand": "Your Company Name",
+  "mcp_endpoint": "https://mcp.your-domain.com/mcp",
+  "api_endpoint": "https://api.your-domain.com/api/v1"
+}
