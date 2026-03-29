@@ -34,6 +34,8 @@ description: "Ask AI-powered questions to Knowz knowledge vaults. Triggers when 
 
 Ask questions against your Knowz knowledge vaults.
 
+If `enterprise.json` exists in the project root, use its `brand` value instead of "Knowz" in messages.
+
 ## Instructions
 
 1. Read `knowz-vaults.md` from the project root for vault configuration and routing rules
@@ -49,7 +51,7 @@ Ask questions against your Knowz knowledge vaults.
    - `researchMode`: `true` for complex questions (multi-part, "how", "why", "compare"), `false` for simple lookups
 5. Present the answer naturally, citing the vault source
 
-If MCP tools are not available, report: "Knowz MCP not connected. Run /knowz-setup or set KNOWZ_API_KEY."
+If MCP tools are not available, report: "{brand} MCP not connected. Run /knowz-setup or set KNOWZ_API_KEY."
 ```
 
 #### .agents/skills/knowz-save/SKILL.md
@@ -64,6 +66,8 @@ description: "Capture knowledge, decisions, patterns, and conventions to Knowz v
 # /knowz-save — Capture Knowledge
 
 Save an insight, decision, or pattern to a Knowz vault.
+
+If `enterprise.json` exists in the project root, use its `brand` value instead of "Knowz" in messages.
 
 ## Instructions
 
@@ -116,6 +120,8 @@ description: "Search across Knowz knowledge vaults using semantic search. Trigge
 
 Search across your Knowz vaults.
 
+If `enterprise.json` exists in the project root, use its `brand` value instead of "Knowz" in messages.
+
 ## Instructions
 
 1. Read `knowz-vaults.md` from the project root for vault configuration
@@ -130,7 +136,7 @@ Search across your Knowz vaults.
 5. Present results grouped by vault with titles and snippets
 6. If no results: suggest broader terms, `/knowz-browse`, or `/knowz-ask`
 
-If MCP tools are not available, report: "Knowz MCP not connected. Run /knowz-setup or set KNOWZ_API_KEY."
+If MCP tools are not available, report: "{brand} MCP not connected. Run /knowz-setup or set KNOWZ_API_KEY."
 ```
 
 #### .agents/skills/knowz-browse/SKILL.md
@@ -146,6 +152,8 @@ description: "Browse Knowz vault contents and topics. Triggers when user wants t
 
 Browse vault contents and topics.
 
+If `enterprise.json` exists in the project root, use its `brand` value instead of "Knowz" in messages.
+
 ## Instructions
 
 1. Read `knowz-vaults.md` from the project root for vault configuration
@@ -157,7 +165,7 @@ Browse vault contents and topics.
    - Call `list_vault_contents(vaultId, limit: 20)` for recent items
 6. Present a browsable overview with topics, counts, and recent items
 
-If MCP tools are not available, report: "Knowz MCP not connected. Run /knowz-setup or set KNOWZ_API_KEY."
+If MCP tools are not available, report: "{brand} MCP not connected. Run /knowz-setup or set KNOWZ_API_KEY."
 ```
 
 #### .agents/skills/knowz-setup/SKILL.md
@@ -171,16 +179,35 @@ description: "Configure Knowz MCP server connection and vault mappings. Triggers
 
 # /knowz-setup — Configure MCP Server
 
-Configure the Knowz MCP server for knowledge management.
+Configure the MCP server for knowledge management.
 
-## MCP Configuration
+## Endpoint Resolution
 
-**Default endpoint:** `https://mcp.knowz.io/mcp`
-**Dev endpoint:** `https://mcp.dev.knowz.io/mcp`
+Before using any endpoints or brand names, resolve them in this order:
+
+1. **Enterprise config:** Check for `enterprise.json` in the project root. If present:
+   - `brand` → replaces "Knowz" in all messages
+   - `mcp_endpoint` → replaces default MCP endpoint
+   - `api_endpoint` → replaces default API endpoint
+   - Ignore `--dev` flag — enterprise provides canonical endpoints
+2. **Dev flag:** If `--dev` is specified (and no enterprise config):
+   - MCP: `https://mcp.dev.knowz.io/mcp`
+   - API: `https://api.dev.knowz.io/api/v1`
+3. **Default (production):**
+   - MCP: `https://mcp.knowz.io/mcp`
+   - API: `https://api.knowz.io/api/v1`
+
+## Parameters
+
+- `<api-key>` — optional API key (positional)
+- `--dev` — use development environment
+- `--endpoint <url>` — custom MCP endpoint (overrides all above)
+
+## Steps
 
 ### Step 1: Check MCP Status
 
-Check if Knowz MCP tools (`list_vaults`, `search_knowledge`, etc.) are available.
+Check if MCP tools (`list_vaults`, `search_knowledge`, etc.) are available.
 - If available → skip to Step 3 (vault file creation)
 - If not available → proceed with configuration
 
@@ -193,12 +220,12 @@ Check if Knowz MCP tools (`list_vaults`, `search_knowledge`, etc.) are available
 
 If no auth found, ask: API Key or Register (/knowz-register).
 
-**For Codex:** Write `.mcp.json` in project root:
+Write `.mcp.json` in project root:
 ```json
 {
   "servers": {
     "knowz": {
-      "url": "https://mcp.knowz.io/mcp",
+      "url": "{mcp_endpoint}",
       "headers": {
         "Authorization": "Bearer <api-key>",
         "X-Project-Path": "<project-path>"
@@ -232,12 +259,30 @@ description: "Register for a Knowz account and auto-configure MCP server. Trigge
 
 # /knowz-register — Register & Configure
 
-Create a Knowz account and automatically configure the MCP server.
+Create an account and automatically configure the MCP server.
 
-## Instructions
+## Endpoint Resolution
 
-**Registration API:** `https://api.knowz.io/api/v1/auth/register`
-**Dev API:** `https://api.dev.knowz.io/api/v1/auth/register`
+Before using any endpoints or brand names, resolve them in this order:
+
+1. **Enterprise config:** Check for `enterprise.json` in the project root. If present:
+   - `brand` → replaces "Knowz" in all messages
+   - `mcp_endpoint` → replaces default MCP endpoint
+   - `api_endpoint` → replaces default API endpoint
+   - Ignore `--dev` flag — enterprise provides canonical endpoints
+2. **Dev flag:** If `--dev` is specified (and no enterprise config):
+   - MCP: `https://mcp.dev.knowz.io/mcp`
+   - API: `https://api.dev.knowz.io/api/v1`
+3. **Default (production):**
+   - MCP: `https://mcp.knowz.io/mcp`
+   - API: `https://api.knowz.io/api/v1`
+
+## Parameters
+
+- `--dev` — use development environment
+- `--endpoint <url>` — custom MCP endpoint (overrides all above)
+
+## Steps
 
 ### Step 1: Smart Discovery
 
@@ -253,7 +298,7 @@ If found: offer "Use existing key via /knowz-setup" or "Register new account".
 ### Step 3: Call Registration API
 
 ```bash
-curl -X POST https://api.knowz.io/api/v1/auth/register \
+curl -X POST {api_endpoint}/auth/register \
   -H "Content-Type: application/json" \
   -d '{"name": "{name}", "email": "{email}", "password": "{password}"}'
 ```
@@ -263,7 +308,7 @@ Handle errors: 409 (email exists), 400 (validation), 429 (rate limit).
 
 ### Step 4: Configure MCP
 
-Write `.mcp.json` with the API key (see /knowz-setup for format).
+Write `.mcp.json` with the API key and resolved `{mcp_endpoint}` (see /knowz-setup for format).
 
 ### Step 5: Generate Vault Configuration
 
@@ -287,20 +332,32 @@ description: "Check Knowz MCP connection health, vault status, and configuration
 
 # /knowz-status — Check Status
 
-Check Knowz MCP connection, vault health, and configuration.
+Check MCP connection, vault health, and configuration.
+
+## Endpoint Resolution
+
+Before using any endpoints or brand names, resolve them in this order:
+
+1. **Enterprise config:** Check for `enterprise.json` in the project root. If present:
+   - `brand` → replaces "Knowz" in all messages
+   - `mcp_endpoint` → replaces default MCP endpoint
+   - Ignore `--dev` flag — enterprise provides canonical endpoints
+2. **Dev flag / Default:** Use production endpoints unless `--dev` specified
 
 ## Instructions
 
-1. **Check MCP tool availability** — if not available, report "MCP not connected" with setup instructions
+1. **Check MCP tool availability** — if not available, report "{brand} MCP not connected" with setup instructions
 2. **Test connectivity:** Call `list_vaults(includeStats: true)`
 3. **Cross-Platform Config Discovery:**
+   - Check `enterprise.json`: present / absent (report brand and endpoint if present)
    - Check `KNOWZ_API_KEY` env var: Set / Not set
-   - Check `.mcp.json` for knowz entry: Configured / Not found
+   - Check `.mcp.json` for knowz entry: Configured / Not found (report endpoint)
    - Check `.gemini/settings.json` for `mcpServers.knowz`: Configured / Not found
    - Check `.vscode/mcp.json` for knowz entry: Configured / Not found
 4. **Check vault file:** Read `knowz-vaults.md`, validate vault IDs against server
 5. **Report status:**
-   - MCP Connection: Connected / Not connected
+   - {brand} MCP Connection: Connected / Not connected
+   - Endpoint: {configured endpoint} (enterprise / dev / production)
    - Server vaults: count and names
    - Vault Configuration: configured vaults, any stale IDs
    - Pending captures: count from `knowz-pending.md`
@@ -319,6 +376,8 @@ description: "Process the pending knowledge captures queue. Triggers when user w
 # /knowz-flush — Process Pending Captures
 
 Drain `knowz-pending.md` to vaults.
+
+If `enterprise.json` exists in the project root, use its `brand` value instead of "Knowz" in messages.
 
 ## Instructions
 
@@ -349,6 +408,8 @@ description: "Auto-detect when the user is asking knowledge questions or sharing
 # Knowz Auto — Frictionless Vault Awareness
 
 Automatically consult vaults or offer to save knowledge when the user's message matches vault rules.
+
+If `enterprise.json` exists in the project root, use its `brand` value instead of "Knowz" in messages.
 
 ## Prerequisites (ALL must be true)
 
@@ -413,7 +474,7 @@ Read knowz-vaults.md for vault routing. Call ask_question with the matched vault
 ```toml
 # .gemini/commands/knowz/save.toml
 description = "Capture knowledge, decisions, and patterns to Knowz vaults"
-prompt = """Read .agents/skills/knowz-save/SKILL.md (or .agents/skills/knowz-save/SKILL.md) for full instructions.
+prompt = """Read .agents/skills/knowz-save/SKILL.md for full instructions.
 Save the given insight to a Knowz vault.
 Read knowz-vaults.md for routing. Categorize, format, dedup check, then create_knowledge.
 <ARGS/>"""
@@ -422,7 +483,7 @@ Read knowz-vaults.md for routing. Categorize, format, dedup check, then create_k
 ```toml
 # .gemini/commands/knowz/search.toml
 description = "Semantic search across Knowz knowledge vaults"
-prompt = """Read .agents/skills/knowz-search/SKILL.md (or .agents/skills/knowz-search/SKILL.md) for full instructions.
+prompt = """Read .agents/skills/knowz-search/SKILL.md for full instructions.
 Search Knowz vaults for the given query.
 Read knowz-vaults.md for routing. Call search_knowledge for each matched vault.
 <ARGS/>"""
@@ -431,7 +492,7 @@ Read knowz-vaults.md for routing. Call search_knowledge for each matched vault.
 ```toml
 # .gemini/commands/knowz/browse.toml
 description = "Browse Knowz vault contents and topics"
-prompt = """Read .agents/skills/knowz-browse/SKILL.md (or .agents/skills/knowz-browse/SKILL.md) for full instructions.
+prompt = """Read .agents/skills/knowz-browse/SKILL.md for full instructions.
 Browse vault contents. Call list_topics and list_vault_contents.
 <ARGS/>"""
 ```
@@ -439,37 +500,37 @@ Browse vault contents. Call list_topics and list_vault_contents.
 ```toml
 # .gemini/commands/knowz/setup.toml
 description = "Configure Knowz MCP server connection for Gemini CLI"
-prompt = """Read .agents/skills/knowz-setup/SKILL.md (or .agents/skills/knowz-setup/SKILL.md) for full instructions.
-Configure the Knowz MCP server for Gemini CLI.
-Check KNOWZ_API_KEY env var and cross-platform configs before prompting.
-Primary method: gemini mcp add --transport http -s <scope> -H "Authorization: Bearer <key>" -H "X-Project-Path: $(pwd)" knowz https://mcp.knowz.io/mcp
-Fallback: write .gemini/settings.json with mcpServers.knowz entry.
+prompt = """Read .agents/skills/knowz-setup/SKILL.md for full instructions.
+Configure the MCP server for Gemini CLI.
+Check enterprise.json first for custom endpoints. Then check KNOWZ_API_KEY env var and cross-platform configs.
+For Gemini — OAuth: gemini mcp add --transport http -s <scope> knowz {mcp_endpoint}
+For Gemini — API Key: write .gemini/settings.json with mcpServers.knowz entry using resolved endpoint.
 <ARGS/>"""
 ```
 
 ```toml
 # .gemini/commands/knowz/register.toml
 description = "Register for Knowz and auto-configure MCP server"
-prompt = """Read .agents/skills/knowz-register/SKILL.md (or .agents/skills/knowz-register/SKILL.md) for full instructions.
-Register a new Knowz account and configure MCP.
-Check for existing API key before registration.
-Primary: gemini mcp add. Fallback: write .gemini/settings.json with mcpServers.knowz entry.
+prompt = """Read .agents/skills/knowz-register/SKILL.md for full instructions.
+Register a new account and configure MCP.
+Check enterprise.json first for custom endpoints. Check for existing API key before registration.
+For Gemini — OAuth: gemini mcp add. For API Key: write .gemini/settings.json with mcpServers.knowz entry.
 <ARGS/>"""
 ```
 
 ```toml
 # .gemini/commands/knowz/status.toml
 description = "Check Knowz MCP connection and vault health"
-prompt = """Read .agents/skills/knowz-status/SKILL.md (or .agents/skills/knowz-status/SKILL.md) for full instructions.
+prompt = """Read .agents/skills/knowz-status/SKILL.md for full instructions.
 Check MCP connection, vault health, and configuration status.
-Read .gemini/settings.json for mcpServers.knowz entry. Call list_vaults.
+Check enterprise.json for custom endpoints. Read .gemini/settings.json for mcpServers.knowz entry. Call list_vaults.
 <ARGS/>"""
 ```
 
 ```toml
 # .gemini/commands/knowz/flush.toml
 description = "Process pending knowledge captures queue"
-prompt = """Read .agents/skills/knowz-flush/SKILL.md (or .agents/skills/knowz-flush/SKILL.md) for full instructions.
+prompt = """Read .agents/skills/knowz-flush/SKILL.md for full instructions.
 Process knowz-pending.md queue. Sync each capture to its target vault.
 <ARGS/>"""
 ```
