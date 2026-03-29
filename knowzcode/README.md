@@ -6,7 +6,7 @@
 
 [![License: MIT + Commons Clause](https://img.shields.io/badge/License-MIT_+_Commons_Clause-yellow.svg)](LICENSE)
 [![Claude Code Plugin](https://img.shields.io/badge/Claude_Code-Plugin-purple)](https://github.com/knowz-io/knowz-skills)
-[![Version](https://img.shields.io/badge/version-0.8.6-blue)](https://github.com/knowz-io/knowz-skills/releases)
+[![Version](https://img.shields.io/badge/version-0.9.0-blue)](https://github.com/knowz-io/knowz-skills/releases)
 
 [Installation](#installation) · [Quick Start](#quick-start) · [When to Use It](#when-to-use-knowzcode) · [How It Works](#how-it-works) · [Commands](#commands) · [Docs](#documentation)
 
@@ -358,6 +358,28 @@ your-project/
 | [knowz](https://github.com/knowz-io/knowz-skill) | MCP vault features — setup, registration, learning capture, flush | `claude plugin install knowz` |
 
 KnowzCode works without companion plugins. The knowz plugin adds `/knowz setup`, `/knowz register`, `/knowz save`, and `/knowz flush` for MCP vault management.
+
+## Enterprise Configuration
+
+Enterprises that self-host the Knowz platform can customize endpoints and branding by creating an `enterprise.json` file in the plugin root:
+
+```json
+{
+  "brand": "Acme Corp",
+  "mcp_endpoint": "https://mcp.acme.internal/mcp",
+  "api_endpoint": "https://api.acme.internal/api/v1"
+}
+```
+
+All fields are optional. When absent, the plugin defaults to the Knowz cloud platform (`knowz.io`). See `enterprise.example.json` for the template.
+
+When `enterprise.json` is present:
+- The CLI installer (`npx knowzcode`) uses the configured endpoints and skips the dev/prod environment selection
+- Initialization and platform adapter generation use the configured values
+- User-facing messages use the configured brand name
+- The `--dev` flag is ignored (enterprise manages its own environments)
+
+Enterprise forks should commit this file so it distributes to all team members via the marketplace.
 
 ## Contributing
 

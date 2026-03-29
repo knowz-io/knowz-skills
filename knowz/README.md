@@ -127,6 +127,27 @@ claude plugin install knowz
 /knowz save "insight"
 ```
 
+## Enterprise Configuration
+
+Enterprises that self-host the Knowz platform can customize endpoints and branding by creating an `enterprise.json` file in the plugin root:
+
+```json
+{
+  "brand": "Acme Corp",
+  "mcp_endpoint": "https://mcp.acme.internal/mcp",
+  "api_endpoint": "https://api.acme.internal/api/v1"
+}
+```
+
+All fields are optional. When absent, the plugin defaults to the Knowz cloud platform (`knowz.io`). See `enterprise.example.json` for the template.
+
+When `enterprise.json` is present:
+- Setup and registration flows use the configured endpoints
+- User-facing messages use the configured brand name (e.g., "Welcome to **Acme Corp**")
+- The `--dev` flag is ignored (enterprise manages its own environments)
+
+Enterprise forks should commit this file so it distributes to all team members via the marketplace.
+
 ## Architecture
 
 - **`/knowz` skill** — Primary interface for all explicit vault operations

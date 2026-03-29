@@ -1,5 +1,9 @@
 # MCP Server Configuration Reference
 
+## Enterprise Configuration
+
+Before using any endpoints below, check for an `enterprise.json` file in the plugin root directory (the directory containing `.claude-plugin/plugin.json`). If present, use its `mcp_endpoint` value instead of the production/development endpoints listed here. If absent, use the defaults below.
+
 ## Server Details
 
 | Property | Value |
