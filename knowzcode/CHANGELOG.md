@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-03-29
+
+### Changed
+- Restructured plugin to lightweight skill stubs backed by framework internals
+- Moved agents, CLAUDE.md, GEMINI.md, and enterprise config out of plugin surface into framework directory
+- Simplified all skill definitions to reduce plugin size
+
+### Added
+- Framework internal files (prompts, specs, orchestration, enterprise templates) in plugin's knowzcode/ directory
+- Platform validation script
+
 ## [0.9.2] - 2026-03-29
 
 ### Added
