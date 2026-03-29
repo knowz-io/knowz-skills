@@ -952,18 +952,9 @@ async function generateAdapters(dir, selectedPlatforms, opts) {
       adapterFiles.push(adapterFile);
       log.ok(`${platform.name} adapter: ${adapterFile}`);
 
-      let skippedGeminiSkills = false;
       for (const [relativePath, { content }] of templateSet.files) {
-        // Skip .gemini/skills/ when codex is co-installed — Gemini CLI reads .agents/skills/ as alias
-        if (platformId === 'gemini' && relativePath.startsWith('.gemini/skills/') && selectedPlatforms.includes('codex')) {
-          skippedGeminiSkills = true;
-          continue;
-        }
         let filePath;
-        if (platformId === 'codex' && opts.global && relativePath.startsWith('.agents/skills/')) {
-          const homeDir = process.env.HOME || process.env.USERPROFILE || '~';
-          filePath = join(homeDir, relativePath);
-        } else if (platformId === 'gemini' && opts.global && relativePath.startsWith('.gemini/skills/')) {
+        if (opts.global && relativePath.startsWith('.agents/skills/')) {
           const homeDir = process.env.HOME || process.env.USERPROFILE || '~';
           filePath = join(homeDir, relativePath);
         } else {
@@ -972,9 +963,6 @@ async function generateAdapters(dir, selectedPlatforms, opts) {
         ensureDir(dirname(filePath));
         writeFileSync(filePath, injectVersion(content));
         adapterFiles.push(filePath);
-      }
-      if (skippedGeminiSkills) {
-        log.info('Gemini skills: using .agents/skills/ (shared with Codex)');
       }
       if (templateSet.files.size > 0) {
         log.ok(`  + ${templateSet.files.size} additional file(s)`);
@@ -994,8 +982,8 @@ async function generateAdapters(dir, selectedPlatforms, opts) {
             rmSync(legacyGlobal, { recursive: true, force: true });
           }
         }
-        // Clean up duplicate .gemini/skills/ when codex is co-installed with gemini
-        if (selectedPlatforms.includes('gemini')) {
+        // Clean up legacy .gemini/skills/knowzcode-* (skills now always in .agents/skills/)
+        {
           const geminiSkillDir = join(dir, '.gemini', 'skills');
           if (existsSync(geminiSkillDir)) {
             let cleaned = false;
@@ -1006,7 +994,7 @@ async function generateAdapters(dir, selectedPlatforms, opts) {
               }
             }
             if (cleaned) {
-              log.info('Removed duplicate .gemini/skills/knowzcode-* (using .agents/skills/ instead)');
+              log.info('Migrated .gemini/skills/knowzcode-* to .agents/skills/');
             }
           }
         }
@@ -1742,10 +1730,6 @@ async function cmdUpgrade(opts) {
     // Regenerate additional files
     const currentPaths = new Set();
     for (const [relativePath, { content }] of templateSet.files) {
-      // Skip .gemini/skills/ when codex is co-installed — Gemini CLI reads .agents/skills/ as alias
-      if (platformId === 'gemini' && relativePath.startsWith('.gemini/skills/') && detected.includes('codex')) {
-        continue;
-      }
       const filePath = join(dir, relativePath);
       ensureDir(dirname(filePath));
       writeFileSync(filePath, injectVersion(content));
@@ -1784,18 +1768,13 @@ async function cmdUpgrade(opts) {
           }
         }
       }
-      // Stale skill cleanup: .gemini/skills/knowzcode-* (skip if codex handles skills via .agents/skills/)
-      if (!detected.includes('codex')) {
+      // Clean up legacy .gemini/skills/knowzcode-* (skills now always in .agents/skills/)
+      {
         const geminiSkillDir = join(dir, '.gemini', 'skills');
         if (existsSync(geminiSkillDir)) {
           for (const entry of readdirSync(geminiSkillDir)) {
-            if (entry.startsWith('knowzcode-') && !currentPaths.has(`.gemini/skills/${entry}/SKILL.md`)) {
-              log.info(`Removing stale Gemini skill: ${entry}/`);
-              rmSync(join(geminiSkillDir, entry), { recursive: true, force: true });
-            }
-            // Migration: remove old kc-* skill dirs superseded by knowzcode-*
-            if (entry.startsWith('kc-')) {
-              log.info(`Removing old-prefix Gemini skill: ${entry}/`);
+            if (entry.startsWith('knowzcode-') || entry.startsWith('kc-')) {
+              log.info(`Migrating legacy Gemini skill to .agents/skills/: ${entry}/`);
               rmSync(join(geminiSkillDir, entry), { recursive: true, force: true });
             }
           }
@@ -1837,19 +1816,14 @@ async function cmdUpgrade(opts) {
         log.info('Removing legacy .codex/skills/kc/ (migrated to .agents/skills/)');
         rmSync(legacySkillDir, { recursive: true, force: true });
       }
-      // Clean up duplicate .gemini/skills/ when codex is co-installed with gemini
-      if (detected.includes('gemini')) {
+      // Clean up legacy .gemini/skills/knowzcode-* (skills now always in .agents/skills/)
+      {
         const geminiSkillDir = join(dir, '.gemini', 'skills');
         if (existsSync(geminiSkillDir)) {
-          let cleaned = false;
           for (const entry of readdirSync(geminiSkillDir)) {
             if (entry.startsWith('knowzcode-') || entry.startsWith('kc-')) {
               rmSync(join(geminiSkillDir, entry), { recursive: true, force: true });
-              cleaned = true;
             }
-          }
-          if (cleaned) {
-            log.info('Removed duplicate .gemini/skills/knowzcode-* (using .agents/skills/ instead)');
           }
         }
       }

@@ -37,6 +37,8 @@ Specs are **lean decision records + contracts** — quick reference documents ca
 
 Use the 4-section template defined in `knowzcode_loop.md` section 3.2. **Minimum valid spec:** 1+ Rules item, 1+ Interface item, 2+ `VERIFY:` statements.
 
+When creating new specs, include `**KnowledgeId:**` (empty) after `**Status:**`. When updating existing specs, preserve the existing `**KnowledgeId:**` value unchanged — it is managed by vault sync agents.
+
 ## Consolidation Mandate
 
 Before creating ANY new spec:

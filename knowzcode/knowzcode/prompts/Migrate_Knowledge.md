@@ -200,6 +200,7 @@ When generating a spec, follow this exact structure:
 
 **Updated:** {timestamp}
 **Status:** Migrated
+**KnowledgeId:**
 **Migrated From:** {source_path} ({source_format} format)
 
 ## Rules & Decisions

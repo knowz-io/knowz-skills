@@ -44,9 +44,23 @@ Apply the content format template provided in your dispatch prompt. If no templa
 
 Before writing, call `search_knowledge(title, vaultId, 3)` on the target vault. If a result with a substantially similar title AND content already exists, skip the write and note the dedup catch.
 
+### Step 3.5: KnowledgeId Check
+
+If your dispatch prompt includes a `knowledgeId` for this item:
+1. Call `get_knowledge_item(id=knowledgeId)` to verify the item still exists in the cloud.
+   - **Exists** → proceed to Step 4 using **UPDATE** mode.
+   - **Not found** (404, item deleted, or similar) → proceed to Step 4 using **CREATE** mode. Include in your output: `REMOVED_KNOWLEDGE_ID: {knowledgeId} (source: {source_file_path})` so the dispatcher knows to remove the local tracking.
+   - **Transient error** (timeout, 500, MCP unavailable) → fall through to MCP Graceful Degradation.
+
+If no `knowledgeId` is provided → proceed to Step 4 using **CREATE** mode (current behavior).
+
 ### Step 4: Write
 
-Call `create_knowledge` with the formatted payload for the target vault.
+**CREATE mode** (no knowledgeId, or cloud item was deleted):
+Call `create_knowledge` with the formatted payload for the target vault. Include the returned item ID in your output: `CREATED_KNOWLEDGE_ID: {returned_id} (source: {source_file_path})`
+
+**UPDATE mode** (knowledgeId verified to exist):
+Call `update_knowledge(id=knowledgeId, ...)` with the formatted payload. Include confirmation in your output: `UPDATED_KNOWLEDGE_ID: {knowledgeId} (source: {source_file_path})`
 
 ## MCP Graceful Degradation
 

@@ -21,7 +21,7 @@ Perform Phase 3: Finalization. Update all project documentation to reflect the c
 ## Instructions
 
 1. Read `knowzcode/knowzcode_loop.md` for the complete Phase 3 methodology
-2. Update specs in `knowzcode/specs/` to "As-Built" status
+2. Update specs in `knowzcode/specs/` to "As-Built" status — preserve `**KnowledgeId:**` fields if present
 3. Update `knowzcode/knowzcode_tracker.md` — set WorkGroup status to `[VERIFIED]`
 4. Prepend a log entry to `knowzcode/knowzcode_log.md`
 5. Review `knowzcode/knowzcode_architecture.md` for drift — update if needed
