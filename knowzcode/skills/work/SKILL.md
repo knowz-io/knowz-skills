@@ -239,6 +239,7 @@ Create `knowzcode/workgroups/{WorkGroupID}.md`:
 **Status**: Active
 **Current Phase**: 1A - Impact Analysis
 **Autonomous Mode**: Active/Inactive
+**KnowledgeId:**
 
 ## Change Set
 (Populated after Phase 1A)
@@ -353,7 +354,11 @@ After builder completes successfully:
    ```
 4. Final commit: `git add knowzcode/ <changed files> && git commit -m "feat: {goal} (WorkGroup {wgid})"`
 5. Report completion.
-6. **Progress capture** (if MCP is configured): Read `knowzcode/knowzcode_vaults.md`, resolve vault IDs. Check for existing entry via `search_by_title_pattern("WorkGroup: {wgid}*")` — update if found, create if not. Then write a WorkGroup completion record to the vault via `create_knowledge` (or `update_knowledge` if entry exists). Also check for duplicates via `search_knowledge` before creating.
+6. **Progress capture** (if MCP is configured): Read `knowzcode/knowzcode_vaults.md`, resolve vault IDs. Read the WorkGroup file for the `**KnowledgeId:**` value.
+   - **If KnowledgeId exists**: call `get_knowledge_item(id)`. If found → `update_knowledge` with the completion record. If not found → remove `**KnowledgeId:**` from the WorkGroup file, fall through to create.
+   - **If no KnowledgeId**: check for existing entry via `search_by_title_pattern("WorkGroup: {wgid}*")` — update if found, create if not.
+   - **After create**: write the returned ID back as `**KnowledgeId:**` in the WorkGroup file.
+   - **If MCP unavailable**: skip capture gracefully, preserve existing KnowledgeId.
 
 **DONE** — 3 agents skipped (analyst, architect, reviewer, closer).
 
