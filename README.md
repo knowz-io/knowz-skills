@@ -1,36 +1,74 @@
+<div align="center">
+
 # Knowz Skills
 
-Official plugin marketplace for [Claude Code](https://code.claude.com/) and a repo-local plugin marketplace for Codex - development methodology and knowledge management for AI coding assistants.
+**AI-Powered Knowledge & Development Tools**
 
-## Products
+Connect your knowledge base to any AI assistant. Build software with structure and quality gates.
 
-| Product | Description | Claude Install |
-|:--------|:------------|:---------------|
-| [knowzcode](./knowzcode/) | Platform-agnostic AI development methodology with TDD, quality gates, and structured workflows | `/plugin install knowzcode@knowz-skills` |
-| [knowz](./knowz/) | Frictionless knowledge management via the Knowz MCP server - search, save, and query knowledge across vaults | `/plugin install knowz@knowz-skills` |
+[MCP Server](#the-mcp-server) · [Plugins](#two-plugins) · [Install](#install) · [Features](https://github.com/knowz-io/knowz-platform/blob/develop/FEATURES.md)
 
-## Marketplace Layout
+</div>
 
-This repository now carries two parallel packaging layouts:
+---
 
-- **Claude marketplace**: [.claude-plugin/marketplace.json](./.claude-plugin/marketplace.json) plus the existing source products in [`knowz/`](./knowz/) and [`knowzcode/`](./knowzcode/)
-- **Codex marketplace**: [.agents/plugins/marketplace.json](./.agents/plugins/marketplace.json) plus packaged Codex plugins in [`plugins/knowz`](./plugins/knowz/) and [`plugins/knowzcode`](./plugins/knowzcode/)
+## The MCP Server
 
-The Codex packaging is additive. It does not replace or alter the Claude marketplace structure.
+Your knowledge, accessible to every AI tool you use.
 
-Ownership rule:
+The Knowz MCP server is a universal connector between your knowledge base and the AI models you already work with. It exposes your vaults, search, and Q&A capabilities through the open [Model Context Protocol](https://modelcontextprotocol.io/) standard — so any compatible agent can read, write, and reason over your organization's knowledge.
 
-- Claude behavior is defined by the source products in [`knowz/`](./knowz/) and [`knowzcode/`](./knowzcode/) plus [.claude-plugin/marketplace.json](./.claude-plugin/marketplace.json)
-- Codex behavior is defined by the packaged plugins in [`plugins/`](./plugins/) plus [.agents/plugins/marketplace.json](./.agents/plugins/marketplace.json)
+**Works with any MCP-compatible AI:**
 
-Parity checklist:
+- Claude, ChatGPT, Gemini, GitHub Copilot, Cursor, Windsurf, and more
+- Custom agents built with LangChain, CrewAI, AutoGen, or any framework that supports MCP
+- Your own integrations via the Knowz API
 
-- Product names stay aligned across Claude and Codex surfaces
-- Versions stay aligned with the source packages
-- High-level product descriptions stay equivalent even when platform-specific details differ
-- Major feature sets stay aligned unless a difference is explicitly documented as platform-specific
+One knowledge base. Every AI tool in your workflow.
 
-## Claude Code Usage
+---
+
+## Two Plugins
+
+Built on top of the MCP server, these plugins add higher-level workflows for two common use cases.
+
+### Knowz — Knowledge Management at Your Fingertips
+
+Search, save, and query your knowledge base without leaving your editor. Knowz auto-detects when a conversation is relevant to your vaults and surfaces the right context — or offers to capture new insights — without being asked.
+
+```bash
+/knowz ask "What's our convention for error handling?"
+/knowz save "We chose Redis over Memcached for pub/sub support"
+/knowz search "authentication patterns"
+```
+
+[Full documentation ->](./knowz/README.md)
+
+### KnowzCode — Structured AI Development
+
+Turns chaotic AI coding into a disciplined loop: analyze impact, draft specs, build with tests, audit quality, and ship. Approval gates at every phase keep you in control while the AI does the heavy lifting.
+
+Scales automatically — quick fixes skip the ceremony, complex features get the full workflow. Works across Claude Code, OpenAI Codex, Gemini CLI, and more.
+
+```bash
+/knowzcode:work "Build user authentication with email and password"
+/knowzcode:explore "how is auth currently implemented?"
+/knowzcode:fix "Fix typo in login button text"
+```
+
+[Full documentation ->](./knowzcode/README.md)
+
+---
+
+## Who It's For
+
+- **Individual developers** — Stop losing context between sessions. Search past decisions, capture new learnings, and build with guardrails that catch mistakes before they ship.
+- **Teams** — Share a knowledge base that every team member's AI tools can access. Enforce coding standards and quality gates across the whole team.
+- **Organizations** — Centralize institutional knowledge, ensure compliance, and give every AI integration a consistent, governed view of your data.
+
+---
+
+## Install
 
 ### 1. Add the marketplace
 
@@ -41,42 +79,27 @@ Parity checklist:
 ### 2. Install plugins
 
 ```bash
-/plugin install knowzcode@knowz-skills
-/plugin install knowz@knowz-skills
+/plugin install knowz@knowz-skills       # Knowledge management
+/plugin install knowzcode@knowz-skills   # Structured development
 ```
 
 ### 3. Get started
 
 ```bash
-cd your-project/
-/knowzcode:init
-/knowzcode:work "Build user authentication"
-/knowz register
+/knowz register                               # Create account + configure MCP
+/knowzcode:init                               # Initialize in your project
+/knowzcode:work "Build user authentication"   # Start building
 ```
 
-## Codex Usage
+---
 
-Codex support in this repo currently ships as local plugin packaging artifacts rather than a documented public OpenAI-hosted marketplace submission.
+## Learn More
 
-Relevant files:
+- [Full feature overview](https://github.com/knowz-io/knowz-platform/blob/develop/FEATURES.md)
+- [Knowz plugin documentation](./knowz/README.md)
+- [KnowzCode plugin documentation](./knowzcode/README.md)
+- [knowz.io](https://knowz.io)
 
-- Marketplace manifest: [`./.agents/plugins/marketplace.json`](./.agents/plugins/marketplace.json)
-- Knowz plugin package: [`./plugins/knowz`](./plugins/knowz)
-- KnowzCode plugin package: [`./plugins/knowzcode`](./plugins/knowzcode)
+---
 
-Current Codex packaging details:
-
-- `knowz` includes packaged skills and a plugin-local MCP manifest at `plugins/knowz/.mcp.json`
-- `knowzcode` includes packaged skills plus the `knowzcode/` support files those skills read
-- Knowz MCP setup for Codex uses shared Codex MCP configuration such as `~/.codex/config.toml` or `codex mcp add`, not the older project-local `.mcp.json` assumption
-- Codex API-key setup uses `bearer_token_env_var` with `KNOWZ_API_KEY`; this repo does not assume a public OpenAI-hosted plugin directory or undocumented Codex auth shape
-
-## Notes
-
-- The Claude marketplace remains the primary published install surface in this repo.
-- The Codex packaging is now an intentional repo-supported surface, not a copied placeholder.
-- Validate both surfaces with `node scripts/validate-platform-surfaces.mjs`.
-
-## License
-
-MIT License with Commons Clause - see individual plugin directories for details.
+MIT License with Commons Clause — See individual plugin directories for details.

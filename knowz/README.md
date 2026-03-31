@@ -1,63 +1,68 @@
-# knowz-skill
+# Knowz
 
-Knowz provides frictionless knowledge management via the Knowz MCP server.
+**Your knowledge base, inside your AI assistant.**
 
-Search, save, and query knowledge across vaults with automatic vault-aware routing.
+Knowz connects your AI coding assistant to a persistent, searchable knowledge base. Every decision your team makes, every convention you establish, every hard-won lesson — captured once, available forever, woven into every conversation automatically.
 
-## Packaging In This Repo
+---
 
-This repository now carries two Knowz packaging shapes:
+## Why Knowz
 
-- **Claude product source** in [`./`](./) with the existing Claude plugin files
-- **Codex packaged plugin** in [`../plugins/knowz`](../plugins/knowz)
+Teams make the same decisions twice because no one remembers the first time. Meeting notes get buried. Architecture decisions live in someone's head. That pattern you agreed on last month? Good luck finding it in Slack.
 
-The Codex package is additive. It does not replace the Claude plugin source tree.
+AI assistants make this worse, not better. They're stateless. Every conversation starts from zero. Your AI doesn't know what you decided last week, what conventions your team follows, or why you chose PostgreSQL over DynamoDB.
 
-## Claude Installation
+Knowz fixes this. It gives your AI a memory that persists across sessions, projects, and team members. Ask a question and get an answer grounded in what your team actually knows — not a generic response from training data.
 
-```bash
-# From the marketplace
-/plugin marketplace add knowz-io/knowz-skills
-/plugin install knowz@knowz-skills
+---
 
-# From local path
-claude plugin install /path/to/knowz
-```
+## What You Can Do
 
-## Codex Packaging
+- **Ask questions** against your knowledge base — "What's our convention for error handling?" returns your team's actual answer, not a textbook one
+- **Save decisions and learnings** as you work — capture insights without leaving your flow
+- **Search across all your vaults** — semantic search that understands meaning, not just keywords
+- **Browse and explore** what your team knows — see topics, patterns, and gaps at a glance
 
-The Codex plugin package for Knowz lives at [`../plugins/knowz`](../plugins/knowz).
+---
 
-Important Codex details:
+## The Magic: Auto-Detection
 
-- Packaged skills live under `plugins/knowz/skills/`
-- The plugin-local MCP manifest is `plugins/knowz/.mcp.json`
-- Codex MCP auth/config is **shared Codex configuration** through `~/.codex/config.toml` or `codex mcp add`
-- Codex API-key auth uses `bearer_token_env_var = "KNOWZ_API_KEY"` plus `http_headers = { X-Project-Path = "<absolute-project-path>" }`
-- The Codex-facing `knowz-setup`, `knowz-register`, and `knowz-status` skills in the packaged plugin reflect that shared-config model
+This is where Knowz disappears into your workflow.
+
+When you ask about a past decision, Knowz silently searches your vaults and weaves the answer into the conversation. No command needed. No context switching. You just get better answers.
+
+When you share an insight worth keeping — "we decided to use UTC everywhere" — Knowz recognizes it and offers to save it. Again, no command needed.
+
+It's like having a team member with perfect memory sitting alongside you. They never interrupt, but they always remember.
+
+---
+
+## Works With Any AI
+
+The Knowz MCP server works with any AI model and any MCP-compatible agent — Claude, GPT, Gemini, local models, custom agents. This plugin is a convenience layer for Claude Code, but the knowledge base itself is accessible from anywhere that speaks MCP.
+
+Your knowledge isn't locked into one tool. Save something from Claude Code, query it from your IDE, surface it in a code review. One knowledge base, many interfaces.
+
+---
 
 ## Quick Start
 
-### New users - create an account
+### New users — create an account
 
 ```bash
-/knowz register
-/knowz status
+/knowz register            # create account + configure MCP + set up vault
+# restart Claude Code
+/knowz status              # verify connection
 ```
 
-### Existing users - configure MCP
+### Existing users — configure MCP
 
 ```bash
-/knowz setup kz_live_abc123
-/knowz setup
-```
-
-For Codex, the setup flow should guide users toward shared MCP configuration rather than writing project-local `.mcp.json`.
-
-Example Codex shared-config command:
-
-```bash
-codex mcp add knowz --url https://mcp.knowz.io/mcp --bearer-token-env-var KNOWZ_API_KEY
+/knowz setup kz_live_abc123    # configure with API key
+# or
+/knowz setup --oauth           # configure with OAuth
+# restart Claude Code
+/knowz setup                   # create vault configuration file
 ```
 
 ### Daily usage
@@ -77,40 +82,30 @@ codex mcp add knowz --url https://mcp.knowz.io/mcp --bearer-token-env-var KNOWZ_
 | `/knowz save "insight"` | Capture knowledge with auto-routing and formatting |
 | `/knowz search "query"` | Semantic search across vaults |
 | `/knowz browse [vault]` | Browse vault contents and topics |
-| `/knowz setup [key]` | Configure MCP server and create or update `knowz-vaults.md` |
+| `/knowz setup [key] [--oauth]` | Configure MCP server + create/update `knowz-vaults.md` |
 | `/knowz status` | Check MCP connection, vault health, and configuration |
-| `/knowz register [--dev]` | Create account, configure MCP, and set up a vault |
+| `/knowz register [--dev]` | Create account, configure MCP, set up vault |
 | `/knowz flush` | Process pending captures queue |
 
 ## Setup
 
-### `/knowz register` - full account setup
+### `/knowz register` — Full account setup
 
-Creates a Knowz account, obtains an API key, configures MCP, and creates `knowz-vaults.md`.
+Creates a Knowz account, generates an API key, configures the MCP server, and creates `knowz-vaults.md` — all in one flow. Best for new users.
 
-### `/knowz setup` - MCP and vault configuration
+### `/knowz setup` — MCP + vault configuration
 
-If MCP is not connected, the skill guides the user through server configuration. Then it creates or updates `knowz-vaults.md` in the project root. This file tells the plugin:
-
+If MCP is not connected, guides you through server configuration (API key or OAuth). Then creates or updates `knowz-vaults.md` in your project root. This file tells the plugin:
 - Which vaults to connect to
-- When to query each vault
+- When to query each vault (routing rules)
 - When to save to each vault
-- How to format saved content
+- How to format saved content (templates)
 
-Without a vault file, the plugin still works, but vault-scoped routing is reduced.
+Without a vault file, the plugin still works — it just won't scope operations to specific vaults or auto-trigger on relevant conversations.
 
-### `/knowz flush` - process pending captures
+### `/knowz flush` — Process pending captures
 
-When MCP writes fail, captures are queued to `knowz-pending.md`. Run `/knowz flush` to sync them when MCP is available again.
-
-## Auto-Trigger
-
-When you have a `knowz-vaults.md` file, the plugin can:
-
-- Search vaults when you ask questions matching "when to query" rules
-- Offer to save insights matching "when to save" rules
-
-For Codex, treat `knowz-auto` as a lightweight intent-routing skill. It may be surfaced automatically by Codex, but the package does not assume guaranteed background auto-execution.
+When MCP writes fail (server unreachable, auth expired), captures are queued to `knowz-pending.md`. Run `/knowz flush` to sync them when MCP is available again.
 
 ## Vault File Format
 
@@ -125,36 +120,35 @@ See `knowz-vaults.example.md` for the full template. Key sections:
 - **Content template**: Format for saved items
 ```
 
-## Using With KnowzCode
+## Using with KnowzCode
 
-The Knowz plugin works alongside the KnowzCode product:
+The knowz plugin works alongside the KnowzCode plugin (`knowzcode`) for teams using the KnowzCode development methodology:
 
 ```bash
+claude plugin install knowzcode
+claude plugin install knowz
+/knowz register            # configure MCP
+# restart
+/knowzcode:init            # initialize KC project
+/knowzcode:work "feature"  # KC agents use MCP automatically (knowledge-liaison/reader/writer)
+/knowz save "insight"      # manual capture via knowz
+```
+
+Vault file interop: `/knowz setup` and `/knowz register` automatically update `knowzcode/knowzcode_vaults.md` when it exists, keeping both configurations in sync.
+
+## Using Standalone
+
+The knowz plugin works completely independently — no KnowzCode required:
+
+```bash
+claude plugin install knowz
 /knowz register
-/knowzcode:init
-/knowzcode:work "feature"
+# restart
+/knowz setup
+/knowz ask "question"
 /knowz save "insight"
 ```
 
-Vault file interop: `/knowz setup` and `/knowz register` can update `knowzcode/knowzcode_vaults.md` when it exists.
+---
 
-## Enterprise Configuration
-
-Enterprises that self-host the Knowz platform can customize endpoints and branding by creating an `enterprise.json` file in the plugin root:
-
-```json
-{
-  "brand": "Acme Corp",
-  "mcp_endpoint": "https://mcp.acme.internal/mcp",
-  "api_endpoint": "https://api.acme.internal/api/v1"
-}
-```
-
-All fields are optional. When absent, the plugin defaults to the Knowz cloud platform.
-
-## Architecture
-
-- **`/knowz` skill** - primary interface for explicit vault operations
-- **`knowz-auto` skill** - lightweight intent routing for vault-relevant conversations
-- **`knowledge-worker` agent** - handles complex multi-step research tasks in the Claude-oriented source product
-- **`knowz-pending.md`** - offline queue for captures when MCP is unavailable
+Full capabilities and advanced usage: [FEATURES.md](FEATURES.md)
