@@ -2,225 +2,157 @@
 
 <div align="center">
 
-**A structured development methodology for AI coding assistants.**
+**Structured AI Development.**
 
 [![License: MIT + Commons Clause](https://img.shields.io/badge/License-MIT_+_Commons_Clause-yellow.svg)](LICENSE)
 [![Claude Code Plugin](https://img.shields.io/badge/Claude_Code-Plugin-purple)](https://github.com/knowz-io/knowz-skills)
-[![Version](https://img.shields.io/badge/version-0.11.0-blue)](https://github.com/knowz-io/knowz-skills/releases)
 
-[Installation](#installation) · [Quick Start](#quick-start) · [When to Use It](#when-to-use-knowzcode) · [How It Works](#how-it-works) · [Commands](#commands) · [Docs](#documentation)
+[What You Get](#what-you-get) · [How It Works](#how-it-works) · [Install](#install) · [Quick Start](#quick-start) · [Platforms](#platform-support)
 
 </div>
 
 ---
 
-## What This Repo Now Contains
+AI coding assistants lack structure. Without it, they forget context between sessions, skip tests, make changes without considering impact, and declare "done" without verifying anything works.
 
-The KnowzCode source repo now has two parallel distribution shapes:
+KnowzCode brings discipline to AI-assisted development — quality gates, test-driven workflows, and session continuity that keeps complex projects on track.
 
-- **Claude/source product** under [`./`](./)
-- **Codex packaged plugin** under [`../plugins/knowzcode`](../plugins/knowzcode)
+## What You Get
 
-The Codex package is additive. It does not replace the existing Claude-oriented source layout.
+- **Quality gates** that catch issues before they compound
+- **Tests written before code**, verified against requirements
+- **Living documentation** that updates as code changes
+- **Session continuity** — pick up exactly where you left off, even days later
+- **Complexity-aware** — quick fixes skip ceremony, complex features get full rigor
+- **Works on 6 AI platforms** — not locked to any single tool
+- **Connected to your knowledge base** — past decisions inform future work (optional)
+- **Autonomous mode** — approve the plan upfront, then let the AI run with safety guardrails
 
-## The Problem
+## When to Use It
 
-AI coding assistants lack structure. Without it, they:
+KnowzCode adds overhead. Here's when it's worth it:
 
-- Forget context between sessions
-- Make changes without considering impact
-- Declare "done" without verifying anything works
-- Let documentation drift from reality immediately
-
-## What KnowzCode Does
-
-KnowzCode is a **platform-agnostic development methodology** that lives in your project's `knowzcode/` directory.
-
-- **Adaptive Development Loop** - scales from quick fixes to full 5-phase TDD workflows with quality gates at each phase
-- **Quality Gates** - automated verification at each phase prevents broken code from advancing
-- **Living Documentation** - architecture diagrams and specs update as code changes
-- **Session Memory** - WorkGroups track complete context so nothing is lost between sessions
-- **Interruption Recovery** - say "continue" to resume exactly where you left off
-- **Multi-Platform** - support for Claude Code, Codex, Gemini CLI, and adapter-based workflows for other platforms
-
-## When to Use KnowzCode
-
-KnowzCode adds overhead. Use it when the cost of getting implementation wrong is higher than the cost of being systematic.
-
-**Native agent mode is usually enough for:**
-
-- Single-file changes
-- Small bug fixes
-- Quick refactors
-- Tasks you can verify at a glance
+**Your agent's native mode is fine for:** single-file changes, small refactors, anything you can verify at a glance.
 
 **Reach for KnowzCode when:**
+- Outcomes aren't meeting expectations — the agent keeps missing edge cases or delivering incomplete work
+- Multi-component changes — features that touch API + database + UI + tests
+- Architecture and security matter
+- You need documentation that stays current
+- Long-running work that spans sessions
 
-- Outcomes are repeatedly incomplete or brittle
-- Work spans multiple layers or components
-- Architecture, security, and quality gates matter
-- Documentation must stay current
-- Team or enterprise standards must be enforced
-- Work needs to survive interruptions across sessions
+The overhead pays for itself when the cost of getting it wrong exceeds the cost of being thorough.
 
 ## How It Works
 
-Every feature follows a structured loop with quality gates between phases:
-
-```text
-Goal -> Analyze -> Approve -> Design -> Approve -> Build -> Audit -> Approve -> Ship
 ```
+  Goal → Analyze → ✓ → Design → ✓ → Build & Test → Audit → ✓ → Ship
+
+  ✓ = approval gate (you decide whether to proceed)
+```
+
+| Step | What Happens |
+|------|-------------|
+| **Analyze** | Scans your codebase for impact — what files change, what could break, what patterns to follow |
+| **Design** | Drafts specifications with requirements and test criteria. You review before any code is written |
+| **Build & Test** | Tests first, then code. Verification loops catch regressions |
+| **Audit** | Quality review covering code quality, security, test coverage, and adherence to your standards |
+| **Ship** | Commits, updates documentation, and captures learnings |
 
 KnowzCode automatically classifies tasks by complexity:
 
-- **Micro** - single-file fixes skip the full loop (`/knowzcode:fix`)
-- **Light** - small changes use a streamlined path
-- **Full** - complex features use the full workflow
+| Tier | When | What Happens |
+|------|------|-------------|
+| **Quick Fix** | Single file, small bug | Skips the loop. Fix, verify, done |
+| **Light** | 3 files or fewer | Streamlined two-step path |
+| **Full** | Complex features | Complete loop with all gates |
 
-## Installation
-
-### Claude Code
+## Install
 
 ```bash
+# Claude Code (recommended)
 /plugin marketplace add knowz-io/knowz-skills
 /plugin install knowzcode@knowz-skills
 cd your-project/
 /knowzcode:init
-/knowzcode:work "Build user authentication"
+
+# All platforms
+npx knowzcode                                    # Interactive setup
+npx knowzcode install --platforms claude,gemini   # Specific platforms
+npx knowzcode install --platforms all             # All 6 platforms
 ```
-
-### Codex Packaging In This Repo
-
-The packaged Codex plugin lives at [`../plugins/knowzcode`](../plugins/knowzcode).
-
-That package currently contains:
-
-- `skills/` for discoverable KnowzCode workflows
-- `knowzcode/` support content required by the workflows
-- `.codex-plugin/plugin.json` for Codex plugin metadata
-
-It intentionally does **not** ship Claude-style agent-team definitions as active Codex package content. Codex workflows use Codex-native skills and, when needed, Codex-native delegation primitives.
-
-This gives you a Codex-local plugin packaging shape in the repo. It is separate from the CLI-generated cross-platform install flow described below.
-
-### Alternative: Script Install
-
-```bash
-npx knowzcode
-npx knowzcode install --platforms claude,gemini
-npx knowzcode install --platforms all
-```
-
-### Supported Platforms
-
-**Primary:**
-
-| Platform | Shape |
-|----------|-------|
-| Claude Code | Plugin marketplace + Claude-oriented source product |
-| OpenAI Codex | Discoverable skills and packaged local plugin artifacts |
-| Gemini CLI | Native commands, skills, and adapter files |
-
-**Additional adapters:** Cursor, GitHub Copilot, and Windsurf.
 
 ## Quick Start
 
-### Start a Feature
-
 ```bash
+# Build a feature (full loop)
 /knowzcode:work "Build user authentication with email and password"
-```
 
-### Research First
-
-```bash
+# Research first, build later
 /knowzcode:explore "how is authentication implemented?"
-```
 
-### Quick Fix
-
-```bash
+# Quick fix (skips the loop)
 /knowzcode:fix "Fix typo in login button text"
+
+# Resume where you left off
+/knowzcode:continue
 ```
 
 ## Commands
 
 | Command | Description |
-|:--------|:------------|
-| `/knowzcode:init` | Initialize KnowzCode in project |
-| `/knowzcode:work <goal>` | Start feature workflow |
+|---------|-------------|
+| `/knowzcode:work <goal>` | Start a feature workflow |
 | `/knowzcode:explore <topic>` | Research before implementing |
-| `/knowzcode:audit [type]` | Run quality audits |
 | `/knowzcode:fix <target>` | Quick targeted fix |
-| `/knowzcode:status` | Check status |
-| `/knowzcode:telemetry` | Investigate production telemetry |
-| `/knowzcode:telemetry-setup` | Configure telemetry sources |
-| `/knowzcode:continue` | Resume active workflow |
-| `/knowzcode:start-work` | Redirect implementation intent into `/knowzcode:work` |
+| `/knowzcode:audit [type]` | Run quality audits |
+| `/knowzcode:init` | Initialize in your project |
+| `/knowzcode:status` | Check project status |
+| `/knowzcode:continue` | Resume active work |
+| `/knowzcode:telemetry` | Investigate production errors |
 
-## Codex Notes
+## Platform Support
 
-Current Codex support in this repo is split between:
+**Full support:**
 
-- the packaged plugin under [`../plugins/knowzcode`](../plugins/knowzcode)
-- generator/install logic elsewhere in the product source tree
+| Platform | Install |
+|----------|---------|
+| Claude Code | `/plugin install knowzcode@knowz-skills` |
+| OpenAI Codex | `npx knowzcode install --platforms codex` |
+| Gemini CLI | `npx knowzcode install --platforms gemini` |
 
-Key Codex rules for this repo:
+**Experimental:**
 
-- discoverable skills are the command surface
-- `AGENTS.md` is optional supporting context, not the required package mechanism
-- Knowz MCP setup should use shared Codex config (`codex mcp add` or `~/.codex/config.toml`)
-- validate metadata and Codex skill frontmatter with `node ../scripts/validate-platform-surfaces.mjs`
+| Platform | Install |
+|----------|---------|
+| GitHub Copilot | `npx knowzcode install --platforms copilot` |
+| Cursor | `npx knowzcode install --platforms cursor` |
+| Windsurf | `npx knowzcode install --platforms windsurf` |
 
-## Project Structure
+## Connected to Knowz
 
-```text
-your-project/
-└── knowzcode/
-    ├── knowzcode_loop.md
-    ├── knowzcode_project.md
-    ├── knowzcode_architecture.md
-    ├── knowzcode_tracker.md
-    ├── knowzcode_log.md
-    ├── specs/
-    ├── prompts/
-    ├── workgroups/
-    └── enterprise/
-```
+KnowzCode optionally connects to [Knowz](https://knowz.io) for persistent knowledge across projects:
 
-## Documentation
+- Past decisions are searchable — "Why did we choose JWT over sessions?" gets a real answer
+- Learnings captured automatically as you work
+- Conventions from one project inform work on another
 
-| Guide | Description |
-|:------|:------------|
-| [Getting Started](./docs/knowzcode_getting_started.md) | Walkthrough, MCP setup, file structure |
-| [Understanding KnowzCode](./docs/understanding-knowzcode.md) | Concepts and architecture deep dive |
-| [Workflow Reference](./docs/workflow-reference.md) | Phase details and orchestration |
-| [Prompts Guide](./docs/knowzcode_prompts_guide.md) | Prompt templates and command reference |
+Works fully without Knowz. The connection adds memory, not dependency.
 
-## Companion Product
+---
 
-| Product | Purpose |
-|:--------|:--------|
-| [knowz](../knowz/) | MCP vault features such as setup, registration, learning capture, and flush |
+## Acknowledgments
 
-KnowzCode works without the companion product, but Knowz adds vault-backed memory and knowledge workflows.
-
-## Enterprise Configuration
-
-Enterprises that self-host the Knowz platform can customize endpoints and branding by creating an `enterprise.json` file in the plugin root:
-
-```json
-{
-  "brand": "Acme Corp",
-  "mcp_endpoint": "https://mcp.acme.internal/mcp",
-  "api_endpoint": "https://api.acme.internal/api/v1"
-}
-```
-
-## Contributing
-
-Fork -> branch -> PR. See [CLAUDE.md](./CLAUDE.md) for developer docs.
+KnowzCode builds upon the [Noderr project](https://github.com/kaithoughtarchitect/noderr) by [@kaithoughtarchitect](https://github.com/kaithoughtarchitect).
 
 ## License
 
-MIT License with Commons Clause - see [LICENSE](./LICENSE) for details.
+MIT License with Commons Clause — See [LICENSE](LICENSE) for details.
+
+---
+
+<div align="center">
+
+[Full capabilities](https://github.com/knowz-io/knowz-platform/blob/develop/FEATURES.md#knowzcode--structured-ai-development) · [Documentation](./docs/) · [knowz.io](https://knowz.io)
+
+</div>
