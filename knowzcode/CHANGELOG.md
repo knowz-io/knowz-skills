@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.1] - 2026-03-31
+
+### Changed
+- Enforced mandatory vault writes at all quality gates and Tier 2 completion — passive capture instructions replaced with MUST + pending_captures.md queue fallback
+- Added missing Gate #2 (Specs) progress capture block
+- Added explicit "autonomous ≠ skip vault writes" rule and Tier 2 artifact reminder
+- Rewrote README as concise product overview
+
 ## [0.11.0] - 2026-03-29
 
 ### Changed
