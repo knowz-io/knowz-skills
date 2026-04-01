@@ -51,6 +51,8 @@ If missing: inform user to run `/knowzcode:init` first. STOP.
 
 ## Step 2: Select Execution Mode
 
+**Agent Teams is the expected execution mode for Tier 2+ workflows.** It enables persistent knowledge-liaison coverage, parallel orchestration, and consistent vault capture. Subagent delegation is a degraded fallback — it works, but knowledge capture is reduced and orchestration is single-threaded.
+
 Determine the execution mode using try-then-fallback:
 
 1. Note user preferences from `$ARGUMENTS`:
@@ -59,14 +61,21 @@ Determine the execution mode using try-then-fallback:
 
 2. **If `--subagent` NOT specified**, attempt `TeamCreate(team_name="kc-{wgid}")`:
    - **If TeamCreate succeeds** → Agent Teams is available. Choose mode:
-     - `--sequential` or Tier 2 → **Sequential Teams**: `**Execution Mode: Sequential Teams** — created team kc-{wgid}`
-     - Otherwise → **Parallel Teams** (default for Tier 3): `**Execution Mode: Parallel Teams** — created team kc-{wgid}`
-   - **If TeamCreate fails** (error, unrecognized tool, timeout) → **Subagent Delegation**: `**Execution Mode: Subagent Delegation** — Agent Teams not available, using Task() fallback`
+     - `--sequential` → **Sequential Teams**: `**Execution Mode: Sequential Teams** — created team kc-{wgid}`
+     - Tier 2 → **Lightweight Teams**: `**Execution Mode: Lightweight Teams** — created team kc-{wgid} (knowledge-liaison + builder)`
+     - Tier 3 (default) → **Parallel Teams**: `**Execution Mode: Parallel Teams** — created team kc-{wgid}`
+   - **If TeamCreate fails** (error, unrecognized tool, timeout) → **Subagent Delegation** with degradation warning:
+     ```
+     **Execution Mode: Subagent Delegation** — Agent Teams not available
+     > WARNING: Knowledge capture and parallel orchestration degraded. The knowledge-liaison
+     > will not run persistently — vault reads are one-shot and captures may be inconsistent.
+     > Enable Agent Teams: set `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` in `.claude/settings.local.json`
+     ```
 
 3. **If `--subagent` specified** → **Subagent Delegation** directly (no TeamCreate attempt):
    - Announce: `**Execution Mode: Subagent Delegation** — per user request`
 
-For all Agent Teams modes (Sequential and Parallel):
+For all Agent Teams modes (Sequential, Lightweight, and Parallel):
 - You are the **team lead** in delegate mode — you coordinate phases, present quality gates, and manage the workflow. You NEVER write code, specs, or project files directly. All work is done by teammates. (Tip: the user can press Shift+Tab to system-enforce delegate mode.)
 - After completion or if the user cancels, shut down all active teammates and clean up the team (see Cleanup section)
 
