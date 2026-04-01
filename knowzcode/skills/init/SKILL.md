@@ -375,7 +375,10 @@ See knowzcode/copilot_execution.md for the full execution guide.
 
 ### 9. Enable Agent Teams (Claude Code only)
 
-If the user is on Claude Code, **auto-enable Agent Teams with opt-out confirmation**:
+If the user is on Claude Code, **auto-enable Agent Teams with opt-out confirmation**.
+
+**If NOT on Claude Code** (detected in Step 8 platform detection — Codex, Gemini, Cursor, Copilot, Windsurf): skip this entire step. Agent Teams is a Claude Code feature. Announce:
+> Agent Teams: Not applicable (Claude Code feature). Your platform uses subagent delegation for multi-agent workflows.
 
 **Step 9a: Announce and confirm**
 

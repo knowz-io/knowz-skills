@@ -69,8 +69,9 @@ Determine the execution mode using try-then-fallback:
      **Execution Mode: Subagent Delegation** — Agent Teams not available
      > WARNING: Knowledge capture and parallel orchestration degraded. The knowledge-liaison
      > will not run persistently — vault reads are one-shot and captures may be inconsistent.
-     > Enable Agent Teams: set `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` in `.claude/settings.local.json`
      ```
+     On Claude Code, append: `> Enable Agent Teams: set CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 in .claude/settings.local.json`
+     On other platforms: no enablement instruction (Agent Teams is Claude Code-only).
 
 3. **If `--subagent` specified** → **Subagent Delegation** directly (no TeamCreate attempt):
    - Announce: `**Execution Mode: Subagent Delegation** — per user request`
