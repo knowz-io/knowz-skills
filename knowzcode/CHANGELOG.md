@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.2] - 2026-04-01
+
+### Changed
+- Made Agent Teams the expected execution mode for all Tier 2+ workflows with degradation warnings on fallback
+- Added Lightweight Teams mode for Tier 2 — persistent knowledge-liaison + builder teammate
+- Changed init Step 9 from neutral three-option prompt to auto-enable with opt-out confirmation
+- Replaced "Agents" section in CLAUDE.md template with "Agent Teams (Expected Execution Mode)" including tier table and impact explanation
+
+### Fixed
+- Added explicit platform guards for non-Claude platforms in init Step 9 and work skill degradation warning
+- Updated specialist mode constraint to reference Lightweight Teams alongside Sequential Teams
+
 ## [0.11.1] - 2026-03-31
 
 ### Changed

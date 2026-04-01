@@ -51,6 +51,8 @@ If missing: inform user to run `/knowzcode:init` first. STOP.
 
 ## Step 2: Select Execution Mode
 
+**Agent Teams is the expected execution mode for Tier 2+ workflows.** It enables persistent knowledge-liaison coverage, parallel orchestration, and consistent vault capture. Subagent delegation is a degraded fallback — it works, but knowledge capture is reduced and orchestration is single-threaded.
+
 Determine the execution mode using try-then-fallback:
 
 1. Note user preferences from `$ARGUMENTS`:
@@ -59,14 +61,22 @@ Determine the execution mode using try-then-fallback:
 
 2. **If `--subagent` NOT specified**, attempt `TeamCreate(team_name="kc-{wgid}")`:
    - **If TeamCreate succeeds** → Agent Teams is available. Choose mode:
-     - `--sequential` or Tier 2 → **Sequential Teams**: `**Execution Mode: Sequential Teams** — created team kc-{wgid}`
-     - Otherwise → **Parallel Teams** (default for Tier 3): `**Execution Mode: Parallel Teams** — created team kc-{wgid}`
-   - **If TeamCreate fails** (error, unrecognized tool, timeout) → **Subagent Delegation**: `**Execution Mode: Subagent Delegation** — Agent Teams not available, using Task() fallback`
+     - `--sequential` → **Sequential Teams**: `**Execution Mode: Sequential Teams** — created team kc-{wgid}`
+     - Tier 2 → **Lightweight Teams**: `**Execution Mode: Lightweight Teams** — created team kc-{wgid} (knowledge-liaison + builder)`
+     - Tier 3 (default) → **Parallel Teams**: `**Execution Mode: Parallel Teams** — created team kc-{wgid}`
+   - **If TeamCreate fails** (error, unrecognized tool, timeout) → **Subagent Delegation** with degradation warning:
+     ```
+     **Execution Mode: Subagent Delegation** — Agent Teams not available
+     > WARNING: Knowledge capture and parallel orchestration degraded. The knowledge-liaison
+     > will not run persistently — vault reads are one-shot and captures may be inconsistent.
+     ```
+     On Claude Code, append: `> Enable Agent Teams: set CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 in .claude/settings.local.json`
+     On other platforms: no enablement instruction (Agent Teams is Claude Code-only).
 
 3. **If `--subagent` specified** → **Subagent Delegation** directly (no TeamCreate attempt):
    - Announce: `**Execution Mode: Subagent Delegation** — per user request`
 
-For all Agent Teams modes (Sequential and Parallel):
+For all Agent Teams modes (Sequential, Lightweight, and Parallel):
 - You are the **team lead** in delegate mode — you coordinate phases, present quality gates, and manage the workflow. You NEVER write code, specs, or project files directly. All work is done by teammates. (Tip: the user can press Shift+Tab to system-enforce delegate mode.)
 - After completion or if the user cancels, shut down all active teammates and clean up the team (see Cleanup section)
 
@@ -141,7 +151,7 @@ Determine which specialists to activate (flags and natural language add to or ov
 **Mode constraints:**
 - Tier 3 Parallel Teams: Full support (Group C)
 - Tier 3 Subagent Delegation: Supported via parallel `Task()` calls
-- Sequential Teams / Tier 2: Not supported — if specialists were detected, announce: `> **Specialists: SKIPPED** — not supported in {Sequential Teams / Tier 2} mode.`
+- Sequential Teams / Lightweight Teams (Tier 2): Not supported — if specialists were detected, announce: `> **Specialists: SKIPPED** — not supported in {Sequential Teams / Lightweight Teams} mode.`
 
 Default: `SPECIALISTS_ENABLED = []` (specialists are opt-in).
 
@@ -305,7 +315,18 @@ When Tier 2 is selected, execute this streamlined workflow instead of the 5-phas
 
 > **Tier 2 still requires**: WorkGroup file (Step 4), tracker updates, log entry, and vault capture attempt. "Light" means fewer agents and phases — not fewer artifacts or vault writes.
 
-### Light Phase 1 (Inline — lead does this, no agent)
+### Tier 2 Team Setup
+
+If Agent Teams is available (TeamCreate succeeded in Step 2):
+1. Create team `kc-{wgid}` (already done in Step 2)
+2. Spawn `knowledge-liaison` as persistent teammate using the Stage 0 spawn prompt from `references/spawn-prompts.md`. Pass `VAULT_BASELINE` from Step 3.6 in the spawn prompt.
+3. Knowledge-liaison performs startup protocol (reads local context, dispatches vault readers if vaults configured, sends Context Briefing — but only to lead since no analyst/architect in Tier 2)
+
+If Agent Teams is NOT available (subagent fallback):
+- Knowledge-liaison dispatched as one-shot `Task(subagent_type="knowzcode:knowledge-liaison")` for vault baseline research before Phase 2
+- Degradation warning already shown in Step 2
+
+### Light Phase 1 (Inline — lead coordinates, knowledge-liaison active)
 
 1. Quick impact scan: grep for related files, check existing specs
 2. **Vault context**: Reference `VAULT_BASELINE` from Step 3.6 (already available). If baseline results are relevant to the affected component, factor them into the Change Set. If deeper component-specific queries are needed, call `search_knowledge({vault_id}, "past decisions about {affected_component}")` for targeted follow-up.
@@ -334,13 +355,15 @@ Approve Change Set and spec to proceed to implementation?
    - Update `knowzcode_tracker.md` with NodeID status `[WIP]`
    - Pre-implementation commit: `git add knowzcode/ && git commit -m "KnowzCode: Light spec approved for {wgid}"`
 
-### Light Phase 2A: Implementation (Builder agent)
+### Light Phase 2A: Implementation (Builder teammate)
 
-Spawn the builder using the standard Phase 2A prompt below (same for both tiers).
+**Agent Teams mode**: Spawn the builder as a teammate in the `kc-{wgid}` team using the standard Phase 2A spawn prompt from `references/spawn-prompts.md` (same prompt for both tiers). The builder runs as a persistent teammate alongside the knowledge-liaison.
+
+**Subagent fallback**: Spawn the builder via `Task(subagent_type="knowzcode:builder")` with the standard Phase 2A prompt (current behavior).
 
 The builder self-verifies against spec VERIFY criteria — no separate audit phase.
 
-### Light Phase 3 (Inline — lead does this, no agent)
+### Light Phase 3 (Inline — lead coordinates, knowledge-liaison captures)
 
 After builder completes successfully:
 1. Update spec to As-Built status
@@ -358,7 +381,11 @@ After builder completes successfully:
    ```
 4. Final commit: `git add knowzcode/ <changed files> && git commit -m "feat: {goal} (WorkGroup {wgid})"`
 5. Report completion.
-6. **Vault Write Checklist (MUST — do not skip, do not defer)**:
+6. **Knowledge-Liaison Capture** (Agent Teams mode only):
+   - DM the knowledge-liaison: `"Capture Phase 3: {wgid}. Your task: #{task-id}"`
+   - Wait for knowledge-liaison to confirm capture (max 2 minutes, else proceed with warning)
+   - After capture, shut down knowledge-liaison, then delete team `kc-{wgid}`
+7. **Vault Write Checklist (MUST — do not skip, do not defer)**:
    You MUST attempt every item. Check each off or report failure to the user.
    - [ ] WorkGroup file exists in `knowzcode/workgroups/{wgid}.md`
    - [ ] `knowzcode_tracker.md` updated with NodeID status
@@ -372,7 +399,7 @@ After builder completes successfully:
 
    Do NOT silently skip. "Light mode" means fewer agents — not fewer artifacts.
 
-**DONE** — 3 agents skipped (analyst, architect, reviewer, closer).
+**DONE** — Lightweight team: knowledge-liaison (persistent) + builder. Skipped: analyst, architect, reviewer, closer.
 
 ---
 
