@@ -375,29 +375,37 @@ See knowzcode/copilot_execution.md for the full execution guide.
 
 ### 9. Enable Agent Teams (Claude Code only)
 
-If the user is on Claude Code, **actively offer** to enable Agent Teams:
+If the user is on Claude Code, **auto-enable Agent Teams with opt-out confirmation**.
 
-**Step 9a: Ask the user**
+**If NOT on Claude Code** (detected in Step 8 platform detection — Codex, Gemini, Cursor, Copilot, Windsurf): skip this entire step. Agent Teams is a Claude Code feature. Announce:
+> Agent Teams: Not applicable (Claude Code feature). Your platform uses subagent delegation for multi-agent workflows.
+
+**Step 9a: Announce and confirm**
+
+Present to the user:
 ```
-"Would you like to enable Agent Teams? (recommended for Claude Code)
+Agent Teams will be enabled for this project (recommended).
 
-Agent Teams spawns specialized teammates for each workflow phase,
-giving you richer multi-agent coordination.
+Agent Teams provides persistent knowledge-liaison coverage, parallel orchestration,
+and consistent vault capture across all workflow phases. Without it, knowledge
+operations are one-shot and orchestration is single-threaded.
 
-Without it, KnowzCode uses subagent delegation (works fine, just less interactive)."
-
-Options:
-  - Yes, for this project only (recommended)
-  - Yes, for all projects (writes to ~/.claude/settings.json)
-  - No (use subagent fallback)
+Press enter to confirm, or type 'no' to use single-agent fallback.
 ```
 
-**Step 9b: If yes, create/update the appropriate settings file**
+**Step 9b: Handle response**
 
-- **"This project only"** → write to `.claude/settings.local.json` (project-level, gitignored)
-- **"All projects"** → write to `~/.claude/settings.json` (home-level global config)
+- **If confirmed** (enter, "yes", "y", or any affirmative):
+  1. Write `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` to `.claude/settings.local.json` (project-level, gitignored)
+  2. Follow-up prompt: `"Enable globally for all projects too? (y/n)"`
+     - If yes: also write to `~/.claude/settings.json` (home-level global config)
+     - If no: project-only (done)
 
-Read the target settings file if it exists. Merge the Agent Teams env var into it:
+- **If declined** ("no", "n"):
+  1. Skip env var write
+  2. Announce: `"Agent Teams not enabled. Knowledge capture will be reduced — vault operations will be one-shot instead of persistent. You can enable later by adding CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 to .claude/settings.local.json"`
+
+Read the target settings file(s) if they exist. Merge the Agent Teams env var into existing content:
 
 ```json
 {
@@ -409,7 +417,7 @@ Read the target settings file if it exists. Merge the Agent Teams env var into i
 
 If the file already has other keys, preserve them and merge. If it doesn't exist, create it with the content above.
 
-**Step 7.5c: Windows note**
+**Step 9c: Windows note**
 
 If the platform is Windows (`process.platform === 'win32'` or detected via environment):
 ```
@@ -417,8 +425,6 @@ Note: On Windows, Agent Teams runs in "in-process" mode by default
 (split-pane tmux mode is not supported in Windows Terminal).
 This works correctly — no action needed.
 ```
-
-**Step 7.5d: If no, proceed normally** — subagent delegation works without any configuration.
 
 ### 10. Optional: Set up enterprise compliance (experimental)
 
@@ -453,7 +459,7 @@ Created:
 
 Platform adapters: [list generated adapters or "None (skip)"]
 
-Agent Teams: [Enabled (.claude/settings.local.json) | Not enabled (subagent fallback)]
+Agent Teams: [Enabled (.claude/settings.local.json) — recommended | Declined (subagent fallback — reduced knowledge capture)]
 
 Next steps:
   1. Review knowzcode/knowzcode_project.md and add project details
