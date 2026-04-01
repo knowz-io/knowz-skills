@@ -56,11 +56,27 @@ Never skip phases. PAUSE for user approval at each gate:
 TDD is mandatory — no production code without a failing test first.
 Red-Green-Refactor cycle for every feature/criterion in the spec.
 
-## Agents
-Specialized agents handle each phase when using Agent Teams or subagent execution:
-- `analyst` (1A), `architect` (1B), `builder` (2A), `reviewer` (2B), `closer` (3)
-- Agent Teams is the preferred execution model when enabled (experimental, requires `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` env var)
-- Subagent fallback for environments without Agent Teams
+## Agent Teams (Expected Execution Mode)
+
+Agent Teams is the expected execution mode for all KnowzCode workflows (Tier 2+).
+Without it, knowledge capture is degraded and parallel orchestration is unavailable.
+
+| Tier | Team Mode | Agents |
+|------|-----------|--------|
+| Tier 1 (Micro) | No team | Redirected to `/knowzcode:fix` |
+| Tier 2 (Light) | Lightweight team | `knowledge-liaison` (persistent) + `builder` |
+| Tier 3 (Full) | Full parallel team | `knowledge-liaison`, `analyst`, `architect`, `builder(s)`, `reviewer(s)`, `closer` + opt-in specialists |
+
+If Agent Teams is not available, KnowzCode falls back to subagent delegation with a degradation warning.
+Enable via `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` in `.claude/settings.local.json`.
+
+### Why Agent Teams Matters
+The `knowledge-liaison` agent runs persistently across all phases, coordinating vault reads (two-tier: baseline + deep research) and vault writes (at every quality gate). Without Agent Teams:
+- Vault reads collapse to baseline-only (one-shot queries, no deep research)
+- Vault writes happen inconsistently (no persistent coordinator)
+- No parallel orchestration (builders run sequentially)
+
+**Always prefer `/knowzcode:work` over `/knowzcode:fix`** for anything beyond single-file micro-fixes to ensure knowledge-liaison coverage.
 
 ## Commands
 - `/knowzcode:work "goal"` — Start feature workflow
