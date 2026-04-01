@@ -31,12 +31,16 @@ Approve this Change Set to proceed to specification?
 **Autonomous Mode**: If `AUTONOMOUS_MODE = true`, present gate info for transparency, log `[AUTO-APPROVED] Gate #1`, and proceed immediately.
 If `AUTONOMOUS_MODE = false`: If rejected — re-run analyst with user feedback. If approved — update tracker, proceed.
 
-### Lead Responsibility: Progress Capture (Gate #1)
+### Lead Responsibility: Progress Capture (Gate #1) — MUST
 
-**Lead responsibility.** After gate approval, the lead triggers progress capture. If vaults are configured and knowledge-liaison is active:
-- DM knowledge-liaison: `"Capture Phase 1A: {wgid}. Your task: #{task-id}"`
-- Include the WorkGroup file's `**KnowledgeId:**` value (if present) so knowledge-liaison can pass it to knowz:writer for update mode
-- The knowledge-liaison owns extraction, vault routing, and writer dispatch (see `agents/knowledge-liaison.md` — Phase Extraction Guide)
+After gate approval, the lead MUST trigger progress capture:
+- **If vaults configured + knowledge-liaison active**: DM knowledge-liaison: `"Capture Phase 1A: {wgid}. Your task: #{task-id}"`
+  Include the WorkGroup file's `**KnowledgeId:**` value (if present) so knowledge-liaison can pass it to knowz:writer for update mode.
+  The knowledge-liaison owns extraction, vault routing, and writer dispatch (see `agents/knowledge-liaison.md` — Phase Extraction Guide).
+- **If vaults configured + no knowledge-liaison**: call MCP directly (direct write fallback per `knowzcode_loop.md` Section 7).
+- **If MCP unavailable**: Queue capture to `knowzcode/pending_captures.md` AND announce to user: `**Vault capture skipped — MCP unavailable at Gate #1. Queued to pending_captures.md.**`
+
+Do NOT silently skip this step.
 
 ---
 
@@ -68,18 +72,32 @@ git add knowzcode/
 git commit -m "KnowzCode: Specs approved for {WorkGroupID}"
 ```
 
+### Lead Responsibility: Progress Capture (Gate #2) — MUST
+
+After gate approval, the lead MUST trigger progress capture for spec design decisions:
+- **If vaults configured + knowledge-liaison active**: DM knowledge-liaison: `"Capture Phase 1B: {wgid}. Your task: #{task-id}"`
+  Include the WorkGroup file's `**KnowledgeId:**` value (if present) so knowledge-liaison can pass it to knowz:writer for update mode.
+- **If vaults configured + no knowledge-liaison**: call MCP directly (direct write fallback per `knowzcode_loop.md` Section 7).
+- **If MCP unavailable**: Queue capture to `knowzcode/pending_captures.md` AND announce to user: `**Vault capture skipped — MCP unavailable at Gate #2. Queued to pending_captures.md.**`
+
+Do NOT silently skip this step.
+
 ---
 
 ## Phase 2A Output + Progress Capture
 
 When complete, present implementation summary including files changed, tests written, and test results.
 
-### Lead Responsibility: Progress Capture (Phase 2A)
+### Lead Responsibility: Progress Capture (Phase 2A) — MUST
 
-**Lead responsibility.** After Phase 2A completion, the lead triggers progress capture. If vaults are configured and knowledge-liaison is active:
-- DM knowledge-liaison: `"Capture Phase 2A: {wgid}. Your task: #{task-id}"`
-- Include the WorkGroup file's `**KnowledgeId:**` value (if present) so knowledge-liaison can pass it to knowz:writer for update mode
-- The knowledge-liaison owns extraction, vault routing, and writer dispatch (see `agents/knowledge-liaison.md` — Phase Extraction Guide)
+After Phase 2A completion, the lead MUST trigger progress capture:
+- **If vaults configured + knowledge-liaison active**: DM knowledge-liaison: `"Capture Phase 2A: {wgid}. Your task: #{task-id}"`
+  Include the WorkGroup file's `**KnowledgeId:**` value (if present) so knowledge-liaison can pass it to knowz:writer for update mode.
+  The knowledge-liaison owns extraction, vault routing, and writer dispatch (see `agents/knowledge-liaison.md` — Phase Extraction Guide).
+- **If vaults configured + no knowledge-liaison**: call MCP directly (direct write fallback per `knowzcode_loop.md` Section 7).
+- **If MCP unavailable**: Queue capture to `knowzcode/pending_captures.md` AND announce to user: `**Vault capture skipped — MCP unavailable after Phase 2A. Queued to pending_captures.md.**`
+
+Do NOT silently skip this step.
 
 ---
 
@@ -140,19 +158,37 @@ Spawn a NEW `builder` with the standard Phase 2A prompt plus gap fix context. Th
 
 Launch parallel `Task()` calls — one for gap fix (builder), then one for re-audit (reviewer). Repeat as needed.
 
-### Lead Responsibility: Progress Capture (Phase 2B)
+### Lead Responsibility: Progress Capture (Phase 2B) — MUST
 
-**Lead responsibility.** After gate approval, the lead triggers progress capture. If vaults are configured and knowledge-liaison is active:
-- DM knowledge-liaison: `"Capture Phase 2B: {wgid}. Your task: #{task-id}"`
-- Include the WorkGroup file's `**KnowledgeId:**` value (if present) so knowledge-liaison can pass it to knowz:writer for update mode
-- The knowledge-liaison owns extraction, vault routing, and writer dispatch (see `agents/knowledge-liaison.md` — Phase Extraction Guide)
+After gate approval, the lead MUST trigger progress capture:
+- **If vaults configured + knowledge-liaison active**: DM knowledge-liaison: `"Capture Phase 2B: {wgid}. Your task: #{task-id}"`
+  Include the WorkGroup file's `**KnowledgeId:**` value (if present) so knowledge-liaison can pass it to knowz:writer for update mode.
+  The knowledge-liaison owns extraction, vault routing, and writer dispatch (see `agents/knowledge-liaison.md` — Phase Extraction Guide).
+- **If vaults configured + no knowledge-liaison**: call MCP directly (direct write fallback per `knowzcode_loop.md` Section 7).
+- **If MCP unavailable**: Queue capture to `knowzcode/pending_captures.md` AND announce to user: `**Vault capture skipped — MCP unavailable after Phase 2B. Queued to pending_captures.md.**`
+
+Do NOT silently skip this step.
 
 ---
 
 ## Phase 3 Output
 
-When complete, if MCP is configured, vaults are available, and knowledge-liaison is active:
-- The closer DMs knowledge-liaison: `"Capture Phase 3: {wgid}. Your task: #{task-id}"`. Include the WorkGroup and spec files' `**KnowledgeId:**` values if present. The knowledge-liaison dispatches `knowz:writer` for Phase 3 capture. The lead waits for the writer task to complete before shutdown.
+### Vault Write — MUST (before reporting completion)
+
+- **If vaults configured + knowledge-liaison active**: The closer DMs knowledge-liaison: `"Capture Phase 3: {wgid}. Your task: #{task-id}"`. Include the WorkGroup and spec files' `**KnowledgeId:**` values if present. The knowledge-liaison dispatches `knowz:writer` for Phase 3 capture. The lead waits for the writer task to complete before shutdown.
+- **If vaults configured + no knowledge-liaison**: The closer calls MCP directly (direct write fallback per `knowzcode_loop.md` Section 7).
+- **If MCP unavailable**: Queue capture to `knowzcode/pending_captures.md` (see `agents/closer.md` MCP Graceful Degradation) AND announce to user: `**Vault capture skipped — MCP unavailable at Phase 3. Queued to pending_captures.md. Run /knowz flush when MCP is available.**`
+
+Do NOT silently skip this step.
+
+### Vault Write Checklist (Tier 3)
+
+Before reporting "Workflow Complete", verify:
+- [ ] WorkGroup file created and updated to "Closed" in `knowzcode/workgroups/`
+- [ ] `knowzcode_tracker.md` updated — all NodeIDs at `[VERIFIED]`
+- [ ] `knowzcode_log.md` ARC-Completion entry written
+- [ ] MCP progress capture attempted (or failure queued to `pending_captures.md` and announced to user)
+- [ ] Specs updated to As-Built / FINAL status
 
 Update workgroup to "Closed" and report:
 
@@ -166,4 +202,5 @@ Update workgroup to "Closed" and report:
 - NodeIDs completed: {list}
 - Specs finalized: {count}
 - Tech debt scheduled: {count REFACTOR_ tasks}
+- Vault captures: {completed / skipped — reason}
 ```
