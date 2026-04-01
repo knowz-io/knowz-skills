@@ -150,7 +150,7 @@ Determine which specialists to activate (flags and natural language add to or ov
 **Mode constraints:**
 - Tier 3 Parallel Teams: Full support (Group C)
 - Tier 3 Subagent Delegation: Supported via parallel `Task()` calls
-- Sequential Teams / Tier 2: Not supported — if specialists were detected, announce: `> **Specialists: SKIPPED** — not supported in {Sequential Teams / Tier 2} mode.`
+- Sequential Teams / Lightweight Teams (Tier 2): Not supported — if specialists were detected, announce: `> **Specialists: SKIPPED** — not supported in {Sequential Teams / Lightweight Teams} mode.`
 
 Default: `SPECIALISTS_ENABLED = []` (specialists are opt-in).
 
