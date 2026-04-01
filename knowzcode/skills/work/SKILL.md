@@ -115,6 +115,8 @@ If `AUTONOMOUS_MODE = true`, announce after the execution mode announcement:
 > **Autonomous Mode: ACTIVE** — Gates presented for transparency but auto-approved.
 > Safety exceptions still pause: critical blockers, HIGH/CRITICAL security findings, >3 same-phase failures, complex architecture discrepancies, >3 gap-fix iterations per partition.
 
+**Autonomous + Vault Write Rule**: Autonomous mode auto-approves quality gates — it does NOT auto-skip vault writes, WorkGroup files, tracker updates, or log entries. Every gate capture and completion artifact is still MUST. "Autonomous" means "no user approval needed for gates" — it does not mean "skip the workflow structure."
+
 ## Step 2.6: Specialist Detection
 
 Set `SPECIALISTS_ENABLED = []` (empty list).
@@ -301,6 +303,8 @@ If `$ARGUMENTS` contains `--tier light`, force Tier 2. If `--tier full`, force T
 
 When Tier 2 is selected, execute this streamlined workflow instead of the 5-phase Tier 3 below.
 
+> **Tier 2 still requires**: WorkGroup file (Step 4), tracker updates, log entry, and vault capture attempt. "Light" means fewer agents and phases — not fewer artifacts or vault writes.
+
 ### Light Phase 1 (Inline — lead does this, no agent)
 
 1. Quick impact scan: grep for related files, check existing specs
@@ -354,11 +358,19 @@ After builder completes successfully:
    ```
 4. Final commit: `git add knowzcode/ <changed files> && git commit -m "feat: {goal} (WorkGroup {wgid})"`
 5. Report completion.
-6. **Progress capture** (if MCP is configured): Read `knowzcode/knowzcode_vaults.md`, resolve vault IDs. Read the WorkGroup file for the `**KnowledgeId:**` value.
-   - **If KnowledgeId exists**: call `get_knowledge_item(id)`. If found → `update_knowledge` with the completion record. If not found → remove `**KnowledgeId:**` from the WorkGroup file, fall through to create.
-   - **If no KnowledgeId**: check for existing entry via `search_by_title_pattern("WorkGroup: {wgid}*")` — update if found, create if not.
-   - **After create**: write the returned ID back as `**KnowledgeId:**` in the WorkGroup file.
-   - **If MCP unavailable**: skip capture gracefully, preserve existing KnowledgeId.
+6. **Vault Write Checklist (MUST — do not skip, do not defer)**:
+   You MUST attempt every item. Check each off or report failure to the user.
+   - [ ] WorkGroup file exists in `knowzcode/workgroups/{wgid}.md`
+   - [ ] `knowzcode_tracker.md` updated with NodeID status
+   - [ ] `knowzcode_log.md` entry written
+   - [ ] MCP progress capture attempted:
+     - Read `knowzcode/knowzcode_vaults.md`, resolve vault IDs. Read the WorkGroup file for the `**KnowledgeId:**` value.
+     - **If KnowledgeId exists**: call `get_knowledge_item(id)`. If found → `update_knowledge` with the completion record. If not found → remove `**KnowledgeId:**` from the WorkGroup file, fall through to create.
+     - **If no KnowledgeId**: check for existing entry via `search_by_title_pattern("WorkGroup: {wgid}*")` — update if found, create if not.
+     - **After create**: write the returned ID back as `**KnowledgeId:**` in the WorkGroup file.
+   - [ ] If MCP unavailable: queue capture to `knowzcode/pending_captures.md` (same format as closer — see `agents/closer.md` MCP Graceful Degradation) AND announce to user: `**Vault capture skipped — MCP unavailable. Queued to pending_captures.md. Run /knowz flush when MCP is available.**`
+
+   Do NOT silently skip. "Light mode" means fewer agents — not fewer artifacts.
 
 **DONE** — 3 agents skipped (analyst, architect, reviewer, closer).
 
