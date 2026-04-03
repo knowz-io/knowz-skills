@@ -280,33 +280,24 @@ Autonomous mode is per-WorkGroup and does not carry over.
 
 ## 6. MCP Integration (Optional but Recommended)
 
-If KnowzCode MCP server is configured (`knowzcode/mcp_config.md` or `knowzcode/knowzcode_vaults.md`), agents can leverage vault queries to enhance every phase.
+If MCP is configured, agents can leverage vault queries to enhance every phase. Vault configuration lives in `knowz-vaults.md` at the project root — created via `/knowz setup`.
 
-**Cross-platform config**: MCP configuration is stored in `knowzcode/mcp_config.md` and
-`knowzcode/knowzcode_vaults.md` — both platform-agnostic. If MCP was configured on one
-platform, other platforms detect and reuse the existing config. Set `KNOWZ_API_KEY` as an
-environment variable to enable automatic MCP authentication on any platform.
+**Cross-platform config**: Set `KNOWZ_API_KEY` as an environment variable to enable automatic MCP authentication on any platform.
 
-**Before using MCP, read `knowzcode/knowzcode_vaults.md` to resolve vault IDs by type.** Use the vault's description to confirm the query is appropriate for that vault. If a single vault covers all types, use it for everything. Never hardcode vault names — always resolve from config.
+**Before using MCP, read `knowz-vaults.md` (project root) to discover vault IDs, descriptions, and routing rules.** Use each vault's description and "When to query"/"When to save" rules to confirm the query is appropriate for that vault. If a single vault is configured, use it for everything. If no vault file exists, fall back to `list_vaults()`. Never hardcode vault names — always resolve from config.
 
-### Vault Types
+### Vault Routing
 
-| Type | Purpose | Example Queries |
-|------|---------|-----------------|
-| **code** | Reference implementations, code snippets, API patterns | `"authentication middleware pattern"`, `"error handling in {framework}"` |
-| **ecosystem** | Business rules, conventions, decisions, integrations, platform knowledge | `"checkout flow rules"`, `"pricing constraints"`, `"Stripe webhook setup"` |
-| **finalizations** | WorkGroup completion summaries, outcome records | `"past decisions about {component}"`, `"similar WorkGroups"` |
-
-A project may configure one vault covering all types (common for small teams) or multiple specialized vaults. `knowz:writer` (or direct MCP calls) writes to vaults; `knowz:reader` has read-only access. The writer is dispatched at quality gates to route writes to the correct vault based on content type.
+Vault routing is driven by `knowz-vaults.md` — each vault entry has "When to query" and "When to save" rules that determine which vault handles which content. A project may configure one vault covering everything (common for small teams) or multiple specialized vaults. `knowz:writer` (or direct MCP calls) writes to vaults; `knowz:reader` has read-only access. The writer is dispatched at quality gates and routes writes based on vault descriptions and save rules.
 
 ### Phase-Specific Usage
 
 | Phase | MCP Tool | Purpose |
 |-------|----------|---------|
-| **1A (Analysis)** | `search_knowledge({vault matching "ecosystem" type}, "past decisions about {domain}")` | Find prior decisions affecting components |
-| **1B (Spec)** | `ask_question({vault matching "ecosystem" type}, "conventions for {component_type}?")` | Check team conventions before drafting |
-| **2A (Build)** | `search_knowledge({vault matching "code" type}, "{similar_feature} implementation")` | Find reference implementations |
-| **2B (Audit)** | `ask_question({vault matching "ecosystem" type}, "standards for {domain}", researchMode=true)` | Comprehensive standards check |
+| **1A (Analysis)** | `search_knowledge({vault_id}, "past decisions about {domain}")` | Find prior decisions affecting components |
+| **1B (Spec)** | `ask_question({vault_id}, "conventions for {component_type}?")` | Check team conventions before drafting |
+| **2A (Build)** | `search_knowledge({vault_id}, "{similar_feature} implementation")` | Find reference implementations |
+| **2B (Audit)** | `ask_question({vault_id}, "standards for {domain}", researchMode=true)` | Comprehensive standards check |
 | **3 (Close)** | Dispatch `knowz:writer` (or `create_knowledge` directly if no writer) | Capture patterns, decisions, workarounds |
 
 ### Knowz Vault Agents (Multi-Agent Platforms)
@@ -321,7 +312,7 @@ On platforms without multi-agent orchestration, the closer handles vault writes 
 
 ### Enterprise: Team Standards
 
-At workflow start, if an enterprise-type vault is configured (read `knowzcode/knowzcode_vaults.md` to find vault matching type "enterprise", then check `knowzcode/enterprise/compliance_manifest.md` for `mcp_compliance_enabled: true`):
+At workflow start, if an enterprise vault is configured (read `knowz-vaults.md` to find a vault whose description mentions "enterprise", "compliance", or "audit", then check `knowzcode/enterprise/compliance_manifest.md` for `mcp_compliance_enabled: true`):
 - Pull team-wide standards and merge into quality gate criteria
 - Push audit results to the resolved enterprise vault after Phase 2B
 - Push completion records to the resolved enterprise vault after Phase 3
@@ -334,7 +325,57 @@ All phases work without MCP. MCP enhances analysis depth and organizational lear
 
 ## 7. Learning Capture (Optional)
 
-> **Vault content must be detailed and self-contained.** Vault entries are retrieved via semantic search — not read directly like local files. Include full reasoning, specific technology names, code examples, and file paths. See `knowzcode/knowzcode_vaults.md` Content Detail Principle.
+> **Content Detail Principle:** Vault entries live in a vector search index — they are chunked and retrieved via semantic search. Unlike local files (specs, workgroups, logs) which are read directly and benefit from being scannable, vault entries must be **self-contained, detailed, and keyword-rich** because they are discovered by meaning, not by file path.
+>
+> **Include in every vault entry:**
+> - Full reasoning and context — why, not just what
+> - Specific technology names, library versions, framework details
+> - Code examples, file paths, error messages where relevant
+> - Consequences and alternatives considered
+>
+> Write vault content as if the reader has no project context — they will find this entry via a search query months from now.
+
+### Minimum Capture Requirements
+
+Agents MUST capture these categories at quality gates:
+
+| Category | When | What |
+|----------|------|------|
+| Scope decisions | Phase 1A gate | What included/excluded, risk reasoning |
+| Implementation patterns | Phase 2A | Patterns, workarounds, performance from TDD |
+| Security & audit findings | Phase 2B gate | Vulnerabilities, audit gaps, remediation |
+| Conventions established | Phase 3 | New conventions with rationale and examples |
+| Architecture discoveries | Phase 3 | Structural insights, component relationships |
+| Completion record | Phase 3 | Goal, outcome, NodeIDs, duration, learnings |
+
+### Mid-Work Discovery Signals
+
+Agents should watch for these during any phase and queue via knowledge-liaison (`"Consider: {description}"`):
+
+| Signal | Examples |
+|--------|----------|
+| Corrected assumption | "It turns out...", unexpected behavior |
+| Undocumented dependency | Hidden coupling, implicit ordering |
+| Workaround applied | Limitation-driven alternatives |
+| Configuration gotcha | Non-obvious defaults, env-specific settings |
+| Performance finding | Before/after measurements |
+| API quirk | Undocumented behavior, version differences |
+
+When detected, capture immediately — do not defer to finalization. Sessions can end unexpectedly.
+
+### Architecture Documentation Depth
+
+When capturing architectural knowledge, include:
+1. **Component relationships** — how modules interact, dependency direction, data flow
+2. **Design rationale** — why this structure was chosen over alternatives
+3. **Boundary definitions** — what belongs in each layer/module, what does not
+4. **Integration contracts** — API surfaces, event schemas, shared data structures
+5. **Error propagation** — how failures cascade, circuit breaker locations
+6. **Configuration surface** — what is configurable, default values, environment differences
+
+Each architectural entry should include file paths, code references, and enough context to be understood without access to the codebase.
+
+### Signal Types
 
 During finalization, scan the WorkGroup for insight-worthy patterns:
 
@@ -373,7 +414,7 @@ The knowledge-liaison handles routing and dispatch. If MCP is unavailable, captu
 
 **Single-agent / no writer (direct MCP writes):**
 
-If MCP is available but no `knowz:writer`, resolve vault IDs from `knowzcode/knowzcode_vaults.md` before writing:
+If MCP is available but no `knowz:writer`, resolve vault IDs from `knowz-vaults.md` (project root) before writing:
 
 - After Phase 1A: `create_knowledge({ecosystem_vault}, title="Scope: {descriptive goal summary}", content="[CONTEXT] {problem description, what prompted this work, constraints}\n[INSIGHT] {scope decisions — what's included/excluded and why}\n[RATIONALE] {risk assessment with full reasoning, affected files, mitigation}\n[TAGS] scope, {domain}", tags=["scope", "{domain}"])`
 - After Phase 2A: Capture implementation patterns and workarounds discovered during TDD cycles — include specific file paths, code examples, and the problem each pattern solves
@@ -389,7 +430,7 @@ If MCP is available but no `knowz:writer`, resolve vault IDs from `knowzcode/kno
 3. No other agent should call `create_knowledge` directly
 
 **When no knowz:writer (single-agent / sequential):**
-1. Read `knowzcode/knowzcode_vaults.md` to resolve vault IDs by type
+1. Read `knowz-vaults.md` (project root) to resolve vault IDs and routing rules
 2. Detect learning candidates from WorkGroup file content
 3. Check for duplicates via `search_knowledge` — skip if substantially similar exists
 4. Prompt user for approval before saving
@@ -399,7 +440,7 @@ If MCP is available but no `knowz:writer`, resolve vault IDs from `knowzcode/kno
 ### Audit Trail (Enterprise)
 
 After Phase 3:
-1. Read `knowzcode/knowzcode_vaults.md` to find vault matching type "enterprise"
+1. Read `knowz-vaults.md` to find a vault whose description mentions "enterprise", "compliance", or "audit"
 2. Only push if an enterprise vault is configured
 - Push WorkGroup completion record with goal, NodeIDs, audit score, and decisions
 - Push architecture drift findings if any detected during finalization

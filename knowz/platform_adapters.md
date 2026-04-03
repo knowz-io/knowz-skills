@@ -219,7 +219,6 @@ After setup, tell the user to restart Codex if the tools do not appear immediate
 2. If `knowz-vaults.md` exists, compare it and offer to update it.
 3. If it does not exist, let the user choose vaults and generate `knowz-vaults.md`.
 4. If no vaults exist, offer to create one with `mcp__knowz__create_vault`.
-5. If `knowzcode/knowzcode_vaults.md` exists, update shared vault IDs there as well.
 ```
 
 #### .agents/skills/knowz-register/SKILL.md
@@ -255,8 +254,7 @@ Resolve endpoints using `enterprise.json`, `--dev`, default production, and `--e
    - Use `KNOWZ_API_KEY` as the bearer token env var.
    - If you cannot safely persist the environment variable from the current Codex session, tell the user exactly what to set and continue.
 6. Generate `knowz-vaults.md` for the newly created vault.
-7. If `knowzcode/knowzcode_vaults.md` exists, update shared vault IDs there too.
-8. Tell the user to restart Codex after configuration.
+7. Tell the user to restart Codex after configuration.
 ```
 
 #### .agents/skills/knowz-status/SKILL.md

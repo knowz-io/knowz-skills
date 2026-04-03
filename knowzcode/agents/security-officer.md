@@ -34,7 +34,7 @@ Persistent security officer across Stages 0–3. Threat model the goal. Review C
    - **I**nformation Disclosure: Data exposure risks
    - **D**enial of Service: Availability risks
    - **E**levation of Privilege: Authorization risks
-4. If MCP is configured: Read `knowzcode/knowzcode_vaults.md`, resolve vault matching "ecosystem" type, `search_knowledge({vault_id}, "security patterns for {domain}")`
+4. If MCP is configured: Read `knowz-vaults.md` (project root), resolve vault whose description matches "ecosystem" (e.g., contains "ecosystem", "decisions", or "conventions"), `search_knowledge({vault_id}, "security patterns for {domain}")`
 5. Broadcast findings: `"Initial threat assessment for {goal}"`
 
 ## Stage 1: Change Set Security Review

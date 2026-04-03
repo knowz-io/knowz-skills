@@ -170,7 +170,7 @@ Read these files ONCE (do NOT re-read between phases):
 
 If MCP is configured and enterprise compliance is enabled:
 1. Check `knowzcode/enterprise/compliance_manifest.md` for `mcp_compliance_enabled: true`
-2. If enabled: Read `knowzcode/knowzcode_vaults.md` to find vault matching type "enterprise", then `ask_question({resolved_enterprise_vault_id}, "team standards for {project_type}")`
+2. If enabled: Read `knowz-vaults.md` from project root, find vault with enterprise/compliance description, then `ask_question({resolved_enterprise_vault_id}, "team standards for {project_type}")`
 3. Merge returned standards into WorkGroup context for quality gate criteria
 
 If MCP is not configured or enterprise is not enabled, skip this step.
@@ -183,43 +183,13 @@ Otherwise:
 
 ### MCP Probe
 
-1. Read `knowzcode/knowzcode_vaults.md` — partition entries into CONFIGURED (non-empty ID) and UNCREATED (empty ID).
-2. Call `list_vaults(includeStats=true)` **always** — regardless of whether any IDs exist in the file.
-3. If `list_vaults()` fails:
-   - Check if `knowzcode/knowzcode_vaults.md` has any CONFIGURED entries (non-empty ID).
-   - **If CONFIGURED entries exist**: Set `MCP_ACTIVE = true`, `VAULTS_CONFIGURED = true`. Announce: `**MCP Status: Lead probe failed — vault agents will verify independently**`
-   - **If no CONFIGURED entries**: Set `MCP_ACTIVE = false`, `VAULTS_CONFIGURED = false`. Announce: `**MCP Status: Not connected**`
-4. If `list_vaults()` succeeds AND UNCREATED list is non-empty → present the **Vault Creation Prompt**:
+1. Read `knowz-vaults.md` from project root — parse vault IDs. If file not found, call `list_vaults(includeStats=true)` to discover vaults.
+2. If `list_vaults()` fails AND no `knowz-vaults.md` exists → `MCP_ACTIVE = false`, `VAULTS_CONFIGURED = false`. Announce: `**MCP Status: Not connected**`
+3. If `list_vaults()` fails BUT `knowz-vaults.md` has vault IDs → `MCP_ACTIVE = true`, `VAULTS_CONFIGURED = true`. Announce: `**MCP Status: Lead probe failed — vault agents will verify independently**`
+4. If vaults discovered but no `knowz-vaults.md` exists → suggest `"Run /knowz setup to configure vault routing."` Set `VAULTS_CONFIGURED = true` (use discovered IDs for baseline).
+5. Set `MCP_ACTIVE` and `VAULTS_CONFIGURED` based on results. Announce: `**MCP Status: Connected — N vault(s) available**` or `**MCP Status: Connected — no vaults configured (knowledge capture disabled)**`
 
-   ```markdown
-   ## Vault Setup
-
-   Your Knowz API key is valid and MCP is connected, but {N} default vault(s) haven't been created yet.
-   Creating vaults enables knowledge capture throughout the workflow:
-
-   | Vault | Type | Description | Written During |
-   |-------|------|-------------|----------------|
-   ```
-
-   Build table rows dynamically from the UNCREATED entries only. Derive "Written During" from each vault's Write Conditions field in `knowzcode_vaults.md`.
-
-   Then present options:
-   ```
-   Options:
-     **A) Create all {N} vaults** (recommended)
-     **B) Select which to create**
-     **C) Skip** — proceed without vaults (can create later with `/knowz setup`)
-   ```
-
-5. Handle user selection:
-   - **A**: For each UNCREATED entry, call MCP `create_vault(name, description)`. If `create_vault` is not available, fall back to matching by name against `list_vaults()` results. Update `knowzcode_vaults.md`: fill ID field, change H3 heading from `(not created)` to vault ID. Report any failures.
-   - **B**: Ask which vaults to create, then create only selected ones.
-   - **C**: Log `"Vault creation skipped — knowledge capture disabled."` Continue.
-   - If BOTH `create_vault()` and name-matching fail: log failure, set `VAULTS_CONFIGURED = false`, continue. Report: `"Vault creation failed — proceeding without knowledge capture. Run /knowz setup to retry."`
-6. After resolution, set:
-   - `MCP_ACTIVE = true` (MCP works regardless of vault creation outcome)
-   - `VAULTS_CONFIGURED = true` if at least 1 vault now has a valid ID, else `false`
-   - Announce: `**MCP Status: Connected — N vault(s) available**` or `**MCP Status: Connected — no vaults configured (knowledge capture disabled)**`
+If no vaults are configured, suggest `/knowz setup`.
 
 ### Baseline Vault Query
 
@@ -391,7 +361,7 @@ After builder completes successfully:
    - [ ] `knowzcode_tracker.md` updated with NodeID status
    - [ ] `knowzcode_log.md` entry written
    - [ ] MCP progress capture attempted:
-     - Read `knowzcode/knowzcode_vaults.md`, resolve vault IDs. Read the WorkGroup file for the `**KnowledgeId:**` value.
+     - Read `knowz-vaults.md`, resolve vault IDs. Read the WorkGroup file for the `**KnowledgeId:**` value.
      - **If KnowledgeId exists**: call `get_knowledge_item(id)`. If found → `update_knowledge` with the completion record. If not found → remove `**KnowledgeId:**` from the WorkGroup file, fall through to create.
      - **If no KnowledgeId**: check for existing entry via `search_by_title_pattern("WorkGroup: {wgid}*")` — update if found, create if not.
      - **After create**: write the returned ID back as `**KnowledgeId:**` in the WorkGroup file.
@@ -434,9 +404,7 @@ Scan `knowzcode/knowzcode_tracker.md` for outstanding `REFACTOR_` tasks that ove
 
 **Parallel Orchestration**: Read [references/parallel-orchestration.md](references/parallel-orchestration.md) for Stages 0-3 orchestration details, WorkGroup file format, and task dependency graph.
 
-> **MCP Probe Design Note:** Multiple agents perform independent MCP verification (`list_vaults()`) at different points in the workflow. This redundancy is intentional — agents spawn at different times and MCP connectivity can change between spawns. Each agent's probe is authoritative for its own MCP state.
->
-> **Vault Creation Failure Recovery:** If BOTH `create_vault()` and name-matching fallback fail: log failure, set `VAULTS_CONFIGURED = false`, continue without vault. Report: `"⚠️ Vault creation failed — proceeding without knowledge capture. Run /knowz setup to retry."`
+> **MCP Probe Design Note:** Multiple agents perform independent MCP verification (`list_vaults()`) at different points in the workflow. This redundancy is intentional — agents spawn at different times and MCP connectivity can change between spawns. Each agent's probe is authoritative for its own MCP state. Vault configuration is read from `knowz-vaults.md` at the project root.
 
 - **Stage 0**: Create team, use MCP/vault baseline from Step 3.6, spawn knowledge-liaison/analyst/architect/scanner/specialist agents in parallel
 - **Stage 1**: Analyst completes Change Set → Gate #1 → Architect drafts specs → Gate #2

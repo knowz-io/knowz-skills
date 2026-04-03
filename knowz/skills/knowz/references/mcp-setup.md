@@ -100,9 +100,6 @@ Before prompting for an API key, check known config sources in order:
    - `~/.gemini/settings.json` → same
    - `.vscode/mcp.json` → `servers.knowz.headers`
 
-3. **KnowzCode vault config** (if present):
-   - `knowzcode/knowzcode_vaults.md` — if vaults have non-empty IDs, note for interop
-
 If a key is discovered, offer to reuse:
 ```
 Found existing API key (ending ...{last4}) in {source}. Use this key? [Yes/No]

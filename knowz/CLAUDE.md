@@ -54,12 +54,8 @@ knowz-skill/
 
 When the knowz plugin is used alongside the KnowzCode plugin (`knowzcode`):
 
-- **Vault file interop:** `/knowz setup` and `/knowz register` check for `knowzcode/knowzcode_vaults.md` and update vault IDs there when both files exist.
 - **Vault agent dispatch:** KnowzCode dispatches `knowz:writer` at quality gates and `knowz:reader` at Stage 0 for vault operations. These agents live in the knowz plugin.
 - **No plugin dependency for setup:** KnowzCode agents check for MCP tools directly — they don't require the knowz plugin. The knowz plugin is recommended for MCP setup but not required.
-- **Two vault file formats:**
-  - `knowz-vaults.md` — knowz plugin format. Plain English routing rules.
-  - `knowzcode/knowzcode_vaults.md` — KnowzCode format. Structured vault types and category routing.
 
 ## Conventions
 

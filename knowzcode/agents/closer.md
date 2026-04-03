@@ -20,7 +20,7 @@ Execute the finalization phase after implementation is verified. Update all Know
 
 On spawn, verify MCP connectivity before beginning finalization:
 
-1. Read `knowzcode/knowzcode_vaults.md` — check for configured vaults (non-empty ID)
+1. Read `knowz-vaults.md` (project root) — check for configured vaults (non-empty ID). If the file is missing, call `list_vaults()` as fallback.
 2. If no configured vaults → skip vault writes (nothing to write to)
 3. If configured vaults exist → call `list_vaults()` to verify MCP connectivity
    - If succeeds → proceed with vault writes during Learning Capture
@@ -97,11 +97,11 @@ If in Parallel Teams mode with MCP connected, vaults configured, and knowledge-l
 
 If in Sequential/Subagent mode and MCP is available (verified at startup):
 
-> **Content Detail Principle**: Vault entries are retrieved via semantic search — write detailed, self-contained content with full reasoning, technology names, and code examples. See `knowzcode/knowzcode_vaults.md` (canonical source for content filters).
+> **Content Detail Principle**: Vault entries are retrieved via semantic search — write detailed, self-contained content with full reasoning, technology names, and code examples. See `knowz-vaults.md` (project root) for vault descriptions and "When to save" rules.
 
 #### Step 1: Read Context
 
-1. Read `knowzcode/knowzcode_vaults.md` to discover configured vaults, their IDs, write conditions, and content filters
+1. Read `knowz-vaults.md` (project root) to discover configured vaults, their IDs, descriptions, and "When to save" rules
 2. Skip vault entries with empty ID fields — these haven't been created on the server yet
 3. Treat backwards-compat aliases identically: `research`/`domain`/`platform` = `ecosystem`, `sessions` = `finalizations`
 4. If a single vault is configured (regardless of type), route everything there
@@ -127,7 +127,7 @@ Only write if the targeted vault is configured — skip gracefully if not.
 
 #### Step 3: Format Content
 
-For each target vault, apply its **Content Filter** as defined in `knowzcode/knowzcode_vaults.md`:
+For each target vault, apply its **Content Filter** (describe **what** to capture in natural language; the knowz layer handles routing and formatting):
 
 - `code` vault: `[CONTEXT]` / `[PATTERN]` / `[EXAMPLE]` / `[TAGS]`
 - `ecosystem` vault: `[CONTEXT]` / `[INSIGHT]` / `[RATIONALE]` / `[TAGS]`
@@ -160,7 +160,7 @@ When scanning the WorkGroup for learnings, extract:
 #### Enterprise Audit Trail
 
 If `knowzcode/enterprise/compliance_manifest.md` exists and `mcp_compliance_enabled: true`:
-1. Find vault matching type "enterprise" in `knowzcode/knowzcode_vaults.md`
+1. Find vault whose description contains "enterprise", "compliance", or "audit" in `knowz-vaults.md` (project root)
 2. Push completion record with goal, NodeIDs, audit score, and decisions
 3. Push architecture drift findings if any detected during finalization
 

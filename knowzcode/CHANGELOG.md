@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Breaking:** Deleted `knowzcode/knowzcode_vaults.md` — vault configuration now reads exclusively from `knowz-vaults.md` (project root, managed by `/knowz setup`)
+- Agents describe captures in natural language; the knowz layer (knowz:writer + knowz-vaults.md) handles vault routing and formatting
+- Moved Content Detail Principle, capture timing, and supplementary guidance into `knowzcode_loop.md` Section 7
+- Simplified MCP Probe in work/explore/audit skills — removed Vault Creation Prompt; vault creation deferred to `/knowz setup`
+- Removed KC vault file interop from knowz plugin (no more dual-file ID sync)
+
 ## [0.11.2] - 2026-04-01
 
 ### Changed
