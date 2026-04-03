@@ -23,7 +23,7 @@ Check KnowzCode MCP connection, vault health, and agent status.
    - Check `.vscode/mcp.json` (Copilot) for knowz entry: Configured | Not found
    - Include all sources in status output
    - If Gemini not configured but another platform is: "Tip: An API key was found in {source}. Run /knowz setup to configure for Gemini."
-3. Read `knowzcode/knowzcode_vaults.md` for vault configuration
+3. Read `knowz-vaults.md` for vault configuration
 4. Test MCP connectivity by calling `list_vaults`
 5. Check each configured vault's health and item count
 6. Read `knowzcode/knowzcode_tracker.md` for active WorkGroups

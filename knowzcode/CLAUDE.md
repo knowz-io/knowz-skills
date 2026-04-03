@@ -43,7 +43,7 @@ For product overview, see [README.md](README.md). For detailed docs, see `docs/`
 │   ├── platform_adapters.md     # Templates for all 6 platform instruction files
 │   ├── prompts/                 # Phase prompt templates
 │   ├── specs/                   # Component specification templates
-│   └── ...
+│   └── ...                      # (vault config lives in knowz-vaults.md at project root, not here)
 ├── docs/                        # Documentation
 ├── CLAUDE.md                    # This file (framework dev guide)
 └── README.md                    # Product overview

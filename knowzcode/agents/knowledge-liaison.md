@@ -30,9 +30,9 @@ At startup, dispatch vault readers immediately, then read local context yourself
 You have Read, Glob, and Grep tools — use them directly for local files.
 Do NOT dispatch subagents for local file reading.
 
-1. Read `knowzcode/knowzcode_vaults.md` AND `knowzcode/pending_captures.md` (same turn).
+1. Read `knowz-vaults.md` (project root) AND `knowzcode/pending_captures.md` (same turn).
    - If pending captures non-empty: inform the lead: `"Note: {N} pending captures exist. Run /knowz flush to sync."`
-   - Note configured vault IDs, types, and routing rules.
+   - Note configured vault IDs, descriptions, and "When to save" routing rules.
 
 2. **Dispatch vault readers for deep research** (if vaults configured) — do this IMMEDIATELY so queries run while you read local files.
 
@@ -94,11 +94,11 @@ When you receive a capture request:
 
 1. **Read source material**: Read the WorkGroup file (`knowzcode/workgroups/{wgid}.md`) to extract relevant content
 2. **Determine extraction targets**: Use the Phase Extraction Guide below to know what to extract at each phase
-3. **Resolve vault routing**: Read `knowzcode/knowzcode_vaults.md` — resolve vault IDs by learning category using the Write Routing table
+3. **Resolve vault routing**: Read `knowz-vaults.md` (project root) — resolve vault IDs by description and "When to save" rules
 4. **Construct writer prompt**: Build a self-contained `knowz:writer` dispatch prompt including:
-   - What to extract (phase-specific extraction targets)
-   - Target vault IDs (resolved, not types)
-   - Content format templates (from vault config)
+   - What to extract (phase-specific extraction targets, described in natural language)
+   - Target vault IDs (resolved from `knowz-vaults.md`)
+   - Vault descriptions and "When to save" rules (so the writer can route correctly)
    - Source file path (WorkGroup or spec file)
    - **KnowledgeId** — if the source file has a `**KnowledgeId:**` value (non-empty), include it in the prompt as `knowledgeId: {value}`. If absent or empty, omit it.
 5. **Create task and dispatch**: `TaskCreate("Writer: Capture Phase {N}: {wgid}")` → dispatch `knowz:writer` with the prompt
@@ -119,7 +119,7 @@ When you receive a query request or need Stage 0 research:
 
 1. Construct a self-contained `knowz:reader` dispatch prompt including:
    - The question or goal-relevant queries
-   - Vault IDs and descriptions from `knowzcode/knowzcode_vaults.md`
+   - Vault IDs and descriptions from `knowz-vaults.md` (project root)
    - Expected output format
 2. Create task and dispatch: `TaskCreate("Reader: {query summary}")` → dispatch `knowz:reader` with the prompt
 
