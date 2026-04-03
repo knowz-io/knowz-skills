@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.3] - 2026-04-03
+
 ### Changed
 - **Breaking:** Deleted `knowzcode/knowzcode_vaults.md` — vault configuration now reads exclusively from `knowz-vaults.md` (project root, managed by `/knowz setup`)
 - Agents describe captures in natural language; the knowz layer (knowz:writer + knowz-vaults.md) handles vault routing and formatting
