@@ -2,5 +2,5 @@
 description = "Check KnowzCode MCP connection and vault status"
 prompt = """Read .gemini/skills/knowzcode-status/SKILL.md for full instructions.
 Check MCP connection: read .gemini/settings.json for mcpServers.knowz entry, run gemini mcp list.
-Report vault config from knowzcode/knowzcode_vaults.md, test connectivity via list_vaults.
+Report vault config from knowz-vaults.md, test connectivity via list_vaults.
 Show active WorkGroups from knowzcode/knowzcode_tracker.md."""

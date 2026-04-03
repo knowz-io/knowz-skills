@@ -286,7 +286,6 @@ Verify: `CLAUDECODE= claude mcp get knowz`
 
 1. Generate `knowz-vaults.md` with the registered vault using the format from `knowz-vaults.example.md`
 2. Pre-populate routing rules based on the vault name/description
-3. **KC interop:** If `knowzcode/knowzcode_vaults.md` exists, update the vault IDs there too (see KC Vault File Interop section)
 
 #### Step R7: Success Message
 
@@ -479,9 +478,7 @@ If user chooses "Register" → advise running `/knowz register` and STOP.
      - When to save: reusable patterns, workarounds, performance insights
    - For vaults that don't match any heuristic → use generic rules and ask the user to customize
 
-5. **KC Vault File Interop:** If `knowzcode/knowzcode_vaults.md` exists, update vault IDs there too (see KC Vault File Interop section).
-
-6. Report success:
+5. Report success:
    ```
    Vault configuration saved to knowz-vaults.md
 
@@ -782,29 +779,6 @@ Browse vault contents and topics.
      - {title 3}
    ```
 6. If a specific topic interests the user, they can follow up with `/knowz search "topic name"`
-
----
-
-## KC Vault File Interop
-
-When the knowz plugin creates or updates vault configurations and a KnowzCode project exists alongside, keep both vault files in sync.
-
-**When to apply:** During `setup` and `register` actions, after writing `knowz-vaults.md`.
-
-### Steps
-
-1. Check if `knowzcode/knowzcode_vaults.md` exists in the project
-2. **If it exists:**
-   - Read the file and find vault entries in the `## Connected Vaults` section
-   - For each vault that was just configured in `knowz-vaults.md`:
-     - Find a matching vault entry in `knowzcode_vaults.md` (match by vault name or vault ID)
-     - If matched: update the **ID** field if it was empty or different
-     - If not matched: leave `knowzcode_vaults.md` as-is (don't add knowz-plugin vaults to KC config)
-   - Write the updated file
-   - Report: `"Also updated vault IDs in knowzcode/knowzcode_vaults.md for KnowzCode compatibility."`
-3. **If it doesn't exist:** do nothing — no KC project present
-
-**Reverse direction:** This interop is one-way from knowz → KC. KC's agents update their own vault file independently.
 
 ---
 

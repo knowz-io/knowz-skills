@@ -50,14 +50,14 @@ Read these files before starting any feature work (use @import syntax for direct
 
 ## Knowledge Capture (CRITICAL — DO NOT SKIP)
 Every piece of durable knowledge — decisions, patterns, gotchas, workarounds — **must** be captured.
-When MCP is connected, write to vaults per `knowzcode/knowzcode_vaults.md` — always pass `vaultId` with `create_knowledge`.
+When MCP is connected, write to vaults per `knowz-vaults.md` — always pass `vaultId` with `create_knowledge`.
 When MCP is unavailable, capture locally in specs, log entries, or docs. Never let insights die in the conversation.
 Use `/knowz save "insight"` for automatic routing.
-Vault entries are retrieved via semantic search — write detailed, self-contained content. See `knowzcode/knowzcode_vaults.md` Content Detail Principle.
+Vault entries are retrieved via semantic search — write detailed, self-contained content. See `knowz-vaults.md` Content Detail Principle.
 
 ### Vault Targeting (MCP Writes)
 **Always pass `vaultId`** when calling `create_knowledge` or `update_knowledge`.
-Vault IDs and routing rules: `knowzcode/knowzcode_vaults.md`
+Vault IDs and routing rules: `knowz-vaults.md`
 
 ## MCP Server Configuration (Gemini CLI)
 MCP servers are configured in `.gemini/settings.json` (project) or `~/.gemini/settings.json` (user).

@@ -111,7 +111,7 @@ Scan the WorkGroup file for `[SPEC_ISSUE]` tags added during implementation. Val
 ## MCP Integration (Optional)
 
 If MCP is configured:
-- Read `knowzcode/knowzcode_vaults.md` to resolve vault IDs by type
+- Read `knowz-vaults.md` (project root) to resolve vault IDs by description
 - `ask_question({vault matching "ecosystem" type}, "standards for {domain}", researchMode=true)` — comprehensive standards check
 - `search_knowledge({vault matching "ecosystem" type}, "audit findings for {component_type}")` — past audit comparison
 

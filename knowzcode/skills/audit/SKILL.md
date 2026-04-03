@@ -85,40 +85,13 @@ The user MUST see the execution mode announcement before audit work begins.
 ### MCP Probe
 
 Before spawning agents, determine vault availability:
-1. Read `knowzcode/knowzcode_vaults.md` — partition entries into CONFIGURED (non-empty ID) and UNCREATED (empty ID)
-2. Call `list_vaults(includeStats=true)` **always** — regardless of whether any IDs exist in the file
-3. If `list_vaults()` fails → set `MCP_ACTIVE = false`, announce `**MCP Status: Not connected**`, skip vault setup
-4. If `list_vaults()` succeeds AND UNCREATED list is non-empty → present the **Vault Creation Prompt**:
+1. Read `knowz-vaults.md` from project root — parse vault IDs. If file not found, call `list_vaults(includeStats=true)` to discover vaults.
+2. If `list_vaults()` fails AND no `knowz-vaults.md` exists → `MCP_ACTIVE = false`, `VAULTS_CONFIGURED = false`. Announce: `**MCP Status: Not connected**`
+3. If `list_vaults()` fails BUT `knowz-vaults.md` has vault IDs → `MCP_ACTIVE = true`, `VAULTS_CONFIGURED = true`. Announce: `**MCP Status: Lead probe failed — vault agents will verify independently**`
+4. If vaults discovered but no `knowz-vaults.md` exists → suggest `"Run /knowz setup to configure vault routing."` Set `VAULTS_CONFIGURED = true` (use discovered IDs for baseline).
+5. Set `MCP_ACTIVE` and `VAULTS_CONFIGURED` based on results. Announce: `**MCP Status: Connected — N vault(s) available**` or `**MCP Status: Connected — no vaults configured (knowledge capture disabled)**`
 
-   ```markdown
-   ## Vault Setup
-
-   Your Knowz API key is valid and MCP is connected, but {N} default vault(s) haven't been created yet.
-   Creating vaults enables knowledge capture throughout the workflow:
-
-   | Vault | Type | Description | Written During |
-   |-------|------|-------------|----------------|
-   ```
-
-   Build table rows dynamically from the UNCREATED entries only. Derive "Written During" from each vault's Write Conditions field in `knowzcode_vaults.md`.
-
-   Then present options:
-   ```
-   Options:
-     **A) Create all {N} vaults** (recommended)
-     **B) Select which to create**
-     **C) Skip** — proceed without vaults (can create later with `/knowz setup`)
-   ```
-
-5. Handle user selection:
-   - **A**: For each UNCREATED entry, call MCP `create_vault(name, description)`. If `create_vault` is not available, fall back to matching by name against `list_vaults()` results. Update `knowzcode_vaults.md`: fill ID field, change H3 heading from `(not created)` to vault ID. Report any failures.
-   - **B**: Ask which vaults to create, then create only selected ones.
-   - **C**: Log `"Vault creation skipped — knowledge capture disabled."` Continue.
-   - If BOTH `create_vault()` and name-matching fail: log failure, set `VAULTS_CONFIGURED = false`, continue without vault. Report: `"⚠️ Vault creation failed — proceeding without knowledge capture. Run /knowz setup to retry."`
-6. After resolution, set:
-   - `MCP_ACTIVE = true` (MCP works regardless of vault creation outcome)
-   - `VAULTS_CONFIGURED = true` if at least 1 vault now has a valid ID, else `false`
-   - Announce: `**MCP Status: Connected — N vault(s) available**` or `**MCP Status: Connected — no vaults configured (knowledge capture disabled)**`
+If no vaults are configured, suggest `/knowz setup`.
 
 > **Vault research is mandatory when available.** If `VAULTS_CONFIGURED = true` and `MCP_AGENTS_ENABLED = true`, the `knowz:reader` dispatch MUST execute in both Exploration and Planning modes. The 10-tool-call budget in Exploration Mode is a scope limit, not a reason to skip. Only skip when MCP is genuinely unavailable (`MCP_ACTIVE = false`).
 
@@ -191,7 +164,7 @@ Spawn reviewers with their task IDs:
    > Check against guidelines in `knowzcode/enterprise/compliance_manifest.md`.
 
 4. If `VAULTS_CONFIGURED = true` AND `MCP_AGENTS_ENABLED = true`, dispatch `knowz:reader` for standards lookup in parallel with reviewers:
-   > Read `knowzcode/knowzcode_vaults.md` to discover configured vaults — their IDs, types, descriptions.
+   > Read `knowz-vaults.md` (project root) to discover configured vaults — their IDs, types, descriptions.
    > Query for team standards: search ecosystem-type vaults for standards, conventions, and past audit decisions.
    > Return synthesized findings.
 
@@ -334,7 +307,7 @@ If `VAULTS_CONFIGURED = true` AND `MCP_ACTIVE = true`, present after audit resul
 ```
 
 **Handling**:
-- **A**: Dispatch `knowz:writer` with a self-contained prompt summarizing all findings, tagged with the topic. Read `knowzcode/knowzcode_vaults.md` to resolve the target vault (use ecosystem-type vault). Check for duplicates via `search_knowledge` before writing.
+- **A**: Dispatch `knowz:writer` with a self-contained prompt summarizing all findings, tagged with the topic. Read `knowz-vaults.md` (project root) to resolve the target vault (use ecosystem-type vault). Check for duplicates via `search_knowledge` before writing.
 - **B**: Ask user which sections to save, then dispatch `knowz:writer` with selected content.
 - **C**: Proceed to Step 5.
 
