@@ -28,5 +28,4 @@ Resolve endpoints using `enterprise.json`, `--dev`, default production, and `--e
    - Use `KNOWZ_API_KEY` as the bearer token env var.
    - If you cannot safely persist the environment variable from the current Codex session, tell the user exactly what to set and continue.
 6. Generate `knowz-vaults.md` for the newly created vault.
-7. If `knowzcode/knowzcode_vaults.md` exists, update shared vault IDs there too.
-8. Tell the user to restart Codex after configuration.
+7. Tell the user to restart Codex after configuration.

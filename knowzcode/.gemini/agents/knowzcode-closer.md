@@ -25,5 +25,5 @@ Perform Phase 3: Finalization. Update all project documentation to reflect the c
 3. Update `knowzcode/knowzcode_tracker.md` — set WorkGroup status to `[VERIFIED]`
 4. Prepend a log entry to `knowzcode/knowzcode_log.md`
 5. Review `knowzcode/knowzcode_architecture.md` for drift — update if needed
-6. Capture learnings to vaults if MCP is connected (per `knowzcode/knowzcode_vaults.md`)
+6. Capture learnings to vaults if MCP is connected (per `knowz-vaults.md`)
 7. Create final commit with all documentation updates

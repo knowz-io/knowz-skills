@@ -78,7 +78,7 @@ All commands work without MCP — it enhances but never blocks.
 Every piece of durable knowledge — decisions, patterns, gotchas, workarounds, convention changes —
 **must** be captured. Knowledge lives in two places:
 
-- **MCP vaults** (when connected): `knowzcode/knowzcode_vaults.md` defines vault IDs, routing rules,
+- **MCP vaults** (when connected): `knowz-vaults.md` defines vault IDs, routing rules,
   and write conditions. Always pass `vaultId` when calling `create_knowledge` — omitting it saves
   to the tenant default vault, NOT the project vault.
 - **Local files** (always available): specs, workgroup files, log entries, architecture docs, and
@@ -86,7 +86,7 @@ Every piece of durable knowledge — decisions, patterns, gotchas, workarounds, 
 
 If MCP is not connected, knowledge still gets captured locally. Never let insights die in the conversation.
 
-**Vault content detail**: Vault entries are retrieved via semantic search, not read directly like local files. Write detailed, self-contained entries with full reasoning, specific technology names, code examples, and file paths. Terse entries produce poor search results. See `knowzcode/knowzcode_vaults.md` Content Detail Principle.
+**Vault content detail**: Vault entries are retrieved via semantic search, not read directly like local files. Write detailed, self-contained entries with full reasoning, specific technology names, code examples, and file paths. Terse entries produce poor search results. See `knowz-vaults.md` Content Detail Principle.
 
 ### Knowledge Liaison Dispatch
 When in Agent Teams mode, vault writes are handled by the knowledge-liaison — do NOT call `create_knowledge` directly. Send knowledge via DM to the knowledge-liaison instead:
@@ -171,10 +171,10 @@ Read `knowzcode/knowzcode_loop.md` before starting any feature work.
 
 ## Knowledge Capture (CRITICAL — DO NOT SKIP)
 Every piece of durable knowledge — decisions, patterns, gotchas, workarounds — **must** be captured.
-When MCP is connected, write to vaults per `knowzcode/knowzcode_vaults.md` — always pass `vaultId` with `create_knowledge`.
+When MCP is connected, write to vaults per `knowz-vaults.md` — always pass `vaultId` with `create_knowledge`.
 When MCP is unavailable, capture locally in specs, log entries, or docs. Never let insights die in the conversation.
 Use `/knowz save "insight"` for automatic routing.
-Vault entries are retrieved via semantic search — write detailed, self-contained content. See `knowzcode/knowzcode_vaults.md` Content Detail Principle.
+Vault entries are retrieved via semantic search — write detailed, self-contained content. See `knowz-vaults.md` Content Detail Principle.
 
 ## Quick Fix (Micro-Fix)
 For single-file, <50 line, no-ripple-effect changes:
@@ -349,7 +349,7 @@ Capture a learning, decision, or pattern to the KnowzCode knowledge vault.
 
 ## Instructions
 
-Read `knowzcode/knowzcode_vaults.md` for vault configuration and routing rules.
+Read `knowz-vaults.md` for vault configuration and routing rules.
 
 1. Analyze the learning provided
 2. Categorize: Pattern, Workaround, Decision, Convention, Security, Integration, Performance, Completion
@@ -444,7 +444,7 @@ Check KnowzCode MCP connection, vault health, and agent status.
 ## Instructions
 
 1. Check for agent definition files (glob `agents/*.md`)
-2. Read `knowzcode/knowzcode_vaults.md` for vault configuration
+2. Read `knowz-vaults.md` for vault configuration
 2.5. **Cross-Platform Config Discovery**:
    - Check `KNOWZ_API_KEY` env var: Set (ending ...{last4}) | Not set
    - Check `knowzcode/mcp_config.md`: Connected / Not configured
@@ -483,7 +483,7 @@ Requires an API key. If the user doesn't have one, suggest `/knowz register` fir
 1.5. **Smart Config Discovery (if no API key provided)**:
    - Check `KNOWZ_API_KEY` environment variable — if set, use as API key
    - Check `knowzcode/mcp_config.md` — if `Connected: Yes`, pre-populate endpoint
-   - Check `knowzcode/knowzcode_vaults.md` — if vaults configured, skip vault prompts
+   - Check `knowz-vaults.md` — if vaults configured, skip vault prompts
    - Check cross-platform configs (`.gemini/settings.json`, `.vscode/mcp.json`) for existing Bearer token
    - If key found: "Found existing API key (ending ...{last4}) in {source}. Use this key? [Yes/No]"
 2. Validate the API key against the KnowzCode API
@@ -493,7 +493,7 @@ Requires an API key. If the user doesn't have one, suggest `/knowz register` fir
    - Set `X-Project-Path` header to current project path
    - Write to the platform's MCP config file (e.g., `.mcp.json` for project-level)
 4. Test connectivity by calling `list_vaults`
-5. Configure vault mappings — check `knowzcode/knowzcode_vaults.md` first; if vaults already configured from another platform, skip vault prompts
+5. Configure vault mappings — check `knowz-vaults.md` first; if vaults already configured from another platform, skip vault prompts
 6. Update `knowzcode/mcp_config.md` with connection status and `API Key (last 4)`
 
 Report connection status and available vaults.
@@ -526,7 +526,7 @@ Register for KnowzCode and automatically configure the MCP server.
    - Set `Authorization: Bearer <api-key>` header
    - Set `X-Project-Path` header to current project path
    - Write to the platform's MCP config file (e.g., `.mcp.json` for project-level)
-5. Update `knowzcode/knowzcode_vaults.md` with returned vault IDs — check first if vaults already configured from another platform
+5. Update `knowz-vaults.md` with returned vault IDs — check first if vaults already configured from another platform
 6. Update `knowzcode/mcp_config.md` with connection status and `API Key (last 4)`
 
 The user will be ready to use MCP-powered features after registration.
@@ -682,7 +682,7 @@ Report completion percentage, gaps, and security concerns."""
 description = "Capture a learning to KnowzCode vault"
 prompt = """Read .gemini/skills/knowzcode-learn/SKILL.md for full instructions.
 Capture the following learning: <ARGS/>
-Route to the appropriate vault per knowzcode/knowzcode_vaults.md routing table.
+Route to the appropriate vault per knowz-vaults.md routing table.
 Vault types: code (patterns/workarounds), ecosystem (decisions/conventions), finalizations (completions).
 If MCP is unavailable, save to knowzcode/pending_captures.md."""
 ```
@@ -692,7 +692,7 @@ If MCP is unavailable, save to knowzcode/pending_captures.md."""
 description = "Check KnowzCode MCP connection and vault status"
 prompt = """Read .gemini/skills/knowzcode-status/SKILL.md for full instructions.
 Check MCP connection: read .gemini/settings.json for mcpServers.knowz entry, run gemini mcp list.
-Report vault config from knowzcode/knowzcode_vaults.md, test connectivity via list_vaults.
+Report vault config from knowz-vaults.md, test connectivity via list_vaults.
 Show active WorkGroups from knowzcode/knowzcode_tracker.md."""
 ```
 
@@ -741,7 +741,7 @@ Registration API: https://api.knowz.io/api/v1/auth/register
 Prompt for name, email, password. Call API. Extract API key and vault ID.
 Configure MCP via: gemini mcp add --transport http -H "Authorization: Bearer <key>" -H "X-Project-Path: $(pwd)" knowz https://mcp.knowz.io/mcp
 Fallback: write .gemini/settings.json with mcpServers.knowz entry.
-Update knowzcode/knowzcode_vaults.md with vault IDs.
+Update knowz-vaults.md with vault IDs.
 <ARGS/>"""
 ```
 
@@ -824,10 +824,10 @@ Read these files before starting any feature work (use @import syntax for direct
 
 ## Knowledge Capture (CRITICAL — DO NOT SKIP)
 Every piece of durable knowledge — decisions, patterns, gotchas, workarounds — **must** be captured.
-When MCP is connected, write to vaults per `knowzcode/knowzcode_vaults.md` — always pass `vaultId` with `create_knowledge`.
+When MCP is connected, write to vaults per `knowz-vaults.md` — always pass `vaultId` with `create_knowledge`.
 When MCP is unavailable, capture locally in specs, log entries, or docs. Never let insights die in the conversation.
 Use `/knowz save "insight"` for automatic routing.
-Vault entries are retrieved via semantic search — write detailed, self-contained content. See `knowzcode/knowzcode_vaults.md` Content Detail Principle.
+Vault entries are retrieved via semantic search — write detailed, self-contained content. See `knowz-vaults.md` Content Detail Principle.
 
 ## MCP Server Configuration (Gemini CLI)
 MCP servers are configured in `.gemini/settings.json` (project) or `~/.gemini/settings.json` (user).
@@ -997,7 +997,7 @@ Capture a learning, decision, or pattern to the KnowzCode knowledge vault.
 
 ## Instructions
 
-Read `knowzcode/knowzcode_vaults.md` for vault configuration and routing rules.
+Read `knowz-vaults.md` for vault configuration and routing rules.
 
 1. Analyze the learning provided
 2. Categorize: Pattern, Workaround, Decision, Convention, Security, Integration, Performance, Completion
@@ -1104,7 +1104,7 @@ Check KnowzCode MCP connection, vault health, and agent status.
    - Check `.vscode/mcp.json` (Copilot) for knowz entry: Configured | Not found
    - Include all sources in status output
    - If Gemini not configured but another platform is: "Tip: An API key was found in {source}. Run /knowz setup to configure for Gemini."
-3. Read `knowzcode/knowzcode_vaults.md` for vault configuration
+3. Read `knowz-vaults.md` for vault configuration
 4. Test MCP connectivity by calling `list_vaults`
 5. Check each configured vault's health and item count
 6. Read `knowzcode/knowzcode_tracker.md` for active WorkGroups
@@ -1149,7 +1149,7 @@ Before prompting for an API key, check known config sources:
    - If `Connected: Yes` and endpoint set: pre-populate endpoint
    - If `API Key (last 4)` set: note for confirmation
 
-3. **Vault config**: Read `knowzcode/knowzcode_vaults.md`
+3. **Vault config**: Read `knowz-vaults.md`
    - If vaults have non-empty IDs: skip vault prompts in Step 5 (unless `--configure-vaults`)
 
 4. **Cross-platform config files** (check for API key in other platforms):
@@ -1196,8 +1196,8 @@ If the file exists, read it first and merge — preserve existing settings, only
 - Test connectivity by calling `list_vaults`
 
 ### Step 5: Configure Vaults (Conditional)
-- First check `knowzcode/knowzcode_vaults.md` — if vaults already have non-empty IDs from a previous platform setup, skip vault prompts and report "Vaults already configured from previous setup"
-- Otherwise, if `list_vaults` returns vaults, offer to update `knowzcode/knowzcode_vaults.md`
+- First check `knowz-vaults.md` — if vaults already have non-empty IDs from a previous platform setup, skip vault prompts and report "Vaults already configured from previous setup"
+- Otherwise, if `list_vaults` returns vaults, offer to update `knowz-vaults.md`
 - If vaults have null IDs, offer to create them via `create_vault`
 
 ### Step 5.5: Update GEMINI.md with Vault Targeting Guidance
@@ -1209,7 +1209,7 @@ Ensure agents know to pass `vaultId` by adding a reference section to the projec
    ```
    ### Vault Targeting (MCP Writes)
    **Always pass `vaultId`** when calling `create_knowledge` or `update_knowledge`.
-   Vault IDs and routing rules: `knowzcode/knowzcode_vaults.md`
+   Vault IDs and routing rules: `knowz-vaults.md`
    ```
 
 ### Step 6: Update Status Files
@@ -1301,8 +1301,8 @@ Merge with existing settings if file exists.
 - Test connectivity by calling `list_vaults`
 
 ### Step 6: Configure Vaults
-- Check `knowzcode/knowzcode_vaults.md` first — if vaults already configured from another platform, reuse them
-- Otherwise, update `knowzcode/knowzcode_vaults.md` with returned vault IDs
+- Check `knowz-vaults.md` first — if vaults already configured from another platform, reuse them
+- Otherwise, update `knowz-vaults.md` with returned vault IDs
 - Update `knowzcode/mcp_config.md` with connection status and `API Key (last 4)`
 
 ### Step 7: Report Success
@@ -1573,7 +1573,7 @@ Perform Phase 3: Finalization. Update all project documentation to reflect the c
 3. Update `knowzcode/knowzcode_tracker.md` — set WorkGroup status to `[VERIFIED]`
 4. Prepend a log entry to `knowzcode/knowzcode_log.md`
 5. Review `knowzcode/knowzcode_architecture.md` for drift — update if needed
-6. Capture learnings to vaults if MCP is connected (per `knowzcode/knowzcode_vaults.md`)
+6. Capture learnings to vaults if MCP is connected (per `knowz-vaults.md`)
 7. Create final commit with all documentation updates
 ```
 
@@ -1601,7 +1601,7 @@ Search MCP vaults for relevant business knowledge, conventions, decisions, and p
 
 ## Instructions
 
-1. Read `knowzcode/knowzcode_vaults.md` for vault configuration
+1. Read `knowz-vaults.md` for vault configuration
 2. Search vaults for knowledge related to the current goal using `search_knowledge`
 3. Look for: conventions, past decisions, known patterns, workarounds, security policies
 4. Correlate vault findings with local specs and architecture
@@ -1634,7 +1634,7 @@ Capture durable knowledge — decisions, patterns, gotchas, workarounds — to M
 
 ## Instructions
 
-1. Read `knowzcode/knowzcode_vaults.md` for vault IDs and routing rules
+1. Read `knowz-vaults.md` for vault IDs and routing rules
 2. For each learning, categorize and route:
    - Pattern/Workaround/Performance → `code` vault
    - Decision/Convention/Security/Integration → `ecosystem` vault
@@ -1705,7 +1705,7 @@ Migrate external knowledge sources (documentation, wikis, READMEs, code comments
 1. Read the source material provided by the user
 2. Extract structured knowledge: decisions, patterns, interfaces, constraints
 3. Map extracted knowledge to existing specs in `knowzcode/specs/` or create new ones
-4. Route vault-worthy learnings per `knowzcode/knowzcode_vaults.md`
+4. Route vault-worthy learnings per `knowz-vaults.md`
 5. Preserve attribution and source references
 ```
 
@@ -1904,13 +1904,13 @@ Before any feature work, read:
 
 ## Knowledge Capture (CRITICAL — DO NOT SKIP)
 Every piece of durable knowledge — decisions, patterns, gotchas, workarounds — **must** be captured.
-When MCP is connected, write to vaults per `knowzcode/knowzcode_vaults.md` — always pass `vaultId` with `create_knowledge`.
+When MCP is connected, write to vaults per `knowz-vaults.md` — always pass `vaultId` with `create_knowledge`.
 When MCP is unavailable, capture locally in specs, log entries, or docs. Never let insights die in the conversation.
 Use `/knowz save "insight"` for automatic routing.
-Vault entries are retrieved via semantic search — write detailed, self-contained content. See `knowzcode/knowzcode_vaults.md` Content Detail Principle.
+Vault entries are retrieved via semantic search — write detailed, self-contained content. See `knowz-vaults.md` Content Detail Principle.
 
 ## MCP Configuration
-MCP status is tracked in `knowzcode/mcp_config.md` and vaults in `knowzcode/knowzcode_vaults.md`.
+MCP status is tracked in `knowzcode/mcp_config.md` and vaults in `knowz-vaults.md`.
 Set `KNOWZ_API_KEY` environment variable for automatic MCP authentication.
 To configure: `/knowz setup <api-key>` or check `knowzcode/mcp_config.md` for existing config.
 ```
@@ -2008,10 +2008,10 @@ for enhanced context from knowledge vaults. All prompts work without MCP.
 
 ## Knowledge Capture (CRITICAL — DO NOT SKIP)
 Every piece of durable knowledge — decisions, patterns, gotchas, workarounds — **must** be captured.
-When MCP is connected, write to vaults per `knowzcode/knowzcode_vaults.md` — always pass `vaultId` with `create_knowledge`.
+When MCP is connected, write to vaults per `knowz-vaults.md` — always pass `vaultId` with `create_knowledge`.
 When MCP is unavailable, capture locally in specs, log entries, or docs. Never let insights die in the conversation.
 Use `/knowz save "insight"` for automatic routing.
-Vault entries are retrieved via semantic search — write detailed, self-contained content. See `knowzcode/knowzcode_vaults.md` Content Detail Principle.
+Vault entries are retrieved via semantic search — write detailed, self-contained content. See `knowz-vaults.md` Content Detail Principle.
 
 ## Copilot Coding Agent
 
@@ -2591,13 +2591,13 @@ Follow `knowzcode/knowzcode_loop.md` for all feature development.
 
 ## Knowledge Capture (CRITICAL — DO NOT SKIP)
 Every piece of durable knowledge — decisions, patterns, gotchas, workarounds — **must** be captured.
-When MCP is connected, write to vaults per `knowzcode/knowzcode_vaults.md` — always pass `vaultId` with `create_knowledge`.
+When MCP is connected, write to vaults per `knowz-vaults.md` — always pass `vaultId` with `create_knowledge`.
 When MCP is unavailable, capture locally in specs, log entries, or docs. Never let insights die in the conversation.
 Use `/knowz save "insight"` for automatic routing.
-Vault entries are retrieved via semantic search — write detailed, self-contained content. See `knowzcode/knowzcode_vaults.md` Content Detail Principle.
+Vault entries are retrieved via semantic search — write detailed, self-contained content. See `knowz-vaults.md` Content Detail Principle.
 
 ## MCP Configuration
-MCP status is tracked in `knowzcode/mcp_config.md` and vaults in `knowzcode/knowzcode_vaults.md`.
+MCP status is tracked in `knowzcode/mcp_config.md` and vaults in `knowz-vaults.md`.
 Set `KNOWZ_API_KEY` environment variable for automatic MCP authentication.
 To configure: `/knowz setup <api-key>` or check `knowzcode/mcp_config.md` for existing config.
 

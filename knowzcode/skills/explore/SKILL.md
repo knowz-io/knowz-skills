@@ -101,40 +101,13 @@ If file doesn't exist, use defaults. Other config settings (`max_builders`, `def
 If `MCP_AGENTS_ENABLED = false` (from Step 3.5, e.g. `--no-mcp`), skip the MCP Probe and Step 4.1 entirely. Set `MCP_ACTIVE = false`, `VAULTS_CONFIGURED = false`, `VAULT_BASELINE = null`.
 
 Before spawning agents, determine vault availability:
-1. Read `knowzcode/knowzcode_vaults.md` — partition entries into CONFIGURED (non-empty ID) and UNCREATED (empty ID)
-2. Call `list_vaults(includeStats=true)` **always** — regardless of whether any IDs exist in the file
-3. If `list_vaults()` fails -> set `MCP_ACTIVE = false`, announce `**MCP Status: Not connected**`, skip vault setup
-4. If `list_vaults()` succeeds AND UNCREATED list is non-empty -> present the **Vault Creation Prompt**:
+1. Read `knowz-vaults.md` from project root — parse vault IDs. If file not found, call `list_vaults(includeStats=true)` to discover vaults.
+2. If `list_vaults()` fails AND no `knowz-vaults.md` exists -> `MCP_ACTIVE = false`, `VAULTS_CONFIGURED = false`. Announce: `**MCP Status: Not connected**`
+3. If `list_vaults()` fails BUT `knowz-vaults.md` has vault IDs -> `MCP_ACTIVE = true`, `VAULTS_CONFIGURED = true`. Announce: `**MCP Status: Lead probe failed — vault agents will verify independently**`
+4. If vaults discovered but no `knowz-vaults.md` exists -> suggest `"Run /knowz setup to configure vault routing."` Set `VAULTS_CONFIGURED = true` (use discovered IDs for baseline).
+5. Set `MCP_ACTIVE` and `VAULTS_CONFIGURED` based on results. Announce: `**MCP Status: Connected — N vault(s) available**` or `**MCP Status: Connected — no vaults configured (knowledge capture disabled)**`
 
-   ```markdown
-   ## Vault Setup
-
-   Your Knowz API key is valid and MCP is connected, but {N} default vault(s) haven't been created yet.
-   Creating vaults enables knowledge capture throughout the workflow:
-
-   | Vault | Type | Description | Written During |
-   |-------|------|-------------|----------------|
-   ```
-
-   Build table rows dynamically from the UNCREATED entries only. Derive "Written During" from each vault's Write Conditions field in `knowzcode_vaults.md`.
-
-   Then present options:
-   ```
-   Options:
-     **A) Create all {N} vaults** (recommended)
-     **B) Select which to create**
-     **C) Skip** — proceed without vaults (can create later with `/knowz setup`)
-   ```
-
-5. Handle user selection:
-   - **A**: For each UNCREATED entry, call MCP `create_vault(name, description)`. If `create_vault` is not available, fall back to matching by name against `list_vaults()` results. Update `knowzcode_vaults.md`: fill ID field, change H3 heading from `(not created)` to vault ID. Report any failures.
-   - **B**: Ask which vaults to create, then create only selected ones.
-   - **C**: Log `"Vault creation skipped — knowledge capture disabled."` Continue.
-   - If BOTH `create_vault()` and name-matching fail: log failure, set `VAULTS_CONFIGURED = false`, continue without vault. Report: `"Vault creation failed — proceeding without knowledge capture. Run /knowz setup to retry."`
-6. After resolution, set:
-   - `MCP_ACTIVE = true` (MCP works regardless of vault creation outcome)
-   - `VAULTS_CONFIGURED = true` if at least 1 vault now has a valid ID, else `false`
-   - Announce: `**MCP Status: Connected — N vault(s) available**` or `**MCP Status: Connected — no vaults configured (knowledge capture disabled)**`
+If no vaults are configured, suggest `/knowz setup`.
 
 > **Vault research is mandatory when available.** The lead performs baseline vault queries directly (Step 4.1) whenever `VAULTS_CONFIGURED = true` and `MCP_ACTIVE = true` — this is the guaranteed minimum. When agents are available, the knowledge-liaison performs deeper targeted queries beyond the baseline. Only skip all vault queries when MCP is genuinely unavailable (`MCP_ACTIVE = false`).
 
@@ -174,7 +147,7 @@ Spawn teammates with their task IDs:
    > Read `agents/knowledge-liaison.md` for your full role definition.
    > Read `knowzcode/claude_code_execution.md` for team conventions.
    > **Goal**: Research "{topic}" — gather local context and vault knowledge.
-   > **Vault config**: `knowzcode/knowzcode_vaults.md`
+   > **Vault config**: `knowz-vaults.md` (project root)
    > **Lead Vault Baseline**: {VAULT_BASELINE or "No baseline — MCP not available or no vaults configured"}
    > **Context gathering**: Read local context directly (specs, workgroups, tracker, architecture) using Read/Glob tools. If baseline results are provided above, skip broad vault queries and dispatch deeper targeted research instead. If no baseline, perform full vault queries per your startup sequence.
    > **Deliverable**: Push Context Briefing to analyst and architect with local + vault findings.
@@ -251,7 +224,7 @@ Wait for all to complete, then synthesize in Step 5.
 Delegate to up to four agents in parallel via `Task()`:
 
 1. **knowledge-liaison** — Local context + vault knowledge:
-   - `Task(subagent_type="knowzcode:knowledge-liaison", description="Context & vault research for {topic}", prompt="Read agents/knowledge-liaison.md for your full role definition. Goal: Research \"{topic}\" — gather local context and vault knowledge. Vault config: knowzcode/knowzcode_vaults.md. Lead Vault Baseline: {VAULT_BASELINE or 'No baseline — MCP not available or no vaults configured'}. Read local context files directly (specs, workgroups, tracker, architecture) using Read and Glob tools. If baseline results are provided, skip broad vault queries and dispatch deeper targeted research instead. If no baseline, perform full vault queries per your startup sequence. Return consolidated Context Briefing with local + vault findings.")`
+   - `Task(subagent_type="knowzcode:knowledge-liaison", description="Context & vault research for {topic}", prompt="Read agents/knowledge-liaison.md for your full role definition. Goal: Research \"{topic}\" — gather local context and vault knowledge. Vault config: knowz-vaults.md (project root). Lead Vault Baseline: {VAULT_BASELINE or 'No baseline — MCP not available or no vaults configured'}. Read local context files directly (specs, workgroups, tracker, architecture) using Read and Glob tools. If baseline results are provided, skip broad vault queries and dispatch deeper targeted research instead. If no baseline, perform full vault queries per your startup sequence. Return consolidated Context Briefing with local + vault findings.")`
 
 2. **analyst** — Code exploration / Impact analysis:
    - `subagent_type`: `"analyst"`
@@ -432,7 +405,7 @@ If `VAULTS_CONFIGURED = true` AND `MCP_ACTIVE = true`, present after findings:
 ```
 
 **Handling**:
-- **A**: Dispatch `knowz:writer` with a self-contained prompt summarizing all findings, tagged with the topic. Read `knowzcode/knowzcode_vaults.md` to resolve the target vault (use ecosystem-type vault). Check for duplicates via `search_knowledge` before writing.
+- **A**: Dispatch `knowz:writer` with a self-contained prompt summarizing all findings, tagged with the topic. Read `knowz-vaults.md` (project root) to resolve the target vault (use ecosystem-type vault). Check for duplicates via `search_knowledge` before writing.
 - **B**: Ask user which sections to save, then dispatch `knowz:writer` with selected content.
 - **C**: Proceed to Step 6.
 
@@ -449,7 +422,7 @@ After Step 5.5 resolves (including if the user chose C/Skip), remain responsive 
 
 When detected:
 1. Ask the user what content to save (or confirm if they specified)
-2. Resolve target vault from `knowzcode/knowzcode_vaults.md`
+2. Resolve target vault from `knowz-vaults.md` (project root)
 3. Dispatch `knowz:writer` via Task() with a self-contained prompt:
    - Content to save (from exploration findings or user-specified content)
    - Target vault ID

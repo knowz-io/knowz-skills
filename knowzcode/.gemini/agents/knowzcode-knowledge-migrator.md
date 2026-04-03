@@ -24,5 +24,5 @@ Migrate external knowledge sources (documentation, wikis, READMEs, code comments
 1. Read the source material provided by the user
 2. Extract structured knowledge: decisions, patterns, interfaces, constraints
 3. Map extracted knowledge to existing specs in `knowzcode/specs/` or create new ones
-4. Route vault-worthy learnings per `knowzcode/knowzcode_vaults.md`
+4. Route vault-worthy learnings per `knowz-vaults.md`
 5. Preserve attribution and source references

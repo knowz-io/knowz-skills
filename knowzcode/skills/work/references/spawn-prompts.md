@@ -58,7 +58,7 @@ Two temporary agents that scan the codebase in parallel with the analyst, broadc
 > Read `agents/knowledge-liaison.md` for your full role definition.
 > **Your Task**: #{task-id} — claim immediately (`TaskUpdate(status: "in_progress")`).
 > **Goal**: {goal}
-> **Vault config**: `knowzcode/knowzcode_vaults.md`
+> **Vault config**: `knowz-vaults.md` (project root)
 > **Lead Vault Baseline**: {VAULT_BASELINE or "No baseline — MCP not available or no vaults configured"}
 > **Lifecycle**: You persist from Stage 0 through team shutdown. You are the last agent shut down before team cleanup.
 > **Context gathering**: At startup, read local context directly and dispatch vault reader subagents in parallel (see `agents/knowledge-liaison.md` Startup). If baseline results are provided above, skip broad vault queries and dispatch deeper targeted research instead. If no baseline, perform full vault queries per your startup sequence. Push Context Briefing to analyst and architect.
@@ -320,7 +320,7 @@ After Gate #1, the lead sends the approved Change Set via DM and creates spec-dr
 > **Your Task**: #{task-id} — claim immediately (`TaskUpdate(status: "in_progress")`). Mark completed with summary when done.
 > **Conventions**: Update WorkGroup file with results (prefix entries with `KnowzCode:`). If blocked, report blocker and notify lead.
 > **Vault writes**: You own all vault writes directly. Follow the Learning Capture instructions in `agents/closer.md`.
-> **MCP Status**: {MCP_ACTIVE} — Vaults configured: {VAULTS_CONFIGURED}. Vault config: `knowzcode/knowzcode_vaults.md`.
+> **MCP Status**: {MCP_ACTIVE} — Vaults configured: {VAULTS_CONFIGURED}. Vault config: `knowz-vaults.md` (project root).
 > **Deliverable**: Atomic finalization — update specs to FINAL, update tracker, write log entry, update architecture if needed, write learnings to vaults, and create final commit.
 
 **Dispatch**:
