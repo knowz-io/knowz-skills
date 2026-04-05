@@ -2,44 +2,68 @@
 
 ## Enterprise Configuration
 
-Before using any endpoints or brand names below, check for an `enterprise.json` file in the plugin root directory (the directory containing `.claude-plugin/plugin.json`). If present, use its values: `api_endpoint` replaces `https://api.knowz.io/api/v1` (registration becomes `{api_endpoint}/auth/register`), `mcp_endpoint` replaces `https://mcp.knowz.io/mcp`, and `brand` replaces "Knowz" in user-facing messages. When enterprise config is present, ignore the `--dev` flag. If absent, use the defaults below.
+Before using any endpoints or brand names below, check for an `enterprise.json` file in the plugin root directory (the directory containing `.claude-plugin/plugin.json`). If present, use its values: `api_endpoint` replaces `https://api.knowz.io/api/v1` (registration becomes `{api_endpoint}/users/register`), `mcp_endpoint` replaces `https://mcp.knowz.io/mcp`, and `brand` replaces "Knowz" in user-facing messages. When enterprise config is present, ignore the `--dev` flag. If absent, use the defaults below.
 
 ## Endpoints
 
 | Environment | API Endpoint | MCP Endpoint |
 |:------------|:-------------|:-------------|
-| **Production** (default) | `https://api.knowz.io/api/v1/auth/register` | `https://mcp.knowz.io/mcp` |
-| **Development** (`--dev`) | `https://api.dev.knowz.io/api/v1/auth/register` | `https://mcp.dev.knowz.io/mcp` |
+| **Production** (default) | `https://api.knowz.io/api/v1/users/register` | `https://mcp.knowz.io/mcp` |
+| **Development** (`--dev`) | `https://api.dev.knowz.io/api/v1/users/register` | `https://mcp.dev.knowz.io/mcp` |
 
 ## Request Format
 
 ```bash
-curl -X POST https://api.knowz.io/api/v1/auth/register \
+curl -X POST https://api.knowz.io/api/v1/users/register \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "{name}",
+    "username": "{email}",
     "email": "{email}",
-    "password": "{password}"
+    "password": "{password}",
+    "firstName": "{firstName}",
+    "lastName": "{lastName}",
+    "registrationSource": "knowzcode",
+    "returnPersonalApiKey": true
   }'
 ```
 
+Notes:
+- `username` is set to the email address (simplifies UX — users don't need a separate username)
+- `registrationSource` tracks that this registration came from the knowz skill — always send `"knowzcode"`
+- `returnPersonalApiKey` must be `true` to receive the API key in the response
+
 ## Response Structure
+
+Success response (HTTP 200) is wrapped in an `ApiResponse` envelope:
 
 ```json
 {
-  "api_key": "kz_live_abc123...",
-  "vault_id": "vault_xyz789...",
-  "vault_name": "KnowzCode"
+  "success": true,
+  "data": {
+    "userId": "uuid",
+    "tenantId": "uuid",
+    "username": "string",
+    "email": "string",
+    "token": "jwt-token",
+    "expiresAt": "2026-04-05T12:00:00Z",
+    "personalApiKey": "ukz_...",
+    "refreshToken": "string"
+  },
+  "message": "User registered successfully"
 }
 ```
 
-Field name variants: `apiKey`/`api_key`/`token`, `vault_id`/`vaultId`, `vault_name`/`vaultName`.
+Key fields:
+- `data.personalApiKey` — the API key for MCP authentication (prefix: `ukz_`)
+- `data.tenantId` — the tenant ID (a default vault is auto-provisioned server-side)
+- Vault info is NOT in the registration response — discover it via MCP `list_vaults` after MCP is configured
 
 ## Input Validation
 
 | Field | Rules |
 |-------|-------|
-| **Name** | Non-empty, 2-100 characters, letters/spaces/hyphens/apostrophes |
+| **FirstName** | Non-empty, letters/spaces/hyphens/apostrophes |
+| **LastName** | Non-empty, letters/spaces/hyphens/apostrophes |
 | **Email** | Must contain `@` and domain, no leading/trailing whitespace |
 | **Password** | Minimum 8 characters |
 
@@ -113,27 +137,11 @@ Account created, but MCP configuration failed.
 Your account:
   Email: {email}
   API Key: {masked_key}
-  Vault: {vault_name} ({vault_id prefix...})
 
 Configure manually:
   /knowz setup {masked_key}
 
 Or visit https://knowz.io/api-keys to retrieve your key later.
-```
-
-### API Response Missing Vault ID
-
-```
-Account created, but no vault was auto-provisioned.
-
-This may indicate:
-  - Account provisioning is still in progress
-  - Server-side configuration needed
-
-You can:
-  1. Wait a few minutes and run /knowz status to check
-  2. Contact support: https://knowz.io/support
-  3. Run /knowz setup later to configure vaults
 ```
 
 ## Security Considerations
@@ -142,15 +150,15 @@ You can:
 - **Password not stored** — sent once, never saved locally
 - **Password not logged** — never display password in output
 - **Minimal data** — only collect what's needed for registration
-- **Mask displayed keys** — show only first 6 + last 4 chars (e.g., `kz_liv...wxyz`)
+- **Mask displayed keys** — show only first 6 + last 4 chars (e.g., `ukz_...wxyz`)
 - **Never log full keys** — exclude from diagnostic output
 - **Warn about project scope** — API key will be in git-committed `.mcp.json`
 - **Recommend local scope** — default to most secure option
 
 ## What Registration Provides
 
-- **API Key** — unique key for MCP server authentication
-- **Knowz Vault** — auto-created vault for learnings, conventions, and patterns
+- **API Key** — personal API key (`ukz_` prefix) for MCP server authentication
+- **Knowz Vault** — auto-provisioned server-side (discoverable via MCP `list_vaults` after setup)
 - **Vector Search** — AI-powered semantic search across vaults
 - **AI Q&A** — question answering with research mode
 - **Knowledge Capture** — save insights with automatic formatting

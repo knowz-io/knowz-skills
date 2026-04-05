@@ -17,7 +17,7 @@ Before using any endpoints or brand names below, check for an `enterprise.json` 
 If the file exists, use its values:
 - `brand` → replaces "Knowz" in all user-facing messages (e.g., "Welcome to {brand}", "{brand} MCP server")
 - `mcp_endpoint` → replaces `https://mcp.knowz.io/mcp` in all MCP commands and references
-- `api_endpoint` → replaces `https://api.knowz.io/api/v1` in all API calls (e.g., registration: `{api_endpoint}/auth/register`)
+- `api_endpoint` → replaces `https://api.knowz.io/api/v1` in all API calls (e.g., registration: `{api_endpoint}/users/register`)
 
 If the file is absent or a field is missing, use the defaults:
 - brand: `Knowz`
@@ -227,8 +227,9 @@ Privacy policy: https://knowz.io/privacy
 
 Then use AskUserQuestion to collect (one at a time, validating each):
 
-1. **Name** — "What name would you like for your account?"
+1. **Name** — "What is your name?"
    - Validation: non-empty, 2-100 characters
+   - Split into first/last name for the API: split on the last space (e.g., "Alex Headscarf" → firstName: "Alex", lastName: "Headscarf"). If single word, use it as both firstName and lastName.
 2. **Email** — "What is your email address?"
    - Validation: contains `@` and domain
 3. **Password** — "Create a password (minimum 8 characters)"
@@ -257,14 +258,22 @@ Use AskUserQuestion with options: Yes / No / Edit.
 Determine endpoint based on `--dev` flag (see [references/registration.md](references/registration.md)).
 
 ```bash
-curl -X POST https://api.knowz.io/api/v1/auth/register \
+curl -s -X POST https://api.knowz.io/api/v1/users/register \
   -H "Content-Type: application/json" \
-  -d '{"name": "{name}", "email": "{email}", "password": "{password}"}'
+  -d '{
+    "username": "{email}",
+    "email": "{email}",
+    "password": "{password}",
+    "firstName": "{firstName}",
+    "lastName": "{lastName}",
+    "registrationSource": "knowzcode",
+    "returnPersonalApiKey": true
+  }'
 ```
 
 Handle response codes per [references/registration.md](references/registration.md).
 
-Extract from response: API key (`apiKey`/`api_key`/`token`), vault ID (`vault_id`/`vaultId`), vault name.
+Extract from response: API key from `data.personalApiKey` (prefix: `ukz_`). Vault info is NOT in the response — a default vault is auto-provisioned server-side and will be discoverable via MCP after restart.
 
 #### Step R5: Configure MCP Server
 
@@ -282,10 +291,9 @@ Configure per [references/mcp-setup.md](references/mcp-setup.md).
 
 Verify: `CLAUDECODE= claude mcp get knowz`
 
-#### Step R6: Generate Vault Configuration
+#### Step R6: Vault Configuration (Deferred)
 
-1. Generate `knowz-vaults.md` with the registered vault using the format from `knowz-vaults.example.md`
-2. Pre-populate routing rules based on the vault name/description
+Vault info is not available during registration — MCP requires a restart before it can be used. Skip `knowz-vaults.md` generation here. The vault will be discovered and configured after restart via `/knowz status` or `/knowz setup`.
 
 #### Step R7: Success Message
 
@@ -294,17 +302,12 @@ REGISTRATION COMPLETE
 
 Account:
   Email: {email}
-  Auth: {OAuth OR API Key: masked_key}
+  Auth: {OAuth OR API Key: ukz_...masked}
 
 MCP Configuration:
   Scope: {scope}
   Endpoint: {endpoint}
   Status: Configured
-
-Vault:
-  Name: {vault_name}
-  ID: {vault_id prefix...}
-  File: knowz-vaults.md
 ```
 
 Then display the restart box:
@@ -324,8 +327,9 @@ Then display the restart box:
 
 After restart:
   1. Verify connection: /knowz status
-  2. Try: /knowz ask "your first question"
-  3. Save knowledge: /knowz save "your first insight"
+  2. Set up vault config: /knowz setup
+  3. Try: /knowz ask "your first question"
+  4. Save knowledge: /knowz save "your first insight"
 ```
 
 ---
@@ -821,7 +825,7 @@ For simple single-query/single-save operations, handle directly in this skill �
 # Account setup
 /knowz register                    # create account + auto-configure
 /knowz setup                       # configure MCP + create vault file
-/knowz setup kz_live_abc123        # configure with specific API key
+/knowz setup ukz_abc123            # configure with specific API key
 /knowz setup --oauth               # configure with OAuth
 
 # Ask a question

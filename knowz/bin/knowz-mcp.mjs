@@ -1170,7 +1170,7 @@ ${c.bold}Options:${c.reset}
 ${c.bold}Examples:${c.reset}
   npx knowz-mcp install                              Auto-detect platforms and install
   npx knowz-mcp install --platforms claude,codex      Install for specific platforms
-  npx knowz-mcp install --mcp-key kz_live_abc123     Install with API key
+  npx knowz-mcp install --mcp-key ukz_abc123          Install with API key
   npx knowz-mcp install --global                     Install to user-level directories
   npx knowz-mcp upgrade                              Update to latest version
   npx knowz-mcp uninstall --force                    Remove without prompting
