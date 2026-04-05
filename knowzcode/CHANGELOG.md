@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.5] - 2026-04-05
+
+### Fixed
+- Aligned `/knowz register` with actual API: endpoint path, request/response fields, API key prefix
+- Updated all platform adapters with correct registration endpoint (`/users/register`)
+- Fixed README command tables: removed trigger skill, added missing user-invocable skills
+
 ## [0.11.4] - 2026-04-05
 
 ### Added
