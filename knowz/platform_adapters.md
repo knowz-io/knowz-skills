@@ -242,14 +242,14 @@ Resolve endpoints using `enterprise.json`, `--dev`, default production, and `--e
 
 1. Check for an existing API key in `KNOWZ_API_KEY`, `~/.codex/config.toml`, `.gemini/settings.json`, and `.mcp.json`.
    - If one already exists, offer `/knowz-setup` instead of creating another account.
-2. Collect name, email, and password one field at a time.
+2. Collect name (split into first/last), email, and password one field at a time.
 3. Call the registration API:
    ```bash
-   curl -X POST {api_endpoint}/auth/register \
+   curl -s -X POST {api_endpoint}/users/register \
      -H "Content-Type: application/json" \
-     -d '{"name":"{name}","email":"{email}","password":"{password}"}'
+     -d '{"username":"{email}","email":"{email}","password":"{password}","firstName":"{firstName}","lastName":"{lastName}","registrationSource":"knowzcode","returnPersonalApiKey":true}'
    ```
-4. Extract the API key and initial vault details from the response.
+4. Extract the API key from `data.personalApiKey` in the response.
 5. Configure Codex using the shared MCP command or `~/.codex/config.toml` block from `/knowz-setup`.
    - Use `KNOWZ_API_KEY` as the bearer token env var.
    - If you cannot safely persist the environment variable from the current Codex session, tell the user exactly what to set and continue.

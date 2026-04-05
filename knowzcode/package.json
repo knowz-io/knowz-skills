@@ -1,6 +1,6 @@
 {
   "name": "knowzcode",
-  "version": "0.11.4",
+  "version": "0.11.5",
   "description": "Platform-agnostic AI development methodology with TDD, quality gates, and structured workflows",
   "type": "module",
   "bin": {

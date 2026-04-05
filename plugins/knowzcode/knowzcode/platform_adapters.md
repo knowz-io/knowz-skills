@@ -11,7 +11,7 @@ Before using any endpoints or brand names in these adapter templates, check for 
 If the file exists, use its values:
 - `brand` → replaces "Knowz" in all generated adapter content
 - `mcp_endpoint` → replaces `https://mcp.knowz.io/mcp` in all MCP commands and config examples
-- `api_endpoint` → replaces `https://api.knowz.io/api/v1` in all API references (e.g., registration: `{api_endpoint}/auth/register`)
+- `api_endpoint` → replaces `https://api.knowz.io/api/v1` in all API references (e.g., registration: `{api_endpoint}/users/register`)
 
 If the file is absent or a field is missing, use the defaults:
 - brand: `Knowz`
@@ -514,8 +514,8 @@ Register for KnowzCode and automatically configure the MCP server.
 
 ## Instructions
 
-**Registration API:** `https://api.knowz.io/api/v1/auth/register`
-**Dev API:** `https://api.dev.knowz.io/api/v1/auth/register`
+**Registration API:** `https://api.knowz.io/api/v1/users/register`
+**Dev API:** `https://api.dev.knowz.io/api/v1/users/register`
 
 0. **Smart Discovery**: Check `KNOWZ_API_KEY`, `knowzcode/mcp_config.md`, and cross-platform configs (`.gemini/settings.json`, `.vscode/mcp.json`) for existing API key. If found, offer: "Use existing key via /knowz setup" or "Register new account"
 1. Prompt user for name, email, and password (one at a time)
@@ -737,7 +737,7 @@ description = "Register for KnowzCode and configure MCP for Gemini CLI"
 prompt = """Read .gemini/skills/knowzcode-register/SKILL.md for full instructions.
 Register for KnowzCode and auto-configure MCP for Gemini CLI.
 Check for existing API key in KNOWZ_API_KEY, mcp_config.md, or other platform configs before registration.
-Registration API: https://api.knowz.io/api/v1/auth/register
+Registration API: https://api.knowz.io/api/v1/users/register
 Prompt for name, email, password. Call API. Extract API key and vault ID.
 Configure MCP via: gemini mcp add --transport http -H "Authorization: Bearer <key>" -H "X-Project-Path: $(pwd)" knowz https://mcp.knowz.io/mcp
 Fallback: write .gemini/settings.json with mcpServers.knowz entry.
@@ -1242,8 +1242,8 @@ Register for KnowzCode and automatically configure the MCP server.
 
 ## Instructions
 
-**Registration API:** `https://api.knowz.io/api/v1/auth/register`
-**Dev API:** `https://api.dev.knowz.io/api/v1/auth/register`
+**Registration API:** `https://api.knowz.io/api/v1/users/register`
+**Dev API:** `https://api.dev.knowz.io/api/v1/users/register`
 
 ### Step 0: Smart Discovery
 
