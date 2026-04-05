@@ -96,6 +96,8 @@ If file doesn't exist, use defaults. Other config settings (`max_builders`, `def
 
 ## Step 4: Launch Parallel Investigation
 
+Use task lists to plan and track your research throughout. Add new tasks as discoveries expand the scope.
+
 ### MCP Probe
 
 If `MCP_AGENTS_ENABLED = false` (from Step 3.5, e.g. `--no-mcp`), skip the MCP Probe and Step 4.1 entirely. Set `MCP_ACTIVE = false`, `VAULTS_CONFIGURED = false`, `VAULT_BASELINE = null`.
