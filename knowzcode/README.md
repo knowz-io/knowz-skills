@@ -94,8 +94,7 @@ npx knowzcode install --platforms all             # All 6 platforms
 # Quick fix (skips the loop)
 /knowzcode:fix "Fix typo in login button text"
 
-# Resume where you left off
-/knowzcode:continue
+# Resume where you left off — just say "continue"
 ```
 
 ## Commands
@@ -108,8 +107,8 @@ npx knowzcode install --platforms all             # All 6 platforms
 | `/knowzcode:audit [type]` | Run quality audits |
 | `/knowzcode:init` | Initialize in your project |
 | `/knowzcode:status` | Check project status |
-| `/knowzcode:continue` | Resume active work |
 | `/knowzcode:telemetry` | Investigate production errors |
+| `/knowzcode:telemetry-setup` | Configure telemetry sources (Sentry, App Insights) |
 
 ## Platform Support
 
