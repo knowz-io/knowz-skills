@@ -236,6 +236,8 @@ Create `knowzcode/workgroups/{WorkGroupID}.md`:
 | 1A | In Progress | {timestamp} |
 ```
 
+Use task lists to plan and track work throughout. Add new tasks as discoveries or needs emerge during each phase.
+
 ## Step 5: Input Classification
 
 **Question indicators** (suggest `/knowzcode:explore` instead): starts with is/does/how/why/what/should, contains `?`, phrased as inquiry.
