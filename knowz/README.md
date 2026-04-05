@@ -67,6 +67,7 @@ The Knowz MCP server works with any AI model and any MCP-compatible agent. This 
 | `/knowz setup` | Configure MCP connection and vault routing |
 | `/knowz status` | Check connection and vault health |
 | `/knowz register` | Create account and set up everything |
+| `/knowz flush` | Process pending captures queued while MCP was unavailable |
 
 ---
 
