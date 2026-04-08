@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-04-08
+
+### Added
+- Smoke-tester agent for runtime verification during Phase 2B — boots the app, tests endpoints/UI, reports actionable findings
+- Smoke testing integrated into Tier 3 (recommended) and Tier 2 (opt-in) workflows with parallel execution alongside reviewer
+- Smoke test gap loop with 3-iteration cap and autonomous mode safety pause
+- Smoke test results section in Gate #3 template
+- Smoke test approach captured to Knowz vaults at Phase 3 finalization
+
+### Changed
+- Renamed skill from `init` to `setup` (`/knowzcode:setup`) to avoid conflict with Claude Code's built-in `/init` command
+- Phase 2B section title updated to "Completeness Audit + Smoke Testing"
+- Agent count updated from 12 to 13
+
 ## [0.11.5] - 2026-04-05
 
 ### Fixed
