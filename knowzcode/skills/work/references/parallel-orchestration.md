@@ -115,6 +115,11 @@ When Parallel Teams mode is active, follow these 4 stages instead of spawning on
    Reviewer stays idle until its paired builder marks first NodeID implementation complete.
    Each reviewer audits incrementally within its partition.
 
+6a. Create smoke-tester task and spawn (one per WorkGroup, not per partition):
+   - `TaskCreate("Smoke test: {wgid}", addBlockedBy: [all-implement-task-ids])` → `TaskUpdate(owner: "smoke-tester")`
+   Spawn smoke-tester with its `{task-id}` in the spawn prompt. The smoke-tester waits until at least one builder marks implementation complete, then launches the full app for runtime verification.
+   **Note:** Unlike reviewers, only one smoke-tester runs per WorkGroup — it needs the full app running, not individual partitions.
+
 6. **Specialist implementation reviews** (if `SPECIALISTS_ENABLED` non-empty): Create specialist review tasks alongside reviewer audit tasks, same `addBlockedBy`:
    - If `security-officer` active — one task per partition (runs parallel to reviewer):
      `TaskCreate("Security officer: review partition {N}", addBlockedBy: [implement-X-task-id])` → `TaskUpdate(owner: "security-officer")`
@@ -143,6 +148,15 @@ When Parallel Teams mode is active, follow these 4 stages instead of spawning on
    g. Each builder-reviewer pair repeats independently until clean — no cross-partition blocking
    — All builders and reviewers stay alive through the entire gap loop (no respawning)
 
+   **Smoke test gap flow** (parallel with per-partition reviewer gaps):
+   h. Smoke-tester marks task complete with structured failure report
+   i. Lead creates smoke fix tasks: `TaskCreate("Fix smoke gap: {description}", addBlockedBy: [smoke-task-id])` → `TaskUpdate(owner: "builder-N")` (assigned to the builder whose partition owns the failing code)
+   j. Lead DMs builder: `"**New Task**: #{fix-task-id} — Fix smoke gap: {description}. {expected vs observed}"`
+   k. Builder fixes, re-runs unit tests, marks fix task complete
+   l. Lead creates re-smoke task: `TaskCreate("Re-smoke: {wgid}", addBlockedBy: [smoke-fix-task-id])` → `TaskUpdate(owner: "smoke-tester")`
+   m. Lead DMs smoke-tester: `"**New Task**: #{resmoke-task-id} — Re-smoke: {wgid}. Previous failures: {list}"`
+   n. 3-iteration cap — if exceeded, pause autonomous mode: `> **Autonomous Mode Paused** — Smoke test failed 3 iterations. Manual review required.`
+
 8. Enterprise compliance (if enabled):
    - Lead creates parallel compliance task for each reviewer (scoped to their partition)
    - Reviewer checks compliance requirements from vault research findings
@@ -162,13 +176,14 @@ When Parallel Teams mode is active, follow these 4 stages instead of spawning on
    - project-advisor → knowledge-liaison: Idea captures (`"Consider: {idea}"` — knowledge-liaison dispatches `knowz:writer` if warranted)
    - project-advisor → lead: Backlog proposals (before gap loop)
 
-10. After all NodeIDs implemented + audited across all partitions:
+10. After all NodeIDs implemented + audited across all partitions AND smoke test complete:
     - Lead consolidates audit results from all reviewers
+    - Lead consolidates smoke test results (if smoke-tester was spawned)
     - Lead consolidates specialist reports (if `SPECIALISTS_ENABLED` non-empty — include even if some specialist tasks are still pending, noting `[Pending: {specialist}]`)
     - Lead presents **Quality Gate #3** (see [quality-gates.md](quality-gates.md))
     - User decides: proceed / fix gaps / modify specs / cancel
 
-11. Shut down analyst, architect, all builders, and all reviewers
+11. Shut down analyst, architect, all builders, all reviewers, and smoke-tester (if spawned)
 
 ---
 
@@ -241,6 +256,8 @@ When creating tasks, model the dependency chain with `addBlockedBy` and pre-assi
 | Project advisor: observe implementation | (none) | project-advisor |
 | Fix gaps: NodeID-X round N | Audit: NodeID-X (or re-audit N-1) | builder-N |
 | Re-audit: NodeID-X round N | Fix gaps round N | reviewer-N |
+| Smoke test: {wgid} | All implement tasks complete | smoke-tester |
+| Re-smoke: {wgid} round N | Smoke gap fix round N | smoke-tester |
 | Phase 3 finalization | All audits approved | closer |
 | Reader: vault queries | (none — dispatched by knowledge-liaison) | knowz:reader |
 | Writer: Capture Phase 1A | Phase 1A (gate approval — dispatched by knowledge-liaison) | knowz:writer |

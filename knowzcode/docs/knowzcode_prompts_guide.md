@@ -49,7 +49,7 @@ When using the KnowzCode plugin with Claude Code, these commands orchestrate the
 | `/knowzcode:explore <topic>` | Research before implementing |
 | `/knowzcode:audit [type]` | Run quality audits (spec, architecture, security, integration, compliance) |
 | `/knowzcode:fix <target>` | Quick targeted fix |
-| `/knowzcode:init` | Initialize KnowzCode in project + generate platform adapters |
+| `/knowzcode:setup` | Initialize KnowzCode in project + generate platform adapters |
 | `/knowzcode:telemetry` | Investigate production telemetry |
 | `/knowzcode:telemetry-setup` | Configure telemetry sources |
 | `/knowz setup` | Configure MCP connection (requires knowz plugin) |
@@ -61,7 +61,7 @@ When using the KnowzCode plugin with Claude Code, these commands orchestrate the
 
 ## Quick Decision Tree
 
-*   **Starting a new project?** -> `/knowzcode:init` (or copy `knowzcode/` directory)
+*   **Starting a new project?** -> `/knowzcode:setup` (or copy `knowzcode/` directory)
 *   **Starting a feature?** -> `/knowzcode:work "goal"` (or Loop 1A prompt)
 *   **Have a question about the codebase?** -> `/knowzcode:explore "question"` (or Investigate prompt)
 *   **Large Change Set (10+ NodeIDs)?** -> Run `Spec_Verification_Checkpoint` after Loop 1B

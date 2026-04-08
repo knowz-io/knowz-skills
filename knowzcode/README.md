@@ -74,7 +74,7 @@ KnowzCode automatically classifies tasks by complexity:
 /plugin marketplace add knowz-io/knowz-skills
 /plugin install knowzcode@knowz-skills
 cd your-project/
-/knowzcode:init
+/knowzcode:setup
 
 # All platforms
 npx knowzcode                                    # Interactive setup
@@ -105,7 +105,7 @@ npx knowzcode install --platforms all             # All 6 platforms
 | `/knowzcode:explore <topic>` | Research before implementing |
 | `/knowzcode:fix <target>` | Quick targeted fix |
 | `/knowzcode:audit [type]` | Run quality audits |
-| `/knowzcode:init` | Initialize in your project |
+| `/knowzcode:setup` | Initialize in your project |
 | `/knowzcode:status` | Check project status |
 | `/knowzcode:telemetry` | Investigate production errors |
 | `/knowzcode:telemetry-setup` | Configure telemetry sources (Sentry, App Insights) |

@@ -176,7 +176,7 @@ graph LR
 **Phase 1: Genesis (New Project)**
 1.  **Prepare your vision** → Create blueprint, project overview, and architecture
 2.  **Build initial prototype** → AI creates the first version
-3.  **`/knowzcode:init`** (or copy `knowzcode/` directory) → Initialize KnowzCode in project
+3.  **`/knowzcode:setup`** (or copy `knowzcode/` directory) → Initialize KnowzCode in project
 
 **Phase 2: Development (The Loop)**
 1.  **Start with `/knowzcode:work "goal"`** (Claude Code) or the Loop 1A prompt (any platform) → Agent analyzes impact for your goal.

@@ -60,7 +60,7 @@ Works across 6 AI platforms — Claude Code, OpenAI Codex, Gemini CLI, GitHub Co
 
 # Get started
 /knowz register                               # Create account + configure MCP
-/knowzcode:init                               # Initialize in your project
+/knowzcode:setup                               # Initialize in your project
 /knowzcode:work "Build user authentication"   # Start building
 ```
 

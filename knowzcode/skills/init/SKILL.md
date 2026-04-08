@@ -1,5 +1,5 @@
 ---
-name: init
+name: setup
 description: "Initialize KnowzCode framework in the current project. Use when asked to set up, install, or bootstrap KnowzCode in a new or existing project."
 user-invocable: true
 allowed-tools: Read, Write, Bash, Glob, Grep
@@ -182,7 +182,7 @@ OpenAI Codex adapter generated:
   .agents/skills/knowzcode-fix/SKILL.md                 (/knowzcode:fix — quick fix)
   .agents/skills/knowzcode-audit/SKILL.md               (/knowzcode:audit — quality audit)
   .agents/skills/knowzcode-continue/SKILL.md            (/knowzcode:continue — resume workflow)
-  .agents/skills/knowzcode-init/SKILL.md                (/knowzcode:init — initialize project)
+  .agents/skills/knowzcode-init/SKILL.md                (/knowzcode:setup — initialize project)
   .agents/skills/knowzcode-status/SKILL.md              (/knowzcode:status — check status)
   .agents/skills/knowzcode-telemetry/SKILL.md           (/knowzcode:telemetry — investigate errors)
   .agents/skills/knowzcode-telemetry-setup/SKILL.md     (/knowzcode:telemetry-setup — configure sources)
@@ -296,7 +296,7 @@ Gemini CLI adapter generated:
   .gemini/commands/knowzcode/audit.toml                 (/knowzcode:audit — quality audit)
   .gemini/commands/knowzcode/status.toml                (/knowzcode:status — connection status)
   .gemini/commands/knowzcode/continue.toml              (/knowzcode:continue — resume workflow)
-  .gemini/commands/knowzcode/init.toml                  (/knowzcode:init — initialize project)
+  .gemini/commands/knowzcode/init.toml                  (/knowzcode:setup — initialize project)
   .gemini/commands/knowzcode/telemetry.toml             (/knowzcode:telemetry — investigate errors)
   .gemini/commands/knowzcode/telemetry-setup.toml       (/knowzcode:telemetry-setup — configure sources)
   .gemini/skills/knowzcode-work/SKILL.md                (discoverable skill)

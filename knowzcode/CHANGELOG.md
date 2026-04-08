@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-04-08
+
+### Added
+- Smoke-tester agent for runtime verification during Phase 2B — boots the app, tests endpoints/UI, reports actionable findings
+- Smoke testing integrated into Tier 3 (recommended) and Tier 2 (opt-in) workflows with parallel execution alongside reviewer
+- Smoke test gap loop with 3-iteration cap and autonomous mode safety pause
+- Smoke test results section in Gate #3 template
+- Smoke test approach captured to Knowz vaults at Phase 3 finalization
+
+### Changed
+- Renamed skill from `init` to `setup` (`/knowzcode:setup`) to avoid conflict with Claude Code's built-in `/init` command
+- Phase 2B section title updated to "Completeness Audit + Smoke Testing"
+- Agent count updated from 12 to 13
+
 ## [0.11.5] - 2026-04-05
 
 ### Fixed
@@ -214,7 +228,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Gemini-specific MCP configuration in connect-mcp and register skills — uses `gemini mcp add --transport sse` as primary method with `.gemini/settings.json` manual fallback
 - MCP Server Configuration section in GEMINI.md template — documents config location, connection commands, and manual setup
-- MCP configuration offer during Gemini init (`/knowzcode:init` Step 7c-gemini-mcp) — optional API key setup writes `.gemini/settings.json`
+- MCP configuration offer during Gemini init (`/knowzcode:setup` Step 7c-gemini-mcp) — optional API key setup writes `.gemini/settings.json`
 - Gemini MCP config generation in CLI installer (`cmdInstall`) — interactive API key prompt for Gemini platform
 - Gemini MCP config cleanup in CLI uninstaller (`cmdUninstall`) — removes `mcpServers.knowz` from `.gemini/settings.json` while preserving other settings
 - Gemini MCP config preservation in CLI upgrader (`cmdUpgrade`) — user's API key and MCP config survive upgrades
@@ -235,7 +249,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - "Restart Claude Code" references in status command generalized to "restart your AI coding assistant"
 - `/knowz setup` command now checks env var and cross-platform configs before prompting for API key (Step 1.5)
 - `/knowz register` command now detects existing API keys and offers reuse before registration (Step 0)
-- `/knowzcode:init` Step 7c-gemini-mcp now runs Smart Discovery before prompting for API key
+- `/knowzcode:setup` Step 7c-gemini-mcp now runs Smart Discovery before prompting for API key
 - `knowzcode_loop.md` Section 6 updated with cross-platform config documentation
 - Gemini and Codex `connect-mcp`, `register`, and `status` skills enriched with Smart Config Discovery steps
 - Gemini `connect-mcp` skill vault step now checks for existing vault config before re-prompting
@@ -248,7 +262,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 5 new Gemini TOML commands: init, connect-mcp, register, telemetry, telemetry-setup (12 total, up from 7) — full command parity with Claude Code
 - Global Gemini skill install support — `--global` flag routes skills to `~/.gemini/skills/` for cross-project availability
 - Gemini skill and subagent cleanup in uninstall and upgrade commands (stale file detection + removal)
-- Gemini subagent opt-in prompt in `/knowzcode:init` (requires `experimental.enableAgents: true`)
+- Gemini subagent opt-in prompt in `/knowzcode:setup` (requires `experimental.enableAgents: true`)
 
 ### Changed
 - Gemini CLI support upgraded from 7 TOML commands to 12 commands + 12 skills + 14 subagents
@@ -274,7 +288,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Global Codex skill install support — `--global` flag routes `.codex/skills/kc/` to `~/.codex/` for cross-project availability
 - Global Codex skill detection in `uninstall` and `upgrade` commands (stale cleanup + regeneration)
 - Codex skill file templates in `platform_adapters.md` (6 skills: work, plan, fix, audit, learn, continue)
-- Global install tip in `/knowzcode:init` Codex success message
+- Global install tip in `/knowzcode:setup` Codex success message
 
 ### Changed
 - Shell installers (`install.sh`, `install.ps1`) replaced with thin Node.js bootstraps — all logic consolidated into `bin/knowzcode.mjs` (~1,600 lines removed)
@@ -368,7 +382,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Orchestration config loading in `/knowzcode:plan` (Step 3.5) — respects `scout_mode` and `mcp_agents_enabled`
 - `SCOUT_MODE` parsing in `/knowzcode:audit` Step 1.1 with `--no-scouts` flag override
 - Orchestration config restore in `continue` skill for resumed workflows
-- Embedded `knowzcode_orchestration.md` template in `/knowzcode:init` for new project generation
+- Embedded `knowzcode_orchestration.md` template in `/knowzcode:setup` for new project generation
 - Combined scan mode note in `context-scout` agent definition
 
 ### Changed
@@ -391,14 +405,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enterprise compliance awareness in all 3 specialist agents (conditional on `compliance_enabled: true`): security-officer cross-references findings with enterprise guideline IDs, test-advisor checks ARC criteria test coverage, project-advisor reports compliance config gaps
 - Specialist rows added to `compliance_manifest.md` Agent-to-Enterprise-Vault Operations table
 - Structured Architecture Health Reports at Gates #1, #2, #3 in `agents/architect.md` (impact scope, spec alignment, drift detection)
-- GitHub Copilot full adapter: `/knowzcode:init` generates `.github/copilot-instructions.md` + 9 prompt files in `.github/prompts/` + optional `.vscode/mcp.json` skeleton
+- GitHub Copilot full adapter: `/knowzcode:setup` generates `.github/copilot-instructions.md` + 9 prompt files in `.github/prompts/` + optional `.vscode/mcp.json` skeleton
 - `knowzcode/copilot_execution.md` — complete single-agent sequential execution model for Copilot users
 - `argument-hint` frontmatter for kc-work, kc-fix, and kc-plan Copilot prompt files
 
 ### Changed
 - Agent count: 11 → 14 (added 3 opt-in specialists)
 - GitHub Copilot support upgraded from adapter template to full adapter with 9 phase-specific prompt files (`#prompt:knowzcode-*` invocation in VS Code)
-- `/knowzcode:init` detects `.github/` directory for Copilot adapter generation
+- `/knowzcode:setup` detects `.github/` directory for Copilot adapter generation
 - Quality gate templates include Specialist Reports section when specialists are active
 - `knowzcode/platform_adapters.md` expanded with Copilot template suite
 - `knowzcode/claude_code_execution.md` updated with specialist lifecycle, communication discipline, and DM protocol tables
