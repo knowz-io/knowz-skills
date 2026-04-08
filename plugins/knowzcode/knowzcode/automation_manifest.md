@@ -10,7 +10,7 @@ This manifest describes the resources that support the KnowzCode workflow.
 | `/knowzcode:explore` | Research and investigate using parallel agents before implementing |
 | `/knowzcode:audit` | Run quality audits (spec, architecture, security, integration) |
 | `/knowzcode:fix` | Execute targeted micro-fix workflow |
-| `/knowzcode:init` | Initialize KnowzCode in current project + generate platform adapters |
+| `/knowzcode:setup` | Initialize KnowzCode in current project + generate platform adapters |
 | `/knowzcode:telemetry` | Investigate production telemetry |
 | `/knowzcode:telemetry-setup` | Configure telemetry sources |
 | `/knowz setup` | Configure MCP server connection (knowz plugin) |
