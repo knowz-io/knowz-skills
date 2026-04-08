@@ -25,11 +25,12 @@ For product overview, see [README.md](README.md). For detailed docs, see `docs/`
 │   ├── continue/SKILL.md        # Trigger skill
 │   ├── start-work/SKILL.md      # Trigger skill
 │   └── *.json                   # JSON skill definitions
-├── agents/                      # Agent definitions (12)
+├── agents/                      # Agent definitions (13)
 │   ├── analyst.md               # Phase 1A — impact analysis
 │   ├── architect.md             # Phase 1B — specification drafting
 │   ├── builder.md               # Phase 2A — TDD implementation
 │   ├── reviewer.md              # Phase 2B — completeness audit
+│   ├── smoke-tester.md          # Phase 2B — runtime smoke testing
 │   ├── closer.md                # Phase 3 — finalization
 │   ├── knowledge-liaison.md     # Persistent — context & vault coordinator via knowz:reader/writer
 │   ├── microfix-specialist.md   # Utility — single-file fixes
