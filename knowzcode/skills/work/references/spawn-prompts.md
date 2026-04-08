@@ -288,6 +288,31 @@ After Gate #1, the lead sends the approved Change Set via DM and creates spec-dr
 
 ---
 
+## Phase 2B: Smoke Testing
+
+**Agent**: `smoke-tester` | **Loop.md**: Section 3.4
+
+**Spawn prompt**:
+> You are the **smoke-tester** for WorkGroup `{wgid}`.
+> Read `agents/smoke-tester.md` for your full role definition.
+>
+> **Goal**: {goal}
+> **Change Set**: {NodeIDs}
+> **Specs**: {list of spec file paths}
+> **Context files**: Read `knowzcode/knowzcode_project.md`
+> **WorkGroup file**: `knowzcode/workgroups/{wgid}.md`
+>
+> **Your Task**: #{task-id} — claim immediately (`TaskUpdate(status: "in_progress")`). Mark completed with summary when done.
+> **App status**: {`"App already running at {URL}"` | `"Launch app yourself"`}
+> **Deliverable**: Smoke test report with pass/fail per check, evidence, and actionable failure descriptions.
+
+**Dispatch**:
+- *Parallel Teams*: One smoke-tester spawned at Stage 2 alongside reviewers. Runs as background agent. Uses `addBlockedBy` on the same implementation tasks as the reviewer. No partition — smoke-tester covers the whole app (it needs the full app running, not individual partitions).
+- *Sequential Teams*: Spawn after reviewer completes, before Phase 3. Create task `Phase 2B: Smoke test for {wgid}`.
+- *Subagent*: `Task(subagent_type="smoke-tester", description="Phase 2B smoke testing", prompt=<above>)`
+
+---
+
 ## Phase 3: Finalization
 
 **Agent**: `closer` | **Loop.md**: Section 3.5

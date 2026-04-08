@@ -111,12 +111,20 @@ Present audit results:
 **ARC Completion**: {X}%
 **Security Posture**: {status}
 **Gaps Found**: {count}
+**Smoke Test**: {PASS / FAIL / SKIPPED — reason}
 
 ### Specialist Reports                    [only when SPECIALISTS_ENABLED non-empty]
 **Security Officer**: Findings: {N} | Critical: {N} | High: {N} | {details or [Pending]}
 **Architect**: Drift: {Yes/No} | Pattern Violations: {N} | {details}
 **Test Advisor**: TDD Compliance: {%} | Missing Edge Cases: {N} | Quality: {Good/Adequate/Poor} | {details or [Pending]}
 **Project Advisor**: New REFACTOR tasks: {N} | Ideas captured to vault: {N}
+
+### Smoke Test Results                      [only when smoke-tester was spawned]
+**Status**: {PASS / FAIL}
+**Method**: {API / Chrome / Playwright}
+**Launch**: {how app was started, or "user-provided"}
+**Checks**: {count passed} / {count total}
+**Findings**: {details or "All checks passed"}
 
 **Recommendation**: {proceed / return to implementation}
 
@@ -149,6 +157,17 @@ If `AUTONOMOUS_MODE = false`: User decides — proceed / fix gaps / modify specs
 7. Each builder-reviewer pair repeats independently until clean — no cross-partition blocking
 8. All builders and reviewers stay alive throughout
 9. **3-iteration cap per partition**: If a partition exceeds 3 gap-fix iterations without resolution, **PAUSE** autonomous mode for that partition (even if `AUTONOMOUS_MODE = true`). Announce: `> **Autonomous Mode Paused** — Partition {N} failed 3 gap-fix iterations. Manual review required.`
+
+### Smoke Test Gap Loop
+
+If the smoke-tester reports failures:
+1. Lead creates smoke fix tasks assigned to the builder owning the failing code
+2. Builder fixes, re-runs unit tests, marks fix task complete
+3. Lead creates re-smoke task for smoke-tester
+4. Smoke-tester re-runs against the running app
+5. **3-iteration cap**: If smoke test exceeds 3 iterations, pause autonomous mode: `> **Autonomous Mode Paused** — Smoke test failed 3 iterations. Manual review required.`
+
+Smoke gap loop runs parallel with per-partition reviewer gap loops. Gate #3 waits for both to pass.
 
 ### Sequential Teams mode:
 
@@ -189,6 +208,7 @@ Before reporting "Workflow Complete", verify:
 - [ ] `knowzcode_log.md` ARC-Completion entry written
 - [ ] MCP progress capture attempted (or failure queued to `pending_captures.md` and announced to user)
 - [ ] Specs updated to As-Built / FINAL status
+- [ ] Smoke test approach captured (if smoke testing ran): launch method, endpoints tested, test method, project-specific quirks
 
 Update workgroup to "Closed" and report:
 
