@@ -69,7 +69,7 @@ Announce the detected mode: `**Mode: Exploration** (lightweight research)` or `*
 
 ## Step 2: Check Initialization
 
-If `knowzcode/` doesn't exist, inform user to run `/knowzcode:init` first. STOP.
+If `knowzcode/` doesn't exist, inform user to run `/knowzcode:setup` first. STOP.
 
 ## Step 3: Set Up Execution Mode
 

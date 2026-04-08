@@ -39,7 +39,7 @@ Verify KnowzCode is initialized:
 1. Check if `knowzcode/` directory exists
 2. Check required files exist: `knowzcode_loop.md`, `knowzcode_tracker.md`, `knowzcode_project.md`, `knowzcode_architecture.md`
 
-If missing: inform user to run `/knowzcode:init` first. STOP.
+If missing: inform user to run `/knowzcode:setup` first. STOP.
 
 ## Step 1: Generate WorkGroup ID
 

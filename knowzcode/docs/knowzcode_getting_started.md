@@ -46,7 +46,7 @@ This approach ensures KnowzCode documents what you ACTUALLY built, not just what
 /plugin marketplace add knowz-io/knowz-skills
 /plugin install knowzcode@knowz-skills
 cd your-project/
-/knowzcode:init
+/knowzcode:setup
 ```
 
 ### Script Install (Any Platform)
@@ -100,12 +100,12 @@ You need to create three foundational documents. There are many ways to approach
 
 2. **Project Overview** (`knowzcode/knowzcode_project.md`)
    - Create through conversation with your AI based on your blueprint
-   - Or use `/knowzcode:init` to generate a starter template
+   - Or use `/knowzcode:setup` to generate a starter template
    - Defines technology stack, standards, and scope
 
 3. **Architecture Diagram** (`knowzcode/knowzcode_architecture.md`)
    - Design through discussion with your AI using your blueprint as reference
-   - Or use `/knowzcode:init` to generate a starter template
+   - Or use `/knowzcode:setup` to generate a starter template
    - Creates the technical system design
 
 #### Option B: Conversational Approach
@@ -168,7 +168,7 @@ your-project/
 
 If using Claude Code with the KnowzCode plugin:
 ```bash
-/knowzcode:init
+/knowzcode:setup
 /knowzcode:audit
 ```
 
@@ -332,7 +332,7 @@ Before building, research your approach:
 ### Claude Code Commands
 | Command | Purpose | When to Use |
 |:--------|:--------|:------------|
-| `/knowzcode:init` | Initialize KnowzCode in project | Once, at project setup |
+| `/knowzcode:setup` | Initialize KnowzCode in project | Once, at project setup |
 | `/knowzcode:work <goal>` | Start feature workflow | Every new feature or fix |
 | `/knowzcode:explore <topic>` | Research before implementing | When investigating options |
 | `/knowzcode:audit [type]` | Run quality audits | Periodic quality checks |
@@ -438,7 +438,7 @@ When stuck, check these in order:
 
 1. Prepare your three foundational documents
 2. Build your initial prototype
-3. Install KnowzCode: `npx knowzcode` or `/knowzcode:init` (Claude Code) or copy the `knowzcode/` directory
+3. Install KnowzCode: `npx knowzcode` or `/knowzcode:setup` (Claude Code) or copy the `knowzcode/` directory
 4. Start systematic development with `/knowzcode:work "your first goal"`!
 
 Remember: The first project might feel slow as you learn the workflow, but each subsequent project becomes faster and more natural. KnowzCode's value increases as projects grow in complexity.
