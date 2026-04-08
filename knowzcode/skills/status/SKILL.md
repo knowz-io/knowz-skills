@@ -50,7 +50,7 @@ Check KnowzCode project status and report findings to the user.
      - knowzcode_orchestration.md: {Present | Missing}
    ```
 
-   If `knowzcode/` is missing: suggest `/knowzcode:init` and STOP.
+   If `knowzcode/` is missing: suggest `/knowzcode:setup` and STOP.
 
 2. **Check Agent Teams Status**
 
@@ -145,7 +145,7 @@ Use clear status indicators:
 
 - `/knowz setup` — Configure MCP server and vaults
 - `/knowz register` — Register a new Knowz account
-- `/knowzcode:init` — Initialize KnowzCode in project
+- `/knowzcode:setup` — Initialize KnowzCode in project
 - `/knowzcode:work` — Start feature (uses MCP if available)
 
 ## Important Notes

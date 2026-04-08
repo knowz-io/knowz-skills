@@ -39,7 +39,7 @@ Verify KnowzCode is initialized:
 1. Check if `knowzcode/` directory exists
 2. Check required files exist: `knowzcode_loop.md`, `knowzcode_tracker.md`, `knowzcode_project.md`, `knowzcode_architecture.md`
 
-If missing: inform user to run `/knowzcode:init` first. STOP.
+If missing: inform user to run `/knowzcode:setup` first. STOP.
 
 ## Step 1: Generate WorkGroup ID
 
@@ -335,6 +335,18 @@ Approve Change Set and spec to proceed to implementation?
 
 The builder self-verifies against spec VERIFY criteria — no separate audit phase.
 
+### Light Phase 2B: Smoke Testing (Opt-in)
+
+Only if user explicitly requested smoke testing (e.g., `--smoke-test` in `$ARGUMENTS` or natural language: "smoke test", "test it running", "verify it works"):
+
+**Agent Teams mode**: Spawn the smoke-tester as a teammate in the `kc-{wgid}` team using the Phase 2B smoke-tester spawn prompt from `references/spawn-prompts.md`.
+
+**Subagent fallback**: Spawn via `Task(subagent_type="smoke-tester", description="Smoke test", prompt=<spawn prompt>)`.
+
+If smoke test fails: create fix tasks for builder, re-run smoke-tester. 3-iteration cap, then escalate. App lifecycle managed by smoke-tester (see `agents/smoke-tester.md`).
+
+If user did not request smoke testing, skip to Light Phase 3.
+
 ### Light Phase 3 (Inline — lead coordinates, knowledge-liaison captures)
 
 After builder completes successfully:
@@ -384,6 +396,8 @@ Tier 3 supports three execution modes (determined in Step 2):
 - **Sequential Teams** (`--sequential`) — one agent per phase, spawned and shut down sequentially
 - **Subagent Delegation** — Task() calls, no persistent agents
 
+**Smoke testing**: Tier 3 recommends smoke testing at Phase 2B. At Gate #2, note to the user that smoke testing will run alongside the reviewer. The user can decline. If not declined, the smoke-tester is spawned at Stage 2 alongside reviewers (see [parallel-orchestration.md](references/parallel-orchestration.md)).
+
 ## Step 6: Spec Detection (Optional Optimization)
 
 Check for existing specs covering this work:
@@ -429,6 +443,7 @@ Scan `knowzcode/knowzcode_tracker.md` for outstanding `REFACTOR_` tasks that ove
 | 1B | architect | #2: Specifications | Specs with VERIFY criteria |
 | 2A | builder(s) | — | Implementation + tests |
 | 2B | reviewer(s) | #3: Audit Results | ARC completion, gap reports |
+| 2B | smoke-tester | #3: Audit Results | Runtime verification, smoke pass/fail |
 | 3 | closer | — | Final specs, tracker updates, log entry, commit |
 
 ---

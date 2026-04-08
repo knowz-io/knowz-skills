@@ -163,14 +163,15 @@ Report implementation results including test counts, verification iterations, an
 
 ---
 
-### 3.4 Phase 2B: Completeness Audit
+### 3.4 Phase 2B: Completeness Audit + Smoke Testing
 
-An independent, READ-ONLY audit verifying what percentage of specifications were actually implemented.
+An independent, READ-ONLY audit verifying what percentage of specifications were actually implemented, plus optional runtime smoke testing.
 
 **Process:**
 - Compare implementation against specifications for all NodeIDs
 - Calculate objective completion percentage
 - Report gaps, orphan code, and risk assessment
+- **Smoke testing** (Tier 3: recommended, Tier 2: opt-in): boot the application and verify runtime behavior against specs
 - Do NOT modify any code during this phase
 
 **Outcomes** (user decides):
@@ -461,6 +462,7 @@ Phases can be executed by a single AI sequentially or by specialized agents coor
 | 1B | architect | Specification drafting, architecture review |
 | 2A | builder | TDD implementation, verification loops |
 | 2B | reviewer | Quality audit, security review |
+| 2B | smoke-tester | Runtime smoke testing (parallel with reviewer) |
 | 3 | closer | Finalization, learning capture |
 
 ### Execution Rules

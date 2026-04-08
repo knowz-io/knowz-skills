@@ -367,7 +367,7 @@ When the environment variable `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` is set, c
 The same phases, quality gates, and approval points apply regardless of execution model. Agent Teams is the richer experience; subagent delegation is the reliable fallback.
 
 **Enabling Agent Teams:**
-- `/knowzcode:init` offers to enable it during project setup
+- `/knowzcode:setup` offers to enable it during project setup
 - `npx knowzcode install --agent-teams` enables it via the CLI installer
 - Or manually set it in `.claude/settings.local.json`:
   ```json

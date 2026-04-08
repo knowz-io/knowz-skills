@@ -1,6 +1,6 @@
 # KnowzCode Init — Template Files
 
-These templates are generated during `/knowzcode:init` Step 3. Create each file in the `knowzcode/` directory.
+These templates are generated during `/knowzcode:setup` Step 3. Create each file in the `knowzcode/` directory.
 
 ## knowzcode_project.md
 ```markdown
