@@ -10,8 +10,9 @@ Investigate a topic and stop with findings and recommendations.
 
 ## Instructions
 
-1. Read `knowzcode/knowzcode_project.md`, `knowzcode/knowzcode_architecture.md`, and `knowzcode/knowzcode_loop.md` if they exist.
+1. Read `knowzcode/knowzcode_project.md`, `knowzcode/knowzcode_architecture.md`, and `knowzcode/knowzcode_loop.md` if they exist. If `knowzcode/codex_execution.md` exists, read it too.
 2. Search the codebase for relevant files, patterns, specs, and prior WorkGroups.
-3. If Knowz MCP is available, use `mcp__knowz__search_knowledge` or `mcp__knowz__ask_question` for prior decisions and conventions.
-4. Summarize current state, constraints, options, risks, and the recommended path.
-5. Do not implement changes unless the user explicitly asks to move into `/knowzcode:work` or `/knowzcode:fix`.
+3. If the topic spans independent subsystems, parallelize read-only exploration with Codex-native `explorer` agents and merge their findings in the coordinator. Do not create overlapping write scopes and do not implement code in this mode.
+4. If Knowz MCP is available, use direct `mcp__knowz__search_knowledge` or `mcp__knowz__ask_question` calls for prior decisions and conventions.
+5. Summarize current state, constraints, options, risks, and the recommended path.
+6. Do not implement changes unless the user explicitly asks to move into `/knowzcode:work` or `/knowzcode:fix`.

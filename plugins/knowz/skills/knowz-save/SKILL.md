@@ -14,7 +14,8 @@ If `enterprise.json` exists in the project root, use its `brand` value instead o
 
 1. Read `knowz-vaults.md` from the project root if it exists.
 2. Parse the content the user wants to save.
-3. Classify the capture:
+3. Perform reads and writes directly from the current Codex agent. Do not assume delegated writer agents.
+4. Classify the capture:
    - pattern/reusable/utility -> Pattern
    - chose/decided/trade-off -> Decision
    - workaround/limitation/temporary -> Workaround
@@ -22,18 +23,19 @@ If `enterprise.json` exists in the project root, use its `brand` value instead o
    - security/vulnerability/auth -> Security
    - always/never/standard/convention -> Convention
    - otherwise -> Note
-4. Route to the best vault using `When to save` rules.
+5. Route to the best vault using `When to save` rules.
    - Multiple strong matches -> ask the user to choose.
    - No match -> use the default vault when available.
-5. Expand terse input into a self-contained body:
+6. Expand terse input into a self-contained body:
    ```
    [CONTEXT] Where and why this arose
    [INSIGHT] The reusable knowledge
    [RATIONALE] Why this approach or decision won
    [TAGS] category, technology, domain keywords
    ```
-6. Generate a title in the form `{Category}: {Descriptive summary}`.
-7. Run a dedupe check with `mcp__knowz__search_knowledge` using the title and target vault.
+7. Generate a title in the form `{Category}: {Descriptive summary}`.
+8. Run a dedupe check with `mcp__knowz__search_knowledge` using the title and target vault.
    - If there is a close match, offer to skip, update, or save anyway.
-8. Save with `mcp__knowz__create_knowledge` using `knowledgeType: "Note"`, the chosen `vaultId`, and tags.
-9. If MCP write fails, append a capture block to `knowz-pending.md` in the project root and report that it was queued for `/knowz-flush`.
+9. Save with `mcp__knowz__create_knowledge` using `knowledgeType: "Note"`, the chosen `vaultId`, and tags.
+10. If the user explicitly wants to refresh an existing matching item, use `mcp__knowz__update_knowledge` instead of creating a duplicate.
+11. If MCP write fails, append a capture block to `knowz-pending.md` in the project root and report that it was queued for `/knowz-flush`.

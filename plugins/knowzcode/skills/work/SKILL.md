@@ -15,7 +15,7 @@ Run the KnowzCode methodology using Codex-native tools.
    - `knowzcode/knowzcode_project.md`
    - `knowzcode/knowzcode_tracker.md`
    - `knowzcode/knowzcode_architecture.md`
-2. Read those files before planning work.
+2. Read those files before planning work. If `knowzcode/codex_execution.md` exists, read it too and follow its Codex-native delegation rules.
 3. Classify scope:
    - Micro fix -> use `/knowzcode:fix`
    - Light change -> streamlined change set, spec, implementation, verification
@@ -23,7 +23,9 @@ Run the KnowzCode methodology using Codex-native tools.
 4. Create or update a WorkGroup file in `knowzcode/workgroups/`.
 5. Phase 1A: propose a Change Set with affected files, NodeIDs, and risks. Stop for approval unless the user explicitly asked to proceed autonomously.
 6. Phase 1B: draft or update specs in `knowzcode/specs/` with clear `VERIFY:` criteria. Stop for approval.
-7. Phase 2A: implement with strict TDD. Use Codex delegation or sub-agents only through Codex-native mechanisms when parallel work is useful. Do not rely on Claude-only team APIs.
-8. Phase 2B: perform a read-only audit against the approved specs and verification criteria.
-9. Phase 3: update specs to as-built, refresh `knowzcode/knowzcode_tracker.md`, prepend an entry to `knowzcode/knowzcode_log.md`, and finalize the work.
-10. If Knowz MCP is available, use `mcp__knowz__search_knowledge`, `mcp__knowz__ask_question`, and `mcp__knowz__create_knowledge` for context and durable capture. If not, fall back to local KnowzCode files without blocking progress.
+7. For broad discovery or audits, prefer 1-3 parallel read-only Codex `explorer` agents over simulated persistent teammates. Merge their findings in the coordinator before proceeding.
+8. Phase 2A: implement with strict TDD. Use Codex delegation only through native mechanisms such as `spawn_agent`, `send_input`, `wait_agent`, and `close_agent` when parallel work is useful. Give each writer an explicit file or module ownership boundary. Never let two workers edit the same file.
+9. Keep inter-agent communication structured. Require short handoffs with owned files, findings, blockers, and next actions. Persist shared state in the WorkGroup file and, when helpful, `knowzcode/workgroups/{wgid}/handoffs/`.
+10. Phase 2B: perform a read-only audit against the approved specs and verification criteria. Split large audits by disjoint file areas only if the review can stay read-only.
+11. Phase 3: update specs to as-built, refresh `knowzcode/knowzcode_tracker.md`, prepend an entry to `knowzcode/knowzcode_log.md`, and finalize the work.
+12. If Knowz MCP is available, prefer direct coordinator-owned `mcp__knowz__search_knowledge`, `mcp__knowz__ask_question`, `mcp__knowz__create_knowledge`, and `mcp__knowz__update_knowledge` calls for context and durable capture. If not, fall back to local KnowzCode files without blocking progress.

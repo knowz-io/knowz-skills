@@ -608,9 +608,15 @@ If `KNOWZ_API_KEY` is set as an environment variable, `/knowz setup` will discov
 
 ### Codex Agent Definitions (`.agents/agents/`)
 
-Codex (2026) supports agent definitions in `.agents/agents/`. Each agent is an `.md` file with YAML frontmatter (`name`, `description`). These mirror the Gemini subagent structure.
+**Current package guidance:** Do not treat `.agents/agents/` as part of the supported Codex package surface for KnowzCode. Keep Codex packaging focused on discoverable skills plus the `knowzcode/` support files those skills read.
 
-> **Note:** Codex agent support is experimental and may vary by platform version. If agents are not supported, the `AGENTS.md` methodology instructions serve as the primary guidance.
+When Codex workflows need parallel or delegated execution, use the Codex runtime's native delegation model instead of assuming Claude-style team APIs. See `knowzcode/codex_execution.md` for the Codex-native coordinator/subagent model, structured handoffs, and safe parallelism rules.
+
+**Legacy note:** The older `.agents/agents/` guidance below reflects an earlier experiment and should be ignored for the current Codex plugin package.
+
+Legacy experiment: Codex (2026) supported agent definitions in `.agents/agents/`. Each agent was an `.md` file with YAML frontmatter (`name`, `description`). This is not the supported surface for the current Codex plugin package.
+
+> **Note:** Treat the legacy notes below as historical only. The current Codex package should use discoverable skills plus `knowzcode/codex_execution.md`.
 
 Agent definitions follow the same structure as [Gemini Subagents](#gemini-subagents-geminiagents--experimental) — generate with the same file content but place in `.agents/agents/knowzcode-*.md` instead of `.gemini/agents/knowzcode-*.md`. The 14 agent files are:
 

@@ -11,8 +11,9 @@ Perform a read-only audit and report findings first.
 ## Instructions
 
 1. Treat this as read-only unless the user explicitly changes scope.
-2. Read `knowzcode/knowzcode_loop.md`, `knowzcode/knowzcode_tracker.md`, relevant specs, and the implementation files under review.
+2. Read `knowzcode/knowzcode_loop.md`, `knowzcode/knowzcode_tracker.md`, relevant specs, and the implementation files under review. If `knowzcode/codex_execution.md` exists, read it too.
 3. Compare the implementation against `VERIFY:` criteria when specs exist.
-4. Check for behavioral gaps, regressions, missing tests, security concerns, and architectural drift.
-5. Present findings ordered by severity with file references first. Keep any summary secondary.
-6. If there are no findings, say so explicitly and mention residual risk or test gaps.
+4. For large review surfaces, split the audit into disjoint read-only slices using Codex-native `explorer` agents or parallel local review. The coordinator merges and de-duplicates the findings.
+5. Check for behavioral gaps, regressions, missing tests, security concerns, and architectural drift.
+6. Present findings ordered by severity with file references first. Keep any summary secondary.
+7. If there are no findings, say so explicitly and mention residual risk or test gaps.

@@ -19,10 +19,12 @@ If `enterprise.json` exists in the project root, use its `brand` value instead o
    - One match -> query that vault.
    - Multiple matches -> query all matching vaults.
    - No match -> use the default vault when available.
-4. Call `mcp__knowz__ask_question` with:
-   - `question`: the user's question
-   - `vaultId`: the matched vault ID when one is known
-   - `researchMode`: `true` for multi-part, comparative, architectural, or "why" questions; otherwise `false`
-5. Answer naturally and mention which vaults informed the result when possible.
+4. Query directly from the current Codex agent. Do not assume helper reader agents.
+   - One target vault -> call `mcp__knowz__ask_question` once with `vaultId`
+   - Multiple target vaults -> issue one `mcp__knowz__ask_question` call per vault, in parallel when the runtime supports it, then synthesize agreements and conflicts
+   - No specific vault -> call `mcp__knowz__ask_question` once without `vaultId` or against the default vault when known
+   - Set `researchMode: true` for multi-part, comparative, architectural, or "why" questions; otherwise `false`
+5. If the answer is still too thin, open the top cited items with `mcp__knowz__get_knowledge_item` before responding.
+6. Answer naturally and mention which vaults informed the result when possible.
 
 If Knowz MCP tools are unavailable, report: "{brand} MCP not connected. Run /knowz-setup and restart Codex."
