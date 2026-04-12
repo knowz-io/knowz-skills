@@ -16,9 +16,9 @@ Treat this as a lightweight helper skill for Codex. Codex may surface it when a 
    - Query intent: "why did we", "what is our convention", "did we already", "have we done this before"
    - Save intent: "we decided", "I learned", "the workaround is", "save this", "capture this"
 4. If query intent matches a configured vault rule:
-   - run a lightweight `mcp__knowz__search_knowledge` or `mcp__knowz__ask_question`
+   - run a lightweight direct `mcp__knowz__search_knowledge` or `mcp__knowz__ask_question` call from the current agent
    - weave successful findings into the response naturally
 5. If save intent matches a configured vault rule:
    - ask the user whether to save it
    - if they agree, hand off to the same workflow as `/knowz-save`
-6. Never auto-save, never block the main task, and do nothing if Knowz tools are unavailable.
+6. Never auto-save, never block the main task, do not spawn helper reader/writer agents for this path, and do nothing if Knowz tools are unavailable.

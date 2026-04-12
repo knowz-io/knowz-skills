@@ -1,6 +1,6 @@
 {
   "name": "knowzcode",
-  "version": "0.11.0",
+  "version": "0.12.0",
   "description": "Platform-agnostic AI development methodology with TDD, quality gates, and structured workflows for Codex.",
   "author": {
     "name": "Alex Headscarf",
@@ -22,7 +22,7 @@
   "interface": {
     "displayName": "KnowzCode",
     "shortDescription": "Structured coding workflows for Codex",
-    "longDescription": "Package the KnowzCode methodology for Codex with Codex-native workflow skills plus the support files those workflows read from the existing product.",
+    "longDescription": "Package the KnowzCode methodology for Codex with Codex-native workflow skills, coordinator/subagent execution guidance, and the support files those workflows read from the initialized project.",
     "developerName": "Knowz",
     "category": "Coding",
     "capabilities": [

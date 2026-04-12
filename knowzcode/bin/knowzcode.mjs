@@ -29,6 +29,7 @@ const BRAND = ENTERPRISE_CONFIG.brand || 'Knowz';
 const MCP_ENDPOINT = ENTERPRISE_CONFIG.mcp_endpoint || 'https://mcp.knowz.io/mcp';
 // In enterprise mode, dev endpoint collapses to the enterprise endpoint (single environment)
 const MCP_DEV_ENDPOINT = IS_ENTERPRISE ? MCP_ENDPOINT : 'https://mcp.dev.knowz.io/mcp';
+const HOME_DIR = process.env.HOME || process.env.USERPROFILE || '~';
 
 // ─── Colors ──────────────────────────────────────────────────────────────────
 
@@ -155,6 +156,22 @@ function detectPlatforms(dir) {
   return detected;
 }
 
+function hasKnowzCodeSkillDir(skillRoot) {
+  if (!existsSync(skillRoot)) return false;
+  return readdirSync(skillRoot).some((entry) =>
+    entry.startsWith('knowzcode-') && existsSync(join(skillRoot, entry, 'SKILL.md'))
+  );
+}
+
+function hasCodexAdapterInstalled(dir) {
+  return (
+    existsSync(join(dir, 'AGENTS.md')) ||
+    existsSync(join(dir, 'AGENTS.override.md')) ||
+    hasKnowzCodeSkillDir(join(dir, '.agents', 'skills')) ||
+    hasKnowzCodeSkillDir(join(HOME_DIR, '.agents', 'skills'))
+  );
+}
+
 // ─── Adapter Template Parser ─────────────────────────────────────────────────
 // Returns Map<platformId, { primary: string, files: Map<relativePath, { content, lang }> }>
 
@@ -194,6 +211,61 @@ function extractFence(text, lang, startFrom = 0) {
     pos = afterBackticks;
   }
   return null;
+}
+
+function extractFirstFence(text, startFrom = 0) {
+  const fenceRegex = /```([A-Za-z0-9_-]*)/g;
+  fenceRegex.lastIndex = startFrom;
+  const match = fenceRegex.exec(text);
+  if (!match) return null;
+
+  const lang = match[1] || '';
+  const contentStart = text.indexOf('\n', match.index) + 1;
+  let depth = 0;
+  let pos = contentStart;
+  while (pos < text.length) {
+    const nextFence = text.indexOf('\n```', pos);
+    if (nextFence === -1) return null;
+    const afterBackticks = nextFence + 4;
+    const charAfter = afterBackticks < text.length ? text[afterBackticks] : undefined;
+    if (charAfter && /\w/.test(charAfter)) {
+      depth++;
+    } else {
+      if (depth === 0) {
+        return { content: text.slice(contentStart, nextFence), endIdx: afterBackticks, lang };
+      }
+      depth--;
+    }
+    pos = afterBackticks;
+  }
+  return null;
+}
+
+function looksLikeRelativeFilePath(value) {
+  return /^[./\w-][^\r\n]*[\\/][^\r\n]+$/.test(value) || /^[./\w-]+\.[A-Za-z0-9_-]+$/.test(value);
+}
+
+function parseHeaderFileSections(section, headerRegex) {
+  const headers = [];
+  let match;
+  while ((match = headerRegex.exec(section)) !== null) {
+    if (looksLikeRelativeFilePath(match[1])) {
+      headers.push({ filepath: match[1], index: match.index });
+    }
+  }
+
+  const files = new Map();
+  for (let i = 0; i < headers.length; i++) {
+    const start = headers[i].index;
+    const end = i + 1 < headers.length ? headers[i + 1].index : section.length;
+    const subSection = section.slice(start, end);
+    const fence = extractFirstFence(subSection);
+    if (fence) {
+      files.set(headers[i].filepath, { content: fence.content, lang: fence.lang || 'markdown' });
+    }
+  }
+
+  return { headers, files };
 }
 
 function parseCopilotSection(section) {
@@ -303,29 +375,11 @@ function parseGeminiSection(section) {
 }
 
 function parseCodexSection(section) {
-  const files = new Map();
-
-  // Primary: first ```markdown fence (AGENTS.md)
-  const primaryFence = extractFence(section, 'markdown');
+  const { headers, files } = parseHeaderFileSections(section, /^#### ([^\r\n]+)$/gm);
+  const firstHeaderIdx = headers.length > 0 ? headers[0].index : section.length;
+  const primarySection = section.slice(0, firstHeaderIdx);
+  const primaryFence = extractFence(primarySection, 'markdown');
   if (!primaryFence) return null;
-
-  // Skill files: #### .agents/skills/knowzcode-{name}/SKILL.md headers
-  const headerRegex = /#### (\.agents\/skills\/knowzcode-[\w-]+\/SKILL\.md)/g;
-  const headers = [];
-  let match;
-  while ((match = headerRegex.exec(section)) !== null) {
-    headers.push({ filepath: match[1], index: match.index });
-  }
-
-  for (let i = 0; i < headers.length; i++) {
-    const start = headers[i].index;
-    const end = i + 1 < headers.length ? headers[i + 1].index : section.length;
-    const subSection = section.slice(start, end);
-    const fence = extractFence(subSection, 'markdown');
-    if (fence) {
-      files.set(headers[i].filepath, { content: fence.content, lang: 'markdown' });
-    }
-  }
 
   return { primary: primaryFence.content, files };
 }
@@ -829,7 +883,7 @@ function scanExistingInstallation(kcDir, dir) {
   // Installed platforms
   const adapterChecks = {
     claude: () => existsSync(join(dir, '.claude', 'skills')) || existsSync(join(dir, '.claude', 'agents')),
-    codex: () => existsSync(join(dir, 'AGENTS.md')),
+    codex: () => hasCodexAdapterInstalled(dir),
     gemini: () => existsSync(join(dir, 'GEMINI.md')),
     cursor: () => existsSync(join(dir, '.cursor', 'rules', 'knowzcode.mdc')),
     copilot: () => existsSync(join(dir, '.github', 'copilot-instructions.md')),
@@ -899,7 +953,7 @@ function displayInstallationSummary(scan, dir) {
 function isAdapterInstalled(platformId, dir) {
   const checks = {
     claude: () => existsSync(join(dir, '.claude', 'skills')) || existsSync(join(dir, '.claude', 'agents')),
-    codex: () => existsSync(join(dir, 'AGENTS.md')),
+    codex: () => hasCodexAdapterInstalled(dir),
     gemini: () => existsSync(join(dir, 'GEMINI.md')),
     cursor: () => existsSync(join(dir, '.cursor', 'rules', 'knowzcode.mdc')),
     copilot: () => existsSync(join(dir, '.github', 'copilot-instructions.md')),
@@ -1641,6 +1695,7 @@ async function cmdUpgrade(opts) {
     'knowzcode_project.md',
     'environment_context.md',
     'user_preferences.md',
+    'knowzcode_orchestration.md',
   ]);
   const preserveDirs = new Set(['specs', 'workgroups']);
 
@@ -1942,7 +1997,7 @@ async function cmdUpgrade(opts) {
   console.log('');
   log.ok(`Upgraded to ${VERSION}`);
   console.log('');
-  console.log(`  ${c.bold}Preserved:${c.reset} specs/, tracker, log, architecture, project config${geminiMcpPreserved ? ', Gemini MCP config' : ''}`);
+  console.log(`  ${c.bold}Preserved:${c.reset} specs/, workgroups/, tracker, log, architecture, project config, environment, preferences, orchestration${geminiMcpPreserved ? ', Gemini MCP config' : ''}`);
   console.log(`  ${c.bold}Updated:${c.reset}   loop, prompts, adapters, enterprise templates`);
   if (regenerated.length > 0) {
     console.log(`  ${c.bold}Adapters:${c.reset}  ${regenerated.join(', ')}`);

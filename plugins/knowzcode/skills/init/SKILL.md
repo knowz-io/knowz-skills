@@ -12,7 +12,7 @@ Initialize the KnowzCode framework in the current project.
 
 1. Check whether `knowzcode/` already exists in the project root.
    - If it does, ask whether to merge, refresh, or stop.
-2. Copy the bundled framework files from this plugin's `knowzcode/` directory into the project root `knowzcode/` directory.
+2. Copy the bundled framework files from this plugin's `knowzcode/` directory into the project root `knowzcode/` directory, including `knowzcode/codex_execution.md` for Codex-native delegation guidance.
 3. Preserve user-authored project files when merging; do not overwrite without confirmation.
 4. Detect the project stack and update `knowzcode/knowzcode_project.md` with the concrete language, framework, test, and build details.
 5. Offer an optional project-level `AGENTS.md` summary for teams that want repo instructions, but do not require it for Codex skill usage.

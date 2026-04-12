@@ -16,11 +16,12 @@ If `enterprise.json` exists in the project root, use its `brand` value instead o
 2. Parse the search query.
 3. Route to the best vaults using `When to query` rules.
    - If no routing rules match, search all configured vaults or the default vault.
-4. For each target vault, call `mcp__knowz__search_knowledge` with:
+4. Search directly from the current Codex agent. When multiple vaults are targeted, issue those `mcp__knowz__search_knowledge` calls in parallel when possible.
    - `query`: the search query
    - `vaultId`: the vault ID when known
    - `limit`: 10
-5. Present results grouped by vault with title, short summary, and why they are relevant.
-6. If nothing useful is found, suggest broader search terms, `/knowz-browse`, or `/knowz-ask`.
+5. If titles or snippets are too thin, open the top 1-2 promising matches with `mcp__knowz__get_knowledge_item` before summarizing.
+6. Present results grouped by vault with title, short summary, and why they are relevant.
+7. If nothing useful is found, suggest broader search terms, `/knowz-browse`, or `/knowz-ask`.
 
 If Knowz MCP tools are unavailable, report: "{brand} MCP not connected. Run /knowz-setup and restart Codex."

@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.1] - 2026-04-12
+
+### Added
+- Codex adapter detection for AGENTS.md, AGENTS.override.md, and knowzcode skill directories
+- Generic section parser utilities for platform adapter templates
+- Orchestration config preservation during upgrades
+
+### Changed
+- Codex section parser refactored to use generic header-based file section extraction
+- Codex packaging guidance updated — `.agents/agents/` marked as legacy experiment; current package focuses on discoverable skills plus `codex_execution.md`
+- Upgrade summary expanded to include workgroups/, environment, preferences, orchestration
+
 ## [0.12.0] - 2026-04-08
 
 ### Added

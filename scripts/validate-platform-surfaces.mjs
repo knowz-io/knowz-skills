@@ -68,6 +68,16 @@ function validateSkillDirectory(...parts) {
   }
 }
 
+function expectFileContains(filePath, pattern, message) {
+  const raw = readFileSync(filePath, 'utf8');
+  expect(pattern.test(raw), message);
+}
+
+function expectFileNotContains(filePath, pattern, message) {
+  const raw = readFileSync(filePath, 'utf8');
+  expect(!pattern.test(raw), message);
+}
+
 const sourcePackages = {
   knowz: readJson('knowz', 'package.json'),
   knowzcode: readJson('knowzcode', 'package.json'),
@@ -164,6 +174,33 @@ validateSkillDirectory('plugins', 'knowzcode', 'skills');
 const codexSupportDir = join(ROOT, 'plugins', 'knowzcode', 'knowzcode');
 expect(existsSync(codexSupportDir) && statSync(codexSupportDir).isDirectory(), `Missing KnowzCode support directory: ${codexSupportDir}`);
 expect(!existsSync(join(ROOT, 'plugins', 'knowzcode', 'agents')), 'Codex package should not ship Claude-only agents/ as active support content');
+
+const codexExecutionGuide = join(ROOT, 'plugins', 'knowzcode', 'knowzcode', 'codex_execution.md');
+expect(existsSync(codexExecutionGuide), `Missing Codex execution guide: ${codexExecutionGuide}`);
+
+const codexWorkSkill = join(ROOT, 'plugins', 'knowzcode', 'skills', 'work', 'SKILL.md');
+expect(existsSync(codexWorkSkill), `Missing Codex work skill: ${codexWorkSkill}`);
+if (existsSync(codexWorkSkill)) {
+  expectFileContains(
+    codexWorkSkill,
+    /knowzcode\/codex_execution\.md/,
+    'Codex work skill must reference knowzcode/codex_execution.md'
+  );
+}
+
+const codexSkillRoot = join(ROOT, 'plugins', 'knowzcode', 'skills');
+if (existsSync(codexSkillRoot)) {
+  for (const entry of readdirSync(codexSkillRoot, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    const skillPath = join(codexSkillRoot, entry.name, 'SKILL.md');
+    if (!existsSync(skillPath)) continue;
+    expectFileNotContains(
+      skillPath,
+      /\b(TeamCreate|TaskCreate|TaskUpdate|TaskGet|SendMessage|ExitPlanMode)\b/,
+      `Codex skill must not rely on Claude-only team APIs: ${skillPath}`
+    );
+  }
+}
 
 if (errors.length) {
   console.error('Platform surface validation failed:\n');
