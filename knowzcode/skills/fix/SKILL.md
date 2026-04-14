@@ -103,18 +103,49 @@ REPEAT until all checks pass:
 /knowzcode:fix NODE_AUTH_123 "Update error message formatting"
 ```
 
+## Flags
+
+| Flag | Effect |
+|------|--------|
+| `--profile={advisor\|teams\|classic}` | Select execution profile — see `knowzcode/skills/work/references/profile-models.md` |
+
+The `advisor` profile routes the micro-fix through Sonnet with advisor-tool guidance (per spec). `teams` and `classic` use the agent's frontmatter default (Opus) with no guidance injection.
+
+## Profile Resolution (pre-dispatch)
+
+Before the `Task()` dispatch, resolve `PROFILE`:
+
+1. **Flag**: if `$ARGUMENTS` contains `--profile=<value>`, set `PROFILE = <value>`. Valid: `advisor`, `teams`, `classic`. Invalid → warn + fall back to `teams`.
+2. **Config**: else read `knowzcode/knowzcode_orchestration.md` for the `^profile:\s*(\S+)` line. Use that value if valid; else `teams`.
+3. **Default**: if config file is absent or line is missing, `PROFILE = "teams"`.
+4. **Advisor detection** (only when `PROFILE == "advisor"`):
+   - If `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS == "1"` → fall back to `teams`, announce reason.
+   - If `ANTHROPIC_BASE_URL` is set AND does NOT contain `"anthropic.com"` → fall back to `teams`, announce reason.
+   - Otherwise proceed with `advisor`.
+
+See `knowzcode/skills/work/references/profile-models.md` for `MODEL_FOR()` semantics. For `/fix`, `MODEL_FOR("microfix-specialist", "advisor") == "sonnet"`; all other cases return null.
+
 ## Execution
 
-Delegate to the **microfix-specialist** agent via `Task()` with these parameters:
+Delegate to the **microfix-specialist** agent via `Task()`.
+
+Resolve two spawn-time values from `PROFILE`:
+
+- `MODEL_OVERRIDE` = `MODEL_FOR("microfix-specialist", PROFILE)` — include `model: "sonnet"` in `Task()` parameters if non-null; omit entirely otherwise.
+- `ADVISOR_GUIDANCE` = the Advisor Guidance block from `knowzcode/skills/work/references/spawn-prompts.md` if `PROFILE == "advisor"` AND `MODEL_OVERRIDE == "sonnet"`; otherwise empty string.
+
+`Task()` parameters:
 - `subagent_type`: `"microfix-specialist"`
+- `model`: `"sonnet"` — included ONLY when `MODEL_OVERRIDE` is non-null; OMIT the parameter otherwise (agent frontmatter default applies)
 - `prompt`: Task-specific context only (role definition is auto-loaded from `agents/microfix-specialist.md`):
   > **Target**: {target file or NodeID}
   > **Fix summary**: {summary}
   > Validate scope, implement the minimal fix, run the verification loop, log the outcome, and commit.
+  > {advisor_guidance}   ← resolves to `ADVISOR_GUIDANCE` (the full block when advisor, else empty)
 - `description`: `"Micro-fix: {summary}"`
 - `mode`: `"bypassPermissions"`
 
-> **Note:** Micro-fixes use subagent delegation only. Agent Teams overhead is not justified for single-file, <50 line fixes.
+> **Note:** Micro-fixes use subagent delegation only. Agent Teams overhead is not justified for single-file, <50 line fixes. The profile selection affects model choice and guidance injection, not execution mode.
 
 ## Related Skills
 
