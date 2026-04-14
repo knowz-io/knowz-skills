@@ -42,6 +42,33 @@ mcp_agents_enabled: true
 
 ---
 
+## Execution Profile
+
+```yaml
+# Controls model assignments and execution strategy (default: teams).
+#
+# advisor: Cost-optimized using Claude Code's advisor tool.
+#          Builder, reviewer, closer, smoke-tester, and microfix-specialist
+#          run on Sonnet; the advisor tool provides Opus-level guidance when
+#          strategic decisions arise. Strategic agents (architect, analyst,
+#          security-officer) stay on Opus.
+#          FORCES: Parallel Teams mode.
+#          REQUIRES: Claude Code v2.1.100+, direct Anthropic API access.
+#
+# teams:   Current behavior (default). All agents use their frontmatter
+#          model assignments. Works on any Claude Code version, any API
+#          provider. No advisor dependency.
+#
+# classic: Forces Subagent Delegation mode. No Agent Teams, no advisor.
+#          Use when Agent Teams is unavailable or you want deterministic
+#          single-threaded execution.
+profile: teams
+```
+
+See `knowzcode/skills/work/references/profile-models.md` for the full profile → agent-model mapping.
+
+---
+
 ## Override Precedence
 
 | Setting | Config Default | Flag Override |
@@ -49,5 +76,6 @@ mcp_agents_enabled: true
 | max_builders | `max_builders:` | `--max-builders=N` |
 | default_specialists | `default_specialists:` | `--specialists`, `--no-specialists` |
 | mcp_agents_enabled | `mcp_agents_enabled:` | `--no-mcp` |
+| profile | `profile:` | `--profile={advisor\|teams\|classic}` |
 
 Per-invocation flags always win. `--specialists` adds to defaults; `--no-specialists` clears all.
