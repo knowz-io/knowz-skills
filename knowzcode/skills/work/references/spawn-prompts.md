@@ -4,6 +4,45 @@ These spawn prompts are shared by all execution modes. In Parallel Teams mode, t
 
 ---
 
+## `{advisor_guidance}` Placeholder
+
+Several spawn prompts below end with a `{advisor_guidance}` token. This token is resolved at spawn time based on the active profile and the agent being spawned:
+
+- **If `profile == "advisor"` AND `MODEL_FOR(agent, profile) == "sonnet"`** (i.e. builder, reviewer, closer, smoke-tester, or microfix-specialist): replace `{advisor_guidance}` with the **Advisor Guidance block** below.
+- **Otherwise** (any other profile, or a strategic agent staying on Opus): replace `{advisor_guidance}` with an empty string. Do not leave the literal `{advisor_guidance}` text in the spawned prompt.
+
+### Advisor Guidance Block
+
+```markdown
+---
+## Advisor Tool Guidance
+
+You have access to an `advisor` tool backed by a stronger reviewer model (Opus 4.6).
+It takes NO parameters — when you call advisor(), your full conversation history is forwarded.
+
+**Call advisor BEFORE substantive work:**
+- Before writing code, specs, or committing to an interpretation
+- Before building on an assumption
+
+**Also call advisor:**
+- When you believe your task is complete (make deliverables durable first — write files, commit)
+- When stuck: errors recurring, approach not converging, results that don't fit
+- When considering a change of approach
+
+**Response format:** The advisor should respond in under 100 words and use enumerated steps.
+
+Give advice serious weight. If you follow a step and it fails empirically, adapt.
+If retrieved data conflicts with advice: surface the conflict in one more advisor call
+rather than silently switching.
+---
+```
+
+> **Why conditional:** The advisor tool is only available to agents running on Sonnet under the `advisor` profile. Adding the guidance to Opus-based or non-advisor spawns would mislead the agent about a tool it cannot use.
+
+See `references/profile-models.md` for the full `MODEL_FOR()` resolution rule.
+
+---
+
 ## Stage 0: Codebase Scanners (2 instances — conditional)
 
 **Agent**: `general-purpose` (x2) | Lightweight codebase searchers (no agent definition file)
@@ -254,6 +293,7 @@ After Gate #1, the lead sends the approved Change Set via DM and creates spec-dr
 > **TDD mandatory**: Write failing tests first, then implement, then refactor. Every NodeID must have tests.
 > **Blocker protocol**: If you hit a blocker, document it as a Blocker Report in the WorkGroup file (see loop.md Section 11 format) and report to the lead immediately instead of guessing.
 > **Deliverable**: All NodeIDs implemented with passing tests.
+> {advisor_guidance}
 
 **Dispatch**:
 - *Parallel Teams*: Multiple builders spawned at Stage 2, one per partition from the dependency map. Each builder gets its partition's NodeIDs and specs. Builders create per-NodeID subtasks for visibility. **Plan approval enabled** — add to prompt: `Present your implementation approach for lead review BEFORE writing code. Wait for approval.` If `AUTONOMOUS_MODE = true`: auto-approve `plan_approval_request` immediately. Log `[AUTO-APPROVED] Builder plan`.
@@ -280,6 +320,7 @@ After Gate #1, the lead sends the approved Change Set via DM and creates spec-dr
 > **Conventions**: Update WorkGroup file with results (prefix entries with `KnowzCode:`). If blocked, report blocker and notify lead.
 > **This is a READ-ONLY audit.** Do not modify any source code or test files.
 > **Deliverable**: Audit report with ARC completion %, security posture, and gap list.
+> {advisor_guidance}
 
 **Dispatch**:
 - *Parallel Teams*: One reviewer per builder partition, spawned at Stage 2. Each reviewer gets its partition's NodeIDs and specs. Audit tasks use `addBlockedBy` per implementation task. Each reviewer uses structured gap report format (see `agents/reviewer.md`).
@@ -305,6 +346,7 @@ After Gate #1, the lead sends the approved Change Set via DM and creates spec-dr
 > **Your Task**: #{task-id} — claim immediately (`TaskUpdate(status: "in_progress")`). Mark completed with summary when done.
 > **App status**: {`"App already running at {URL}"` | `"Launch app yourself"`}
 > **Deliverable**: Smoke test report with pass/fail per check, evidence, and actionable failure descriptions.
+> {advisor_guidance}
 
 **Dispatch**:
 - *Parallel Teams*: One smoke-tester spawned at Stage 2 alongside reviewers. Runs as background agent. Uses `addBlockedBy` on the same implementation tasks as the reviewer. No partition — smoke-tester covers the whole app (it needs the full app running, not individual partitions).
@@ -331,6 +373,7 @@ After Gate #1, the lead sends the approved Change Set via DM and creates spec-dr
 > **Conventions**: Update WorkGroup file with results (prefix entries with `KnowzCode:`). If blocked, report blocker and notify lead.
 > **Vault writes**: DM knowledge-liaison for Phase 3 capture: `"Capture Phase 3: {wgid}. Your task: #{task-id}"`. The knowledge-liaison dispatches `knowz:writer`. Do NOT call `create_knowledge` directly.
 > **Deliverable**: Atomic finalization — update specs to FINAL, update tracker, write log entry, update architecture if needed, dispatch learning capture to `knowz:writer`, and create final commit.
+> {advisor_guidance}
 
 **Spawn prompt (Sequential Teams / Subagent)**:
 > You are the **closer** for WorkGroup `{wgid}`.
@@ -347,6 +390,7 @@ After Gate #1, the lead sends the approved Change Set via DM and creates spec-dr
 > **Vault writes**: You own all vault writes directly. Follow the Learning Capture instructions in `agents/closer.md`.
 > **MCP Status**: {MCP_ACTIVE} — Vaults configured: {VAULTS_CONFIGURED}. Vault config: `knowz-vaults.md` (project root).
 > **Deliverable**: Atomic finalization — update specs to FINAL, update tracker, write log entry, update architecture if needed, write learnings to vaults, and create final commit.
+> {advisor_guidance}
 
 **Dispatch**:
 - *Parallel Teams*: Spawned at Stage 3 (`addBlockedBy`: last audit/re-audit task). Use the **Parallel Teams** spawn prompt. All other agents shut down before closer starts.

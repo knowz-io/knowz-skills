@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-04-14
+
+### Added
+- Execution profile system with three profiles: `advisor`, `teams` (default), and `classic`, configurable via `profile:` in `knowzcode_orchestration.md` or `--profile=<name>` flag
+- Advisor-tool integration routes builder, reviewer, closer, smoke-tester, and microfix-specialist through Sonnet with advisor-tool guidance under `advisor` profile; strategic agents (architect, analyst, security-officer) stay on Opus
+- `profile-models.md` single source of truth for profile → agent-model mappings and the `MODEL_FOR(agent, profile)` resolution rule
+- `{advisor_guidance}` placeholder appended to all eligible spawn prompts in `/work`, `/audit`, and `/fix`; resolves to the Advisor Guidance block only when Sonnet routing applies
+- Graceful fallback detection for `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS` and non-Anthropic `ANTHROPIC_BASE_URL`; silently degrades `advisor` to `teams` with clear announcement
+- Execution Profiles section in `knowzcode/README.md` with mapping table and configuration examples
+- `/fix` now honors profile resolution and injects advisor guidance into the microfix dispatch
+- `/audit` honors profile on its reviewer and specialist spawns
+
+### Changed
+- `/work` Step 1.5 pre-flight profile parse runs before Step 2 so `--profile=advisor --sequential` halts with a clear conflict error before any TeamCreate side effects
+- `/work` Step 2 short-circuits to Subagent Delegation when `profile=classic` is active
+- `/audit` gates TeamCreate on `profile=classic` to honor the no-teams contract
+- Agent model assignments are now resolved at spawn time via `MODEL_FOR()`; agent `.md` frontmatter `model:` values remain the baseline default and are unchanged
+
 ## [0.12.1] - 2026-04-12
 
 ### Added
