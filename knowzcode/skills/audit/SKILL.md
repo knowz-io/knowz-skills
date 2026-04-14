@@ -70,7 +70,7 @@ If the file doesn't exist, use hardcoded defaults (current behavior); `PROFILE =
 
 If `PROFILE == "advisor"`, apply the same detection/fallback checks as `/knowzcode:work` Step 2.3 (CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS, ANTHROPIC_BASE_URL). On fallback, reset `PROFILE = "teams"` and announce. See `knowzcode/skills/work/references/profile-models.md` for profile semantics and `MODEL_FOR()` resolution.
 
-At each reviewer/specialist spawn below, resolve `model` via `MODEL_FOR(agent_name, PROFILE)`. Include `model: <value>` when non-null; otherwise omit. Under `PROFILE == "advisor"`, the reviewer runs on Sonnet; append the Advisor Guidance block from `references/spawn-prompts.md` to its spawn prompt.
+At each reviewer/specialist spawn below, resolve `model` via `MODEL_FOR(agent_name, PROFILE)`. Include `model: <value>` when non-null; otherwise omit. Under `PROFILE == "advisor"`, the reviewer runs on Sonnet; append the Advisor Guidance block from `knowzcode/skills/work/references/spawn-prompts.md` to its spawn prompt (resolve the `{advisor_guidance}` placeholder appended to each inline prompt below — substitute the block when `MODEL_FOR` returns `"sonnet"`, else substitute an empty string).
 
 ## Step 2: Set Up Execution Mode
 
@@ -120,6 +120,7 @@ Spawn a single `reviewer` teammate:
 > **Specs directory**: knowzcode/specs/
 >
 > Deliverable: Audit report with health scores, critical issues, recommendations.
+> {advisor_guidance}
 
 Wait for completion. Shut down teammate. Clean up the team.
 
@@ -152,6 +153,7 @@ Spawn reviewers with their task IDs:
    > **Specs directory**: knowzcode/specs/
    >
    > Deliverable: Audit report with spec quality scores, architecture health, critical issues.
+   > {advisor_guidance}
 
 2. Spawn `reviewer` teammate (name: `reviewer-sec-int`):
    > **Your Task**: #{task-id} — claim immediately (`TaskUpdate(status: "in_progress")`). Mark completed with summary when done.
@@ -165,11 +167,13 @@ Spawn reviewers with their task IDs:
    > **Specs directory**: knowzcode/specs/
    >
    > Deliverable: Audit report with security posture, integration health, critical issues.
+   > {advisor_guidance}
 
 3. (Optional) If enterprise compliance configured, spawn `reviewer` (name: `reviewer-compliance`):
    > **Your Task**: #{task-id} — claim immediately (`TaskUpdate(status: "in_progress")`). Mark completed with summary when done.
    > **Audit scope**: Enterprise compliance ONLY.
    > Check against guidelines in `knowzcode/enterprise/compliance_manifest.md`.
+   > {advisor_guidance}
 
 4. If `VAULTS_CONFIGURED = true` AND `MCP_AGENTS_ENABLED = true`, dispatch `knowz:reader` for standards lookup in parallel with reviewers:
    > Read `knowz-vaults.md` (project root) to discover configured vaults — their IDs, types, descriptions.
@@ -205,6 +209,7 @@ Parse which specialists to enable. Then spawn alongside reviewers:
      >
      > Deliverable: Security finding report with severity ratings. Tag CRITICAL/HIGH findings with `[SECURITY-BLOCK]`.
      > If `knowzcode/enterprise/compliance_manifest.md` exists and `compliance_enabled: true`, also cross-reference findings with enterprise guideline IDs.
+     > {advisor_guidance}
 
 2. **test-advisor** (if enabled) — spawn alongside reviewers for test quality assessment:
    - `TaskCreate("Test advisor: test quality audit")` → `TaskUpdate(owner: "test-advisor")`
@@ -219,6 +224,7 @@ Parse which specialists to enable. Then spawn alongside reviewers:
      >
      > Deliverable: Test quality report with coverage metrics, TDD compliance, and improvement recommendations.
      > If `knowzcode/enterprise/compliance_manifest.md` exists and `compliance_enabled: true`, also check enterprise ARC criteria for test coverage.
+     > {advisor_guidance}
 
 Wait for all reviewers and specialists to complete. Synthesize results in Step 4.
 
@@ -239,6 +245,7 @@ Launch knowledge-liaison + reviewer in parallel via `Task()`:
      > **Specs directory**: knowzcode/specs/
      >
      > Deliverable: Audit report with health scores, critical issues, recommendations.
+     > {advisor_guidance}
    - `description`: `"Audit: {audit_type}"`
 
 All launched in parallel. Synthesize knowledge-liaison context alongside reviewer results.
@@ -250,10 +257,10 @@ Launch knowledge-liaison + parallel reviewers via `Task()`:
 1. **knowledge-liaison** — Local context + vault knowledge:
    - `Task(subagent_type="knowzcode:knowledge-liaison", description="Liaison: audit context", prompt="Research for comprehensive audit. Gather local context (specs, workgroups, tracker, log, architecture) and vault knowledge (standards, conventions, security policies, compliance requirements). Push Context Briefing with findings. Max 15 tool calls. Write findings to a concise summary.")`
 
-2. **Parallel reviewers**:
-   - `Task(subagent_type="reviewer", description="Audit: spec + architecture", prompt="Audit scope: Specification quality AND architecture health ONLY. ...")`
-   - `Task(subagent_type="reviewer", description="Audit: security + integration", prompt="Audit scope: Security vulnerability scan AND integration consistency ONLY. ...")`
-   - `Task(subagent_type="reviewer", description="Audit: compliance", prompt="Audit scope: Enterprise compliance ONLY. ...")` (if enterprise configured)
+2. **Parallel reviewers** (append `{advisor_guidance}` resolution to each `prompt` per Step 1.1):
+   - `Task(subagent_type="reviewer", description="Audit: spec + architecture", prompt="Audit scope: Specification quality AND architecture health ONLY. ... {advisor_guidance}")`
+   - `Task(subagent_type="reviewer", description="Audit: security + integration", prompt="Audit scope: Security vulnerability scan AND integration consistency ONLY. ... {advisor_guidance}")`
+   - `Task(subagent_type="reviewer", description="Audit: compliance", prompt="Audit scope: Enterprise compliance ONLY. ... {advisor_guidance}")` (if enterprise configured)
 
 Synthesize knowledge-liaison context alongside reviewer results.
 
@@ -269,10 +276,10 @@ If `$ARGUMENTS` contains `--specialists` (or `--specialists=security`, `--specia
 If `AUDIT_SPECIALISTS` is non-empty, launch specialist `Task()` calls in parallel with reviewers:
 
 1. **security-officer** (if enabled):
-   - `Task(subagent_type="security-officer", description="Security officer: deep security audit", prompt="Audit scope: Full codebase security scan. Context files: knowzcode_tracker.md, knowzcode_architecture.md. Specs: knowzcode/specs/. Deliverable: Security finding report with severity ratings. Tag CRITICAL/HIGH with [SECURITY-BLOCK]. If knowzcode/enterprise/compliance_manifest.md exists and compliance_enabled: true, also cross-reference findings with enterprise guideline IDs.")`
+   - `Task(subagent_type="security-officer", description="Security officer: deep security audit", prompt="Audit scope: Full codebase security scan. Context files: knowzcode_tracker.md, knowzcode_architecture.md. Specs: knowzcode/specs/. Deliverable: Security finding report with severity ratings. Tag CRITICAL/HIGH with [SECURITY-BLOCK]. If knowzcode/enterprise/compliance_manifest.md exists and compliance_enabled: true, also cross-reference findings with enterprise guideline IDs. {advisor_guidance}")`
 
 2. **test-advisor** (if enabled):
-   - `Task(subagent_type="test-advisor", description="Test advisor: test quality audit", prompt="Audit scope: Test coverage, TDD compliance, assertion quality, edge cases. Context files: knowzcode_tracker.md. Deliverable: Test quality report with coverage metrics and recommendations. If knowzcode/enterprise/compliance_manifest.md exists and compliance_enabled: true, also check enterprise ARC criteria for test coverage.")`
+   - `Task(subagent_type="test-advisor", description="Test advisor: test quality audit", prompt="Audit scope: Test coverage, TDD compliance, assertion quality, edge cases. Context files: knowzcode_tracker.md. Deliverable: Test quality report with coverage metrics and recommendations. If knowzcode/enterprise/compliance_manifest.md exists and compliance_enabled: true, also check enterprise ARC criteria for test coverage. {advisor_guidance}")`
 
 Synthesize specialist findings alongside reviewer results.
 
