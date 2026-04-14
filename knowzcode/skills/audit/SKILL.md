@@ -74,7 +74,9 @@ At each reviewer/specialist spawn below, resolve `model` via `MODEL_FOR(agent_na
 
 ## Step 2: Set Up Execution Mode
 
-Attempt `TeamCreate(team_name="kc-audit-{timestamp}")`:
+**Classic-profile short-circuit:** If `PROFILE == "classic"` (from Step 1.1), skip the `TeamCreate` attempt entirely. Announce `**Execution Mode: Subagent Delegation** — forced by --profile classic (or profile: classic in config)` and proceed to Step 3's Subagent Mode for all reviewer/specialist dispatches.
+
+Otherwise, attempt `TeamCreate(team_name="kc-audit-{timestamp}")`:
 
 - **If TeamCreate succeeds** → Agent Teams mode:
   1. Announce: `**Execution Mode: Agent Teams** — created team kc-audit-{timestamp}`
