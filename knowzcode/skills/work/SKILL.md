@@ -49,11 +49,34 @@ If missing: inform user to run `/knowzcode:setup` first. STOP.
 - `{slug}`: 2-4 word kebab-case from goal (remove common words: build, add, create, implement, the, a, with, for)
 - Truncate slug to max 25 characters
 
+## Step 1.5: Pre-flight Profile Parse
+
+Runs BEFORE Step 2 so profile-related flag conflicts halt without side effects (no orphan teams).
+
+1. Parse `--profile=<value>` from `$ARGUMENTS`:
+   - Present and value is `advisor`, `teams`, or `classic` → `PROFILE_PREFLIGHT = <value>`
+   - Present but value is none of the three → halt with: `**Error:** --profile value "{value}" is invalid. Use advisor, teams, or classic.`
+   - Absent → continue to config fallback
+2. If flag absent, read `knowzcode/knowzcode_orchestration.md` with a targeted grep for `^profile:\s*(\S+)`:
+   - File absent or line absent → `PROFILE_PREFLIGHT = "teams"`
+   - Value is `advisor`, `teams`, or `classic` → `PROFILE_PREFLIGHT = <value>`
+   - Invalid value → log warning, `PROFILE_PREFLIGHT = "teams"`
+3. Mode-conflict validation. If `PROFILE_PREFLIGHT == "advisor"` AND (`$ARGUMENTS` contains `--sequential` OR `--subagent`), halt with this exact error and do NOT proceed to Step 2:
+   ```
+   **Error:** --profile advisor requires Parallel Teams mode.
+   Conflicting flag: --sequential (or --subagent).
+   Remove the conflicting flag, or choose --profile teams instead.
+   ```
+
+This step is a pure-metadata parse (no TeamCreate, no spawns). The full orchestration-config load happens later in Step 2.4 and supersedes `PROFILE_PREFLIGHT` by setting `PROFILE` through the same logic. Step 2.3 then runs advisor-specific env detection and final announcement. See `knowzcode/skills/work/references/profile-models.md` for profile semantics.
+
 ## Step 2: Select Execution Mode
 
 **Agent Teams is the expected execution mode for Tier 2+ workflows.** It enables persistent knowledge-liaison coverage, parallel orchestration, and consistent vault capture. Subagent delegation is a degraded fallback — it works, but knowledge capture is reduced and orchestration is single-threaded.
 
-Determine the execution mode using try-then-fallback:
+**Classic-profile short-circuit:** If `PROFILE_PREFLIGHT == "classic"` (from Step 1.5), skip the `TeamCreate` attempt entirely. Announce `**Execution Mode: Subagent Delegation** — forced by --profile classic (or profile: classic in config)` and proceed to Step 2.3. All phase work uses Subagent Delegation for this invocation.
+
+Otherwise, determine the execution mode using try-then-fallback:
 
 1. Note user preferences from `$ARGUMENTS`:
    - `--sequential` → prefer Sequential Teams
@@ -89,30 +112,13 @@ The user MUST see the execution mode announcement before any phase work begins. 
 
 ## Step 2.3: Resolve Execution Profile
 
+Profile resolution is split across three steps to keep flag-conflict halts free of side effects:
+
+- **Step 1.5** (ran above) parsed `PROFILE_PREFLIGHT` from the flag/config and halted on mode conflicts.
+- **Step 2.4** (runs below) loads the full orchestration config and sets `PROFILE` authoritatively from `PROFILE_CONFIG` plus any `--profile=<value>` flag. Flag wins over config. Invalid values fall back to `"teams"` with a warning.
+- **This step** runs the advisor-specific environment detection (for `PROFILE == "advisor"`), announces the final profile, and documents downstream use.
+
 Read `knowzcode/skills/work/references/profile-models.md` once if not already loaded. It defines profile semantics, agent-model mappings, and the `MODEL_FOR(agent, profile)` resolution rule.
-
-### Profile resolution order
-
-1. **Flag wins**: If `$ARGUMENTS` contains `--profile=<value>`, set `PROFILE = <value>` (validate: must be `advisor`, `teams`, or `classic`; otherwise error and halt).
-2. **Config fallback**: Else, use `PROFILE_CONFIG` from Step 2.4 (which reads `profile:` from `knowzcode_orchestration.md`, defaulting to `"teams"`).
-3. **Hardcoded default**: If config file absent, `PROFILE = "teams"`.
-
-(Step 2.4 runs after this step. When `PROFILE` depends on config, perform a quick inline re-check: read `knowzcode/knowzcode_orchestration.md` directly here for the `profile:` line, then the full Step 2.4 parse happens as usual. If the file is absent, `PROFILE = "teams"`.)
-
-### Mode-constraint validation
-
-After resolving `PROFILE`:
-
-- `PROFILE == "advisor"`: If `$ARGUMENTS` contains `--sequential` OR `--subagent`, halt with this exact error and do NOT proceed:
-  ```
-  **Error:** --profile advisor requires Parallel Teams mode.
-  Conflicting flag: --sequential (or --subagent).
-  Remove the conflicting flag, or choose --profile teams instead.
-  ```
-- `PROFILE == "classic"`: Ignore any Step 2 mode selection and force Subagent Delegation. Re-announce: `**Execution Mode: Subagent Delegation** — forced by --profile classic (or profile: classic in config)`
-- `PROFILE == "teams"`: No mode constraint. Respect whatever Step 2 selected.
-
-If Step 2 already created a team (`TeamCreate` succeeded) and `PROFILE == "classic"`, delete the team now: `TeamDelete(team_name="kc-{wgid}")`. Then proceed as Subagent Delegation.
 
 ### Advisor detection & graceful fallback
 
