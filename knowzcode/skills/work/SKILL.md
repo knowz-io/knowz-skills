@@ -87,6 +87,67 @@ The user MUST see the execution mode announcement before any phase work begins. 
 
 > **Note:** Agent Teams is experimental and the API may change.
 
+## Step 2.3: Resolve Execution Profile
+
+Read `knowzcode/skills/work/references/profile-models.md` once if not already loaded. It defines profile semantics, agent-model mappings, and the `MODEL_FOR(agent, profile)` resolution rule.
+
+### Profile resolution order
+
+1. **Flag wins**: If `$ARGUMENTS` contains `--profile=<value>`, set `PROFILE = <value>` (validate: must be `advisor`, `teams`, or `classic`; otherwise error and halt).
+2. **Config fallback**: Else, use `PROFILE_CONFIG` from Step 2.4 (which reads `profile:` from `knowzcode_orchestration.md`, defaulting to `"teams"`).
+3. **Hardcoded default**: If config file absent, `PROFILE = "teams"`.
+
+(Step 2.4 runs after this step. When `PROFILE` depends on config, perform a quick inline re-check: read `knowzcode/knowzcode_orchestration.md` directly here for the `profile:` line, then the full Step 2.4 parse happens as usual. If the file is absent, `PROFILE = "teams"`.)
+
+### Mode-constraint validation
+
+After resolving `PROFILE`:
+
+- `PROFILE == "advisor"`: If `$ARGUMENTS` contains `--sequential` OR `--subagent`, halt with this exact error and do NOT proceed:
+  ```
+  **Error:** --profile advisor requires Parallel Teams mode.
+  Conflicting flag: --sequential (or --subagent).
+  Remove the conflicting flag, or choose --profile teams instead.
+  ```
+- `PROFILE == "classic"`: Ignore any Step 2 mode selection and force Subagent Delegation. Re-announce: `**Execution Mode: Subagent Delegation** — forced by --profile classic (or profile: classic in config)`
+- `PROFILE == "teams"`: No mode constraint. Respect whatever Step 2 selected.
+
+If Step 2 already created a team (`TeamCreate` succeeded) and `PROFILE == "classic"`, delete the team now: `TeamDelete(team_name="kc-{wgid}")`. Then proceed as Subagent Delegation.
+
+### Advisor detection & graceful fallback
+
+Only when `PROFILE == "advisor"`, run these checks in order:
+
+1. If environment variable `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS == "1"` → fall back. Reason: `"CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1 is set — advisor tool is behind a beta flag."` Workaround: `"unset CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS"`.
+2. If environment variable `ANTHROPIC_BASE_URL` is set AND does NOT contain `"anthropic.com"` (case-insensitive) → fall back. Reason: `"ANTHROPIC_BASE_URL points to {value}, not *.anthropic.com (likely Bedrock/Vertex/custom endpoint)."` Workaround: `"unset ANTHROPIC_BASE_URL, or route through the Anthropic API directly."`
+3. Otherwise → trust the user's setup; proceed with `PROFILE = "advisor"`.
+
+If a fallback is triggered, set `PROFILE = "teams"` and announce:
+
+```
+**Profile: ADVISOR requested — falling back to TEAMS**
+> Reason: {specific reason from check}
+> The advisor tool requires Claude Code v2.1.100+ with direct Anthropic API access.
+> To force advisor profile anyway: {specific workaround}, then retry.
+```
+
+We do NOT perform an API probe (see spec §5.4 — rationale). Runtime `advisor_tool_result_error` during a spawn is handled by the Claude Code runtime — the executor continues without advice for that call.
+
+### Announce profile
+
+After any fallback resolution, announce the final profile to the user:
+
+```
+**Execution Profile: {PROFILE}**
+```
+
+For `advisor`: also print `> Builder, reviewer, closer, smoke-tester, and microfix-specialist will run on Sonnet with advisor-tool guidance. Other agents stay on Opus.`
+
+### Downstream use
+
+- Every spawn site (Stage 0/1/2/3 in Parallel Teams, each spawn in Sequential/Subagent) MUST resolve `MODEL_FOR(agent_name, PROFILE)` per `references/profile-models.md` and include `model: <value>` in the spawn call when non-null, or omit the `model` parameter when null.
+- Every spawn prompt with a `{advisor_guidance}` placeholder MUST substitute the Advisor Guidance block (from `references/spawn-prompts.md`) when `PROFILE == "advisor"` AND `MODEL_FOR(agent, PROFILE) == "sonnet"`; otherwise substitute an empty string.
+
 ## Step 2.4: Load Orchestration Config (Optional)
 
 If `knowzcode/knowzcode_orchestration.md` exists, parse its YAML blocks:
@@ -96,6 +157,7 @@ If `knowzcode/knowzcode_orchestration.md` exists, parse its YAML blocks:
 3. `MCP_AGENTS_ENABLED` = `mcp_agents_enabled` value (default: true)
 4. `CODEBASE_SCANNER_ENABLED` = `codebase_scanner_enabled` value (default: true)
 5. `PARALLEL_SPEC_THRESHOLD` = `parallel_spec_threshold` value (default: 3, clamp to 2-10)
+6. `PROFILE_CONFIG` = `profile` value (default: `"teams"`; valid: `"advisor"`, `"teams"`, `"classic"`). If the value is not one of the three, log a warning and fall back to `"teams"`. Used as the input to Step 2.3.
 
 Apply flag overrides (flags win over config):
 - `--max-builders=N` in `$ARGUMENTS` → override `MAX_BUILDERS`
@@ -103,7 +165,9 @@ Apply flag overrides (flags win over config):
 - `--no-scanners` in `$ARGUMENTS` → override `CODEBASE_SCANNER_ENABLED = false`
 - `--no-parallel-specs` in `$ARGUMENTS` → override `PARALLEL_SPEC_THRESHOLD = 999` (effectively disabled)
 
-If the file doesn't exist, use hardcoded defaults (current behavior).
+(Profile flag handling — `--profile=...` — is applied in Step 2.3, not here, because it affects execution-mode selection which runs before orchestration config load.)
+
+If the file doesn't exist, use hardcoded defaults (current behavior); `PROFILE_CONFIG = "teams"`.
 
 ## Step 2.5: Autonomous Mode Detection
 
@@ -482,6 +546,27 @@ The WorkGroup file remains in `knowzcode/workgroups/` for reference. It can be r
 - Phase 2A blocker encountered: present Blocker Report (per loop.md Section 11) to user with 5 recovery options: (1) modify spec, (2) change approach, (3) split WorkGroup, (4) accept partial with documented gap, (5) cancel WorkGroup
 - Phase 2B audit shows gaps: return to 2A with gap list (see Gap Loop in [references/quality-gates.md](references/quality-gates.md))
 - If >3 failures on same phase: PAUSE and ask user for direction (applies even when `AUTONOMOUS_MODE = true` — this is a safety exception)
+
+## Orchestration Flags
+
+These flags override corresponding config defaults in `knowzcode/knowzcode_orchestration.md`:
+
+| Flag | Effect |
+|------|--------|
+| `--max-builders=N` | Cap concurrent builders in Parallel Teams (1-5) |
+| `--specialists[=csv]` | Enable specialist agents (security, test, project) |
+| `--no-specialists` | Disable specialists even if configured |
+| `--no-mcp` | Skip MCP vault agents |
+| `--no-scanners` | Skip codebase scanners at Stage 0 |
+| `--no-parallel-specs` | Force Path A spec drafting regardless of NodeID count |
+| `--sequential` | Prefer Sequential Teams (incompatible with `--profile advisor`) |
+| `--subagent` | Force Subagent Delegation (incompatible with `--profile advisor`) |
+| `--profile={advisor\|teams\|classic}` | Select execution profile — see `references/profile-models.md` |
+| `--autonomous` / `--auto` | Autonomous mode — gates auto-approved |
+| `--tier {light\|full}` | Override complexity tier |
+| `--smoke-test` | Request smoke testing in Tier 2 |
+
+The `advisor` profile forces Parallel Teams and requires Claude Code v2.1.100+ with direct Anthropic API access. See `references/profile-models.md` for the full profile → agent-model mapping.
 
 ## Related Skills
 
