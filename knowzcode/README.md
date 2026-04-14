@@ -67,6 +67,56 @@ KnowzCode automatically classifies tasks by complexity:
 | **Light** | 3 files or fewer | Streamlined two-step path |
 | **Full** | Complex features | Complete loop with all gates |
 
+## Execution Profiles (advisor / teams / classic)
+
+KnowzCode on Claude Code supports three execution profiles that trade cost, quality, and parallelism. Pick one by setting `profile:` in `knowzcode/knowzcode_orchestration.md` or passing `--profile=<name>` on the command line.
+
+| Profile | When to Use | Mode | Requires |
+|---------|-------------|------|----------|
+| `teams` (default) | Standard work. No external dependencies. | Parallel / Sequential / Subagent (your choice) | Any Claude Code version, any provider |
+| `advisor` | Cost-sensitive work where Sonnet + advisor-tool is acceptable quality. ~12% cheaper on coding tasks (per Anthropic benchmarks). | Parallel Teams (forced) | Claude Code v2.1.100+, direct Anthropic API |
+| `classic` | Agent Teams unavailable, or you want deterministic single-threaded execution. | Subagent Delegation (forced) | — |
+
+### How the `advisor` profile works
+
+Claude Code's advisor tool lets a Sonnet-based agent consult Opus mid-generation within a single API call. Under `advisor` profile, the agents listed below switch to Sonnet and get an advisor-guidance block in their spawn prompt:
+
+| Agent | `advisor` | `teams` | `classic` |
+|-------|-----------|---------|-----------|
+| architect, analyst, security-officer | opus | opus | opus |
+| builder, reviewer, closer, smoke-tester, microfix-specialist | **sonnet** | opus | opus |
+| knowledge-liaison, test-advisor, project-advisor | sonnet | sonnet | sonnet |
+| knowledge-migrator, update-coordinator (utility) | opus | opus | opus |
+
+Strategic agents (architect, analyst, security-officer) stay on Opus — the advisor tool adds no value where the whole task is reasoning.
+
+### Configure
+
+In `knowzcode/knowzcode_orchestration.md`:
+
+```yaml
+profile: teams    # or: advisor, classic
+```
+
+Or override per-invocation:
+
+```bash
+/knowzcode:work "build X" --profile=advisor
+/knowzcode:audit --profile=teams
+```
+
+### Graceful fallback
+
+When `profile: advisor` is set but the environment can't support the advisor tool (e.g., `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1`, or `ANTHROPIC_BASE_URL` pointing to Bedrock/Vertex/custom endpoints), `/work` and `/audit` automatically fall back to `teams` with a clear message. Your workflow proceeds — you just don't get the cost savings.
+
+### Conflicts
+
+`--profile=advisor` with `--sequential` or `--subagent` is an error: the advisor profile requires Parallel Teams. Remove the conflicting flag, or choose `--profile=teams` if you want sequential/subagent execution.
+
+### Roll back
+
+Delete the `profile:` line from `knowzcode/knowzcode_orchestration.md` (or omit `--profile` on the CLI). Default is `teams`. No migration needed.
+
 ## Install
 
 ```bash
