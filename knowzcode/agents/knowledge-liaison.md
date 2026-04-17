@@ -167,14 +167,19 @@ When you receive a query request or need Stage 0 research:
 
 If `knowz:writer` dispatch fails or reports MCP unavailability:
 
-1. **Queue locally**: Append each capture to `knowzcode/pending_captures.md`:
+1. **Queue locally**: Append each capture to `knowzcode/pending_captures.md` using the canonical knowz pending-queue schema. Wrap each block in `---` delimiters — the flush parser splits on them.
    ```markdown
-   ### {timestamp} — {title}
+   ---
+
+   ### {timestamp} -- {title}
+   - **Operation**: create
    - **Intent**: {Phase capture identifier}
    - **Category**: {Pattern|Decision|Workaround|Performance|Security|Convention|Integration|Scope|Completion}
    - **Target Vault Type**: {code|ecosystem|enterprise|finalizations}
    - **Source**: knowledge-liaison / WorkGroup {wgid}
-   - **Content**: {full formatted content that would have been written to the vault}
+   - **Payload**: {full formatted content that would have been written to the vault}
+
+   ---
    ```
 2. Report the failure to the lead: `"WARNING: Writer dispatch failed for Phase {N} capture. {N} item(s) queued to pending_captures.md."`
 3. The pending file can be flushed later via `/knowz flush`
