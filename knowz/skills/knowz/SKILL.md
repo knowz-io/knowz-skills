@@ -3,7 +3,7 @@ name: knowz
 description: "Search, save, query, and manage knowledge in Knowz vaults. Use when the user wants to find knowledge, save an insight, ask a question, browse vaults, configure vault connections, register for an account, or interact with the Knowz knowledge base in any way."
 user-invocable: true
 allowed-tools: Read, Write, Bash, Glob, Grep, AskUserQuestion
-argument-hint: "ask|save|search|browse|setup|status|register|flush [query or content]"
+argument-hint: "ask|save|amend|search|browse|setup|status|register|flush [query or content]"
 ---
 
 # Knowz — Frictionless Knowledge Management
@@ -31,6 +31,7 @@ When `enterprise.json` is present, ignore the `--dev` flag for endpoint selectio
 ```bash
 /knowz ask "question"              # AI-powered Q&A against vaults
 /knowz save "insight"              # Capture knowledge to a vault
+/knowz amend "change" [--id <id>]  # Targeted server-side edit of an existing item
 /knowz search "query"              # Semantic search across vaults
 /knowz browse [vault-name]         # Browse vault contents and topics
 /knowz setup [api-key] [--oauth]   # Configure MCP + create/update knowz-vaults.md
@@ -48,6 +49,7 @@ Parse the first word of `$ARGUMENTS` to determine the action:
 |---|---|---|
 | `ask "question"` | AI-powered Q&A | `mcp__knowz__ask_question` |
 | `save "insight"` / `learn "insight"` | Capture knowledge | `mcp__knowz__create_knowledge` |
+| `amend "change"` / `edit "change"` | Targeted edit of an existing item | `mcp__knowz__amend_knowledge` |
 | `search "query"` / `find "query"` | Semantic search | `mcp__knowz__search_knowledge` |
 | `browse` / `list` | Browse vault contents | `mcp__knowz__list_vault_contents`, `mcp__knowz__list_topics` |
 | `setup` / `configure` / `config` | Configure MCP + vault file | `mcp__knowz__list_vaults` |
@@ -567,8 +569,8 @@ Process the pending captures queue — drain `knowz-pending.md` to vaults.
      STOP.
 
 2. **Verify MCP connectivity:**
-   - Check that `mcp__knowz__create_knowledge` is available
-   - If NOT available:
+   - Check that `mcp__knowz__create_knowledge`, `mcp__knowz__amend_knowledge`, and `mcp__knowz__update_knowledge` are available (at least `create_knowledge` — the others are only required if the queue contains amend/update blocks)
+   - If none are available:
      ```
      Cannot flush — MCP not connected. Run /knowz setup first.
      ```
@@ -577,22 +579,42 @@ Process the pending captures queue — drain `knowz-pending.md` to vaults.
 
 3. **Parse capture blocks:**
    - Split file content by `---` delimiters
-   - Each block contains: timestamp, title (after `###`), Category, Target Vault, Source, Content
+   - Each block contains: timestamp, title (after `###`), and fields:
+     - `Operation` — `create`, `amend`, or `update`. **Missing → treat as `create`** (legacy block).
+     - `KnowledgeId` — required for `amend` and `update`; absent for `create`.
+     - `Category`, `Target Vault`, `Source`
+     - `Payload` — the body. **Legacy fallback:** if `Payload` is missing but `Content:` is present, read `Content` as the payload.
    - Count total blocks
 
-4. **Flush each capture to MCP:**
-   For each parsed block:
-   a. Resolve target vault ID from `knowz-vaults.md` matching the Target Vault name. If only one vault configured, use it for all.
-   b. Build `mcp__knowz__create_knowledge` payload:
-      - `title`: from the `###` header (after timestamp and ` -- `)
-      - `content`: the Content field value
-      - `knowledgeType`: `"Note"`
-      - `vaultId`: resolved vault ID
-      - `tags`: extract from `[TAGS]` section in content if present, otherwise derive from Category
-      - `source`: the Source field value
-   c. Call `mcp__knowz__create_knowledge` with the payload
+4. **Flush each capture to MCP — branch on Operation:**
+   For each parsed block, resolve the target vault ID from `knowz-vaults.md` (match by Target Vault name; if only one vault configured, use it for all), then dispatch by Operation:
+
+   **`create` (or no Operation — legacy):**
+   - Call `mcp__knowz__create_knowledge` with:
+     - `title`: from the `###` header (after timestamp and ` -- `)
+     - `content`: the Payload field value
+     - `knowledgeType`: `"Note"`
+     - `vaultId`: resolved vault ID
+     - `tags`: extract from `[TAGS]` section in payload if present, otherwise derive from Category
+     - `source`: the Source field value
+
+   **`amend`:**
+   - If `KnowledgeId` is missing → log a malformed-block error, leave the block in place, and continue to the next block.
+   - Call `mcp__knowz__amend_knowledge` with:
+     - `id`: the KnowledgeId
+     - delta payload derived from the Payload field (send only the change, not a synthesized full body)
+   - If the server reports the item no longer exists, do NOT silently recreate it — leave the block in place, mark it as a missing-target failure, and surface it in the final report so the user can decide whether to re-save.
+
+   **`update`:**
+   - If `KnowledgeId` is missing → log a malformed-block error, leave the block in place, and continue to the next block.
+   - Call `mcp__knowz__update_knowledge` with:
+     - `id`: the KnowledgeId
+     - full replacement payload from the Payload field
+     - `tags`, `vaultId`, `source` as for create
+
+   For all branches:
    d. On **success**: mark the block for removal
-   e. On **failure**: leave the block in place, log the error
+   e. On **failure**: leave the block in place, log the error (distinguish missing-target for amend vs generic MCP failure)
 
 5. **Update the pending captures file:**
    - Remove all successfully flushed blocks
@@ -601,19 +623,23 @@ Process the pending captures queue — drain `knowz-pending.md` to vaults.
 
 6. **Report results:**
    ```
-   Flushed {success}/{total} pending captures to vault.
+   Flushed {success}/{total} pending operations to vault.
 
-   Captured:
+   Created:
      - {title1} → {vault name}
-     - {title2} → {vault name}
+   Amended:
+     - {title2} → {vault name} (id {...})
+   Updated:
+     - {title3} → {vault name} (id {...})
 
    {If any failed:}
    Failed:
-     - {title3} — {error reason}
+     - {title4} — {error reason}
+     - {title5} — amend target missing (id {...}) — consider re-saving as a new item
      Run /knowz flush again when MCP is available.
 
    {If all succeeded:}
-   All captures synced. Pending file cleared.
+   All operations synced. Pending file cleared.
    ```
 
 ---
@@ -693,12 +719,16 @@ Capture an insight or piece of knowledge to a vault.
        {brief snippet}
 
      Options:
-       1. Create anyway (new entry)
-       2. Skip (don't save)
-       3. Update existing item
+       1. Create anyway       — new, separate entry
+       2. Skip                — don't save
+       3. Amend existing item — targeted delta (add a line, fix a phrase, change a tag)
+       4. Replace existing item — full rewrite with complete new body
      ```
    - Use AskUserQuestion for their choice
-   - If "Update existing" → call `mcp__knowz__update_knowledge` instead of create
+   - If **Amend existing item** → call `mcp__knowz__amend_knowledge(id=<match>, ...)` with the delta. Send only the change, not a synthesized full body. If the server reports the target is missing, do NOT fall through to create — report the missing-target conflict and offer to save as a new item instead.
+   - If **Replace existing item** → call `mcp__knowz__update_knowledge(id=<match>, ...)` with the complete new content.
+   - If **Skip** → stop.
+   - If **Create anyway** → proceed to Step 8.
 
 8. **Create:** Call `mcp__knowz__create_knowledge` with:
    - `content`: the formatted content
@@ -715,6 +745,48 @@ Capture an insight or piece of knowledge to a vault.
    Title: {title}
    Vault: {vault name}
    Tags: {tag list}
+   ```
+
+---
+
+## Action: `amend`
+
+Apply a targeted server-side change to an existing knowledge item without retyping the whole entry. Use this whenever the user describes a delta — "fix the typo in the Redis entry", "add a caveat about SameSite cookies to the auth pattern", "change the tag from `draft` to `final`".
+
+Prefer `amend` over `save` + "Update existing" whenever the user's request is partial. Reserve `update_knowledge` for the rare case where the user hands over a complete replacement payload.
+
+### Steps
+
+1. **Parse the change** from `$ARGUMENTS` (everything after `amend` or `edit`). Strip any `--id <knowledgeId>` flag and remember the value.
+
+2. **Resolve the target item:**
+   - If `--id` was provided → call `mcp__knowz__get_knowledge_item(id)` to confirm the item exists and fetch its title/vault for the confirmation step.
+   - If no `--id` → extract the subject of the change (what entry the user is referring to) and call `mcp__knowz__search_knowledge` scoped to the vault routing rules in `knowz-vaults.md`. Limit 5.
+     - If one clear match → use it.
+     - If multiple plausible matches → present the top 3 with titles + snippets and use AskUserQuestion to pick one.
+     - If zero matches → report no matching item found and suggest `/knowz save` instead.
+
+3. **Confirm** the change with the user before writing:
+   ```
+   Amending in {Vault Name}:
+     Title: {existing title}
+     Change: {user's requested change}
+   ```
+   Use AskUserQuestion (Yes / No / Edit).
+
+4. **Call `mcp__knowz__amend_knowledge`** with:
+   - `id`: the resolved knowledgeId
+   - the delta payload that expresses the user's change (e.g., a new content patch, tag addition, title tweak). Do NOT send the full prior content.
+
+5. **On MCP failure** (server unreachable, auth expired): queue the amend to `knowz-pending.md` as a capture block annotated with `Operation: amend` and `KnowledgeId: {id}`, then report "Queued to knowz-pending.md — run /knowz flush when MCP is available."
+
+6. **Report success:**
+   ```
+   Knowledge amended!
+
+   Title: {title}
+   Vault: {vault name}
+   Change: {short summary of what was patched}
    ```
 
 ---

@@ -1,7 +1,7 @@
 ---
 name: writer
 description: "Knowz: Generic vault write executor — captures knowledge to vaults from self-contained dispatch prompts"
-tools: Read, Write, Glob, mcp__knowz__create_knowledge, mcp__knowz__update_knowledge, mcp__knowz__search_knowledge, mcp__knowz__search_by_title_pattern, mcp__knowz__list_vaults, mcp__knowz__get_knowledge_item
+tools: Read, Write, Glob, mcp__knowz__create_knowledge, mcp__knowz__update_knowledge, mcp__knowz__amend_knowledge, mcp__knowz__search_knowledge, mcp__knowz__search_by_title_pattern, mcp__knowz__list_vaults, mcp__knowz__get_knowledge_item
 model: sonnet
 permissionMode: acceptEdits
 maxTurns: 10
@@ -46,38 +46,56 @@ Before writing, call `search_knowledge(title, vaultId, 3)` on the target vault. 
 
 ### Step 3.5: KnowledgeId Check
 
-If your dispatch prompt includes a `knowledgeId` for this item:
-1. Call `get_knowledge_item(id=knowledgeId)` to verify the item still exists in the cloud.
-   - **Exists** → proceed to Step 4 using **UPDATE** mode.
-   - **Not found** (404, item deleted, or similar) → proceed to Step 4 using **CREATE** mode. Include in your output: `REMOVED_KNOWLEDGE_ID: {knowledgeId} (source: {source_file_path})` so the dispatcher knows to remove the local tracking.
-   - **Transient error** (timeout, 500, MCP unavailable) → fall through to MCP Graceful Degradation.
+Determine the **intended mode** from your dispatch prompt first, then verify the target:
 
-If no `knowledgeId` is provided → proceed to Step 4 using **CREATE** mode (current behavior).
+- Prompt supplies a `knowledgeId` and describes a **targeted delta** (add/append/change a specific field, fix a phrase, adjust tags) → intended mode is **AMEND**.
+- Prompt supplies a `knowledgeId` and a **full replacement payload** or says "replace" / "rewrite" → intended mode is **UPDATE**.
+- Prompt supplies a `knowledgeId` but the shape is ambiguous → default to **AMEND** (preserves untouched content).
+- No `knowledgeId` → intended mode is **CREATE**.
+
+Then, if the intended mode is AMEND or UPDATE, call `get_knowledge_item(id=knowledgeId)` to verify the target still exists:
+- **Exists** → proceed to Step 4 in the intended mode.
+- **Not found** (404, item deleted, or similar):
+  - If intended mode was **UPDATE** → it is safe to fall through to **CREATE** mode (a full replacement payload is a complete new item). Emit `REMOVED_KNOWLEDGE_ID: {knowledgeId} (source: {source_file_path})` so the dispatcher can clean up local tracking.
+  - If intended mode was **AMEND** → **do NOT** fall through to CREATE. An amend delta is not a full item body — silently recreating would publish a partial item under the wrong assumptions. Skip the write for this item and emit `MISSING_AMEND_TARGET: {knowledgeId} (source: {source_file_path})` so the dispatcher can decide whether to re-save as a fresh CREATE with a full payload.
+- **Transient error** (timeout, 500, MCP unavailable) → fall through to MCP Graceful Degradation (queue the operation with its intended `Operation` so `/knowz flush` can replay it).
 
 ### Step 4: Write
 
 **CREATE mode** (no knowledgeId, or cloud item was deleted):
 Call `create_knowledge` with the formatted payload for the target vault. Include the returned item ID in your output: `CREATED_KNOWLEDGE_ID: {returned_id} (source: {source_file_path})`
 
-**UPDATE mode** (knowledgeId verified to exist):
+**AMEND mode** (knowledgeId verified to exist + dispatch prompt describes a targeted delta):
+Call `amend_knowledge(id=knowledgeId, ...)` with just the delta payload — the fields the dispatch prompt asked to change. Do NOT send the full prior content. Include confirmation in your output: `AMENDED_KNOWLEDGE_ID: {knowledgeId} (source: {source_file_path})`
+
+**UPDATE mode** (knowledgeId verified to exist + dispatch prompt supplies a full replacement):
 Call `update_knowledge(id=knowledgeId, ...)` with the formatted payload. Include confirmation in your output: `UPDATED_KNOWLEDGE_ID: {knowledgeId} (source: {source_file_path})`
 
 ## MCP Graceful Degradation
 
 If MCP calls fail or MCP is unavailable:
 
-1. **Queue locally**: Append each capture to `knowz-pending.md` in the project root using this format:
-   ```markdown
-   ### {timestamp} — {title}
-   - **Category**: {category}
-   - **Target Vault**: {vault ID or type}
-   - **Source**: {source description from dispatch prompt}
-   - **Content**: {full formatted content}
-   ```
-2. Report the MCP failure in your output
-3. Note which items were queued so the caller knows captures are pending
+1. **Queue locally**: Append each operation to `knowz-pending.md` in the project root using the canonical format. Every block MUST be wrapped in `---` delimiters — the flush parser splits on them. The `Operation` field carries the intended mode so `/knowz flush` can replay it correctly.
 
-Never drop knowledge. If MCP is down, queue it. The pending file can be flushed later via `/knowz flush`.
+   ```markdown
+   ---
+
+   ### {timestamp} -- {title}
+   - **Operation**: create | amend | update
+   - **KnowledgeId**: {knowledgeId}    # required for amend/update, omit for create
+   - **Category**: {category}
+   - **Target Vault**: {vault ID or name}
+   - **Source**: {source description from dispatch prompt}
+   - **Payload**:
+   {full formatted content for create/update, or the delta for amend}
+
+   ---
+   ```
+
+2. Report the MCP failure in your output.
+3. Note which items were queued so the caller knows operations are pending.
+
+Never drop knowledge. If MCP is down, queue it with its intended `Operation`. The pending file can be flushed later via `/knowz flush`.
 
 ## Communication
 

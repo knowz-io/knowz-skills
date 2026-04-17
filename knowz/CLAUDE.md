@@ -66,6 +66,7 @@ When the knowz plugin is used alongside the KnowzCode plugin (`knowzcode`):
 - Never auto-save knowledge — always ask the user first
 - Error messages should include actionable next steps
 - When MCP writes fail, queue captures to `knowz-pending.md` instead of losing them
+- Prefer `amend_knowledge` for partial/targeted edits (user describes a delta); reserve `update_knowledge` for full replacements (user hands over the complete new payload)
 
 ## Modifying Skills
 
@@ -83,7 +84,8 @@ The plugin assumes these Knowz MCP tools are available in the environment:
 | `mcp__knowz__ask_question` | AI-powered Q&A |
 | `mcp__knowz__search_knowledge` | Semantic search |
 | `mcp__knowz__create_knowledge` | Create new knowledge item |
-| `mcp__knowz__update_knowledge` | Update existing item |
+| `mcp__knowz__amend_knowledge` | Targeted server-side patch of an existing item — preferred for partial edits (add a line, fix a phrase, change a tag) |
+| `mcp__knowz__update_knowledge` | Full replacement of an existing item — requires the complete new payload |
 | `mcp__knowz__list_vaults` | List available vaults |
 | `mcp__knowz__list_vault_contents` | Browse vault items |
 | `mcp__knowz__list_topics` | Get vault topics |
