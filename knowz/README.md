@@ -52,6 +52,7 @@ The Knowz MCP server works with any AI model and any MCP-compatible agent. This 
 # Daily usage
 /knowz ask "What's our convention for error handling?"
 /knowz save "We chose Redis over Memcached for pub/sub support"
+/knowz amend "Add a caveat to the auth pattern: SameSite=None requires Secure in production"
 /knowz search "authentication patterns"
 /knowz browse
 ```
@@ -62,6 +63,7 @@ The Knowz MCP server works with any AI model and any MCP-compatible agent. This 
 |---------|-------------|
 | `/knowz ask "question"` | AI-powered Q&A against your vaults |
 | `/knowz save "insight"` | Capture knowledge with automatic routing |
+| `/knowz amend "change"` | Targeted edit of an existing vault item — just describe the change |
 | `/knowz search "query"` | Semantic search across vaults |
 | `/knowz browse [vault]` | Browse vault contents and topics |
 | `/knowz setup` | Configure MCP connection and vault routing |

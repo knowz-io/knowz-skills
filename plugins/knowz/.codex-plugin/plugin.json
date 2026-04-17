@@ -34,6 +34,7 @@
     "defaultPrompt": [
       "Search our Knowz vaults for prior art on this feature",
       "Save this implementation decision to the right Knowz vault",
+      "Amend an existing Knowz vault entry with a targeted change — just describe the delta",
       "Help configure the Knowz MCP connection for Codex"
     ],
     "screenshots": [],
