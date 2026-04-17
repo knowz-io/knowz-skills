@@ -168,14 +168,19 @@ If `knowzcode/enterprise/compliance_manifest.md` exists and `mcp_compliance_enab
 
 If MCP calls fail during vault writes (or MCP was unavailable at startup):
 
-1. **Queue locally**: Append each capture to `knowzcode/pending_captures.md`:
+1. **Queue locally**: Append each capture to `knowzcode/pending_captures.md` using the canonical knowz pending-queue schema. Wrap each block in `---` delimiters — the flush parser splits on them.
    ```markdown
-   ### {timestamp} — {title}
+   ---
+
+   ### {timestamp} -- {title}
+   - **Operation**: create
    - **Intent**: Phase 3 capture
    - **Category**: {Pattern|Decision|Workaround|Performance|Security|Convention|Integration|Scope|Completion}
    - **Target Vault Type**: {code|ecosystem|enterprise|finalizations}
    - **Source**: closer / WorkGroup {wgid}
-   - **Content**: {full formatted content that would have been written to the vault}
+   - **Payload**: {full formatted content that would have been written to the vault}
+
+   ---
    ```
 2. Log the MCP failure in the WorkGroup file: `"KnowzCode: MCP unavailable — queued {N} capture(s) to pending_captures.md"`
 3. Note in the finalization report that captures were queued locally
