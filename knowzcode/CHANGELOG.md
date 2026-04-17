@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.1] - 2026-04-17
+
+### Changed
+- `knowledge-liaison` and `closer` agents now emit pending-queue blocks in the canonical knowz schema (`Operation: create`, `Payload:`) with `---` delimiters, so queued captures replay cleanly through `/knowz flush`
+
 ## [0.13.0] - 2026-04-14
 
 ### Added
