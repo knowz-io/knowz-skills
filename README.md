@@ -27,6 +27,7 @@ Search, save, and query your knowledge base without leaving your editor. Knowz a
 ```bash
 /knowz ask "What's our convention for error handling?"
 /knowz save "We chose Redis over Memcached for pub/sub support"
+/knowz regroup "Continue implementing tenant-aware auth middleware"
 /knowz search "authentication patterns"
 ```
 

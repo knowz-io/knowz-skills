@@ -22,8 +22,8 @@
   "mcpServers": "./.mcp.json",
   "interface": {
     "displayName": "Knowz",
-    "shortDescription": "Query and capture knowledge across Knowz vaults",
-    "longDescription": "Bring Knowz knowledge management into Codex with vault-aware skills that query and save directly through MCP, plus setup and status helpers for shared Codex Knowz access.",
+    "shortDescription": "Query, capture, and regroup context across Knowz vaults",
+    "longDescription": "Bring Knowz knowledge management into Codex with vault-aware skills that query, save, regroup current session context into resumable handoffs, and configure shared Codex Knowz access.",
     "developerName": "Knowz",
     "category": "Productivity",
     "capabilities": [
@@ -34,7 +34,8 @@
     "defaultPrompt": [
       "Search our Knowz vaults for prior art on this feature",
       "Save this implementation decision to the right Knowz vault",
-      "Amend an existing Knowz vault entry with a targeted change — just describe the delta",
+      "Regroup this session into Knowz and give me a resume prompt for a fresh context window",
+      "Amend an existing Knowz vault entry with a targeted change -- just describe the delta",
       "Help configure the Knowz MCP connection for Codex"
     ],
     "screenshots": [],
