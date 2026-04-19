@@ -1,0 +1,7 @@
+# .gemini/commands/knowzcode/regroup.toml
+description = "Create a local KnowzCode handoff before clearing context"
+prompt = """Read .gemini/skills/knowzcode-regroup/SKILL.md for full instructions.
+Create a local handoff in knowzcode/handoffs/.
+Use active WorkGroup state from knowzcode/knowzcode_tracker.md and knowzcode/workgroups/.
+Do not save the handoff itself to Knowz. Only list durable learning candidates for later capture.
+<ARGS/>"""

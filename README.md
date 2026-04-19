@@ -41,6 +41,7 @@ Works across 6 AI platforms — Claude Code, OpenAI Codex, Gemini CLI, GitHub Co
 ```bash
 /knowzcode:work "Build user authentication with email and password"
 /knowzcode:explore "how is auth currently implemented?"
+/knowzcode:regroup "Continue from the active WorkGroup after context clear"
 /knowzcode:fix "Fix typo in login button text"
 ```
 

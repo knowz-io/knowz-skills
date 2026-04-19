@@ -13,7 +13,7 @@ For product overview, see [README.md](README.md). For detailed docs, see `docs/`
 ```
 ├── .claude-plugin/
 │   └── plugin.json              # Plugin manifest
-├── skills/                      # Skills (10 — 8 user-invocable + 2 trigger)
+├── skills/                      # Skills (12 — 9 user-invocable + 3 trigger)
 │   ├── work/SKILL.md
 │   ├── explore/SKILL.md
 │   ├── fix/SKILL.md
@@ -22,6 +22,8 @@ For product overview, see [README.md](README.md). For detailed docs, see `docs/`
 │   ├── status/SKILL.md
 │   ├── telemetry/SKILL.md
 │   ├── telemetry-setup/SKILL.md
+│   ├── regroup/SKILL.md          # User-invocable: local context handoff
+│   ├── regroup-trigger/SKILL.md  # Trigger: offers regroup before clearing context
 │   ├── continue/SKILL.md        # Trigger skill
 │   ├── start-work/SKILL.md      # Trigger skill
 │   └── *.json                   # JSON skill definitions
@@ -53,7 +55,11 @@ For product overview, see [README.md](README.md). For detailed docs, see `docs/`
 ## Key Development Conventions
 
 - **`knowzcode/`** contains template files copied into user projects on `/knowzcode:setup` — changes here affect all new installations
-- **`skills/`** contains skill definitions — each `<name>/SKILL.md` defines one skill (8 user-invocable + 2 trigger). For MCP vault features, install the knowz plugin: `claude plugin install knowz`
+- **`skills/`** contains skill definitions — each `<name>/SKILL.md` defines one skill (9 user-invocable + 3 trigger). For MCP vault features, install the knowz plugin: `claude plugin install knowz`
+- **`skills/regroup/SKILL.md`** owns local context-clearing handoffs. It writes workflow state to `knowzcode/handoffs/`; Knowz only receives durable learnings extracted from that work.
+- **`skills/regroup-trigger/SKILL.md`** is the non-writing pause/handoff detector. It only offers `/knowzcode:regroup`; it never writes directly.
+- **Gemini regroup trigger decision:** Gemini has no passive trigger-skill surface here, so Gemini gets explicit `/knowzcode:regroup` and `/knowzcode:continue` only.
+- **Source-of-truth rule:** source skills under `knowzcode/skills/` are canonical. Packaged Codex skills under `plugins/knowzcode/skills/` and templates in both `platform_adapters.md` files must stay behaviorally aligned; platform-specific frontmatter may differ.
 - **`agents/`** contains agent definitions — each `.md` file defines one specialized agent
 - **`knowzcode/platform_adapters.md`** holds the adapter templates for all 6 platforms (Claude Code, Gemini, Codex, Cursor, Copilot, Windsurf)
 - **`knowzcode/prompts/`** holds phase prompt templates used by commands and agents

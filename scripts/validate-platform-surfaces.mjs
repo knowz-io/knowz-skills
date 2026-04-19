@@ -171,6 +171,86 @@ expect(
 validateSkillDirectory('plugins', 'knowz', 'skills');
 validateSkillDirectory('plugins', 'knowzcode', 'skills');
 
+const retiredKnowzSkillDirs = [
+  join(ROOT, 'plugins', 'knowz', 'skills', 'knowz-regroup'),
+  join(ROOT, 'plugins', 'knowz', 'skills', 'knowz-resume'),
+];
+for (const dir of retiredKnowzSkillDirs) {
+  expect(!existsSync(dir), `Knowz must not ship workflow handoff skill directory: ${dir}`);
+}
+
+const knowzBoundaryFiles = [
+  join(ROOT, 'knowz', 'skills', 'knowz', 'SKILL.md'),
+  join(ROOT, 'knowz', 'skills', 'knowz-auto', 'SKILL.md'),
+  join(ROOT, 'plugins', 'knowz', 'skills', 'knowz-auto', 'SKILL.md'),
+  join(ROOT, 'knowz', 'platform_adapters.md'),
+];
+for (const file of knowzBoundaryFiles) {
+  expectFileNotContains(
+    file,
+    /\/knowz\s+(regroup|resume)|knowz-regroup|knowz-resume|Resume Context|resume-context/i,
+    `Knowz surface must not expose workflow handoff commands: ${file}`
+  );
+}
+
+const regroupContractFiles = [
+  join(ROOT, 'knowzcode', 'skills', 'regroup', 'SKILL.md'),
+  join(ROOT, 'plugins', 'knowzcode', 'skills', 'regroup', 'SKILL.md'),
+  join(ROOT, 'knowzcode', '.gemini', 'skills', 'knowzcode-regroup', 'SKILL.md'),
+  join(ROOT, 'knowzcode', 'knowzcode', 'platform_adapters.md'),
+  join(ROOT, 'plugins', 'knowzcode', 'knowzcode', 'platform_adapters.md'),
+];
+for (const file of regroupContractFiles) {
+  expect(existsSync(file), `Missing KnowzCode regroup surface: ${file}`);
+  if (!existsSync(file)) continue;
+  expectFileContains(file, /knowzcode\/handoffs\//, `Regroup surface must write local handoffs: ${file}`);
+  expectFileContains(file, /Fresh Context Prompt/, `Regroup surface must include fresh-context prompt schema: ${file}`);
+  expectFileContains(file, /Durable Learning Candidates/, `Regroup surface must separate durable Knowz candidates: ${file}`);
+  expectFileContains(file, /Do not save the (whole )?handoff to Knowz|Do not save the handoff itself to Knowz/i, `Regroup surface must keep workflow handoffs out of Knowz: ${file}`);
+}
+
+const regroupTriggerFiles = [
+  join(ROOT, 'knowzcode', 'skills', 'regroup-trigger', 'SKILL.md'),
+  join(ROOT, 'plugins', 'knowzcode', 'skills', 'regroup-trigger', 'SKILL.md'),
+  join(ROOT, 'knowzcode', 'knowzcode', 'platform_adapters.md'),
+  join(ROOT, 'plugins', 'knowzcode', 'knowzcode', 'platform_adapters.md'),
+];
+for (const file of regroupTriggerFiles) {
+  expect(existsSync(file), `Missing KnowzCode regroup trigger surface: ${file}`);
+  if (!existsSync(file)) continue;
+  expectFileContains(file, /\/knowzcode:regroup/, `Regroup trigger must route to /knowzcode:regroup: ${file}`);
+  expectFileContains(file, /Never auto-regroup|never writes handoffs directly/i, `Regroup trigger must ask before writing: ${file}`);
+}
+
+// Gemini has explicit commands/skills only in this repo; do not ship a passive regroup trigger there
+// unless Gemini gains an equivalent trigger-skill concept.
+const geminiRegroupTriggerDir = join(ROOT, 'knowzcode', '.gemini', 'skills', 'knowzcode-regroup-trigger');
+expect(!existsSync(geminiRegroupTriggerDir), `Gemini regroup trigger is intentionally not shipped: ${geminiRegroupTriggerDir}`);
+for (const file of [
+  join(ROOT, 'knowzcode', 'knowzcode', 'platform_adapters.md'),
+  join(ROOT, 'plugins', 'knowzcode', 'knowzcode', 'platform_adapters.md'),
+]) {
+  expectFileNotContains(
+    file,
+    /\.gemini\/skills\/knowzcode-regroup-trigger/,
+    `Gemini regroup trigger template should not exist without a passive trigger surface: ${file}`
+  );
+}
+
+const continueHandoffFiles = [
+  join(ROOT, 'knowzcode', 'skills', 'continue', 'SKILL.md'),
+  join(ROOT, 'plugins', 'knowzcode', 'skills', 'continue', 'SKILL.md'),
+  join(ROOT, 'knowzcode', '.gemini', 'skills', 'knowzcode-continue', 'SKILL.md'),
+  join(ROOT, 'knowzcode', '.gemini', 'commands', 'knowzcode', 'continue.toml'),
+  join(ROOT, 'knowzcode', 'knowzcode', 'platform_adapters.md'),
+  join(ROOT, 'plugins', 'knowzcode', 'knowzcode', 'platform_adapters.md'),
+];
+for (const file of continueHandoffFiles) {
+  expect(existsSync(file), `Missing KnowzCode continue handoff surface: ${file}`);
+  if (!existsSync(file)) continue;
+  expectFileContains(file, /knowzcode\/handoffs/, `Continue surface must check local handoffs before WorkGroups: ${file}`);
+}
+
 const codexSupportDir = join(ROOT, 'plugins', 'knowzcode', 'knowzcode');
 expect(existsSync(codexSupportDir) && statSync(codexSupportDir).isDirectory(), `Missing KnowzCode support directory: ${codexSupportDir}`);
 expect(!existsSync(join(ROOT, 'plugins', 'knowzcode', 'agents')), 'Codex package should not ship Claude-only agents/ as active support content');

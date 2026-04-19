@@ -1,6 +1,6 @@
 {
   "name": "knowzcode",
-  "version": "0.12.0",
+  "version": "0.14.0",
   "description": "Platform-agnostic AI development methodology with TDD, quality gates, and structured workflows for Codex.",
   "author": {
     "name": "Alex Headscarf",
@@ -21,8 +21,8 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "KnowzCode",
-    "shortDescription": "Structured coding workflows for Codex",
-    "longDescription": "Package the KnowzCode methodology for Codex with Codex-native workflow skills, coordinator/subagent execution guidance, and the support files those workflows read from the initialized project.",
+    "shortDescription": "Structured coding workflows and local handoffs for Codex",
+    "longDescription": "Package the KnowzCode methodology for Codex with Codex-native workflow skills, local context-clearing handoffs, coordinator/subagent execution guidance, and the support files those workflows read from the initialized project.",
     "developerName": "Knowz",
     "category": "Coding",
     "capabilities": [
@@ -32,8 +32,8 @@
     "websiteURL": "https://github.com/knowz-io/knowz-skills",
     "defaultPrompt": [
       "Initialize KnowzCode in this repository",
-      "Run a KnowzCode explore workflow for this refactor",
-      "Audit this codebase with the KnowzCode methodology"
+      "Run or audit a KnowzCode workflow for this feature or refactor",
+      "Regroup before clearing context, then continue from the latest handoff"
     ],
     "screenshots": [],
     "brandColor": "#1D4ED8"

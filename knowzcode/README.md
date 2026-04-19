@@ -144,8 +144,13 @@ npx knowzcode install --platforms all             # All 6 platforms
 # Quick fix (skips the loop)
 /knowzcode:fix "Fix typo in login button text"
 
+# Save local resume state before clearing context
+/knowzcode:regroup "Continue from the active WorkGroup after context clear"
+
 # Resume where you left off — just say "continue"
 ```
+
+KnowzCode can also offer regroup automatically when you say things like "wrap up", "clear context", "step away", or "resume this later". The trigger only asks; it never writes a handoff without approval.
 
 ## Commands
 
@@ -154,6 +159,7 @@ npx knowzcode install --platforms all             # All 6 platforms
 | `/knowzcode:work <goal>` | Start a feature workflow |
 | `/knowzcode:explore <topic>` | Research before implementing |
 | `/knowzcode:fix <target>` | Quick targeted fix |
+| `/knowzcode:regroup [next step]` | Save a local handoff for clearing context |
 | `/knowzcode:audit [type]` | Run quality audits |
 | `/knowzcode:setup` | Initialize in your project |
 | `/knowzcode:status` | Check project status |

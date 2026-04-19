@@ -1,6 +1,6 @@
 {
   "name": "knowz-mcp",
-  "version": "0.6.5",
+  "version": "0.7.0",
   "description": "Frictionless knowledge management via the Knowz MCP server -- search, save, and query knowledge across vaults",
   "type": "module",
   "bin": {
