@@ -8,7 +8,7 @@
 
 | Status | WorkGroupID | Node ID | Label | Dependencies | Logical Grouping | Spec Link | Classification | Notes / Issues |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| | | | | | | | | |
+| 🟢 `[VERIFIED]` | kc-fix-server-side-summary-20260418-132817 | ServerSideSummary | Platform-owned summary generation (groundedness, indexing-state, refresh) | None | Platform contracts | [ServerSideSummary.md](specs/ServerSideSummary.md) | Spec / Draft | Platform-side fix required; spec documents contract for platform team |
 
 ---
 ### Status Legend:

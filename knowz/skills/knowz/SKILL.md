@@ -1,6 +1,6 @@
 ---
 name: knowz
-description: "Search, save, query, and manage knowledge in Knowz vaults. Use when the user wants to find knowledge, save an insight, ask a question, browse vaults, configure vault connections, register for an account, or interact with the Knowz knowledge base in any way."
+description: "Search, save, query, amend, and manage durable knowledge in Knowz vaults. Use when the user wants to find knowledge, save an insight or learning, ask a question, browse vaults, configure vault connections, register for an account, or interact with the Knowz knowledge base in any way."
 user-invocable: true
 allowed-tools: Read, Write, Bash, Glob, Grep, AskUserQuestion
 argument-hint: "ask|save|amend|search|browse|setup|status|register|flush [query or content]"
@@ -788,8 +788,6 @@ Prefer `amend` over `save` + "Update existing" whenever the user's request is pa
    Vault: {vault name}
    Change: {short summary of what was patched}
    ```
-
----
 
 ## Action: `search`
 

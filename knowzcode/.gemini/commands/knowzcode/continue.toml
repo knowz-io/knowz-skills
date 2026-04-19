@@ -1,7 +1,8 @@
 # .gemini/commands/knowzcode/continue.toml
 description = "Resume interrupted KnowzCode workflow"
 prompt = """Read .gemini/skills/knowzcode-continue/SKILL.md for full instructions.
+Check knowzcode/handoffs/ for a requested or latest local handoff.
 Read knowzcode/knowzcode_tracker.md to find active [WIP] WorkGroups.
-Read the most recent WorkGroup file from knowzcode/workgroups/.
+Read the selected WorkGroup file from knowzcode/workgroups/.
 Determine the current phase from the Phase History table.
-Resume from where the workflow left off, following knowzcode/knowzcode_loop.md."""
+Resume from where the workflow left off, following knowzcode/knowzcode_loop.md."""

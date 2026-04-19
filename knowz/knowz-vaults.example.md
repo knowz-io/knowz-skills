@@ -19,6 +19,7 @@ Connected vaults for this project.
   - A useful code pattern is discovered or created
   - A workaround for a limitation is found
   - A convention or standard is established
+  - When durable learnings are extracted from substantial in-progress work or research
 - **Content template**:
   ```
   [CONTEXT] {Where/why this arose — component, technology, problem}
@@ -35,3 +36,5 @@ Connected vaults for this project.
 - **Content principle**: Every saved item must be self-contained and detailed
   enough to be useful when retrieved via semantic search months later.
   Include reasoning, technology names, code examples, and file paths.
+  Workflow handoffs belong in KnowzCode local files; vault entries should capture
+  durable decisions, patterns, workarounds, conventions, and architecture findings.

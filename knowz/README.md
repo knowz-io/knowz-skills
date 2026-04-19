@@ -75,7 +75,7 @@ The Knowz MCP server works with any AI model and any MCP-compatible agent. This 
 
 ## Works With KnowzCode
 
-Knowz integrates with the [KnowzCode](../knowzcode/) development methodology — past decisions are searchable during planning, and learnings are captured automatically after each feature ships.
+Knowz integrates with the [KnowzCode](../knowzcode/) development methodology — past decisions are searchable during planning, and durable learnings are captured automatically after each feature ships. KnowzCode owns local workflow continuity such as `/knowzcode:regroup` and `/knowzcode:continue`.
 
 Works fully standalone too. No KnowzCode required.
 
