@@ -74,17 +74,45 @@ knowzcode/
 
 Use the embedded templates below.
 
-### 4. Generate environment context
+### 4. Detect project stack and populate environment context
 
-- Detect project language, framework, tools
-- Populate `environment_context.md`
-- Include package managers, test runners, build tools
+If `npx knowzcode install` ran first, the Stack table in `knowzcode/knowzcode_project.md` may already be populated. Check it — if rows are empty, detect and fill them yourself:
 
-### 5. Capture user preferences (optional)
+- Probe for `package.json` (Node/TS), `pyproject.toml` / `requirements.txt` / `Pipfile` (Python), `*.csproj` / `*.sln` / `*.slnx` / `*.fsproj` (.NET), `go.mod` (Go), `Cargo.toml` (Rust), `Gemfile` (Ruby).
+- Write the Stack table rows (Language, Backend Framework, Frontend Framework, ORM/ODM, Testing (Unit), Testing (E2E)) with detected values. Leave a row empty if detection fails — don't write `[Detected]` or similar placeholders.
+- Populate `environment_context.md` sections the user will actually use (Platform, Language, Package Manager, Test Runner, Build command). The template is large; only fill what you can verify, and remove `[bracketed placeholders]` from filled sections.
 
-- Ask: "Would you like to configure development preferences? (optional)"
-- If yes: prompt for testing frameworks, code style, quality priorities
-- Create `knowzcode/user_preferences.md`
+### 5. Personalize project context (three gates)
+
+Run the three gates in order. Each gate is skippable — if the user declines, write `Not configured during init — edit this file or re-run /knowzcode:setup to fill.` into the relevant section rather than leaving the template placeholders.
+
+**Gate A — Project overview (rewrites `knowzcode_project.md`):**
+
+Ask three questions:
+1. "Project name and one-sentence goal?"
+2. "Core problem this solves (1–2 sentences)?"
+3. "Architecture style? (e.g., monolith, microservices, CLI + MCP, static site)"
+
+Write the answers into the `## Goal` and `## Architecture` sections, replacing the `[concise project objective — 1-2 sentences]`, `[specific user problem this solves — 1-2 sentences]`, and `[e.g., Monolithic, Microservices, Serverless]` placeholders. Do not touch the Stack table — that was handled in Step 4.
+
+**Gate B — Architecture stub:**
+
+No interactive diagram at init. `knowzcode_architecture.md` already ships with an empty Mermaid stub; leave it alone. Announce to the user: "Architecture will be populated on the first `/knowzcode:work`, or when you ask for an architecture sketch explicitly."
+
+**Gate C — User preferences (rewrites `user_preferences.md`):**
+
+Ask four structured questions:
+1. "Testing framework and coverage target? (e.g., 'Jest, 80% lines' — or 'use project defaults')"
+2. "Code style / formatter / linter? (e.g., 'Prettier + ESLint', 'Black + Ruff', 'dotnet format')"
+3. "Top three quality priorities, ranked? (Reliability / Security / Performance / Maintainability / Testability)"
+4. "Any non-negotiable project conventions? (free text — e.g., 'Result types, no exceptions'; optional)"
+
+Rewrite `user_preferences.md` so the filled copy contains only real answers. Specifically:
+- Replace `[User-provided principles, or "Not configured"]`, `[User-provided testing preferences, …]`, etc. with the user's answers.
+- **Strip the `*Examples:*` blocks from the filled copy** — they're helpful in the template but noise once the file holds real content.
+- Set the `Last Updated` line to the current ISO timestamp.
+
+If the user declines Gate C entirely, leave the file on disk but replace each `[…]` placeholder with `Not configured during init — edit this file or re-run /knowzcode:setup to fill.`
 
 ### 6. Configure orchestration defaults (optional)
 

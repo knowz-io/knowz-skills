@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.1] - 2026-04-19
+
+### Added
+- Stack auto-detection in `npx knowzcode install` for Node, Python, .NET, Go, Rust, Ruby projects — populates `knowzcode_project.md` Stack table with language, framework, ORM, and test runner on fresh installs
+- `/knowzcode:setup` three personalization gates (project overview, architecture, user preferences) that actively rewrite the three context files with real content instead of leaving template placeholders
+- Plugin-aware install and upgrade: `npx knowzcode` detects the `knowzcode@knowz-skills` marketplace plugin via `~/.claude/plugins/installed_plugins.json`, skips `.claude/skills/` and `.claude/agents/` copy when the plugin is active, and cleans up leftover duplicates from prior installs
+- `--force-local-skills` flag to override plugin detection and copy bundled skills into `.claude/` as an override
+- Stale-plugin version check — warns when the installed plugin version is older than the CLI being run, with `/plugin update` guidance
+
+### Changed
+- `knowzcode_architecture.md` ships as an empty Mermaid stub instead of the sample Login/Dashboard diagram; populated on first `/knowzcode:work` or on explicit request
+- Installation next-steps branch on plugin state: "Plugin is active" for matching plugin, "Update the plugin" for stale, "Install the plugin" for no plugin
+- `templates.md` init architecture block uses a four-backtick outer fence so the embedded Mermaid fence no longer terminates it early
+
 ## [0.14.0] - 2026-04-19
 
 ### Added

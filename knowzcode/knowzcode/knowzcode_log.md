@@ -9,6 +9,20 @@
 ---
 **[NEWEST ENTRIES APPEAR HERE - DO NOT REMOVE THIS MARKER]**
 ---
+**Type:** Exploration-Deferred
+**Timestamp:** 2026-04-19 12:35:00
+**Topic:** Tree-sitter / code-graph fit for knowz vs knowzcode
+**Logged By:** AI-Agent (kc-explore-tree-sitter-knowz, Planning mode)
+**Details:**
+Explored integrating a tree-sitter / code-graph capability into knowz or knowzcode. Team (knowledge-liaison, analyst, architect, reviewer) unanimously concluded: knowzcode is the correct integration surface (knowz would violate its curated-knowledge charter and create PII leakage risk). Recommended path is Option 1 — adopt Serena or compatible symbol-aware MCP as an optional ecosystem dependency, with detection probe + graceful fallback in analyst/scanner agents. User elected **Option 3 (defer)**: log as evaluated, revisit if demand materializes.
+
+Key premise correction captured in plan: tree-sitter alone doesn't monitor or save tokens — that's Aider's repo-map (tree-sitter + PageRank) or Serena (LSP-based). Realistic savings are 20–40% on Stage 0 discovery for repos >200 files, not blanket.
+
+Artifacts:
+- `knowzcode/planning/tree-sitter-knowz-fit.md` — full plan with 3 options, NodeID breakdown, risk table.
+
+MCP note: vault capture queued to `knowzcode/pending_captures.md` (MCP auth failed at probe — 401). Run `/knowz flush` after API key refresh.
+---
 **Type:** ARC-Completion
 **Timestamp:** 2026-04-18 13:28:17
 **WorkGroupID:** kc-fix-server-side-summary-20260418-132817
