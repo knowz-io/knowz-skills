@@ -18,7 +18,6 @@ Knowz fixes this. Ask a question and get an answer grounded in what your team ac
 
 - **Ask questions** — "What's our convention for error handling?" returns your team's actual answer, not a generic one
 - **Save learnings** — capture decisions and patterns as you work, without leaving your flow
-- **Regroup session context** — save a resumable handoff before clearing context, then paste a fresh-session prompt later
 - **Search everything** — semantic search that understands meaning, not just keywords
 - **Browse knowledge** — see topics, patterns, and gaps at a glance
 
@@ -53,7 +52,6 @@ The Knowz MCP server works with any AI model and any MCP-compatible agent. This 
 # Daily usage
 /knowz ask "What's our convention for error handling?"
 /knowz save "We chose Redis over Memcached for pub/sub support"
-/knowz regroup "Continue implementing tenant-aware auth middleware"
 /knowz amend "Add a caveat to the auth pattern: SameSite=None requires Secure in production"
 /knowz search "authentication patterns"
 /knowz browse
@@ -65,7 +63,6 @@ The Knowz MCP server works with any AI model and any MCP-compatible agent. This 
 |---------|-------------|
 | `/knowz ask "question"` | AI-powered Q&A against your vaults |
 | `/knowz save "insight"` | Capture knowledge with automatic routing |
-| `/knowz regroup ["next step"]` | Save a regroup handoff and return a copy-paste prompt for a fresh context window |
 | `/knowz amend "change"` | Targeted edit of an existing vault item — just describe the change |
 | `/knowz search "query"` | Semantic search across vaults |
 | `/knowz browse [vault]` | Browse vault contents and topics |
@@ -78,7 +75,7 @@ The Knowz MCP server works with any AI model and any MCP-compatible agent. This 
 
 ## Works With KnowzCode
 
-Knowz integrates with the [KnowzCode](../knowzcode/) development methodology — past decisions are searchable during planning, and learnings are captured automatically after each feature ships.
+Knowz integrates with the [KnowzCode](../knowzcode/) development methodology — past decisions are searchable during planning, and durable learnings are captured automatically after each feature ships. KnowzCode owns local workflow continuity such as `/knowzcode:regroup` and `/knowzcode:continue`.
 
 Works fully standalone too. No KnowzCode required.
 

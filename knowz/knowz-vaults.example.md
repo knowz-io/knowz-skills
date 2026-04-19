@@ -14,13 +14,12 @@ Connected vaults for this project.
   - When asking about past decisions, conventions, or "why did we..."
   - When looking for code patterns or "how did we build..."
   - When checking for best practices or standards
-  - When resuming prior work and you need a saved session handoff or resume context
 - **When to save**:
   - A decision is made about architecture, tooling, or approach
   - A useful code pattern is discovered or created
   - A workaround for a limitation is found
   - A convention or standard is established
-  - Before clearing context on substantial in-progress work or research that should resume later
+  - When durable learnings are extracted from substantial in-progress work or research
 - **Content template**:
   ```
   [CONTEXT] {Where/why this arose — component, technology, problem}
@@ -37,5 +36,5 @@ Connected vaults for this project.
 - **Content principle**: Every saved item must be self-contained and detailed
   enough to be useful when retrieved via semantic search months later.
   Include reasoning, technology names, code examples, and file paths.
-  Resume handoffs should also preserve the goal, mode, autonomy preference when
-  relevant, next steps, and the most helpful references.
+  Workflow handoffs belong in KnowzCode local files; vault entries should capture
+  durable decisions, patterns, workarounds, conventions, and architecture findings.

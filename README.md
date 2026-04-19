@@ -27,7 +27,6 @@ Search, save, and query your knowledge base without leaving your editor. Knowz a
 ```bash
 /knowz ask "What's our convention for error handling?"
 /knowz save "We chose Redis over Memcached for pub/sub support"
-/knowz regroup "Continue implementing tenant-aware auth middleware"
 /knowz search "authentication patterns"
 ```
 
@@ -42,6 +41,7 @@ Works across 6 AI platforms — Claude Code, OpenAI Codex, Gemini CLI, GitHub Co
 ```bash
 /knowzcode:work "Build user authentication with email and password"
 /knowzcode:explore "how is auth currently implemented?"
+/knowzcode:regroup "Continue from the active WorkGroup after context clear"
 /knowzcode:fix "Fix typo in login button text"
 ```
 
