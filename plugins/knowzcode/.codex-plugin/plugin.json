@@ -1,6 +1,6 @@
 {
   "name": "knowzcode",
-  "version": "0.13.1",
+  "version": "0.14.0",
   "description": "Platform-agnostic AI development methodology with TDD, quality gates, and structured workflows for Codex.",
   "author": {
     "name": "Alex Headscarf",
