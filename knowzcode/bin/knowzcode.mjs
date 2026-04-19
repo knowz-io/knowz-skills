@@ -107,6 +107,7 @@ function parseArgs(argv) {
     agentTeams: false,
     mcpKey: null,
     mcpEndpoint: null,
+    forceLocalSkills: false,
   };
 
   let i = 0;
@@ -131,6 +132,8 @@ function parseArgs(argv) {
       opts.mcpKey = args[++i].trim();
     } else if (arg === '--mcp-endpoint' && i + 1 < args.length) {
       opts.mcpEndpoint = args[++i].trim();
+    } else if (arg === '--force-local-skills') {
+      opts.forceLocalSkills = true;
     } else if (arg === '--help' || arg === '-h') {
       opts.command = 'help';
     } else if (arg === '--version' || arg === '-v') {
@@ -163,6 +166,213 @@ function hasKnowzCodeSkillDir(skillRoot) {
   );
 }
 
+// ─── Stack Detection ─────────────────────────────────────────────────────────
+// Non-interactive probe of the project directory. Returns detected values for
+// knowzcode_project.md Stack table and installer summary. Empty strings where
+// detection fails — the /knowzcode:setup skill fills the rest interactively.
+
+function safeReadJson(path) {
+  try { return JSON.parse(readFileSync(path, 'utf8')); } catch { return null; }
+}
+
+function safeReadText(path) {
+  try { return readFileSync(path, 'utf8'); } catch { return ''; }
+}
+
+function detectStack(dir) {
+  const stack = {
+    language: '', backendFramework: '', frontendFramework: '',
+    database: '', ormOdm: '', testingUnit: '', testingE2E: '',
+    keyLibraries: '', packageManager: '',
+    testCommand: '', buildCommand: '',
+  };
+
+  // Node / JS / TS
+  const pkgPath = join(dir, 'package.json');
+  if (existsSync(pkgPath)) {
+    const pkg = safeReadJson(pkgPath) || {};
+    const deps = { ...(pkg.dependencies || {}), ...(pkg.devDependencies || {}) };
+    stack.language = deps.typescript ? 'TypeScript' : 'JavaScript';
+    if (deps.next) stack.frontendFramework = 'Next.js';
+    else if (deps.react) stack.frontendFramework = 'React';
+    else if (deps.vue) stack.frontendFramework = 'Vue';
+    else if (deps.svelte || deps['@sveltejs/kit']) stack.frontendFramework = 'Svelte';
+    else if (deps['@angular/core']) stack.frontendFramework = 'Angular';
+    if (deps['@nestjs/core']) stack.backendFramework = 'NestJS';
+    else if (deps.express) stack.backendFramework = 'Express';
+    else if (deps.fastify) stack.backendFramework = 'Fastify';
+    else if (deps.koa) stack.backendFramework = 'Koa';
+    else if (deps['@hapi/hapi'] || deps.hapi) stack.backendFramework = 'Hapi';
+    if (deps.vitest) stack.testingUnit = 'Vitest';
+    else if (deps.jest) stack.testingUnit = 'Jest';
+    else if (deps.mocha) stack.testingUnit = 'Mocha';
+    else if (deps.ava) stack.testingUnit = 'AVA';
+    if (deps['@playwright/test'] || deps.playwright) stack.testingE2E = 'Playwright';
+    else if (deps.cypress) stack.testingE2E = 'Cypress';
+    if (deps.prisma || deps['@prisma/client']) stack.ormOdm = 'Prisma';
+    else if (deps['drizzle-orm']) stack.ormOdm = 'Drizzle';
+    else if (deps.typeorm) stack.ormOdm = 'TypeORM';
+    else if (deps.sequelize) stack.ormOdm = 'Sequelize';
+    else if (deps.mongoose) stack.ormOdm = 'Mongoose';
+    if (pkg.scripts?.test) stack.testCommand = 'npm test';
+    if (pkg.scripts?.build) stack.buildCommand = 'npm run build';
+    if (existsSync(join(dir, 'pnpm-lock.yaml'))) stack.packageManager = 'pnpm';
+    else if (existsSync(join(dir, 'yarn.lock'))) stack.packageManager = 'Yarn';
+    else if (existsSync(join(dir, 'bun.lockb')) || existsSync(join(dir, 'bun.lock'))) stack.packageManager = 'Bun';
+    else stack.packageManager = 'npm';
+    return stack;
+  }
+
+  // Python
+  const pyproject = join(dir, 'pyproject.toml');
+  const hasPython = existsSync(pyproject) || existsSync(join(dir, 'requirements.txt')) || existsSync(join(dir, 'setup.py')) || existsSync(join(dir, 'Pipfile'));
+  if (hasPython) {
+    stack.language = 'Python';
+    const content = safeReadText(pyproject) + safeReadText(join(dir, 'requirements.txt')) + safeReadText(join(dir, 'Pipfile'));
+    if (/fastapi/i.test(content)) stack.backendFramework = 'FastAPI';
+    else if (/\bdjango\b/i.test(content)) stack.backendFramework = 'Django';
+    else if (/\bflask\b/i.test(content)) stack.backendFramework = 'Flask';
+    else if (/\bstarlette\b/i.test(content)) stack.backendFramework = 'Starlette';
+    if (/\bpytest\b/i.test(content)) stack.testingUnit = 'pytest';
+    else if (existsSync(join(dir, 'tests'))) stack.testingUnit = 'unittest';
+    if (/\bplaywright\b/i.test(content)) stack.testingE2E = 'Playwright';
+    if (/sqlalchemy/i.test(content)) stack.ormOdm = 'SQLAlchemy';
+    else if (/\btortoise\b/i.test(content)) stack.ormOdm = 'Tortoise ORM';
+    if (existsSync(join(dir, 'poetry.lock'))) stack.packageManager = 'Poetry';
+    else if (existsSync(join(dir, 'uv.lock'))) stack.packageManager = 'uv';
+    else if (existsSync(join(dir, 'Pipfile.lock'))) stack.packageManager = 'pipenv';
+    else stack.packageManager = 'pip';
+    stack.testCommand = stack.testingUnit === 'pytest' ? 'pytest' : 'python -m unittest';
+    return stack;
+  }
+
+  // .NET
+  const dotnetProjects = readdirSync(dir).filter(f => /\.(csproj|fsproj|vbproj|sln|slnx)$/i.test(f));
+  if (dotnetProjects.length > 0) {
+    const hasFs = dotnetProjects.some(p => p.endsWith('.fsproj'));
+    stack.language = hasFs ? 'F#' : 'C#';
+    stack.packageManager = 'NuGet';
+    stack.testCommand = 'dotnet test';
+    stack.buildCommand = 'dotnet build';
+    const testProjects = dotnetProjects.filter(p => /(?:\.(Tests?|Specs?)|\.IntegrationTests)\.(csproj|fsproj)$/i.test(p));
+    if (testProjects.length > 0) {
+      const testContent = safeReadText(join(dir, testProjects[0]));
+      if (/xunit/i.test(testContent)) stack.testingUnit = 'xUnit';
+      else if (/\bnunit\b/i.test(testContent)) stack.testingUnit = 'NUnit';
+      else if (/mstest/i.test(testContent)) stack.testingUnit = 'MSTest';
+    }
+    const mainProjects = dotnetProjects.filter(p => !testProjects.includes(p) && /\.(csproj|fsproj)$/i.test(p));
+    if (mainProjects.length > 0) {
+      const mainContent = safeReadText(join(dir, mainProjects[0]));
+      if (/Microsoft\.AspNetCore/i.test(mainContent)) stack.backendFramework = 'ASP.NET Core';
+      else if (/Microsoft\.NET\.Sdk\.Web/i.test(mainContent)) stack.backendFramework = 'ASP.NET Core';
+      if (/EntityFrameworkCore|Microsoft\.EntityFrameworkCore/i.test(mainContent)) stack.ormOdm = 'EF Core';
+      else if (/Dapper/i.test(mainContent)) stack.ormOdm = 'Dapper';
+    }
+    return stack;
+  }
+
+  // Go
+  if (existsSync(join(dir, 'go.mod'))) {
+    stack.language = 'Go';
+    stack.packageManager = 'go modules';
+    stack.testCommand = 'go test ./...';
+    stack.buildCommand = 'go build ./...';
+    stack.testingUnit = 'testing (stdlib)';
+    const goMod = safeReadText(join(dir, 'go.mod'));
+    if (/gin-gonic\/gin/.test(goMod)) stack.backendFramework = 'Gin';
+    else if (/gofiber\/fiber/.test(goMod)) stack.backendFramework = 'Fiber';
+    else if (/labstack\/echo/.test(goMod)) stack.backendFramework = 'Echo';
+    else if (/go-chi\/chi/.test(goMod)) stack.backendFramework = 'chi';
+    return stack;
+  }
+
+  // Rust
+  if (existsSync(join(dir, 'Cargo.toml'))) {
+    stack.language = 'Rust';
+    stack.packageManager = 'Cargo';
+    stack.testCommand = 'cargo test';
+    stack.buildCommand = 'cargo build';
+    stack.testingUnit = 'cargo test';
+    const cargo = safeReadText(join(dir, 'Cargo.toml'));
+    if (/\baxum\b/.test(cargo)) stack.backendFramework = 'Axum';
+    else if (/\brocket\b/.test(cargo)) stack.backendFramework = 'Rocket';
+    else if (/\bactix-web\b/.test(cargo)) stack.backendFramework = 'Actix-web';
+    return stack;
+  }
+
+  // Ruby
+  if (existsSync(join(dir, 'Gemfile'))) {
+    stack.language = 'Ruby';
+    stack.packageManager = 'Bundler';
+    const gemfile = safeReadText(join(dir, 'Gemfile'));
+    if (/\brails\b/i.test(gemfile)) stack.backendFramework = 'Rails';
+    else if (/sinatra/i.test(gemfile)) stack.backendFramework = 'Sinatra';
+    if (/rspec/i.test(gemfile)) stack.testingUnit = 'RSpec';
+    else if (/minitest/i.test(gemfile)) stack.testingUnit = 'Minitest';
+    stack.testCommand = stack.testingUnit === 'RSpec' ? 'bundle exec rspec' : 'bundle exec rake test';
+    return stack;
+  }
+
+  return stack;
+}
+
+// ─── Template Personalization ────────────────────────────────────────────────
+// Fresh-install only: rewrite knowzcode_project.md Stack table with detected
+// values. Architecture template already ships as an empty stub so no rewrite
+// needed there. Interactive personalization (Goal, preferences, etc.) is the
+// /knowzcode:setup skill's responsibility.
+
+const PROJECT_STACK_EMPTY_BLOCK = `| Language | | |
+| Backend Framework | | |
+| Frontend Framework | | |
+| Database | | |
+| ORM/ODM | | |
+| Testing (Unit) | | |
+| Testing (E2E) | | |
+| Key Libraries | | |`;
+
+function personalizeProjectFile(kcDir, stack) {
+  const projectFile = join(kcDir, 'knowzcode_project.md');
+  if (!existsSync(projectFile)) return false;
+  const content = readFileSync(projectFile, 'utf8');
+  if (!content.includes(PROJECT_STACK_EMPTY_BLOCK)) return false;
+  const filled = [
+    `| Language | ${stack.language} | |`,
+    `| Backend Framework | ${stack.backendFramework} | |`,
+    `| Frontend Framework | ${stack.frontendFramework} | |`,
+    `| Database | ${stack.database} | |`,
+    `| ORM/ODM | ${stack.ormOdm} | |`,
+    `| Testing (Unit) | ${stack.testingUnit} | |`,
+    `| Testing (E2E) | ${stack.testingE2E} | |`,
+    `| Key Libraries | ${stack.keyLibraries} | |`,
+  ].join('\n');
+  writeFileSync(projectFile, content.replace(PROJECT_STACK_EMPTY_BLOCK, filled));
+  return true;
+}
+
+function summarizeStack(stack) {
+  const filled = [];
+  const empty = [];
+  const rows = [
+    ['Language', stack.language],
+    ['Backend', stack.backendFramework],
+    ['Frontend', stack.frontendFramework],
+    ['Database', stack.database],
+    ['ORM/ODM', stack.ormOdm],
+    ['Testing (Unit)', stack.testingUnit],
+    ['Testing (E2E)', stack.testingE2E],
+    ['Package Manager', stack.packageManager],
+    ['Test Command', stack.testCommand],
+    ['Build Command', stack.buildCommand],
+  ];
+  for (const [label, value] of rows) {
+    if (value) filled.push(`${label}=${value}`);
+    else empty.push(label);
+  }
+  return { filled, empty };
+}
+
 function hasCodexAdapterInstalled(dir) {
   return (
     existsSync(join(dir, 'AGENTS.md')) ||
@@ -170,6 +380,98 @@ function hasCodexAdapterInstalled(dir) {
     hasKnowzCodeSkillDir(join(dir, '.agents', 'skills')) ||
     hasKnowzCodeSkillDir(join(HOME_DIR, '.agents', 'skills'))
   );
+}
+
+// ─── Claude Code Plugin Detection ────────────────────────────────────────────
+// Reads ~/.claude/plugins/installed_plugins.json to decide whether the
+// marketplace plugin is already providing /knowzcode:* skills + agents. When
+// it is, the Claude branch of generateAdapters skips the .claude/skills/ and
+// .claude/agents/ copy to avoid duplicating every command.
+
+// Semver-style comparison. Returns negative if a<b, 0 if equal, positive if a>b.
+// Treats non-numeric segments (pre-release tags, "unknown") as 0 and falls back
+// to string compare when both sides lack numeric parts.
+function compareVersions(a, b) {
+  if (!a || !b) return 0;
+  if (a === b) return 0;
+  const pa = String(a).split(/[.+-]/).map((s) => (/^\d+$/.test(s) ? parseInt(s, 10) : NaN));
+  const pb = String(b).split(/[.+-]/).map((s) => (/^\d+$/.test(s) ? parseInt(s, 10) : NaN));
+  const len = Math.max(pa.length, pb.length);
+  for (let i = 0; i < len; i++) {
+    const na = Number.isFinite(pa[i]) ? pa[i] : 0;
+    const nb = Number.isFinite(pb[i]) ? pb[i] : 0;
+    if (na !== nb) return na - nb;
+  }
+  return 0;
+}
+
+function detectKnowzCodePlugin(targetDir) {
+  if (!HOME_DIR || HOME_DIR === '~') return { installed: false };
+  const registryPath = join(HOME_DIR, '.claude', 'plugins', 'installed_plugins.json');
+  if (!existsSync(registryPath)) return { installed: false };
+  const registry = safeReadJson(registryPath);
+  const entries = registry?.plugins?.['knowzcode@knowz-skills'];
+  if (!Array.isArray(entries) || entries.length === 0) return { installed: false };
+  const normalize = (p) => (p ? resolve(p).toLowerCase() : '');
+  const target = normalize(targetDir);
+  const match = entries.find((e) => {
+    if (!e) return false;
+    if (e.scope === 'user') return true;
+    if (e.scope === 'project' && normalize(e.projectPath) === target) return true;
+    return false;
+  });
+  if (!match) return { installed: false };
+  const version = typeof match.version === 'string' && match.version !== 'unknown' ? match.version : null;
+  const stale = version ? compareVersions(version, VERSION) < 0 : false;
+  return { installed: true, scope: match.scope, version: version || 'unknown', stale };
+}
+
+// Shared handler for the "plugin is active" branch — called from both
+// generateAdapters (install) and cmdUpgrade. Warns on stale plugin versions,
+// wires marketplace config, and cleans up any leftover local skills/agents.
+async function applyPluginActivePath(dir, claudeDir, plugin, opts, adapterFiles) {
+  if (plugin.stale) {
+    log.warn(`KnowzCode plugin v${plugin.version} is older than this CLI (v${VERSION}).`);
+    log.warn(`Run \`/plugin update knowzcode@knowz-skills\` in Claude Code to pick up new skills.`);
+    log.warn(`Or re-run with --force-local-skills to copy bundled skills into .claude/ as an override.`);
+  } else {
+    log.info(`KnowzCode plugin detected (${plugin.scope} scope, v${plugin.version}) — skills and agents provided by plugin; skipping .claude/skills/ + .claude/agents/ copy.`);
+  }
+  setMarketplaceConfig(claudeDir);
+  if (adapterFiles) adapterFiles.push(`${claudeDir}/ (skills & agents provided by plugin)`);
+  await maybeCleanupLocalSkills(dir, opts);
+}
+
+// Remove .claude/skills/knowzcode-* and matching agents from prior npx installs
+// after the marketplace plugin has taken over. Runs only when the plugin is
+// detected (the caller gates this).
+async function maybeCleanupLocalSkills(dir, opts) {
+  const claudeDir = join(dir, '.claude');
+  const skillsDir = join(claudeDir, 'skills');
+  const agentsDir = join(claudeDir, 'agents');
+  const srcSkillsDir = join(PKG_ROOT, 'skills');
+  const srcAgentsDir = join(PKG_ROOT, 'agents');
+  const sourceSkills = existsSync(srcSkillsDir)
+    ? readdirSync(srcSkillsDir).filter((e) => !e.startsWith('.'))
+    : [];
+  const sourceAgents = existsSync(srcAgentsDir)
+    ? readdirSync(srcAgentsDir).filter((f) => f.endsWith('.md'))
+    : [];
+  const dupSkills = sourceSkills.filter((e) => existsSync(join(skillsDir, e)));
+  const dupAgents = sourceAgents.filter((f) => existsSync(join(agentsDir, f)));
+  if (dupSkills.length === 0 && dupAgents.length === 0) return;
+  const total = dupSkills.length + dupAgents.length;
+  log.warn(`Found ${total} leftover item(s) from a prior npx install that now duplicate the plugin:`);
+  for (const e of dupSkills) console.log(`    .claude/skills/${e}`);
+  for (const f of dupAgents) console.log(`    .claude/agents/${f}`);
+  const confirmed = opts.force || (await promptConfirm('Remove these duplicates?', true));
+  if (!confirmed) {
+    log.info('Skipped cleanup — duplicates remain.');
+    return;
+  }
+  for (const e of dupSkills) rmSync(join(skillsDir, e), { recursive: true, force: true });
+  for (const f of dupAgents) rmSync(join(agentsDir, f), { force: true });
+  log.ok(`Removed ${total} duplicate item(s) from .claude/`);
 }
 
 // ─── Adapter Template Parser ─────────────────────────────────────────────────
@@ -968,31 +1270,40 @@ async function generateAdapters(dir, selectedPlatforms, opts) {
   const templates = parseAdapterTemplates();
   const adapterFiles = [];
   let agentTeamsEnabled = false;
+  let claudePluginActive = false;
+  let claudePluginStale = false;
 
   for (const platformId of selectedPlatforms) {
     const platform = PLATFORMS[platformId];
 
     if (platformId === 'claude') {
       const claudeDir = opts.global ? join(process.env.HOME || process.env.USERPROFILE || '~', '.claude') : join(dir, '.claude');
+      const plugin = opts.forceLocalSkills || opts.global ? { installed: false } : detectKnowzCodePlugin(dir);
 
       log.info(`Installing Claude Code components to ${claudeDir}/`);
 
-      if (opts.force) {
-        removeStaleFiles(join(PKG_ROOT, 'agents'), join(claudeDir, 'agents'));
-        removeStaleEntries(join(PKG_ROOT, 'skills'), join(claudeDir, 'skills'));
-      }
+      if (plugin.installed) {
+        claudePluginActive = !plugin.stale;
+        claudePluginStale = plugin.stale;
+        await applyPluginActivePath(dir, claudeDir, plugin, opts, adapterFiles);
+      } else {
+        if (opts.force) {
+          removeStaleFiles(join(PKG_ROOT, 'agents'), join(claudeDir, 'agents'));
+          removeStaleEntries(join(PKG_ROOT, 'skills'), join(claudeDir, 'skills'));
+        }
 
-      // Clean up stale .claude/commands/ from pre-v0.7.0 installs
-      const oldCommandsDir = join(claudeDir, 'commands');
-      if (existsSync(oldCommandsDir)) {
-        rmSync(oldCommandsDir, { recursive: true, force: true });
-        log.info('Removed stale .claude/commands/ (migrated to skills/)');
-      }
+        // Clean up stale .claude/commands/ from pre-v0.7.0 installs
+        const oldCommandsDir = join(claudeDir, 'commands');
+        if (existsSync(oldCommandsDir)) {
+          rmSync(oldCommandsDir, { recursive: true, force: true });
+          log.info('Removed stale .claude/commands/ (migrated to skills/)');
+        }
 
-      copyDirContents(join(PKG_ROOT, 'agents'), join(claudeDir, 'agents'));
-      copyDirContents(join(PKG_ROOT, 'skills'), join(claudeDir, 'skills'));
-      setMarketplaceConfig(claudeDir);
-      adapterFiles.push(claudeDir + '/agents/', claudeDir + '/skills/');
+        copyDirContents(join(PKG_ROOT, 'agents'), join(claudeDir, 'agents'));
+        copyDirContents(join(PKG_ROOT, 'skills'), join(claudeDir, 'skills'));
+        setMarketplaceConfig(claudeDir);
+        adapterFiles.push(claudeDir + '/agents/', claudeDir + '/skills/');
+      }
     } else {
       const templateSet = templates.get(platformId);
       if (!templateSet) {
@@ -1165,7 +1476,7 @@ async function generateAdapters(dir, selectedPlatforms, opts) {
     }
   }
 
-  return { adapterFiles, agentTeamsEnabled };
+  return { adapterFiles, agentTeamsEnabled, claudePluginActive, claudePluginStale };
 }
 
 // ─── Commands ────────────────────────────────────────────────────────────────
@@ -1327,6 +1638,19 @@ async function cmdInstall(opts) {
     log.ok('Core framework installed');
   }
 
+  // 1b. Personalize templates on fresh install (reinstall preserves user edits above)
+  let stackSummary = null;
+  if (!isReinstall) {
+    const stack = detectStack(dir);
+    personalizeProjectFile(kcDir, stack);
+    stackSummary = summarizeStack(stack);
+    if (stackSummary.filled.length > 0) {
+      log.ok(`Stack detected: ${stackSummary.filled.join(', ')}`);
+    } else {
+      log.warn('Stack not detected — no known project files (package.json, pyproject.toml, *.csproj, go.mod, Cargo.toml, Gemfile) in target directory');
+    }
+  }
+
   // 2. Platform detection + selection
   const detected = detectPlatforms(dir);
   let selectedPlatforms;
@@ -1349,7 +1673,7 @@ async function cmdInstall(opts) {
   }
 
   // 3. Generate adapters (using shared helper)
-  const { adapterFiles, agentTeamsEnabled } = await generateAdapters(dir, selectedPlatforms, opts);
+  const { adapterFiles, agentTeamsEnabled, claudePluginActive, claudePluginStale } = await generateAdapters(dir, selectedPlatforms, opts);
 
   // 4. Summary
   console.log('');
@@ -1368,17 +1692,35 @@ async function cmdInstall(opts) {
   console.log('');
   console.log(`${c.bold}Next steps:${c.reset}`);
   if (!isReinstall) {
-    console.log('  1. Edit knowzcode/knowzcode_project.md — set project name, stack, standards');
-    console.log('  2. Edit knowzcode/environment_context.md — configure build/test commands');
+    if (stackSummary && stackSummary.empty.length > 0) {
+      console.log(`  1. Run /knowzcode:setup in your AI tool to fill these interactively:`);
+      console.log(`     Goal, Core Problem, Architecture style, user preferences,`);
+      console.log(`     and stack fields still empty (${stackSummary.empty.join(', ')})`);
+    } else {
+      console.log('  1. Run /knowzcode:setup in your AI tool to fill Goal, Core Problem, and preferences');
+    }
+    console.log('  2. Or edit knowzcode/knowzcode_project.md and knowzcode/user_preferences.md directly');
   }
   if (selectedPlatforms.includes('claude')) {
     const step = isReinstall ? 1 : 3;
-    console.log(`  ${step}. Install the KnowzCode plugin (recommended):`);
-    console.log('     /plugin install knowzcode@knowz-skills');
-    console.log(`  ${step + 1}. Start building:`);
-    console.log('     /knowzcode:work "Your first feature"');
-    console.log('');
-    console.log('  Note: Commands also work without plugin as /work, /explore, /fix, etc.');
+    if (claudePluginActive) {
+      console.log(`  ${step}. Plugin is active — commands available as /knowzcode:work, /knowzcode:explore, etc.`);
+      console.log(`  ${step + 1}. Start building:`);
+      console.log('     /knowzcode:work "Your first feature"');
+    } else if (claudePluginStale) {
+      console.log(`  ${step}. Update the KnowzCode plugin to match this CLI:`);
+      console.log('     /plugin update knowzcode@knowz-skills');
+      console.log('     (or re-run npx install --force-local-skills to override with bundled skills)');
+      console.log(`  ${step + 1}. Start building once updated:`);
+      console.log('     /knowzcode:work "Your first feature"');
+    } else {
+      console.log(`  ${step}. Install the KnowzCode plugin (recommended):`);
+      console.log('     /plugin install knowzcode@knowz-skills');
+      console.log(`  ${step + 1}. Start building:`);
+      console.log('     /knowzcode:work "Your first feature"');
+      console.log('');
+      console.log('  Note: Commands also work without plugin as /work, /explore, /fix, etc.');
+    }
   } else if (!isReinstall) {
     console.log('  3. Start building: use knowzcode/prompts/[LOOP_1A]__Propose_Change_Set.md');
   }
@@ -1743,7 +2085,14 @@ async function cmdUpgrade(opts) {
 
   // Update Claude Code components if present
   const claudeDir = join(dir, '.claude');
-  if (existsSync(join(claudeDir, 'agents')) || existsSync(join(claudeDir, 'skills'))) {
+  const upgradePlugin = opts.forceLocalSkills ? { installed: false } : detectKnowzCodePlugin(dir);
+  const hasLocalClaudeComponents = existsSync(join(claudeDir, 'agents')) || existsSync(join(claudeDir, 'skills'));
+
+  if (upgradePlugin.installed) {
+    // Plugin provides skills/agents — skip the refresh, but clean up any leftovers
+    // from a prior npx install so the user doesn't end up with duplicate commands.
+    await applyPluginActivePath(dir, claudeDir, upgradePlugin, opts, null);
+  } else if (hasLocalClaudeComponents) {
     log.info('Updating Claude Code components...');
 
     // Clean up stale .claude/commands/ from pre-v0.7.0 installs
