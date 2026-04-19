@@ -1,9 +1,9 @@
 ---
 name: knowz
-description: "Search, save, query, regroup current session context, and manage knowledge in Knowz vaults. Use when the user wants to find knowledge, save an insight, generate a resumable context handoff, ask a question, browse vaults, configure vault connections, register for an account, or interact with the Knowz knowledge base in any way."
+description: "Search, save, query, amend, and manage durable knowledge in Knowz vaults. Use when the user wants to find knowledge, save an insight or learning, ask a question, browse vaults, configure vault connections, register for an account, or interact with the Knowz knowledge base in any way."
 user-invocable: true
 allowed-tools: Read, Write, Bash, Glob, Grep, AskUserQuestion
-argument-hint: "ask|save|regroup|amend|search|browse|setup|status|register|flush [query or content]"
+argument-hint: "ask|save|amend|search|browse|setup|status|register|flush [query or content]"
 ---
 
 # Knowz â€” Frictionless Knowledge Management
@@ -31,7 +31,6 @@ When `enterprise.json` is present, ignore the `--dev` flag for endpoint selectio
 ```bash
 /knowz ask "question"              # AI-powered Q&A against vaults
 /knowz save "insight"              # Capture knowledge to a vault
-/knowz regroup ["next step"]       # Save a regroup handoff + fresh-session prompt
 /knowz amend "change" [--id <id>]  # Targeted server-side edit of an existing item
 /knowz search "query"              # Semantic search across vaults
 /knowz browse [vault-name]         # Browse vault contents and topics
@@ -50,7 +49,6 @@ Parse the first word of `$ARGUMENTS` to determine the action:
 |---|---|---|
 | `ask "question"` | AI-powered Q&A | `mcp__knowz__ask_question` |
 | `save "insight"` / `learn "insight"` | Capture knowledge | `mcp__knowz__create_knowledge` |
-| `regroup` / `resume-context` | Save regrouped session context + generate a resume prompt | `mcp__knowz__create_knowledge` |
 | `amend "change"` / `edit "change"` | Targeted edit of an existing item | `mcp__knowz__amend_knowledge` |
 | `search "query"` / `find "query"` | Semantic search | `mcp__knowz__search_knowledge` |
 | `browse` / `list` | Browse vault contents | `mcp__knowz__list_vault_contents`, `mcp__knowz__list_topics` |
@@ -791,102 +789,6 @@ Prefer `amend` over `save` + "Update existing" whenever the user's request is pa
    Change: {short summary of what was patched}
    ```
 
----
-
-## Action: `regroup`
-
-Create a regroup handoff for the current session so the user can clear context, come back later, and resume with the right goal, state, next steps, and supporting knowledge references.
-
-### Steps
-
-1. Parse any optional continuation hint from `$ARGUMENTS` (everything after `regroup` or `resume-context`). Treat it as the preferred next-step statement if the user supplied one.
-
-2. Summarize the **current session context**, not just the last user message. Capture only durable, high-signal context:
-   - the primary goal
-   - whether the next session should **work** or **explore**
-   - completed work or findings
-   - current status, blockers, and unresolved questions
-   - immediate next steps
-   - important files, commands, URLs, or evidence worth preserving
-
-3. Infer the continuation mode:
-   - **work** -> building, fixing, editing, verifying, or shipping
-   - **explore** -> researching, auditing, mapping, comparing, or planning
-   - If unclear, infer from the dominant session activity. Ask only if there are multiple unrelated active goals and you cannot safely choose one.
-
-4. Infer whether **Autonomous Mode** should carry forward:
-   - **Active** -> the current session or related KnowzCode work explicitly uses autonomous mode, auto-approved gates, or hands-off continuation
-   - **Inactive** -> the current session clearly expects manual gating or review before major steps
-   - **Unspecified** -> there is not enough signal; omit it from the saved body and resume prompt
-
-5. **Vault routing:** Match the inferred goal and summary against each vault's "when to save" rules.
-   - If one vault matches -> target that vault
-   - If multiple vaults match -> ask the user which one using AskUserQuestion
-   - If no vaults match -> use the default vault
-   - If no vault file -> no vault scoping (use first available vault)
-
-6. Build a regrouped but self-contained body. If the target vault has a content template, map the handoff into it. Otherwise use this format:
-   ```
-   [SUMMARY] {concise summary of the session state}
-   [GOAL] {exact goal to resume}
-   [MODE] {work|explore}
-   [AUTONOMY] {Active|Inactive}    # include only when known
-   [STATE] {completed work, current status, blockers}
-   [NEXT] {immediate next actions}
-   [REFERENCES] {Knowz ids/titles, files, commands, evidence}
-   [TAGS] resume-context, regroup, {mode}, {domain tags}
-   ```
-   Keep it dense and retrievable. Do not dump raw transcript text.
-
-7. **Generate title:** `{Goal or Workstream} -- Resume Context ({YYYY-MM-DD})`
-
-8. **Related knowledge search:** Call `mcp__knowz__search_knowledge` with the inferred goal or workstream and gather up to 3 helpful supporting items for the resume prompt.
-   - Prefer items from the same vault when a target vault is known
-   - Include the new regroup item first in the final prompt, then the supporting references
-
-9. **Create:** Call `mcp__knowz__create_knowledge` with:
-   - `content`: the formatted regroup context
-   - `title`: the generated title
-   - `knowledgeType`: `"Note"`
-   - `vaultId`: target vault ID
-   - `tags`: `["resume-context", "regroup", mode, extracted-keywords]`
-   - `source`: `"knowz-regroup"`
-
-10. **If MCP write fails** (server unreachable, auth expired, or the create tool is unavailable), append a capture block to `knowz-pending.md` in the project root and continue to Step 11 using `Pending` instead of a knowledge ID:
-   ```markdown
-   ---
-
-   ### {timestamp} -- {title}
-   - **Operation**: create
-   - **Category**: ResumeContext
-   - **Target Vault**: {vault name}
-   - **Source**: knowz-regroup
-   - **Payload**:
-   {full regroup context body}
-
-   ---
-   ```
-   Report: "Queued to knowz-pending.md - run /knowz flush when MCP is available."
-
-11. **Report success + fresh-session prompt:**
-   ```
-   Regroup saved!
-
-   Title: {title}
-   Vault: {vault name}
-   ID: {knowledge id or Pending}
-   ```
-
-   Then provide a copy-paste-ready prompt for a fresh context window that includes:
-   - `Goal:`
-   - `Summary:`
-   - either `Work statement:` or `Explore statement:`
-   - `Autonomous Mode:` when it was inferred as Active or Inactive
-   - `Start by loading these Knowz items:` with the new item first, then the 1-3 supporting references
-   - any critical file paths, blockers, or constraints that should shape the next step
-
----
-
 ## Action: `search`
 
 Semantic search across configured vaults.
@@ -1001,9 +903,6 @@ For simple single-query/single-save operations, handle directly in this skill â€
 
 # Save an insight
 /knowz save "We chose Redis over Memcached because we need pub/sub for real-time notifications"
-
-# Regroup the current session before clearing context
-/knowz regroup "Continue implementing tenant-aware auth middleware"
 
 # Search for knowledge
 /knowz search "authentication patterns"

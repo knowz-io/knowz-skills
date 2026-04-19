@@ -1,6 +1,6 @@
 ---
 name: continue
-description: "Detect continuation intent and resume active WorkGroup workflow. Triggers when user says continue, keep going, resume, or similar continuation intent"
+description: "Detect continuation intent and resume active WorkGroup workflow or latest KnowzCode handoff. Triggers when user says continue, keep going, resume, resume handoff, or similar continuation intent"
 user-invocable: false
 allowed-tools: Read, Glob, Grep, Task
 ---
@@ -20,6 +20,9 @@ Activate when user message matches ANY of these patterns:
 - "continue with this"
 - "let's continue"
 - "keep working"
+- "resume handoff"
+- "continue from handoff"
+- "pick this back up"
 
 **Context Requirements**:
 - Must be in a KnowzCode-initialized project (knowzcode/ directory exists)
@@ -37,6 +40,17 @@ Activate when user message matches ANY of these patterns:
 
 When triggered:
 
+### Step 0: Check Local Handoffs
+
+Check `knowzcode/handoffs/*.md` before choosing a resume target.
+
+- If the user supplied a handoff path or slug, load that handoff.
+- If no explicit path was supplied, find the newest handoff by filename timestamp.
+- If the newest handoff points to an active WorkGroup, use it to supplement the WorkGroup context.
+- If there are no handoffs, continue with active WorkGroup discovery.
+
+Handoffs are local operational state. Do not search Knowz vaults for workflow handoffs.
+
 ### Step 1: Find Active WorkGroup
 
 Search `knowzcode/knowzcode_tracker.md` for `[WIP]` entries.
@@ -44,6 +58,7 @@ Search `knowzcode/knowzcode_tracker.md` for `[WIP]` entries.
 - **One active WorkGroup**: Use it automatically
 - **Multiple active**: Present options to user
 - **None active**: Inform user and suggest `/knowzcode:work`
+- **Handoff with WorkGroupID: none**: Present the handoff context and suggest `/knowzcode:work` if the user wants to convert it into a formal workflow
 
 ### Step 2: Load WorkGroup Context
 
@@ -54,6 +69,15 @@ Read `knowzcode/workgroups/{WorkGroupID}.md` to determine:
 - Outstanding todos
 - **Autonomous Mode**: If the WorkGroup file contains `**Autonomous Mode**: Active`, restore `AUTONOMOUS_MODE = true` and announce: `> **Autonomous Mode: RESTORED** — continuing with auto-approved gates.`
 - **Orchestration Config**: If `knowzcode/knowzcode_orchestration.md` exists, parse and restore `MAX_BUILDERS`, `MCP_AGENTS_ENABLED`, `DEFAULT_SPECIALISTS` (same logic as work.md Step 2.4). Defaults apply if file is absent.
+
+If a handoff was selected in Step 0, also parse:
+- `## Goal`
+- `## Current State`
+- `## Next Step`
+- `## References`
+- `## Durable Learning Candidates`
+
+Use the handoff as the freshest local state. Do not run `cmd:` references automatically; treat them as suggested commands only.
 
 ### Step 3: Resume at Current Phase
 
