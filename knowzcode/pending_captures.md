@@ -4,6 +4,37 @@ Queued writes awaiting MCP availability. Run `/knowz flush` when the Knowz MCP A
 
 ---
 
+### 2026-04-19 12:35:00 -- Decision: Code-graph / symbol-index integration belongs to knowzcode, never knowz — deferred
+- **Operation**: create
+- **Intent**: Exploration capture (planning mode, deferred)
+- **Category**: Decision
+- **Target Vault Type**: ecosystem
+- **Source**: /knowzcode:explore kc-explore-tree-sitter-knowz, 2026-04-19
+- **Payload**:
+
+[CONTEXT]
+Evaluated whether to integrate a tree-sitter / code-graph capability (as user framed it: "monitors codebase, reduces token count") into knowz or knowzcode. Four-agent team investigation (knowledge-liaison, analyst, architect, reviewer). User elected to defer (Option 3); this capture preserves the durable architecture decision and the premise correction so the evaluation doesn't have to be re-run from scratch.
+
+[INSIGHT]
+Three durable findings:
+
+1. **Premise correction (ecosystem literacy).** "Tree-sitter reduces tokens" conflates three layers. Tree-sitter itself is a parser-generator — it doesn't monitor anything or save tokens. The token-reduction behavior comes from *layered* tools: Aider's repo-map (tree-sitter + PageRank + token-budget fitting), or LSP-based symbol MCPs like Serena (which skip tree-sitter entirely). Future conversations citing "tree-sitter" for code intelligence should disambiguate which layer is actually being discussed.
+
+2. **Architecture boundary: code graphs never belong in knowz vaults.** A symbol/code graph is derived, volatile, regenerated on every file change. Storing it in a knowz vault violates knowz's charter (durable curated human knowledge), creates SEV-1 PII/IP leakage (symbol names, auth-flow identifiers, proprietary domain vocabulary synced to cloud backups/embeddings), and bloats the signal-to-noise ratio of vault content. If this capability ever ships, it lives in knowzcode (or a sidecar plugin it depends on) — never in a knowz vault.
+
+3. **Realistic cost analysis.** Symbol-aware MCPs deliver ~20–40% token savings on Stage 0 discovery turns for repos >200 files. They do NOT beat targeted grep+Read for: one-shot edits in a known file, small repos (<50 files), non-code content, or sessions with few symbol lookups. Any future "saves tokens" claim must ship with benchmark numbers, not vibes.
+
+[RATIONALE]
+- knowz and knowzcode have deliberately clean separation of concerns (knowz = vault I/O, knowzcode = code workflow). All 86 code-inspection call sites live in knowzcode agents; knowz does no source inspection. Blurring this boundary would force knowz to pull parser runtimes and grammar binaries it has no business shipping.
+- Two independent existing tools (Serena LSP-based; Aider tree-sitter+PageRank) already solve this, with active maintenance. Building in-house reinvents them inferiorly (reviewer SEV-3).
+- If we ever proceed, recommended path is adopting Serena or compatible symbol-aware MCP as an **optional ecosystem dependency**, with detection probe in `/knowzcode:status` and graceful fallback to Grep+Read in analyst/scanner agents. Full plan preserved at `knowzcode/planning/tree-sitter-knowz-fit.md`.
+- Reviewer flagged Windows native-dep hazards (tree-sitter + node-gyp + VS 2026). If future work does build in-house, WASM (`web-tree-sitter`) is mandatory — not native bindings.
+
+[TAGS]
+tree-sitter, code-graph, symbol-index, Serena, Aider, repo-map, knowzcode, knowz-boundary, plugin-separation, token-economy, architecture-decision, deferred
+
+---
+
 ### 2026-04-18 13:28:17 -- Decision: Knowz platform summary generation — groundedness, indexing-state gating, and post-processing refresh
 - **Operation**: create
 - **Intent**: Phase 3 capture
