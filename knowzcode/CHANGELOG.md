@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-04-19
+
+### Added
+- `/knowzcode:regroup` skill for local context-clearing handoffs; writes workflow state to `knowzcode/handoffs/` with Fresh Context Prompt, Durable Learning Candidates, and per-section length budgets
+- `regroup-trigger` trigger skill that offers `/knowzcode:regroup` on pause/wrap-up/clear-context intent; never writes handoffs directly
+- `scripts/validate-platform-surfaces.mjs` validator enforcing the knowz/knowzcode ownership boundary, regroup/continue surface contracts, Codex-skill purity, and marketplace/version parity
+- `ServerSideSummary` spec documenting platform summary groundedness, indexing-state gating, and post-processing refresh requirements
+
+### Changed
+- `/knowzcode:continue` now checks `knowzcode/handoffs/` before WorkGroup discovery and uses the latest handoff as freshest local state
+
 ## [0.13.1] - 2026-04-17
 
 ### Changed
