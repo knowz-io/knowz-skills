@@ -1,7 +1,7 @@
 {
   "name": "knowz",
   "description": "Frictionless knowledge management via the Knowz MCP server — search, save, and query knowledge across vaults",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "keywords": ["knowledge", "knowz", "mcp", "vaults"],
   "author": {
     "name": "Alex Headscarf",
