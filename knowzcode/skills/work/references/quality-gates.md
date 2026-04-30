@@ -2,6 +2,15 @@
 
 Gate templates, autonomous mode handling, gap loop mechanics, and progress capture instructions.
 
+## Contents
+
+- [Quality Gate #1: Change Set](#quality-gate-1-change-set)
+- [Quality Gate #2: Specifications](#quality-gate-2-specifications)
+- [Phase 2A Output + Progress Capture](#phase-2a-output--progress-capture)
+- [Quality Gate #3: Audit Results](#quality-gate-3-audit-results)
+- [Gap Loop](#gap-loop)
+- [Phase 3 Output](#phase-3-output)
+
 ---
 
 ## Quality Gate #1: Change Set

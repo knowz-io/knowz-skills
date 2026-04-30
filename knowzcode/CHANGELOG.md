@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.2] - 2026-04-30
+
+### Added
+- Per-skill `CLAUDE.md` operational rules for `audit`, `continue`, `explore`, `fix`, `telemetry`, and `work` skills
+- Reference-file extractions for oversized SKILL.md bodies: `init/references/success-messages.md`, `work/references/light-workflow.md`, plus existing `templates.md`, `parallel-orchestration.md`, `quality-gates.md`, and `spawn-prompts.md`
+- Handoff Payload Contract section in `start-work` skill for structured handoff to `/knowzcode:work`
+
+### Changed
+- `init/SKILL.md` and `work/SKILL.md` reduced to a thin orchestration shell with all detail copy moved into `references/`
+- Plugin manifest expanded with full marketplace description, `homepage`, and `repository` fields (PV-008)
+- Codex-variant skill names under `plugins/knowzcode/skills/*` drop the redundant `knowzcode-` prefix now that the plugin namespace already provides it
+- `.gemini/skills/knowzcode-*/SKILL.md` updated for `explore`, `status`, `telemetry-setup`, and `work` to match the source skills
+
 ## [0.14.1] - 2026-04-19
 
 ### Added

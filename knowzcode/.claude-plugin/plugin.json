@@ -1,9 +1,11 @@
 {
   "name": "knowzcode",
   "description": "KnowzCode - Platform-agnostic AI development methodology with TDD, quality gates, and structured workflows",
-  "version": "0.14.1",
+  "version": "0.14.2",
   "keywords": ["tdd", "development-methodology", "quality-gates", "agents", "code-review"],
   "author": {
     "name": "Alex Headscarf"
-  }
+  },
+  "homepage": "https://github.com/knowz-io/knowz-skills/tree/main/knowzcode",
+  "repository": "https://github.com/knowz-io/knowz-skills"
 }

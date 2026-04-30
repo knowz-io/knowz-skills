@@ -1,5 +1,5 @@
 ---
-name: knowzcode-regroup
+name: regroup
 description: "Create a local KnowzCode handoff before clearing context. Use when the user wants to pause, wrap up, step away, clear context, or resume an active WorkGroup later without losing workflow state."
 ---
 <!-- Packaged Codex mirror of knowzcode/skills/regroup/SKILL.md. Keep behavior in sync with the source skill and platform adapters. -->

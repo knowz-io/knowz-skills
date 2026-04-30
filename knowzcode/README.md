@@ -160,6 +160,8 @@ KnowzCode can also offer regroup automatically when you say things like "wrap up
 | `/knowzcode:explore <topic>` | Research before implementing |
 | `/knowzcode:fix <target>` | Quick targeted fix |
 | `/knowzcode:regroup [next step]` | Save a local handoff for clearing context |
+| `/knowzcode:regroup-trigger` | (Trigger) Detects pause/wrap-up intent and offers regroup |
+| `/knowzcode:start-work` | (Trigger) Detects "implement the plan" intent and invokes `/knowzcode:work` |
 | `/knowzcode:audit [type]` | Run quality audits |
 | `/knowzcode:setup` | Initialize in your project |
 | `/knowzcode:status` | Check project status |

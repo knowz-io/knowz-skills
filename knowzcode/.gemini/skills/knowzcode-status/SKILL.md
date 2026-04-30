@@ -29,4 +29,23 @@ Check KnowzCode MCP connection, vault health, and agent status.
 6. Read `knowzcode/knowzcode_tracker.md` for active WorkGroups
 
 Report connection status, vault health, agent availability, and active WorkGroups.
-If MCP is not configured, suggest `/knowz setup <api-key>` or `/knowz register`.
+If MCP is not configured, suggest `/knowz setup <api-key>` or `/knowz register`.
+
+## Output Format
+
+Render the report in this shape so it stays consistent across runs:
+
+```
+## KnowzCode Status (Gemini)
+
+MCP: {Connected — N vault(s) | Not connected}
+  Source: {.gemini/settings.json | ~/.gemini/settings.json | other}
+Cross-platform configs: {list any other platform configs found, or "none"}
+Agents: {N} definitions found
+Vaults: {N} healthy, {N} unhealthy
+WorkGroups: {A} active, {C} completed
+
+Next: {one concrete suggested action}
+```
+
+Omit lines that don't apply.

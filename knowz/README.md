@@ -73,6 +73,15 @@ The Knowz MCP server works with any AI model and any MCP-compatible agent. This 
 
 ---
 
+## Skills
+
+| Skill | Invocation | User-Invocable | Description |
+|-------|-----------|----------------|-------------|
+| `knowz` | `/knowz <action>` | Yes | Search, save, query, amend, and manage durable knowledge in Knowz vaults. Handles ask, save, amend, search, browse, setup, status, register, and flush. |
+| `knowz-auto` | Automatic | No | Auto-detects vault-relevant conversations — silently searches vaults on knowledge questions, and offers to save or amend insights without an explicit command. |
+
+---
+
 ## Works With KnowzCode
 
 Knowz integrates with the [KnowzCode](../knowzcode/) development methodology — past decisions are searchable during planning, and durable learnings are captured automatically after each feature ships. KnowzCode owns local workflow continuity such as `/knowzcode:regroup` and `/knowzcode:continue`.

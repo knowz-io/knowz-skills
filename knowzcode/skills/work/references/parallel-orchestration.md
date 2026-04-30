@@ -2,6 +2,17 @@
 
 When Parallel Teams mode is active, follow these 4 stages instead of spawning one agent per phase sequentially. The same phase spawn prompts (defined in [spawn-prompts.md](spawn-prompts.md)) are reused — what changes is WHEN agents are spawned and HOW MANY run concurrently.
 
+## Contents
+
+- [Model Overrides](#model-overrides-applies-to-every-spawn-below)
+- [Stage 0: Team Creation + Parallel Discovery](#stage-0-team-creation--parallel-discovery)
+- [Stage 1: Analysis + Specification](#stage-1-analysis--specification)
+- [Stage 2: Parallel Implementation + Incremental Review](#stage-2-parallel-implementation--incremental-review)
+- [Stage 3: Finalization](#stage-3-finalization)
+- [WorkGroup File Format (Parallel Mode)](#workgroup-file-format-parallel-mode)
+- [Task Dependency Graph](#task-dependency-graph)
+- [Sequential Teams / Subagent Flow (Tier 3 Fallback)](#sequential-teams--subagent-flow-tier-3-fallback)
+
 ---
 
 ## Model Overrides (applies to every spawn below)

@@ -8,15 +8,15 @@
     {
       "name": "knowzcode",
       "source": "./knowzcode",
-      "description": "KnowzCode - Platform-agnostic AI development methodology with TDD, quality gates, and structured workflows",
-      "version": "0.14.1",
+      "description": "Platform-agnostic AI development methodology with TDD and quality gates. Skills: /work (full feature loop), /explore (research & plan), /fix (micro-fix), /audit (spec/architecture/security scans), /init (setup), /regroup (handoff), /status, /telemetry (Sentry/AppInsights), /telemetry-setup, /continue (resume WorkGroup), plus regroup-trigger and start-work triggers.",
+      "version": "0.14.2",
       "author": { "name": "Alex Headscarf" }
     },
     {
       "name": "knowz",
       "source": "./knowz",
       "description": "Frictionless knowledge management via the Knowz MCP server — search, save, and query knowledge across vaults",
-      "version": "0.7.0",
+      "version": "0.7.1",
       "author": { "name": "Alex Headscarf" }
     }
   ]

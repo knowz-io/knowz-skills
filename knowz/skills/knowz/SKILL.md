@@ -87,75 +87,17 @@ Before any MCP operation, verify the Knowz MCP tools are available:
 2. **If NOT available** → run `CLAUDECODE= claude mcp get knowz` to distinguish:
 
    **a) Configured but not active** (command succeeds — MCP entry exists):
-   The server was configured in this session but Claude Code hasn't loaded it yet.
-   ```
-   ┌─────────────────────────────────────────────────────┐
-   │  RESTART REQUIRED                                   │
-   │                                                     │
-   │  Knowz MCP server is configured but not yet active. │
-   │                                                     │
-   │  Claude Code only loads MCP servers at startup —    │
-   │  this is a platform limitation, not a bug.          │
-   │                                                     │
-   │  → Close and reopen Claude Code                     │
-   │  → Then run: /knowz status                          │
-   └─────────────────────────────────────────────────────┘
-   ```
+   Report that the MCP server is configured but not yet active due to platform startup limitations. Tell the user to close and reopen Claude Code, then run `/knowz status`.
    STOP here — do not attempt any MCP operations.
 
    **b) Not configured** (command fails — no MCP entry found):
-   ```
-   Knowz MCP server is not connected.
-
-   To set it up:
-     /knowz register     — create an account and configure automatically
-     /knowz setup        — configure with an existing API key or OAuth
-
-   Or configure manually:
-     claude mcp add --transport http --scope local knowz https://mcp.knowz.io/mcp \
-       --header "Authorization: Bearer <your-api-key>"
-
-   Then restart Claude Code and run /knowz status to verify.
-   ```
+   Report that the MCP server is not connected. Offer `/knowz register` (create account) or `/knowz setup` (configure existing key), and show the manual `claude mcp add` command for `https://mcp.knowz.io/mcp`.
    STOP here — do not attempt any MCP operations.
 
 3. **If available:** Call `mcp__knowz__list_vaults()` as a connectivity smoke test
    - If it succeeds → MCP is connected, proceed to the action
-   - If it fails with **401/unauthorized or OAuth error** → authentication issue:
-     ```
-     ┌─────────────────────────────────────────────────────┐
-     │  AUTHENTICATION FAILED                              │
-     │                                                     │
-     │  The Knowz MCP server returned an auth error.       │
-     │                                                     │
-     │  If using OAuth:                                    │
-     │    → Restart Claude Code — browser will open for    │
-     │      login on the next MCP call                     │
-     │    → If this keeps happening, switch to API Key:    │
-     │      /knowz setup <your-api-key>                    │
-     │      (no browser login or token refresh needed)  │
-     │                                                     │
-     │  If using API Key:                                  │
-     │    → Your key may be invalid or expired             │
-     │    → Get a new key at: https://knowz.io/api-keys    │
-     │    → Reconfigure: /knowz setup <new-key>            │
-     └─────────────────────────────────────────────────────┘
-     ```
-   - If it fails with **other error** → report with troubleshooting:
-     ```
-     Knowz MCP server is configured but returned an error:
-       {error message}
-
-     This usually means:
-       - The Knowz server is temporarily unreachable
-       - There's a network connectivity issue
-
-     Try:
-       - Verify network connectivity to the Knowz server
-       - Run "claude mcp list" to inspect server status
-       - If using OAuth and errors persist, consider switching to API Key
-         for more resilient connections: /knowz setup <api-key>
-     ```
+   - If it fails with **401/unauthorized or OAuth error** → report authentication failure. For OAuth: advise restart so browser login fires on next call, or switch to API key via `/knowz setup <api-key>`. For API key: advise getting a new key at `https://knowz.io/api-keys` and reconfiguring.
+   - If it fails with **other error** → report the error message with troubleshooting: check network connectivity, run `claude mcp list`, consider switching to API key for more resilient connections.
 
 ---
 
@@ -164,6 +106,7 @@ Before any MCP operation, verify the Knowz MCP tools are available:
 Create a new Knowz account and automatically configure MCP + vault.
 
 **Reference:** Read [references/registration.md](references/registration.md) for API endpoints, error codes, and response format.
+**Flow detail:** Read [references/register-flow.md](references/register-flow.md) for step-by-step UI copy and confirmation prompts.
 
 ### Parameters
 
@@ -178,161 +121,36 @@ Before starting registration, check if user already has an API key:
 
 1. Check `KNOWZ_API_KEY` environment variable
 2. Check cross-platform configs: `.gemini/settings.json`, `.vscode/mcp.json`, `.mcp.json`
-   - Extract Bearer token from Authorization headers if found
 
-If existing API key found:
-```
-You already have a Knowz API key configured (ending ...{last4}) from {source}.
-
-Options:
-1. Use existing key — run /knowz setup to configure this platform
-2. Register a new account anyway
-3. Cancel
-```
-
-If user chooses option 1: advise running `/knowz setup` with discovered key.
-If user chooses option 2: proceed with registration normally.
-If user chooses option 3: stop.
+If existing API key found: present options (use existing key → advise `/knowz setup`, register new account, or cancel). Use AskUserQuestion.
 
 #### Step R1: Check Existing MCP Configuration
 
-1. Run: `CLAUDECODE= claude mcp get knowz`
-2. If already configured:
-   ```
-   Knowz MCP server is already configured.
+Run `CLAUDECODE= claude mcp get knowz`. If already configured: ask to keep existing (abort) or remove and register new account (run `CLAUDECODE= claude mcp remove knowz` first). Use AskUserQuestion.
 
-   Options:
-   1. Keep existing configuration (abort registration)
-   2. Remove existing and register new account
-   ```
-   Use AskUserQuestion. If they keep existing, STOP.
-   If they continue, run `CLAUDECODE= claude mcp remove knowz` first.
+#### Step R2: Welcome + Collect Information
 
-#### Step R2: Welcome + Collect Information (one question at a time)
-
-**CRITICAL: Interactive Flow — ask ONE question, then WAIT for response.**
-
-Display welcome:
-```
-KNOWZ REGISTRATION
-
-Welcome! Let's set up your Knowz account.
-
-This will:
-1. Create your Knowz account
-2. Generate an API key
-3. Configure the MCP server automatically
-
-All data transmitted securely over HTTPS.
-Privacy policy: https://knowz.io/privacy
-```
-
-Then use AskUserQuestion to collect (one at a time, validating each):
-
-1. **Name** — "What is your name?"
-   - Validation: non-empty, 2-100 characters
-   - Split into first/last name for the API: split on the last space (e.g., "Alex Headscarf" → firstName: "Alex", lastName: "Headscarf"). If single word, use it as both firstName and lastName.
-2. **Email** — "What is your email address?"
-   - Validation: contains `@` and domain
-3. **Password** — "Create a password (minimum 8 characters)"
-   - Note: "Your password will be sent securely over HTTPS. It will NOT be stored locally."
-   - Validation: minimum 8 characters
+Display welcome message and collect name, email, and password one at a time using AskUserQuestion with validation. See [references/register-flow.md](references/register-flow.md) for the exact welcome text and validation rules.
 
 #### Step R3: Confirm Details
 
-```
-CONFIRM REGISTRATION
-
-Name:      {name}
-Email:     {email}
-Password:  ********
-
-Is this correct?
-```
-
-Use AskUserQuestion with options: Yes / No / Edit.
-- If "Edit": go back to Step R2
-- If "No": cancel and STOP
-- If "Yes": proceed
+Show a confirmation summary (name, email, password masked). Use AskUserQuestion (Yes / No / Edit). Edit loops back to R2. No cancels.
 
 #### Step R4: Call Registration API
 
-Determine endpoint based on `--dev` flag (see [references/registration.md](references/registration.md)).
-
-```bash
-curl -s -X POST https://api.knowz.io/api/v1/users/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "username": "{email}",
-    "email": "{email}",
-    "password": "{password}",
-    "firstName": "{firstName}",
-    "lastName": "{lastName}",
-    "registrationSource": "knowzcode",
-    "returnPersonalApiKey": true
-  }'
-```
-
-Handle response codes per [references/registration.md](references/registration.md).
-
-Extract from response: API key from `data.personalApiKey` (prefix: `ukz_`). Vault info is NOT in the response — a default vault is auto-provisioned server-side and will be discoverable via MCP after restart.
+POST to `https://api.knowz.io/api/v1/users/register` (or dev endpoint). Handle response codes per [references/registration.md](references/registration.md). Extract API key from `data.personalApiKey`.
 
 #### Step R5: Configure MCP Server
 
-Parse scope from arguments (default: `local`). If `project` scope, warn about `.mcp.json` git visibility.
-
-Ask auth method:
-```
-How would you like to authenticate with the MCP server?
-
-  OAuth (recommended) — authenticate via browser, tokens auto-managed
-  API Key — use the key from registration, no browser step needed
-```
-
-Configure per [references/mcp-setup.md](references/mcp-setup.md).
-
-Verify: `CLAUDECODE= claude mcp get knowz`
+Ask auth method (OAuth recommended vs API Key). Configure per [references/mcp-setup.md](references/mcp-setup.md). Verify with `CLAUDECODE= claude mcp get knowz`.
 
 #### Step R6: Vault Configuration (Deferred)
 
-Vault info is not available during registration — MCP requires a restart before it can be used. Skip `knowz-vaults.md` generation here. The vault will be discovered and configured after restart via `/knowz status` or `/knowz setup`.
+Vault info is not available during registration — MCP requires a restart. Skip `knowz-vaults.md` generation here; it will be created after restart via `/knowz status` or `/knowz setup`.
 
 #### Step R7: Success Message
 
-```
-REGISTRATION COMPLETE
-
-Account:
-  Email: {email}
-  Auth: {OAuth OR API Key: ukz_...masked}
-
-MCP Configuration:
-  Scope: {scope}
-  Endpoint: {endpoint}
-  Status: Configured
-```
-
-Then display the restart box:
-```
-┌─────────────────────────────────────────────────────┐
-│  RESTART REQUIRED                                   │
-│                                                     │
-│  Claude Code must be restarted to load the new      │
-│  MCP server — this is a platform limitation.        │
-│                                                     │
-│  → Close and reopen Claude Code                     │
-│  → Then run: /knowz status                          │
-│                                                     │
-│  {If OAuth: "Your browser will open for login on    │
-│   the first MCP call after restart."}               │
-└─────────────────────────────────────────────────────┘
-
-After restart:
-  1. Verify connection: /knowz status
-  2. Set up vault config: /knowz setup
-  3. Try: /knowz ask "your first question"
-  4. Save knowledge: /knowz save "your first insight"
-```
+Show account and MCP configuration summary. Display the RESTART REQUIRED box. List next steps (status → setup → ask → save). See [references/register-flow.md](references/register-flow.md) for exact box copy.
 
 ---
 
@@ -341,6 +159,7 @@ After restart:
 Configure MCP server connection (if needed) and generate/update the `knowz-vaults.md` vault configuration file.
 
 **Reference:** Read [references/mcp-setup.md](references/mcp-setup.md) for MCP configuration details.
+**Flow detail:** Read [references/setup-flow.md](references/setup-flow.md) for vault discovery and file creation prose.
 
 ### Parameters (from `$ARGUMENTS` after `setup`)
 
@@ -368,16 +187,7 @@ Before prompting for credentials, check known sources per [references/mcp-setup.
 2. Check cross-platform configs (`.gemini/settings.json`, `.vscode/mcp.json`, `.mcp.json`)
 3. Parse API key or `--oauth` from `$ARGUMENTS`
 
-If no auth found from any source:
-```
-No API key found. How would you like to authenticate?
-
-  OAuth (recommended) — authenticate via browser, tokens auto-managed
-  API Key — enter a Knowz API key, no browser step needed
-  Register — create a new account (/knowz register)
-```
-
-If user chooses "Register" → advise running `/knowz register` and STOP.
+If no auth found: ask whether to use OAuth, API Key, or Register. If "Register" → advise `/knowz register` and STOP.
 
 #### Step S3: Configure MCP Server
 
@@ -388,115 +198,12 @@ If user chooses "Register" → advise running `/knowz register` and STOP.
 4. Run `claude mcp add` per [references/mcp-setup.md](references/mcp-setup.md)
 5. Verify: `CLAUDECODE= claude mcp get knowz`
 6. **If Gemini CLI detected** (`.gemini/` directory exists): configure Gemini too
-7. Report:
-   ```
-   MCP server configured!
-   Scope: {scope}
-   Endpoint: {endpoint}
+7. Report MCP configured with scope/endpoint, display RESTART REQUIRED box telling user to reopen Claude Code and then run `/knowz setup` to create the vault config file.
+8. STOP here — restart required before vault discovery.
 
-   ┌─────────────────────────────────────────────────────┐
-   │  RESTART REQUIRED                                   │
-   │                                                     │
-   │  Claude Code must be restarted to load the new      │
-   │  MCP server — this is a platform limitation.        │
-   │  MCP servers only connect at session startup.       │
-   │                                                     │
-   │  → Close and reopen Claude Code                     │
-   │  → Then run: /knowz setup                           │
-   │    (to create your vault configuration file)        │
-   └─────────────────────────────────────────────────────┘
-   ```
-   STOP here — restart required before vault discovery.
+#### Step S4: Vault File Creation/Update (MCP available)
 
-#### Step S4: Vault File Creation/Update (existing flow, MCP available)
-
-1. Call `mcp__knowz__list_vaults(includeStats: true)` to discover vaults
-2. **If `knowz-vaults.md` already exists:**
-   - Read the existing file
-   - Compare configured vaults against server vaults
-   - Show what's configured vs available:
-     ```
-     Current vault configuration:
-
-     Configured:
-       - Engineering Knowledge (abc-123) — 42 items
-       - Company Wiki (def-456) — 18 items
-
-     Available on server but not configured:
-       - Personal Notes (ghi-789) — 7 items
-
-     Would you like to:
-     1. Add missing vaults to your configuration
-     2. Reconfigure from scratch
-     3. Keep current configuration
-     ```
-   - Use AskUserQuestion to get their choice
-   - Update the file accordingly
-
-3. **If `knowz-vaults.md` does not exist:**
-   - **If server has vaults:** Present discovered vaults to the user:
-     ```
-     Found {N} vault(s) on the Knowz server:
-
-       1. {Vault Name} — {item count} items
-          "{vault description}"
-
-       2. {Vault Name} — {item count} items
-          "{vault description}"
-
-     Which vaults would you like to connect to this project?
-     (Enter numbers, "all", or "none")
-     ```
-   - Use AskUserQuestion to get their selection
-   - For each selected vault, ask (or infer from the vault description):
-     - Brief description of what this vault contains
-     - When to query it (plain English rules)
-     - When to save to it (plain English rules)
-   - Generate `knowz-vaults.md` using the format from `knowz-vaults.example.md`
-   - Write the file to the project root
-
-   - **If server has NO vaults:** Offer to create one:
-     ```
-     No vaults found on the Knowz server.
-
-     Would you like to create a vault for this project?
-     I can set up a general-purpose knowledge vault to get you started.
-
-     Suggested vault:
-       Name: "{project-name} Knowledge"
-       Description: "Architecture decisions, code patterns, conventions, and technical learnings for {project-name}"
-     ```
-   - Use AskUserQuestion for confirmation and to let user customize the name/description
-   - If confirmed → call `mcp__knowz__create_vault(name, description)` to create it
-   - Then generate `knowz-vaults.md` with the newly created vault
-   - Pre-populate sensible "when to query" and "when to save" rules based on the vault description
-
-4. **Smart defaults for routing rules:**
-   When generating rules for a vault, infer from the vault's name and description:
-   - A vault named "Engineering Knowledge" or with "decisions" in description →
-     - When to query: architecture decisions, conventions, "why did we...", best practices
-     - When to save: decisions about approach, new conventions, workarounds
-   - A vault named "Company Wiki" or with "processes" in description →
-     - When to query: team processes, onboarding, "how do we...", policies
-     - When to save: new processes, policy changes, team structure updates
-   - A vault with "patterns" or "code" in description →
-     - When to query: code patterns, "how did we build...", implementation examples
-     - When to save: reusable patterns, workarounds, performance insights
-   - For vaults that don't match any heuristic → use generic rules and ask the user to customize
-
-5. Report success:
-   ```
-   Vault configuration saved to knowz-vaults.md
-
-   Connected vaults:
-     - {Vault Name} (query + save)
-     - {Vault Name} (query only)
-
-   You can now use:
-     /knowz ask "question"    — query your vaults
-     /knowz save "insight"    — save to your vaults
-     /knowz search "term"     — search across vaults
-   ```
+Call `mcp__knowz__list_vaults(includeStats: true)` to discover vaults. Follow the vault discovery and file creation logic in [references/setup-flow.md](references/setup-flow.md).
 
 ---
 
@@ -507,10 +214,7 @@ Check MCP connection health and vault configuration.
 ### Steps
 
 1. **Check MCP tool availability:**
-   - If `mcp__knowz__list_vaults` is NOT in available tools → report "MCP not connected" with setup instructions:
-     ```
-     Knowz MCP not connected. Run /knowz setup or /knowz register to configure.
-     ```
+   - If `mcp__knowz__list_vaults` is NOT in available tools → report "MCP not connected" with setup instructions.
    - If available → proceed
 
 2. **Test MCP connectivity:**
@@ -528,7 +232,6 @@ Check MCP connection health and vault configuration.
    MCP Connection: Connected
    Server vaults: {N} vault(s) available
      - {Vault Name} — {item count} items
-     - {Vault Name} — {item count} items
 
    Vault Configuration: {Configured / Not configured}
    {If configured:}
@@ -542,12 +245,11 @@ Check MCP connection health and vault configuration.
      No knowz-vaults.md found. Run /knowz setup to create one.
 
    Pending captures: {N items in knowz-pending.md, or "None"}
-
    Auto-trigger: {Active (vault file found) / Inactive (no vault file)}
    ```
 
 5. **Surface actionable issues:**
-   - Vault IDs in the file that don't match any server vault → "Stale vault config? Run `/knowz setup` to refresh."
+   - Vault IDs not found on server → "Stale vault config? Run `/knowz setup` to refresh."
    - No vaults on server → "No vaults found. Create one on the Knowz platform, then run `/knowz setup`."
    - Vault file missing → "Run `/knowz setup` for vault-aware routing and auto-trigger behavior."
    - Pending captures exist → "Run `/knowz flush` to sync pending captures to vaults."
@@ -562,80 +264,42 @@ Process the pending captures queue — drain `knowz-pending.md` to vaults.
 
 1. **Read pending captures file:**
    - Read `knowz-pending.md` from the project root
-   - If the file doesn't exist or contains no `---`-delimited capture blocks:
-     ```
-     0 pending captures — nothing to flush.
-     ```
-     STOP.
+   - If the file doesn't exist or contains no `---`-delimited capture blocks → report "0 pending captures — nothing to flush." STOP.
 
 2. **Verify MCP connectivity:**
-   - Check that `mcp__knowz__create_knowledge`, `mcp__knowz__amend_knowledge`, and `mcp__knowz__update_knowledge` are available (at least `create_knowledge` — the others are only required if the queue contains amend/update blocks)
-   - If none are available:
-     ```
-     Cannot flush — MCP not connected. Run /knowz setup first.
-     ```
-     STOP.
-   - Read `knowz-vaults.md` to resolve vault IDs
+   - Check that `mcp__knowz__create_knowledge` is available (plus `amend_knowledge` / `update_knowledge` if the queue contains those operation types).
+   - If none are available → report "Cannot flush — MCP not connected. Run /knowz setup first." STOP.
+   - Read `knowz-vaults.md` to resolve vault IDs.
 
 3. **Parse capture blocks:**
    - Split file content by `---` delimiters
-   - Each block contains: timestamp, title (after `###`), and fields:
-     - `Operation` — `create`, `amend`, or `update`. **Missing → treat as `create`** (legacy block).
-     - `KnowledgeId` — required for `amend` and `update`; absent for `create`.
-     - `Category`, `Target Vault`, `Source`
-     - `Payload` — the body. **Legacy fallback:** if `Payload` is missing but `Content:` is present, read `Content` as the payload.
-   - Count total blocks
+   - Each block fields: `Operation` (create/amend/update; missing → `create`), `KnowledgeId` (required for amend/update), `Category`, `Target Vault`, `Source`, `Payload` (legacy fallback: `Content` field)
 
-4. **Flush each capture to MCP — branch on Operation:**
-   For each parsed block, resolve the target vault ID from `knowz-vaults.md` (match by Target Vault name; if only one vault configured, use it for all), then dispatch by Operation:
+4. **Flush each capture — dispatch by Operation:**
 
-   **`create` (or no Operation — legacy):**
-   - Call `mcp__knowz__create_knowledge` with:
-     - `title`: from the `###` header (after timestamp and ` -- `)
-     - `content`: the Payload field value
-     - `knowledgeType`: `"Note"`
-     - `vaultId`: resolved vault ID
-     - `tags`: extract from `[TAGS]` section in payload if present, otherwise derive from Category
-     - `source`: the Source field value
+   **`create` (or no Operation — legacy):** Call `mcp__knowz__create_knowledge` with title (from `###` header), content (Payload), knowledgeType `"Note"`, vaultId, tags (from `[TAGS]` or Category), source.
 
-   **`amend`:**
-   - If `KnowledgeId` is missing → log a malformed-block error, leave the block in place, and continue to the next block.
-   - Call `mcp__knowz__amend_knowledge` with:
-     - `id`: the KnowledgeId
-     - delta payload derived from the Payload field (send only the change, not a synthesized full body)
-   - If the server reports the item no longer exists, do NOT silently recreate it — leave the block in place, mark it as a missing-target failure, and surface it in the final report so the user can decide whether to re-save.
+   **`amend`:** If `KnowledgeId` missing → log malformed error, leave block, continue. Call `mcp__knowz__amend_knowledge(id, delta)`. If item missing on server → leave block, mark as missing-target failure, surface in report.
 
-   **`update`:**
-   - If `KnowledgeId` is missing → log a malformed-block error, leave the block in place, and continue to the next block.
-   - Call `mcp__knowz__update_knowledge` with:
-     - `id`: the KnowledgeId
-     - full replacement payload from the Payload field
-     - `tags`, `vaultId`, `source` as for create
+   **`update`:** If `KnowledgeId` missing → log malformed error, leave block, continue. Call `mcp__knowz__update_knowledge(id, full-payload)`.
 
-   For all branches:
-   d. On **success**: mark the block for removal
-   e. On **failure**: leave the block in place, log the error (distinguish missing-target for amend vs generic MCP failure)
+   On success: mark block for removal. On failure: leave block in place, log error.
 
 5. **Update the pending captures file:**
-   - Remove all successfully flushed blocks
-   - Keep the file header (`# Knowz Pending Captures` and description line)
-   - If all blocks flushed: file should contain only the header
+   - Remove all successfully flushed blocks; keep file header
+   - If all blocks flushed: file contains only the header
 
 6. **Report results:**
    ```
    Flushed {success}/{total} pending operations to vault.
 
-   Created:
-     - {title1} → {vault name}
-   Amended:
-     - {title2} → {vault name} (id {...})
-   Updated:
-     - {title3} → {vault name} (id {...})
+   Created: {titles}
+   Amended: {titles with ids}
+   Updated: {titles with ids}
 
    {If any failed:}
    Failed:
-     - {title4} — {error reason}
-     - {title5} — amend target missing (id {...}) — consider re-saving as a new item
+     - {title} — {error reason}
      Run /knowz flush again when MCP is available.
 
    {If all succeeded:}
@@ -652,10 +316,7 @@ AI-powered Q&A against configured vaults.
 
 1. Parse the question from `$ARGUMENTS` (everything after `ask`)
 2. **Vault routing:** Match the question against each vault's "when to query" rules
-   - If one vault matches → scope to that vault
-   - If multiple vaults match → query all matching vaults
-   - If no vaults match → use the default vault from `## Defaults`
-   - If no vault file → no vault scoping
+   - One match → scope to that vault; multiple → query all matching; none → use default; no vault file → no scoping
 3. Call `mcp__knowz__ask_question` with:
    - `question`: the user's question
    - `vaultId`: the matched vault ID (if vault file exists)
@@ -689,54 +350,33 @@ Capture an insight or piece of knowledge to a vault.
    | *(no clear match)* | Note |
 
 4. **Vault routing:** Match content against each vault's "when to save" rules
-   - If one vault matches → target that vault
-   - If multiple vaults match → ask the user which one using AskUserQuestion
-   - If no vaults match → use the default vault
-   - If no vault file → no vault scoping (use first available vault)
+   - One match → target that vault; multiple → ask user (AskUserQuestion); none → use default; no vault file → first available vault
 
-5. **Content formatting:** Apply the target vault's content template. Expand terse user input into detailed, self-contained content:
-   - **Content Detail Principle:** Every saved item must be detailed enough to be useful when retrieved via semantic search months later. Include reasoning, technology names, code examples, and file paths.
-   - If the vault has a content template, fill each field
-   - If no template, use the default format:
-     ```
-     [CONTEXT] {Where/why this arose — component, technology, problem}
-     [INSIGHT] {The knowledge — detailed, self-contained, actionable}
-     [RATIONALE] {Why this approach, alternatives considered}
-     [TAGS] {category, technology, domain keywords}
-     ```
+5. **Content formatting:** Apply the target vault's content template. Expand terse input into detailed, self-contained content. Every saved item must be detailed enough to be useful when retrieved via semantic search months later (include reasoning, technology names, code examples, file paths). Default format if no template:
+   ```
+   [CONTEXT] {Where/why this arose — component, technology, problem}
+   [INSIGHT] {The knowledge — detailed, self-contained, actionable}
+   [RATIONALE] {Why this approach, alternatives considered}
+   [TAGS] {category, technology, domain keywords}
+   ```
 
 6. **Generate title:** `{Category}: {Descriptive summary with key technology names}`
 
-7. **Dedup check:** Call `mcp__knowz__search_knowledge` with:
-   - `query`: the generated title
-   - `vaultId`: the target vault ID
-   - `limit`: 3
-   - If a substantially similar item exists, present it and ask:
-     ```
-     Similar knowledge already exists:
+7. **Dedup check:** Call `mcp__knowz__search_knowledge` (query: generated title, vaultId: target, limit: 3). If a substantially similar item exists:
+   ```
+   Similar knowledge already exists:
+     "{existing title}"
+     {brief snippet}
 
-       "{existing title}"
-       {brief snippet}
+   Options:
+     1. Create anyway       — new, separate entry
+     2. Skip                — don't save
+     3. Amend existing item — targeted delta
+     4. Replace existing item — full rewrite
+   ```
+   Use AskUserQuestion. Amend → `mcp__knowz__amend_knowledge` (delta only; if target missing, do NOT create — report conflict). Replace → `mcp__knowz__update_knowledge`. Skip → stop. Create anyway → Step 8.
 
-     Options:
-       1. Create anyway       — new, separate entry
-       2. Skip                — don't save
-       3. Amend existing item — targeted delta (add a line, fix a phrase, change a tag)
-       4. Replace existing item — full rewrite with complete new body
-     ```
-   - Use AskUserQuestion for their choice
-   - If **Amend existing item** → call `mcp__knowz__amend_knowledge(id=<match>, ...)` with the delta. Send only the change, not a synthesized full body. If the server reports the target is missing, do NOT fall through to create — report the missing-target conflict and offer to save as a new item instead.
-   - If **Replace existing item** → call `mcp__knowz__update_knowledge(id=<match>, ...)` with the complete new content.
-   - If **Skip** → stop.
-   - If **Create anyway** → proceed to Step 8.
-
-8. **Create:** Call `mcp__knowz__create_knowledge` with:
-   - `content`: the formatted content
-   - `title`: the generated title
-   - `knowledgeType`: `"Note"`
-   - `vaultId`: target vault ID
-   - `tags`: `[category, extracted-keywords]`
-   - `source`: `"knowz-skill"`
+8. **Create:** Call `mcp__knowz__create_knowledge` with content, title, knowledgeType `"Note"`, vaultId, tags, source `"knowz-skill"`.
 
 9. **Report success:**
    ```
@@ -751,22 +391,17 @@ Capture an insight or piece of knowledge to a vault.
 
 ## Action: `amend`
 
-Apply a targeted server-side change to an existing knowledge item without retyping the whole entry. Use this whenever the user describes a delta — "fix the typo in the Redis entry", "add a caveat about SameSite cookies to the auth pattern", "change the tag from `draft` to `final`".
-
-Prefer `amend` over `save` + "Update existing" whenever the user's request is partial. Reserve `update_knowledge` for the rare case where the user hands over a complete replacement payload.
+Apply a targeted server-side change to an existing knowledge item without retyping the whole entry. Use this whenever the user describes a delta. Prefer `amend` over `save` + "Update existing" whenever the user's request is partial.
 
 ### Steps
 
-1. **Parse the change** from `$ARGUMENTS` (everything after `amend` or `edit`). Strip any `--id <knowledgeId>` flag and remember the value.
+1. **Parse the change** from `$ARGUMENTS` (everything after `amend` or `edit`). Strip any `--id <knowledgeId>` flag.
 
 2. **Resolve the target item:**
-   - If `--id` was provided → call `mcp__knowz__get_knowledge_item(id)` to confirm the item exists and fetch its title/vault for the confirmation step.
-   - If no `--id` → extract the subject of the change (what entry the user is referring to) and call `mcp__knowz__search_knowledge` scoped to the vault routing rules in `knowz-vaults.md`. Limit 5.
-     - If one clear match → use it.
-     - If multiple plausible matches → present the top 3 with titles + snippets and use AskUserQuestion to pick one.
-     - If zero matches → report no matching item found and suggest `/knowz save` instead.
+   - If `--id` provided → call `mcp__knowz__get_knowledge_item(id)` to confirm existence.
+   - If no `--id` → extract subject and call `mcp__knowz__search_knowledge` (limit 5, scoped per vault routing). One clear match → use it. Multiple → show top 3 with AskUserQuestion. Zero → report not found, suggest `/knowz save`.
 
-3. **Confirm** the change with the user before writing:
+3. **Confirm** the change:
    ```
    Amending in {Vault Name}:
      Title: {existing title}
@@ -774,11 +409,9 @@ Prefer `amend` over `save` + "Update existing" whenever the user's request is pa
    ```
    Use AskUserQuestion (Yes / No / Edit).
 
-4. **Call `mcp__knowz__amend_knowledge`** with:
-   - `id`: the resolved knowledgeId
-   - the delta payload that expresses the user's change (e.g., a new content patch, tag addition, title tweak). Do NOT send the full prior content.
+4. **Call `mcp__knowz__amend_knowledge`** with the resolved knowledgeId and delta payload (do NOT send full prior content).
 
-5. **On MCP failure** (server unreachable, auth expired): queue the amend to `knowz-pending.md` as a capture block annotated with `Operation: amend` and `KnowledgeId: {id}`, then report "Queued to knowz-pending.md — run /knowz flush when MCP is available."
+5. **On MCP failure:** queue the amend to `knowz-pending.md` with `Operation: amend` and `KnowledgeId: {id}`. Report "Queued — run /knowz flush when MCP is available."
 
 6. **Report success:**
    ```
@@ -786,8 +419,10 @@ Prefer `amend` over `save` + "Update existing" whenever the user's request is pa
 
    Title: {title}
    Vault: {vault name}
-   Change: {short summary of what was patched}
+   Change: {short summary}
    ```
+
+---
 
 ## Action: `search`
 
@@ -796,34 +431,10 @@ Semantic search across configured vaults.
 ### Steps
 
 1. Parse the search query from `$ARGUMENTS` (everything after `search` or `find`)
-2. **Vault routing:** Match query against "when to query" rules
-   - If matches found → search those vaults
-   - If no match → search all configured vaults (or no scoping in zero-config mode)
-3. For each target vault, call `mcp__knowz__search_knowledge` with:
-   - `query`: the search query
-   - `vaultId`: the vault ID
-   - `limit`: 10
-4. Present results grouped by vault:
-   ```
-   Results from {Vault Name}:
-
-     1. {title} — {snippet}
-     2. {title} — {snippet}
-     3. {title} — {snippet}
-
-   Results from {Other Vault}:
-
-     1. {title} — {snippet}
-   ```
-5. If no results across any vault:
-   ```
-   No results found for "{query}" across configured vaults.
-
-   Try:
-     - Broader search terms
-     - /knowz browse to see what's in your vaults
-     - /knowz ask "{query}" for AI-powered Q&A
-   ```
+2. **Vault routing:** Match query against "when to query" rules; if no match → search all configured vaults (or no scoping in zero-config mode)
+3. For each target vault: call `mcp__knowz__search_knowledge` (query, vaultId, limit: 10)
+4. Present results grouped by vault with title and snippet
+5. If no results: suggest broader terms, `/knowz browse`, or `/knowz ask`
 
 ---
 
@@ -833,26 +444,11 @@ Browse vault contents and topics.
 
 ### Steps
 
-1. Parse optional vault name from `$ARGUMENTS` (everything after `browse` or `list`)
-2. **If vault name provided** → browse that specific vault
-3. **If no vault name** → browse all configured vaults (or all available vaults in zero-config mode)
-4. For each vault:
-   - Call `mcp__knowz__list_topics(vaultId)` to get topic overview
-   - Call `mcp__knowz__list_vault_contents(vaultId, limit: 20)` for recent items
-5. Present a browsable overview:
-   ```
-   {Vault Name} ({item count} items)
-
-   Topics:
-     - {topic 1} ({count} items)
-     - {topic 2} ({count} items)
-
-   Recent items:
-     - {title 1}
-     - {title 2}
-     - {title 3}
-   ```
-6. If a specific topic interests the user, they can follow up with `/knowz search "topic name"`
+1. Parse optional vault name from `$ARGUMENTS`
+2. If vault name provided → browse that vault; if none → browse all configured vaults
+3. For each vault: call `mcp__knowz__list_topics(vaultId)` and `mcp__knowz__list_vault_contents(vaultId, limit: 20)`
+4. Present a browsable overview with topic breakdown and recent items
+5. Suggest `/knowz search "topic name"` for drill-down
 
 ---
 
@@ -879,47 +475,13 @@ For complex, multi-step research tasks, dispatch the `knowledge-worker` agent in
 - Query requires synthesizing findings from many items
 - Task involves batch capture of multiple insights
 
-**How to dispatch:**
 ```
 Use the Agent tool with subagent_type "knowledge-worker" — pass the user's query
 and let the agent handle multi-step vault operations.
 ```
 
-For simple single-query/single-save operations, handle directly in this skill — don't dispatch an agent for simple tasks.
+For simple single-query/single-save operations, handle directly — don't dispatch an agent for simple tasks.
 
 ---
-
-## Usage Examples
-
-```bash
-# Account setup
-/knowz register                    # create account + auto-configure
-/knowz setup                       # configure MCP + create vault file
-/knowz setup ukz_abc123            # configure with specific API key
-/knowz setup --oauth               # configure with OAuth
-
-# Ask a question
-/knowz ask "What's our convention for error handling in APIs?"
-
-# Save an insight
-/knowz save "We chose Redis over Memcached because we need pub/sub for real-time notifications"
-
-# Search for knowledge
-/knowz search "authentication patterns"
-
-# Browse vaults
-/knowz browse
-/knowz browse "Engineering Knowledge"
-
-# Check connection and health
-/knowz status
-
-# Process pending captures
-/knowz flush
-
-# Auto-detected intent (bare input)
-/knowz "Why did we use PostgreSQL?"        # → detected as ask
-/knowz "Always use UTC for timestamps"     # → detected as save
-```
 
 Execute the detected action now.
