@@ -5,5 +5,7 @@
   "keywords": ["tdd", "development-methodology", "quality-gates", "agents", "code-review"],
   "author": {
     "name": "Alex Headscarf"
-  }
+  },
+  "homepage": "https://github.com/knowz-io/knowz-skills/tree/main/knowzcode",
+  "repository": "https://github.com/knowz-io/knowz-skills"
 }

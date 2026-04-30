@@ -1,5 +1,17 @@
 # MCP Server Configuration Reference
 
+## Contents
+
+1. [Enterprise Configuration](#enterprise-configuration)
+2. [Server Details](#server-details)
+3. [Authentication Methods](#authentication-methods)
+4. [Scope Options](#scope-options)
+5. [Smart Config Discovery](#smart-config-discovery)
+6. [CLI Commands Reference](#cli-commands-reference)
+7. [Error Handling](#error-handling)
+
+---
+
 ## Enterprise Configuration
 
 Before using any endpoints below, check for an `enterprise.json` file in the plugin root directory (the directory containing `.claude-plugin/plugin.json`). If present, use its `mcp_endpoint` value instead of the production/development endpoints listed here. If absent, use the defaults below.

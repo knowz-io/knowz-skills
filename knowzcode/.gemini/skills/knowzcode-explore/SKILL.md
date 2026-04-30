@@ -24,4 +24,31 @@ Read these files for context:
 7. For **Exploration**: Present findings with current state, patterns, options, and recommended approach
 8. For **Planning**: Save structured plan to `knowzcode/planning/{slug}.md` with impact analysis, architecture proposal, and project context
 
+## Exploration Deliverable
+
+For both modes, write a summary file at `knowzcode/explore/<topic-slug>/summary.md` (slug = 2-4 word kebab-case) and mirror the same content into the chat reply. Use these sections:
+
+```markdown
+# Exploration: {topic}
+
+## Current State
+{what exists today, with file:line citations}
+
+## Constraints
+{rules, conventions, dependencies that must hold}
+
+## Options
+1. {option name} — {one-paragraph description}
+2. {option name} — {one-paragraph description}
+
+## Risks
+{risk → mitigation, one per bullet}
+
+## Recommendation
+{one option above, with rationale}
+
+## Suggested Next Skill
+{`/knowzcode:work` | `/knowzcode:fix` | `/knowzcode:audit` — pick one}
+```
+
 **STOP** — Present research findings. To implement, use `/knowzcode:work` with the chosen approach.

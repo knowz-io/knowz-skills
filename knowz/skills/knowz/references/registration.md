@@ -1,5 +1,18 @@
 # Registration API Reference
 
+## Contents
+
+1. [Enterprise Configuration](#enterprise-configuration)
+2. [Endpoints](#endpoints)
+3. [Request Format](#request-format)
+4. [Response Structure](#response-structure)
+5. [Input Validation](#input-validation)
+6. [Error Codes](#error-codes)
+7. [Security Considerations](#security-considerations)
+8. [What Registration Provides](#what-registration-provides)
+
+---
+
 ## Enterprise Configuration
 
 Before using any endpoints or brand names below, check for an `enterprise.json` file in the plugin root directory (the directory containing `.claude-plugin/plugin.json`). If present, use its values: `api_endpoint` replaces `https://api.knowz.io/api/v1` (registration becomes `{api_endpoint}/users/register`), `mcp_endpoint` replaces `https://mcp.knowz.io/mcp`, and `brand` replaces "Knowz" in user-facing messages. When enterprise config is present, ignore the `--dev` flag. If absent, use the defaults below.

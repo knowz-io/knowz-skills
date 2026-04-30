@@ -62,3 +62,6 @@ docs/superpowers/
 
 # Dev-only slash commands (not shipped)
 .claude/commands/
+
+# Plugin validator/fixer output
+validation-reports/

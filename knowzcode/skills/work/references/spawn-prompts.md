@@ -2,6 +2,21 @@
 
 These spawn prompts are shared by all execution modes. In Parallel Teams mode, the lead uses these prompts when spawning agents at the appropriate stage. In Sequential Teams / Subagent mode, agents are spawned one at a time in phase order.
 
+## Contents
+
+- [`{advisor_guidance}` Placeholder](#advisor_guidance-placeholder)
+- [Stage 0: Codebase Scanners](#stage-0-codebase-scanners-2-instances--conditional)
+- [Stage 0: Context & Knowledge Liaison (Persistent)](#stage-0-context--knowledge-liaison-persistent)
+- [Quality Gate Writer Dispatches](#quality-gate-writer-dispatches)
+- [Specialist Spawn Prompts (Group C)](#specialist-spawn-prompts-group-c--opt-in-via---specialists)
+- [Phase 1A: Impact Analysis](#phase-1a-impact-analysis)
+- [Stage 0: Architect Pre-load (Parallel Teams)](#stage-0-architect-pre-load-parallel-teams)
+- [Phase 1B: Specification](#phase-1b-specification)
+- [Phase 2A: Implementation](#phase-2a-implementation)
+- [Phase 2B: Completeness Audit](#phase-2b-completeness-audit)
+- [Phase 2B: Smoke Testing](#phase-2b-smoke-testing)
+- [Phase 3: Finalization](#phase-3-finalization)
+
 ---
 
 ## `{advisor_guidance}` Placeholder

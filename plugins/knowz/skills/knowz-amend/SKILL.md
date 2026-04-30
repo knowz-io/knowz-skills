@@ -10,12 +10,7 @@ Patch an existing Knowz knowledge item with just the change the user describes. 
 
 If `enterprise.json` exists in the project root, use its `brand` value instead of "Knowz" in user-facing text.
 
-## When to Use
-
-- "Fix the typo in the Redis entry"
-- "Add a caveat about SameSite cookies to the auth pattern"
-- "Change the tag on the retry-with-jitter note from `draft` to `final`"
-- "Append a link to the runbook in the on-call note"
+## Routing
 
 If the user hands over a **complete new body** or explicitly asks to "replace" or "rewrite" the entry, use `/knowz-save` with "Replace existing item" instead — that path calls `update_knowledge`.
 
