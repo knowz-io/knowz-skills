@@ -32,6 +32,50 @@ Before prompting, check:
 3. Cross-platform configs such as `.gemini/settings.json`, `.vscode/mcp.json`, and `.mcp.json`
 4. API key passed in the user's request
 
-For Codex, prefer shared configuration instead of project-local `.mcp.json`.
+If `KNOWZ_API_KEY` is not set, ask the user for the key (or suggest `/knowz-register` to obtain one) and offer to export it for the current shell. Persist it via the user's normal env-var mechanism (`~/.zshrc`, `~/.bashrc`, or a per-project `.env`); do not write it into `config.toml`.
 
-Preferred command:
+For Codex, prefer shared configuration instead of project-local `.mcp.json`. Resolve the endpoint per the **Endpoint Resolution** section above, then write (or update) the `[mcp_servers.knowz]` block in `~/.codex/config.toml`:
+
+```toml
+[mcp_servers.knowz]
+type = "http"
+url = "https://mcp.knowz.io/mcp"          # use the resolved endpoint
+bearer_token_env_var = "KNOWZ_API_KEY"
+```
+
+After writing, ask the user to restart Codex so the new server is picked up, then re-check tool availability before continuing.
+
+If the project ships an `enterprise.json`, swap the `url` for the resolved `mcp_endpoint`. Example:
+
+```json
+{
+  "brand": "Your Company Name",
+  "mcp_endpoint": "https://mcp.your-domain.com/mcp",
+  "api_endpoint": "https://api.your-domain.com/api/v1"
+}
+```
+
+### Step 3: Create or Refresh Vault Routing
+
+Generate `knowz-vaults.md` at the project root if it does not already exist. This file drives vault routing for `/knowz-search`, `/knowz-ask`, `/knowz-browse`, and `/knowz-save`.
+
+1. Call `mcp__knowz__list_vaults` to discover available vaults.
+2. For each vault, write a section using the structure from the example template:
+   - **ID** — the vault id from the server
+   - **Description** — what the vault stores
+   - **When to query** — concrete situations that should fan out to this vault
+   - **When to save** — concrete situations that should write to this vault
+   - **Content template** — the `[CONTEXT] / [INSIGHT] / [RATIONALE] / [TAGS]` shape
+3. Set a **Default vault** at the bottom for cases that match no rule.
+4. Do not invent fields; if information is missing for a vault, leave the section short and let the user fill it in later.
+
+If `knowz-vaults.md` already exists, offer to refresh it: re-read `mcp__knowz__list_vaults`, append any new vaults, and flag any vaults present in the file but absent from the server.
+
+### Step 4: Verify
+
+Run a smoke test in this order; surface any failure to the user:
+1. `mcp__knowz__list_vaults` returns at least one vault id.
+2. `mcp__knowz__search_knowledge` against the default vault returns a result (or an empty-but-successful response).
+3. Confirm the resolved brand by reading `enterprise.json#/brand` (default `Knowz`).
+
+Report the configured endpoint, brand, and vault count back to the user.

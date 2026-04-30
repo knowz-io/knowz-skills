@@ -1,6 +1,6 @@
 ---
-name: knowzcode-regroup-trigger
-description: "Offer a KnowzCode regroup handoff when the user signals pause, wrap-up, handoff, clear-context, fresh-session, or resume-later intent."
+name: regroup-trigger
+description: "Detect pause, wrap-up, handoff, or clear-context intent and offer a KnowzCode regroup handoff. Triggers when the user says they need to stop, step away, clear context, start fresh, hand off, or resume later."
 ---
 <!-- Packaged Codex mirror of knowzcode/skills/regroup-trigger/SKILL.md. Keep behavior in sync with the source skill and platform adapters. -->
 

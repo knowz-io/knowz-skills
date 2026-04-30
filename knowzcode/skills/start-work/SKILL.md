@@ -119,6 +119,20 @@ The /knowzcode:work command will:
 - Handle "option N" references from investigations
 - Detect matching specs for optimization paths
 
+### Handoff Payload Contract
+
+When delegating to `/knowzcode:work`, structure the handoff so the workflow can skip rediscovery:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `goal` | string | yes | One-sentence imperative summary of what to build |
+| `source_path` | string | no | Path to the plan or investigation the goal came from (e.g. `~/.claude/plans/foo.md`, `knowzcode/planning/investigation-*.md`) |
+| `tier` | `"micro" \| "light" \| "full"` | no | Pre-classified scope hint; `/knowzcode:work` may override |
+| `flags` | string | no | Pass-through orchestration flags such as `--autonomous`, `--tier full`, `--specialists=security` |
+| `prior_findings_summary` | string | no | 2-3 sentences summarizing key constraints/decisions from the source so Phase 1A can build on them |
+
+Always include `goal`. Include `source_path` whenever a plan/investigation was the trigger so the workflow can re-read the source rather than rely on chat memory.
+
 ## Example Interactions
 
 ### Example 1: After Plan Mode Exit

@@ -2,6 +2,15 @@
 
 These templates are generated during `/knowzcode:setup` Step 3. Create each file in the `knowzcode/` directory.
 
+## Contents
+
+- [knowzcode_project.md](#knowzcode_projectmd)
+- [knowzcode_tracker.md](#knowzcode_trackermd)
+- [knowzcode_log.md](#knowzcode_logmd)
+- [knowzcode_architecture.md](#knowzcode_architecturemd)
+- [environment_context.md](#environment_contextmd)
+- [knowzcode_orchestration.md](#knowzcode_orchestrationmd)
+
 ## knowzcode_project.md
 ```markdown
 # KnowzCode Project Overview
