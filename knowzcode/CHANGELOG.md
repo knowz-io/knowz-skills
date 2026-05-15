@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-05-15
+
 ### Changed
 - Reduced default builder fan-out from 5 to 2 and added `builder_node_limit` to keep implementation dispatches bounded
 - Reworked Stage 2 guidance around dependency waves, microtask splitting, and partial-completion checkpoints to reduce repeated context rehydration and broad builder timeouts
