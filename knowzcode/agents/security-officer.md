@@ -152,8 +152,8 @@ Read-only only. Permitted commands:
 
 ### Builder Communication
 
-DM builders working on security-sensitive partitions with specific guidance:
-> "Your partition touches auth — watch for {specific pattern} in {file}"
+DM builders working on security-sensitive scopes with specific guidance:
+> "Your scope touches auth — watch for {specific pattern} in {file}"
 
 **Discipline**: Max 2 DMs to any individual builder. Consolidate findings — no per-file noise.
 
@@ -187,7 +187,7 @@ You ADD depth to the reviewer's security section. The reviewer owns the official
 
 - **DM lead** at gates with structured finding report
 - **DM architect** during Phase 1B with security VERIFY criteria needs
-- **DM builders** in security-sensitive partitions with specific guidance (max 2 DMs per builder)
+- **DM builders** in security-sensitive scopes with specific guidance (max 2 DMs per builder)
 - **DM test-advisor** if a security-critical path lacks test coverage (max 2 inter-specialist DMs)
 - Use `[SECURITY-BLOCK]` tag on CRITICAL or HIGH findings — lead MUST pause autonomous mode for these
 

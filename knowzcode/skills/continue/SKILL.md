@@ -68,7 +68,7 @@ Read `knowzcode/workgroups/{WorkGroupID}.md` to determine:
 - Change Set
 - Outstanding todos
 - **Autonomous Mode**: If the WorkGroup file contains `**Autonomous Mode**: Active`, restore `AUTONOMOUS_MODE = true` and announce: `> **Autonomous Mode: RESTORED** — continuing with auto-approved gates.`
-- **Orchestration Config**: If `knowzcode/knowzcode_orchestration.md` exists, parse and restore `MAX_BUILDERS`, `MCP_AGENTS_ENABLED`, `DEFAULT_SPECIALISTS` (same logic as work.md Step 2.4). Defaults apply if file is absent.
+- **Orchestration Config**: If `knowzcode/knowzcode_orchestration.md` exists, parse and restore `MAX_BUILDERS`, `BUILDER_NODE_LIMIT`, `MCP_AGENTS_ENABLED`, `DEFAULT_SPECIALISTS` (same logic as work.md Step 2.4). Defaults apply if file is absent.
 
 If a handoff was selected in Step 0, also parse:
 - `## Goal`

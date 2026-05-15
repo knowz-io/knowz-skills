@@ -77,7 +77,7 @@ When `AUTONOMOUS_MODE = true`, the lead auto-approves all `plan_approval_request
 
 When you receive a `shutdown_request` from the lead:
 
-1. Complete or save any in-progress work (update the WorkGroup file if needed)
+1. Complete or save any in-progress work (report state in task summary; the lead updates the WorkGroup file in Parallel Teams mode)
 2. Mark your current task as `completed` (or leave as `in_progress` if unfinished)
 3. Respond with `SendMessage` type `shutdown_response`:
    - `approve: true` → confirms shutdown, your process will terminate
@@ -153,7 +153,7 @@ Use mailbox messaging for coordination between teammates:
 | builder | analyst | Affected files and dependency questions |
 | builder | architect | Spec clarification requests |
 | builder | builder | Shared interface changes, dependency coordination |
-| reviewer | lead | Gap reports per partition (structured format via task summaries) |
+| reviewer | lead | Gap reports per builder scope (structured format via task summaries) |
 | lead | builder | Gap fix assignments with context (task creation + DM) |
 | lead | reviewer | Re-audit requests after gap fixes (task creation + DM) |
 | lead | knowledge-liaison | Capture DMs at quality gates: `"Capture Phase {N}: {wgid}"` |
@@ -165,7 +165,7 @@ Use mailbox messaging for coordination between teammates:
 | closer | architect | Spec format and legacy migration |
 | security-officer | lead | Structured finding reports at gates (with `[SECURITY-BLOCK]` for CRITICAL/HIGH) |
 | security-officer | architect | Security VERIFY criteria needs during Phase 1B |
-| security-officer | builder | Security guidance for sensitive partitions (max 2 DMs per builder) |
+| security-officer | builder | Security guidance for sensitive scopes (max 2 DMs per builder) |
 | security-officer | test-advisor | Cross-cutting: test gaps in security-critical paths (max 2 inter-specialist DMs) |
 | test-advisor | lead | Test quality reports at gates |
 | test-advisor | architect | VERIFY criteria testability concerns during Phase 1B |
@@ -225,7 +225,7 @@ Agents must NOT create new tasks for work already assigned to them via task ID.
 | architect | Stage 0 (pre-load + speculative research) | After Gate #3 | Pre-load → speculative research on `[PRELIMINARY]` NodeIDs → spec drafting (+ parallel coordination for 3+ NodeIDs) → design guidance for builders |
 | spec-drafter(s) | Stage 1 (Path B, 3+ NodeIDs) | After architect consistency review | Draft specs for assigned NodeID partition |
 | builder(s) | Stage 2 | After Gate #3 | Implementation + gap fixes (persistent through gap loop) |
-| reviewer(s) | Stage 2 (1 per builder partition) | After Gate #3 | Incremental audit per partition (persistent through gap loop) |
+| reviewer(s) | Stage 2 (1 per builder scope) | After Gate #3 | Incremental audit per scope (persistent through gap loop) |
 | security-officer | Stage 0 (Group C) | After Gate #3 | Threat modeling + vulnerability scanning (officer — can block gates) |
 | test-advisor | Stage 0 (Group C) | After Gate #3 | TDD enforcement + test quality review (advisor — informational) |
 | project-advisor | Stage 0 (Group C) | Mid-Stage 2 | Backlog curation + idea capture (advisor — informational) |
@@ -252,7 +252,8 @@ Team sizing defaults are configurable via `knowzcode/knowzcode_orchestration.md`
 
 | Parameter | Default | Flag Override | Effect |
 |-----------|---------|--------------|--------|
-| `max_builders` | 5 | `--max-builders=N` | Cap concurrent builders (1-5) |
+| `max_builders` | 2 | `--max-builders=N` | Effective cap is 1-3 unless `--broad-builders` is explicit; up to 5 only with broad-builder intent |
+| `builder_node_limit` | 1 | `--builder-node-limit=N` | Cap NodeIDs per builder dispatch (1-2) |
 | `default_specialists` | [] | `--specialists`, `--no-specialists` | Project-level specialist defaults |
 | `mcp_agents_enabled` | true | `--no-mcp` | Toggle vault agents (knowz:reader, knowz:writer dispatches) |
 | `codebase_scanner_enabled` | true | `--no-scanners` | Toggle codebase scanner agents (scanner-direct, scanner-tests) |
@@ -263,24 +264,26 @@ Precedence: hardcoded defaults → orchestration config → per-invocation flags
 ### Builder Partitioning Rules
 
 - No two builders touch the same file
-- Analyst dependency map determines partitions
-- Max `MAX_BUILDERS` concurrent builders (default 5, configurable in `knowzcode_orchestration.md`)
-- If all NodeIDs share files → single builder with subtask tracking
-- Builder-to-builder messages for interface changes affecting other partitions
+- Analyst dependency map determines dependency waves and ready work
+- Default to one NodeID or one named microtask per builder dispatch
+- Split oversized NodeIDs before dispatch when they cross layers, touch more than 5 files, or contain sequential subtasks
+- Max `MAX_BUILDERS` concurrent builders (effective default 2; old configs above 2 are capped unless broad-builder intent is explicit)
+- If all NodeIDs share files or depend on each other → single builder with microtask checkpoints
+- Builder-to-builder messages for interface changes affecting other active scopes
 
 ### Persistent Agent Patterns
 
 In `/knowzcode:work` Parallel Teams mode, agents persist across sub-phases for efficiency:
 
 #### Build + Audit Loop
-During Stage 2, each builder is paired with a dedicated reviewer for its partition:
-- One reviewer per builder partition (e.g., builder-1 ↔ reviewer-1, builder-2 ↔ reviewer-2)
-- Each reviewer audits only the NodeIDs in its paired builder's partition
-- Gap loops run independently per partition — partition A's gap loop does not block partition B's audit
-- If gaps found: lead creates fix task for the partition's builder + re-audit task for the partition's reviewer
+During Stage 2, each builder is paired with a dedicated reviewer for its active scope:
+- One reviewer per builder scope (e.g., builder-1 ↔ reviewer-1, builder-2 ↔ reviewer-2)
+- Each reviewer audits only the NodeID/microtask in its paired builder's scope
+- Gap loops run independently per scope when dependencies allow — scope A's gap loop does not block scope B's audit unless the dependency graph requires it
+- If gaps found: lead creates fix task for the scope's builder + re-audit task for the scope's reviewer
 - All builders and reviewers stay alive through the entire gap loop — shut down only after Gate #3
 
-This eliminates both cold-start overhead (no respawning) and the sequential bottleneck (no single reviewer processing all partitions).
+This reduces cold-start overhead without forcing broad builder prompts. The lead should prefer dependency-wave progress over spawning large parallel builders that duplicate context loading.
 
 #### Architect Consultative Persistence
 During Stage 2, the architect persists as a read-only consultative resource:
@@ -330,7 +333,7 @@ Max Stage 0 concurrent: 3-8 agents depending on orchestration config (scanners, 
 Specialists communicate directly with builders, architect, and each other — no lead bottleneck relay:
 
 - **security-officer → architect**: Security VERIFY criteria needs during Phase 1B
-- **security-officer → builder-N**: Security guidance for sensitive partitions (max 2 DMs per builder)
+- **security-officer → builder-N**: Security guidance for sensitive scopes (max 2 DMs per builder)
 - **test-advisor → architect**: VERIFY criteria testability concerns during Phase 1B
 - **test-advisor → builder-N**: Specific test improvement feedback (max 2 DMs per builder)
 - **project-advisor → knowledge-liaison**: Idea captures (`"Consider: {idea}"` — knowledge-liaison dispatches knowz:writer if warranted)
@@ -367,7 +370,7 @@ When spawned as a teammate in an Agent Teams workflow, follow this sequence:
 4. Read the WorkGroup file for current state, Change Set, and context
 5. Read context files listed in your task description
 6. Begin your phase work as defined by your role
-7. Update the WorkGroup file with results — prefix all todo entries with `KnowzCode:`
+7. Report results in your task summary. In Parallel Teams mode, the lead is the sole WorkGroup file writer and consolidates your output. In Sequential Teams mode, update the WorkGroup file only when your phase prompt explicitly delegates that write.
 8. Mark your task as complete with a summary of what was delivered
 
 ### Subagent Mode (spawned via Task())

@@ -24,11 +24,14 @@ The builder writes tests. The test-advisor (if active) reviews test quality. You
 
 ## ARC Verification
 
-For each NodeID in the WorkGroup:
+For the assigned audit scope:
 
-1. Read the specification (`knowzcode/specs/{NodeID}.md`)
-2. Extract all `VERIFY:` statements (or legacy `ARC_XXX_01:` criteria)
-3. For each criterion, verify: does the code implement it? Do tests exist and pass?
+1. Read the assigned specification path (`knowzcode/specs/{NodeID}.md`)
+2. Read the assigned acceptance criteria from your task prompt.
+3. If assigned a whole NodeID, audit all relevant `VERIFY:` statements (or legacy `ARC_XXX_01:` criteria).
+4. If assigned a microtask, audit only the assigned acceptance criteria or `VERIFY:` subset. Do not report unrelated criteria from the same NodeID as implementation gaps.
+5. If a microtask has no assigned acceptance criteria, report a scope-definition gap to the lead and do not score unrelated spec criteria as failed implementation.
+6. For each assigned criterion, verify: does the code implement it? Do tests exist and pass?
 
 Report format: see `knowzcode_loop.md` section 3.4 for audit outcome structure.
 
@@ -119,11 +122,11 @@ If MCP is not available, audit against specs and codebase directly. All auditing
 
 ## Incremental Audit (Parallel Teams)
 
-In Parallel Teams mode, you are paired with a specific builder partition:
-- You audit only the NodeIDs assigned to your partition
+In Parallel Teams mode, you are paired with a specific builder scope:
+- You audit only the NodeID/microtask and assigned acceptance criteria assigned to your scope
 - Each audit task is blocked until the builder marks its implementation complete
-- Audit each NodeID independently — don't wait for all implementation in your partition
-- Other partitions have their own reviewer — do not audit their NodeIDs
+- Audit each assigned NodeID or microtask independently
+- Other scopes have their own reviewer — do not audit their NodeIDs or files
 
 ### Structured Gap Report Format
 
@@ -135,6 +138,13 @@ When reporting gaps in task completion summaries, use this format:
 | 1 | Auth | auth.ts:45 | VERIFY:token_expiry | 1hr exp | No expiry set | Critical |
 
 The lead will create fix tasks for builders based on this report.
+
+If the issue is missing or ambiguous microtask acceptance criteria, report it separately:
+
+```markdown
+**Scope Definition Gaps: {count}**
+- {NodeID or microtask}: Missing assigned acceptance criteria. Lead must clarify scope before audit can score implementation.
+```
 
 ## Consolidated Audit Output
 
@@ -161,8 +171,9 @@ The lead will create fix tasks for builders based on this report.
 ## Startup Expectations
 
 Before beginning audit, verify these prerequisites:
-- Implementation is complete for assigned NodeIDs (builder tasks marked complete)
+- Implementation is complete for assigned NodeID/microtask scopes (builder tasks marked complete)
 - Specs exist in `knowzcode/specs/` for each NodeID being audited
+- Assigned acceptance criteria are present for each microtask scope
 - WorkGroup file has the current Change Set for scope reference
 
 ## Exit Expectations

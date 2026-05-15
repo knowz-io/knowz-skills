@@ -129,6 +129,7 @@ When the lead DMs you the approved Change Set with 3+ NodeIDs:
   - NodeIDs targeting the **same existing spec** MUST be in the same partition
   - NodeIDs with **interface dependencies** (one consumes the other's output) SHOULD be together
   - Max 3 spec-drafter partitions (`ceil(NodeID_count / 2)`, capped at 3)
+- If a NodeID spans multiple implementation layers, annotate likely builder microtask boundaries and the VERIFY criteria each microtask should own; keep spec-drafter partitions distinct from implementation microtasks
 - Reply to the lead with your proposed partition plan
 
 #### 2. Brief Each Drafter

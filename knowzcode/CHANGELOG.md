@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-05-15
+
+### Changed
+- Reduced default builder fan-out from 5 to 2 and added `builder_node_limit` to keep implementation dispatches bounded
+- Reworked Stage 2 guidance around dependency waves, microtask splitting, and partial-completion checkpoints to reduce repeated context rehydration and broad builder timeouts
+- Added builder scope and context-budget guardrails for Claude Code and Codex execution paths
+- Added assigned acceptance criteria for microtasks so reviewers audit only the intended VERIFY subset
+- Clarified WorkGroup ownership in Parallel Teams: teammates report summaries/checkpoints and the lead consolidates WorkGroup state
+- Effective builder fan-out now caps old `max_builders: 5` configs at 3 unless broad-builder intent is explicit
+- Aligned legacy `[LOOP_2A]` prompt, generated Claude/Codex Phase 2A adapter walkthroughs, and platform-adapter Phase 2B walkthroughs with the dependency-wave/microtask builder model
+- Updated the Codex handoff schema to support `partial` checkpoints with explicit remaining work, and labeled standalone `/knowzcode:audit` sections as whole-WorkGroup audits
+
 ## [0.14.2] - 2026-04-30
 
 ### Added

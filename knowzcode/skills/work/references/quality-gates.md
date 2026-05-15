@@ -118,6 +118,7 @@ Present audit results:
 ## Approval Gate #3: Audit Results
 
 **ARC Completion**: {X}%
+**Criteria Coverage**: {covered VERIFY count}/{total VERIFY count} | Scope definition gaps: {count}
 **Security Posture**: {status}
 **Gaps Found**: {count}
 **Smoke Test**: {PASS / FAIL / SKIPPED — reason}
@@ -143,6 +144,7 @@ How would you like to proceed?
 **Autonomous Mode**: If `AUTONOMOUS_MODE = true`:
 - **Safety check**: If any security finding rated HIGH or CRITICAL (from reviewer OR security-officer `[SECURITY-BLOCK]`) → **PAUSE** autonomous mode for this gate. Announce: `> **Autonomous Mode Paused** — HIGH/CRITICAL security finding requires manual review.`
 - **Safety check**: If ARC completion < 50% → **PAUSE** autonomous mode for this gate. Announce: `> **Autonomous Mode Paused** — ARC completion below 50% requires manual review.`
+- **Safety check**: If criteria coverage is incomplete or any scope-definition gaps remain → **PAUSE** autonomous mode for this gate. Announce: `> **Autonomous Mode Paused** — assigned acceptance criteria coverage is incomplete.`
 - If safety checks pass and gaps found → log `[AUTO-APPROVED] Gate #3 — proceeding to gap loop`, auto-proceed to gap loop.
 - If safety checks pass and no gaps → log `[AUTO-APPROVED] Gate #3`, auto-proceed to Phase 3.
 
@@ -152,7 +154,7 @@ If `AUTONOMOUS_MODE = false`: User decides — proceed / fix gaps / modify specs
 
 ## Gap Loop
 
-### Parallel Teams mode (per-partition, persistent agents — no respawning):
+### Parallel Teams mode (per-scope, persistent agents — no respawning):
 
 1. Lead reads each reviewer's structured gap report from task summary
 2. Lead creates fix task and pre-assigns:
@@ -163,9 +165,17 @@ If `AUTONOMOUS_MODE = false`: User decides — proceed / fix gaps / modify specs
 5. Lead creates re-audit task and pre-assigns:
    `TaskCreate("Re-audit: NodeID-X", addBlockedBy: [gap-fix-task-id])` → `TaskUpdate(owner: "reviewer-N")`
 6. Lead sends DM to reviewer: `"**New Task**: #{reaudit-task-id} — Re-audit: NodeID-X. {gap list}"`
-7. Each builder-reviewer pair repeats independently until clean — no cross-partition blocking
+7. Each builder-reviewer pair repeats independently until clean — no cross-scope blocking unless dependencies require it
 8. All builders and reviewers stay alive throughout
-9. **3-iteration cap per partition**: If a partition exceeds 3 gap-fix iterations without resolution, **PAUSE** autonomous mode for that partition (even if `AUTONOMOUS_MODE = true`). Announce: `> **Autonomous Mode Paused** — Partition {N} failed 3 gap-fix iterations. Manual review required.`
+9. **3-iteration cap per scope**: If a scope exceeds 3 gap-fix iterations without resolution, **PAUSE** autonomous mode for that scope (even if `AUTONOMOUS_MODE = true`). Announce: `> **Autonomous Mode Paused** — Scope {N} failed 3 gap-fix iterations. Manual review required.`
+
+### Microtask Coverage Rule
+
+When implementation uses microtasks, Gate #3 cannot be marked clean until the lead confirms:
+- Every microtask has assigned acceptance criteria.
+- Every required NodeID `VERIFY:` criterion is covered by at least one completed and audited scope.
+- Cross-microtask integration criteria are audited after all dependent microtasks land.
+- Scope-definition gaps from reviewers are resolved by clarifying or creating a missing microtask, not by sending the same implementation back through a gap loop.
 
 ### Smoke Test Gap Loop
 
@@ -176,7 +186,7 @@ If the smoke-tester reports failures:
 4. Smoke-tester re-runs against the running app
 5. **3-iteration cap**: If smoke test exceeds 3 iterations, pause autonomous mode: `> **Autonomous Mode Paused** — Smoke test failed 3 iterations. Manual review required.`
 
-Smoke gap loop runs parallel with per-partition reviewer gap loops. Gate #3 waits for both to pass.
+Smoke gap loop runs parallel with per-scope reviewer gap loops. Gate #3 waits for both to pass.
 
 ### Sequential Teams mode:
 

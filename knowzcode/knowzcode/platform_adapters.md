@@ -42,6 +42,7 @@ Follow the phases in `knowzcode_loop.md` for all feature work:
 1. **Phase 1A: Impact Analysis** — Identify affected components, propose Change Set. PAUSE for user approval.
 2. **Phase 1B: Specification** — Draft specs for all NodeIDs. PAUSE for user approval. Commit specs.
 3. **Phase 2A: Implementation** — Strict TDD (Red-Green-Refactor). No production code without a failing test.
+   Stage 2 dispatches builders per ready NodeID/microtask with assigned acceptance criteria; do not implement the whole Change Set in one pass.
 4. **Phase 2B: Completeness Audit** — Independent READ-ONLY audit. PAUSE for user decision on gaps.
 5. **Phase 3: Finalization** — Update specs to as-built, update tracker, log entry, final commit.
 
@@ -54,7 +55,7 @@ Never skip phases. PAUSE for user approval at each gate:
 
 ## TDD Enforcement
 TDD is mandatory — no production code without a failing test first.
-Red-Green-Refactor cycle for every feature/criterion in the spec.
+Apply Red-Green-Refactor within the assigned NodeID or microtask; verify assigned acceptance criteria before broadening scope.
 
 ## Agent Teams (Expected Execution Mode)
 
@@ -155,17 +156,18 @@ Read `knowzcode/knowzcode_loop.md` before starting any feature work.
 - After approval: `git commit` the specs as a checkpoint
 
 ### Phase 2A: Implementation (TDD MANDATORY)
+- Scope implementation by dependency wave: one ready NodeID or named microtask with assigned acceptance criteria and owned files per writer; do not implement the whole Change Set in one pass.
 - For EACH feature/criterion in the spec:
   1. RED: Write a failing test first
   2. GREEN: Write minimal code to make the test pass
   3. REFACTOR: Clean up while keeping tests green
-- Run full test suite + static analysis + build after all features
+- Run targeted checks after each dependency wave; run the consolidated full test suite + static analysis + build after all waves
 - Maximum 10 verification iterations before pausing
 - **STOP**: Report implementation results
 
 ### Phase 2B: Completeness Audit
 - READ-ONLY audit — do NOT modify source files
-- Compare implementation against all VERIFY statements in specs
+- Compare implementation against the assigned VERIFY statements for each scope (full NodeID or microtask). The lead consolidates per-scope coverage into overall completion; do not fail unrelated parent NodeID criteria when auditing a microtask.
 - Calculate completion percentage
 - Report gaps, security concerns, integration issues
 - **STOP**: Present audit results for user decision
@@ -335,6 +337,8 @@ Read these files:
 - `knowzcode/knowzcode_tracker.md` — Find active WorkGroups
 
 **CRITICAL: This is a READ-ONLY audit. Do NOT modify source files.**
+
+**Whole-WorkGroup audit** — this command audits all completed NodeIDs together. For per-scope Stage 2 audits, builders/reviewers use only their assigned acceptance criteria; this standalone command intentionally covers the full WorkGroup.
 
 1. Compare implementation against all VERIFY statements in specs from `knowzcode/specs/`
 2. Calculate completion percentage per NodeID and overall
@@ -1036,6 +1040,8 @@ Read these files:
 
 **CRITICAL: This is a READ-ONLY audit. Do NOT modify source files.**
 
+**Whole-WorkGroup audit** — this command audits all completed NodeIDs together. For per-scope Stage 2 audits, builders/reviewers use only their assigned acceptance criteria; this standalone command intentionally covers the full WorkGroup.
+
 1. Compare implementation against all VERIFY statements in specs from `knowzcode/specs/`
 2. Calculate completion percentage per NodeID and overall
 3. Identify gaps: missing features, incomplete criteria, untested paths
@@ -1620,9 +1626,9 @@ Perform Phase 2B: Completeness Audit. Conduct a READ-ONLY audit comparing implem
 ## Instructions
 
 1. Read `knowzcode/knowzcode_loop.md` for the complete Phase 2B methodology
-2. Read all specs from `knowzcode/specs/` for the active WorkGroup
-3. For each spec, check every VERIFY statement against the implementation
-4. Calculate completion percentage per NodeID and overall
+2. Read specs and assigned acceptance criteria from `knowzcode/specs/` for the active WorkGroup scope
+3. For each assigned NodeID or microtask, check assigned criteria against the implementation. Do not fail unrelated parent NodeID criteria for a microtask.
+4. Calculate completion percentage per assigned scope and overall criteria coverage
 5. Check for security concerns (OWASP top 10, input validation, auth flows)
 6. Assess integration health (API contracts, dependency compatibility)
 
@@ -2288,7 +2294,7 @@ You are implementing the approved specifications using strict TDD.
 Read `knowzcode/knowzcode_tracker.md` to find the active `[WIP]` WorkGroup.
 Then read:
 - The WorkGroup file at `knowzcode/workgroups/{WorkGroupID}.md`
-- All spec files listed in the Change Set from `knowzcode/specs/`
+- The spec files and assigned acceptance criteria for the current NodeID or microtask from `knowzcode/specs/`
 
 ## Instructions
 
@@ -2304,8 +2310,10 @@ For EACH feature/criterion in the specs:
 1. Run all tests → if FAIL: fix and restart
 2. Run static analysis → if issues: fix and restart
 3. Run build → if FAIL: fix and restart
-4. Verify all VERIFY: criteria from specs → if unmet: implement and restart
+4. Verify assigned acceptance criteria for the current NodeID or microtask → if unmet: implement and restart
 5. All checks pass → report complete
+
+If the current assignment is a microtask, do not treat unrelated `VERIFY:` criteria from the parent NodeID as failed implementation. Leave them pending for their assigned microtask.
 
 Maximum 10 iterations. If exceeded, report blocker.
 
@@ -2345,8 +2353,8 @@ You are performing an independent, READ-ONLY audit of the implementation.
 Read `knowzcode/knowzcode_tracker.md` to find the active `[WIP]` WorkGroup.
 Then read:
 - The WorkGroup file at `knowzcode/workgroups/{WorkGroupID}.md`
-- All spec files listed in the Change Set from `knowzcode/specs/`
-- The implementation files listed in the Change Set
+- The spec files and assigned acceptance criteria for the current audit scope from `knowzcode/specs/`
+- The implementation files listed for the current audit scope
 
 ## Instructions
 
@@ -2354,8 +2362,8 @@ Follow Phase 2B from `knowzcode/knowzcode_loop.md`:
 
 **CRITICAL: This is a READ-ONLY audit. Do NOT modify any source files.**
 
-1. For each NodeID, compare implementation against every VERIFY statement in its spec
-2. Calculate objective completion percentage per NodeID and overall
+1. For each assigned NodeID or microtask, compare implementation against assigned acceptance criteria. For a microtask, do not fail unrelated parent NodeID criteria.
+2. Calculate objective completion percentage for the assigned scope and overall criteria coverage
 3. Identify gaps: missing features, incomplete criteria, untested paths
 4. Check for security concerns: input validation, authentication, data exposure
 5. Check for orphan code: implementation not covered by any spec

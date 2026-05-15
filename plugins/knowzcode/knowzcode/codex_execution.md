@@ -54,12 +54,16 @@ Keep tightly coupled planning local unless the Change Set cleanly partitions:
 
 ### Implementation
 
-Use `worker` agents only for disjoint write scopes:
+Use `worker` agents only for small, disjoint write scopes:
 
+- Default to one NodeID or one named microtask per worker
 - Assign each worker an explicit owned file set or module boundary
+- Assign each worker explicit acceptance criteria: either the whole NodeID `VERIFY:` list or the exact subset/micro-criteria for that microtask
+- Keep each worker scope to about 6 touched files or less; split larger work before dispatch
 - Never let two Codex workers edit the same file
 - Keep shared interfaces local unless they are isolated behind one worker's ownership
 - Pair each worker with a read-only reviewer path, either local or via an `explorer`
+- For dependency-heavy work, run workers sequentially by dependency wave instead of spawning broad parallel builders
 
 ### Audit
 
@@ -72,26 +76,38 @@ Large audits can be split by file area or subsystem:
 
 ## Communication Contract
 
-Codex subagents should communicate through **structured handoffs**, not free-form chat between peers.
+Codex subagents should communicate through **structured disk handoffs**, not free-form chat between peers.
 
-Every delegated task should return a compact handoff with these fields:
+Every delegated task in `/knowzcode:work` should write a phase report to:
+
+`knowzcode/workgroups/{wgid}/handoffs/{agent-id}.md`
+
+Use the same schema as the packaged work skill:
 
 ```markdown
-## Handoff
-- Status: complete | blocked
-- Scope: what this agent owned
-- Files: explicit files reviewed or edited
-- Findings: important evidence, decisions, or changes
-- Open Questions: anything still ambiguous
-- Next Action: the best follow-up step
-- Artifact Paths: optional local files created for the coordinator
+## Phase
+1A | 1B | 2A | 2B | 3
+
+## Status
+complete | blocked | partial
+
+## Owned Files
+Paths the agent touched. Use read paths for explorers/auditors and written paths for workers.
+
+## Findings
+Important evidence, decisions, or changes, with file:line citations when available.
+
+## Blockers
+Open questions or external dependencies. Omit when Status is complete.
+
+## Remaining Work
+Only when Status is partial; include the exact next microtask and files needed.
+
+## Next Phase Inputs
+Paths and notes the coordinator or next phase must consume.
 ```
 
-If the workflow benefits from persistent artifacts, the coordinator may keep handoff notes in:
-
-`knowzcode/workgroups/{wgid}/handoffs/{agent-name}.md`
-
-Use that directory only as a coordination aid. The WorkGroup file remains the source of truth for phase state and approvals.
+Return only the handoff file path so the coordinator can read it from disk. The coordinator merges handoff files into the WorkGroup file; the WorkGroup file remains the source of truth for phase state and approvals.
 
 ---
 
@@ -111,6 +127,7 @@ This keeps Knowz usage reliable and avoids a fake inter-agent transport layer.
 
 - Do not emulate `DM`, `broadcast`, or shared task-list semantics in Codex skills
 - Do not keep idle agents around as pseudo-persistent teammates without active work
+- Do not send broad multi-NodeID builder prompts when dependencies are serialized; split to microtasks with assigned acceptance criteria and persist checkpoints
 - Do not use parallel writers unless ownership is explicit and non-overlapping
 - Do not reflexively call `wait_agent`; keep integrating local work while sidecar agents run
 - Close agents when their scope is complete so stale context does not accumulate

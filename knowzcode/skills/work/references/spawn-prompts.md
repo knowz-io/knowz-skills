@@ -160,7 +160,7 @@ The spawn prompts below are used when `SPECIALISTS_ENABLED` is non-empty. Specia
 > **READ-ONLY.** Do NOT modify any files. Bash is for read-only security scanning only.
 > **Stage 0 Deliverable**: Build STRIDE-lite threat model. Scan for auth/PII/crypto/session patterns. Broadcast initial threat assessment.
 > **Authority**: CRITICAL/HIGH findings use `[SECURITY-BLOCK]` tag — lead MUST pause autonomous mode.
-> **Communication**: DM lead at gates. DM architect with security VERIFY criteria needs. DM builders in security-sensitive partitions (max 2 per builder). DM test-advisor for cross-cutting test gaps (max 2).
+> **Communication**: DM lead at gates. DM architect with security VERIFY criteria needs. DM builders in security-sensitive scopes (max 2 per builder). DM test-advisor for cross-cutting test gaps (max 2).
 > **Enterprise Compliance**: If `knowzcode/enterprise/compliance_manifest.md` exists and `compliance_enabled: true`, read active security guidelines and cross-reference findings with enterprise guideline IDs.
 
 ### Test Advisor
@@ -207,11 +207,11 @@ The spawn prompts below are used when `SPECIALISTS_ENABLED` is non-empty. Specia
 > **WorkGroup file**: `knowzcode/workgroups/{wgid}.md`
 >
 > **Your Task**: #{task-id} — claim immediately (`TaskUpdate(status: "in_progress")`). Mark completed with summary when done.
-> **Conventions**: Update WorkGroup file with results (prefix entries with `KnowzCode:`). If blocked, report blocker and notify lead.
+> **Conventions**: In Parallel Teams, report results in your task summary and let the lead update the WorkGroup file. In Sequential/Subagent mode, update the WorkGroup file only when delegated. Prefix any task/todo entries with `KnowzCode:`. If blocked, report blocker and notify lead.
 > **Context**: The knowledge-liaison will DM you a Context Briefing with local project context and vault knowledge. Incorporate its findings into your analysis. For additional queries, DM: `"VaultQuery: {question}"`.
 > **Codebase scanners**: Scanner agents are running in parallel — their findings will arrive as broadcast messages. Incorporate them into your analysis but do NOT wait for them.
 > **Preliminary Findings Protocol**: As you discover high-confidence NodeIDs, DM the architect with `[PRELIMINARY]` messages (max 3 — see `agents/analyst.md` for format). This lets the architect start speculative research early.
-> **Deliverable**: Change Set proposal written to the WorkGroup file. Include NodeIDs, descriptions, affected files, risk assessment, and dependency map (for Parallel Teams mode).
+> **Deliverable**: Change Set proposal with NodeIDs, descriptions, affected files, risk assessment, and dependency map. In Parallel Teams, return it in task summary for lead consolidation; in Sequential/Subagent mode, write it to the WorkGroup file when delegated.
 
 **Dispatch**:
 - *Parallel Teams*: Spawned at Stage 0 alongside knowledge-liaison, scanners, and architect. Starts immediately (no blockedBy).
@@ -259,7 +259,7 @@ After Gate #1, the lead sends the approved Change Set via DM and creates spec-dr
 > **Specs directory**: `knowzcode/specs/`
 >
 > **Your Task**: #{task-id} — claim immediately (`TaskUpdate(status: "in_progress")`). Mark completed with summary when done.
-> **Conventions**: Update WorkGroup file with results (prefix entries with `KnowzCode:`). If blocked, report blocker and notify lead.
+> **Conventions**: In Parallel Teams, report WorkGroup updates in your task summary and let the lead consolidate. In Sequential/Subagent mode, update the WorkGroup file only when delegated. Prefix any task/todo entries with `KnowzCode:`. If blocked, report blocker and notify lead.
 > **Deliverable**: Finalized specs for all NodeIDs written to `knowzcode/specs/`.
 
 **Spec-drafter spawn prompt** (Path B — 3+ NodeIDs, Parallel Teams only):
@@ -297,22 +297,28 @@ After Gate #1, the lead sends the approved Change Set via DM and creates spec-dr
 > Read `agents/builder.md` for your full role definition.
 >
 > **Goal**: {goal}
-> **Approved Change Set**: {NodeIDs}
-> **Specs**: {list of spec file paths from Phase 1B}
+> **Assigned scope**: {one NodeID or one named microtask; never an open-ended Change Set}
+> **Specs**: {assigned spec file path(s) from Phase 1B}
+> **Assigned acceptance criteria**: {full NodeID VERIFY list, or the exact VERIFY subset / micro-acceptance criteria for this microtask}
+> **Owned files**: {exact writable file list or module boundary}
+> **Prior checkpoint**: {handoff/checkpoint for this scope, or "none"}
 > **Context files**: Read sections 1-2 and 3.3 of `knowzcode/knowzcode_loop.md` (skip other phases), `knowzcode/knowzcode_project.md`
-> **WorkGroup file**: `knowzcode/workgroups/{wgid}.md`
+> **WorkGroup file**: `knowzcode/workgroups/{wgid}.md` (read for context; in Parallel Teams the lead is the only WorkGroup writer)
 >
 > **Your Task**: #{task-id} — claim immediately (`TaskUpdate(status: "in_progress")`). Mark completed with summary when done.
-> **Conventions**: Update WorkGroup file with results (prefix entries with `KnowzCode:`). If blocked, report blocker and notify lead.
-> **Context**: The knowledge-liaison can provide vault knowledge. DM: `"VaultQuery: {question}"` for patterns and best practices before writing tests.
-> **TDD mandatory**: Write failing tests first, then implement, then refactor. Every NodeID must have tests.
-> **Blocker protocol**: If you hit a blocker, document it as a Blocker Report in the WorkGroup file (see loop.md Section 11 format) and report to the lead immediately instead of guessing.
-> **Deliverable**: All NodeIDs implemented with passing tests.
+> **Conventions**: Report results, blockers, and checkpoints in your task summary or handoff. In Parallel Teams, do not edit the WorkGroup file directly; the lead consolidates. If blocked, report blocker and notify lead.
+> **Scope guard**: If this assignment includes more than one NodeID, more than one microtask, missing/ambiguous assigned acceptance criteria, overlapping file ownership, or more than 6 likely touched files, stop before coding and ask the lead to split or clarify it unless the lead explicitly marked the task as a `--broad-builders` exception.
+> **Context discipline**: Read only the assigned spec(s), listed owned files, and targeted sections named above. Do not load every spec, tracker history, or broad architecture file unless a specific blocker requires it.
+> **Context**: The knowledge-liaison can provide vault knowledge. DM at most one targeted `"VaultQuery: {question}"` before writing tests; skip broad best-practice queries when the assigned scope is already clear.
+> **TDD mandatory**: Write failing tests first, then implement, then refactor. Every assigned criterion must have tests or a documented reason why it is covered by an existing test.
+> **Checkpoint rule**: If you cannot finish the assigned scope cleanly in this dispatch, include a checkpoint in your task summary or handoff with Done, Files changed, Tests run, Remaining work, and Next microtask. Mark the task partial/blocked instead of restarting or expanding scope.
+> **Blocker protocol**: If you hit a blocker, document it as a Blocker Report in your task summary or handoff (see loop.md Section 11 format) and report to the lead immediately instead of guessing. The lead persists it to the WorkGroup file in Parallel Teams.
+> **Deliverable**: Assigned NodeID/microtask implemented with passing targeted tests and a compact completion summary.
 > {advisor_guidance}
 
 **Dispatch**:
-- *Parallel Teams*: Multiple builders spawned at Stage 2, one per partition from the dependency map. Each builder gets its partition's NodeIDs and specs. Builders create per-NodeID subtasks for visibility. **Plan approval enabled** — add to prompt: `Present your implementation approach for lead review BEFORE writing code. Wait for approval.` If `AUTONOMOUS_MODE = true`: auto-approve `plan_approval_request` immediately. Log `[AUTO-APPROVED] Builder plan`.
-- *Sequential Teams*: Spawn teammate `builder`, create task `Phase 2A: Implement {N} NodeIDs with TDD`. **Plan approval enabled** — add to prompt: `Present your implementation approach for lead review BEFORE writing code. Wait for approval.` Wait for `plan_approval_request`, review, respond. If `AUTONOMOUS_MODE = true`: auto-approve immediately. Log `[AUTO-APPROVED] Builder plan`.
+- *Parallel Teams*: Builders spawn in dependency waves, one per ready independent NodeID/microtask. Each builder gets only its scope, spec(s), assigned acceptance criteria, owned files, and prior checkpoint. Builders create per-NodeID/microtask subtasks for visibility. **Plan approval enabled** — add to prompt: `Present your implementation approach for lead review BEFORE writing code. Wait for approval.` If `AUTONOMOUS_MODE = true`: auto-approve `plan_approval_request` immediately unless the plan exceeds the scope guard. Log `[AUTO-APPROVED] Builder plan`.
+- *Sequential Teams*: Spawn teammate `builder`, create task `Phase 2A: Implement next ready NodeID/microtask with TDD`. For multi-NodeID Change Sets, repeat sequentially by dependency wave. **Plan approval enabled** — add to prompt: `Present your implementation approach for lead review BEFORE writing code. Wait for approval.` Wait for `plan_approval_request`, review, respond. If `AUTONOMOUS_MODE = true`: auto-approve immediately unless the plan exceeds the scope guard. Log `[AUTO-APPROVED] Builder plan`.
 - *Subagent*: `Task(subagent_type="builder", description="Phase 2A TDD implementation", mode="bypassPermissions", prompt=<above>)`
 
 ---
@@ -326,19 +332,22 @@ After Gate #1, the lead sends the approved Change Set via DM and creates spec-dr
 > Read `agents/reviewer.md` for your full role definition.
 >
 > **Goal**: {goal}
-> **Change Set**: {NodeIDs}
-> **Specs**: {list of spec file paths}
+> **Assigned scope**: {one NodeID or one named microtask}
+> **Specs**: {assigned spec file path(s)}
+> **Assigned acceptance criteria**: {full NodeID VERIFY list, or the exact VERIFY subset / micro-acceptance criteria for this microtask}
+> **Owned files**: {exact read-only file list or module boundary to audit}
 > **Context files**: Read sections 1-2 and 3.4 of `knowzcode/knowzcode_loop.md` (skip other phases), `knowzcode/knowzcode_project.md`, `knowzcode/knowzcode_architecture.md`
-> **WorkGroup file**: `knowzcode/workgroups/{wgid}.md`
+> **WorkGroup file**: `knowzcode/workgroups/{wgid}.md` (read-only context)
 >
 > **Your Task**: #{task-id} — claim immediately (`TaskUpdate(status: "in_progress")`). Mark completed with summary when done.
-> **Conventions**: Update WorkGroup file with results (prefix entries with `KnowzCode:`). If blocked, report blocker and notify lead.
+> **Conventions**: Report audit results in your task summary or handoff. Do not edit the WorkGroup file. If blocked, report blocker and notify lead.
 > **This is a READ-ONLY audit.** Do not modify any source code or test files.
-> **Deliverable**: Audit report with ARC completion %, security posture, and gap list.
+> **Scope guard**: Audit only the assigned acceptance criteria. If this is a microtask and no assigned acceptance criteria are provided, report a scope-definition gap instead of failing unrelated NodeID criteria.
+> **Deliverable**: Audit report for the assigned acceptance criteria with completion %, security posture, gap list, and any scope-definition gaps.
 > {advisor_guidance}
 
 **Dispatch**:
-- *Parallel Teams*: One reviewer per builder partition, spawned at Stage 2. Each reviewer gets its partition's NodeIDs and specs. Audit tasks use `addBlockedBy` per implementation task. Each reviewer uses structured gap report format (see `agents/reviewer.md`).
+- *Parallel Teams*: One reviewer per active builder scope, spawned at Stage 2. Each reviewer gets only its assigned NodeID/microtask, specs, assigned acceptance criteria, and owned files. Audit tasks use `addBlockedBy` per implementation task. Each reviewer uses structured gap report format (see `agents/reviewer.md`).
 - *Sequential Teams*: Spawn teammate `reviewer`, create task `Phase 2B: Completeness audit for {N} NodeIDs`, wait for completion.
 - *Subagent*: `Task(subagent_type="reviewer", description="Phase 2B completeness audit", prompt=<above>)`
 
@@ -364,7 +373,7 @@ After Gate #1, the lead sends the approved Change Set via DM and creates spec-dr
 > {advisor_guidance}
 
 **Dispatch**:
-- *Parallel Teams*: One smoke-tester spawned at Stage 2 alongside reviewers. Runs as background agent. Uses `addBlockedBy` on the same implementation tasks as the reviewer. No partition — smoke-tester covers the whole app (it needs the full app running, not individual partitions).
+- *Parallel Teams*: One smoke-tester spawned at Stage 2 alongside reviewers. Runs as background agent. Uses `addBlockedBy` on the implementation tasks. No builder scope — smoke-tester covers the whole app.
 - *Sequential Teams*: Spawn after reviewer completes, before Phase 3. Create task `Phase 2B: Smoke test for {wgid}`.
 - *Subagent*: `Task(subagent_type="smoke-tester", description="Phase 2B smoke testing", prompt=<above>)`
 
@@ -385,7 +394,7 @@ After Gate #1, the lead sends the approved Change Set via DM and creates spec-dr
 > **WorkGroup file**: `knowzcode/workgroups/{wgid}.md`
 >
 > **Your Task**: #{task-id} — claim immediately (`TaskUpdate(status: "in_progress")`). Mark completed with summary when done.
-> **Conventions**: Update WorkGroup file with results (prefix entries with `KnowzCode:`). If blocked, report blocker and notify lead.
+> **Conventions**: In Parallel Teams, report WorkGroup updates in your task summary and let the lead consolidate. In Sequential/Subagent mode, update the WorkGroup file only when delegated. Prefix any task/todo entries with `KnowzCode:`. If blocked, report blocker and notify lead.
 > **Vault writes**: DM knowledge-liaison for Phase 3 capture: `"Capture Phase 3: {wgid}. Your task: #{task-id}"`. The knowledge-liaison dispatches `knowz:writer`. Do NOT call `create_knowledge` directly.
 > **Deliverable**: Atomic finalization — update specs to FINAL, update tracker, write log entry, update architecture if needed, dispatch learning capture to `knowz:writer`, and create final commit.
 > {advisor_guidance}
@@ -401,7 +410,7 @@ After Gate #1, the lead sends the approved Change Set via DM and creates spec-dr
 > **WorkGroup file**: `knowzcode/workgroups/{wgid}.md`
 >
 > **Your Task**: #{task-id} — claim immediately (`TaskUpdate(status: "in_progress")`). Mark completed with summary when done.
-> **Conventions**: Update WorkGroup file with results (prefix entries with `KnowzCode:`). If blocked, report blocker and notify lead.
+> **Conventions**: In Parallel Teams, report WorkGroup updates in your task summary and let the lead consolidate. In Sequential/Subagent mode, update the WorkGroup file only when delegated. Prefix any task/todo entries with `KnowzCode:`. If blocked, report blocker and notify lead.
 > **Vault writes**: You own all vault writes directly. Follow the Learning Capture instructions in `agents/closer.md`.
 > **MCP Status**: {MCP_ACTIVE} — Vaults configured: {VAULTS_CONFIGURED}. Vault config: `knowz-vaults.md` (project root).
 > **Deliverable**: Atomic finalization — update specs to FINAL, update tracker, write log entry, update architecture if needed, write learnings to vaults, and create final commit.

@@ -7,10 +7,16 @@
 ## Builder Configuration
 
 ```yaml
-# Maximum concurrent builders in Parallel Teams mode (default: 5, range: 1-5)
-# Lower values reduce token usage and complexity; higher values increase parallelism.
-# If the dependency map produces fewer partitions, fewer builders spawn regardless.
-max_builders: 5
+# Maximum concurrent builders in Parallel Teams mode (default: 2, range: 1-3)
+# Lower values reduce duplicated context loading and partial-completion churn.
+# Higher values should be reserved for truly independent, disjoint microtasks.
+# If the dependency map produces fewer ready microtasks, fewer builders spawn regardless.
+max_builders: 2
+
+# Maximum NodeIDs assigned to one builder dispatch by default (default: 1, range: 1-2).
+# Keep this at 1 for dependency-heavy or multi-layer work. Raise only when the
+# NodeIDs are tiny, share the same owned files, and fit in one bounded TDD pass.
+builder_node_limit: 1
 ```
 
 ---
@@ -74,6 +80,7 @@ See `knowzcode/skills/work/references/profile-models.md` for the full profile â†
 | Setting | Config Default | Flag Override |
 |---------|---------------|--------------|
 | max_builders | `max_builders:` | `--max-builders=N` |
+| builder_node_limit | `builder_node_limit:` | `--builder-node-limit=N` |
 | default_specialists | `default_specialists:` | `--specialists`, `--no-specialists` |
 | mcp_agents_enabled | `mcp_agents_enabled:` | `--no-mcp` |
 | profile | `profile:` | `--profile={advisor\|teams\|classic}` |

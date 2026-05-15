@@ -24,7 +24,7 @@ Run the KnowzCode methodology using Codex-native tools.
 5. **Optional parallel discovery (before Phase 1A).** If the topic spans 2 or more independent subsystems, dispatch 1-3 parallel read-only Codex `explorer` agents per the Spawned-Agent Contract below. Merge their findings into the WorkGroup file before proposing the Change Set. Skip when the scope clearly touches one subsystem.
 6. Phase 1A: propose a Change Set with affected files, NodeIDs, and risks. Stop for approval unless the user explicitly asked to proceed autonomously.
 7. Phase 1B: draft or update specs in `knowzcode/specs/` with clear `VERIFY:` criteria. Stop for approval.
-8. Phase 2A: implement with strict TDD. Use Codex delegation only through native mechanisms such as `spawn_agent`, `send_input`, `wait_agent`, and `close_agent` when parallel work is useful. Give each writer an explicit file or module ownership boundary. Never let two writers edit the same file.
+8. Phase 2A: implement with strict TDD. Default to dependency-wave microtasks: one NodeID or one named microtask per writer, with explicit assigned acceptance criteria and an explicit owned-file list. Use Codex delegation only through native mechanisms such as `spawn_agent`, `send_input`, `wait_agent`, and `close_agent` when parallel work is useful. Give each writer an explicit file or module ownership boundary. Never let two writers edit the same file. Do not dispatch broad bundles such as `N3+N4` unless they are tiny, independent, and share one bounded owned-file set.
 9. Keep inter-agent communication structured. Require short handoffs with owned files, findings, blockers, and next actions. Persist shared state in the WorkGroup file and, when helpful, `knowzcode/workgroups/{wgid}/handoffs/{agent-id}.md`.
 10. Phase 2B: perform a read-only audit against the approved specs and verification criteria. Split large audits by disjoint file areas only if the review can stay read-only. **Cap the audit -> fix loop at 3 iterations.** If the audit still surfaces failures after the 3rd fix attempt, stop and surface the residual issues to the user with a recommended downscope or spec revision; do not loop indefinitely.
 11. Phase 3: update specs to as-built, refresh `knowzcode/knowzcode_tracker.md`, prepend an entry to `knowzcode/knowzcode_log.md`, and finalize the work.
@@ -35,6 +35,8 @@ Run the KnowzCode methodology using Codex-native tools.
 When using `spawn_agent` / `send_input` / `wait_agent` / `close_agent` for explorer, writer, or auditor work, the spawned agent must:
 
 - **Receive a scope boundary**: a path glob, module name, or owned-file list. No two parallel agents share writable files.
+- **Stay within a small implementation unit**: default one NodeID or one named microtask, ideally <=6 touched files, with explicit assigned acceptance criteria. If the scope is broader or criteria are ambiguous, the agent must checkpoint and ask the coordinator to split or clarify it.
+- **Load context incrementally**: read only assigned specs, owned files, and the current WorkGroup state needed for the task. Do not reread all specs or architecture history inside every delegated turn.
 - **Persist its work to disk, not chat.** The coordinator reads from the filesystem after `wait_agent` returns; do not rely on the agent's stdout to carry results.
 - **Write a phase report** to `knowzcode/workgroups/{wgid}/handoffs/{agent-id}.md` with these sections:
   - `## Phase` — `1A` | `1B` | `2A` | `2B` | `3`
@@ -42,6 +44,7 @@ When using `spawn_agent` / `send_input` / `wait_agent` / `close_agent` for explo
   - `## Owned Files` — paths the agent touched (read for explorers/auditors; written for writers)
   - `## Findings` — what was discovered or done, with file:line citations
   - `## Blockers` — open questions or external dependencies (omit if `Status: complete`)
+  - `## Remaining Work` — only when partial; exact next microtask and files needed
   - `## Next Phase Inputs` — paths and notes the next phase must consume
 - **Return only the path to its handoff file** so the coordinator can read it.
 

@@ -152,9 +152,11 @@ WHILE verification not complete:
     1. Run all tests → If FAIL: fix and restart
     2. Run static analysis → If issues: fix and restart
     3. Run build → If FAIL: fix and restart
-    4. Verify all VERIFY: criteria from specs → If unmet: implement and restart
+    4. Verify assigned acceptance criteria for the current NodeID or microtask → If unmet: implement and restart
     5. All checks pass → Report complete
 ```
+
+For microtask implementation, "complete" means the assigned acceptance criteria are met, not every criterion in the parent NodeID. The lead is responsible for tracking criteria coverage across microtasks and must not mark the parent NodeID complete until all required `VERIFY:` criteria and cross-microtask integration criteria are covered.
 
 **Maximum iterations**: 10. If exceeded, pause and report blocker.
 
@@ -168,7 +170,7 @@ Report implementation results including test counts, verification iterations, an
 An independent, READ-ONLY audit verifying what percentage of specifications were actually implemented.
 
 **Process:**
-- Compare implementation against specifications for all NodeIDs
+- Compare implementation against specifications for all assigned NodeIDs or microtask acceptance criteria
 - Calculate objective completion percentage
 - Report gaps, orphan code, and risk assessment
 - Do NOT modify any code during this phase
@@ -272,7 +274,7 @@ The lead should interpret the **spirit** of the user's instruction, not just exa
 * Security vulnerabilities rated HIGH or CRITICAL
 * >3 failures on the same phase
 * Architecture discrepancies too complex to fix autonomously
-* >3 gap-fix iterations per partition without resolution
+* >3 gap-fix iterations per builder scope without resolution
 
 Autonomous mode is per-WorkGroup and does not carry over.
 
