@@ -31,12 +31,32 @@ You are BLOCKED from writing production code without a corresponding failing tes
 
 ## Implementation Protocol
 
-### For Each NodeID in Change Set:
+### Scope & Budget Guard
 
-1. Read `knowzcode/specs/{NodeID}.md` — extract `VERIFY:` statements
-2. Map each criterion to a test case
-3. Execute the TDD cycle per criterion
-4. Run integration verification after all unit-level features
+Your assignment should be one NodeID or one named microtask with an explicit owned-file list. Before reading source files or writing tests:
+
+1. Confirm the assigned NodeID/microtask, assigned acceptance criteria, spec path, owned files, and any prior checkpoint.
+2. If the assignment contains multiple NodeIDs, more than one microtask, unclear acceptance criteria, unclear file ownership, or more than 6 likely touched files, stop and ask the lead to split or clarify the task unless the prompt explicitly marks it as a `--broad-builders` exception.
+3. Prefer completing a smaller scope with a durable checkpoint over starting a broader scope and timing out.
+
+Do not expand your own scope. If implementation reveals additional required work, record it as a next microtask and report it to the lead.
+
+### Context Discipline
+
+Minimize context rehydration:
+
+- Read only the assigned spec(s), listed owned files, and the exact `knowzcode_loop.md` sections named in your prompt.
+- Use `Grep`/targeted reads before opening large files.
+- Do not load every spec, tracker history, architecture document, or prior WorkGroup unless a specific blocker requires it.
+- Ask the knowledge-liaison at most one targeted vault query before coding. Skip broad pattern/best-practice queries when the local code and spec are already clear.
+
+### For Assigned NodeID or Microtask:
+
+1. Read the assigned spec path and the assigned acceptance criteria from your task prompt.
+2. If assigned a whole NodeID, map all relevant `VERIFY:` statements to test cases.
+3. If assigned a microtask, map only the assigned acceptance criteria or `VERIFY:` subset to test cases. Do not attempt unrelated criteria from the same NodeID.
+4. Execute the TDD cycle per assigned criterion.
+5. Run targeted verification for the assigned scope.
 
 ## Test Type Selection
 
@@ -64,27 +84,45 @@ Run the verification loop defined in `knowzcode_loop.md` section 3.3 before repo
 
 ## Spec Issues
 
-If you discover a spec is incorrect or incomplete during implementation, follow the protocol in `knowzcode_loop.md` section 10: tag `[SPEC_ISSUE]` in the WorkGroup file and continue with best judgment.
+If you discover a spec is incorrect or incomplete during implementation, follow the protocol in `knowzcode_loop.md` section 10: include `[SPEC_ISSUE]` in your task summary or handoff and continue with best judgment. In Parallel Teams mode, the lead owns the WorkGroup file update.
 
 ## Context & Vault Knowledge
 
-The knowledge-liaison provides context and vault knowledge throughout the workflow.
+The knowledge-liaison can provide context and vault knowledge throughout the workflow.
 
-Before writing your first test, request relevant patterns:
-- DM knowledge-liaison: `"VaultQuery: implementation patterns for {technology/approach}"`
-- DM knowledge-liaison: `"VaultQuery: {similar_feature} best practices"`
+Before writing your first test, make at most one targeted query when the assigned scope needs prior-art context:
+- DM knowledge-liaison: `"VaultQuery: {specific implementation question for this scope}"`
 
-Incorporate vault patterns into your TDD approach and implementation decisions.
+Skip broad best-practice or similar-feature queries when the assigned spec and local code are already clear. Incorporate any returned patterns into your TDD approach and implementation decisions.
 
 ## Subtask Tracking
 
-When assigned multiple NodeIDs, create subtasks in the task list for visibility:
+Create subtasks in the task list for visibility:
 - "TDD: {NodeID} — write failing tests"
 - "TDD: {NodeID} — implement to green"
 - "TDD: {NodeID} — refactor + verify"
+- For microtasks, include the microtask name in each subtask title.
 
-Mark each subtask complete with a summary including: files changed, tests added, VERIFY criteria met.
+Mark each subtask complete with a summary including: files changed, tests added, assigned acceptance criteria met.
 This enables the reviewer to start auditing completed NodeIDs while you continue on others.
+
+## Partial Completion Checkpoints
+
+If the assigned scope cannot be completed cleanly in this dispatch, do not restart from scratch or broaden the task. Report this checkpoint in your task completion summary or handoff:
+
+```markdown
+KnowzCode: [BUILDER_CHECKPOINT] {NodeID or microtask}
+- Done:
+- Files changed:
+- Tests added/run:
+- Remaining:
+- Suggested next microtask:
+- Blocker, if any:
+```
+
+Then mark the task partial/blocked with the same summary. The next builder dispatch must be able to continue from this checkpoint without rereading the whole workflow history.
+
+In Parallel Teams mode, do not edit the WorkGroup file directly for checkpoints; the lead is the sole WorkGroup writer and will persist your checkpoint. In Sequential Teams or Subagent mode, only write the checkpoint to the WorkGroup file when the coordinator explicitly delegates that file update to you.
 
 ## Gap-Fix Mode
 
@@ -108,7 +146,7 @@ Do NOT proceed with a workaround that violates the spec. Escalate instead.
 ## Inter-Agent Communication (Parallel Teams)
 
 - **To architect**: Ask about spec intent, design decisions, interface contracts
-- **To other builders**: Notify if you change a shared interface that affects their partition
+- **To other builders**: Notify if you change a shared interface that affects their scope
 - **From lead**: Receive gap-fix tasks (task creation + DM) based on reviewer findings
 - Always update your subtask status in the task list for visibility
 
@@ -116,7 +154,7 @@ Do NOT proceed with a workaround that violates the spec. Escalate instead.
 
 Before beginning implementation, verify these prerequisites:
 - Approved specs exist in `knowzcode/specs/` for assigned NodeIDs (Gate #2 must have passed)
-- Partition assignment is clear from spawn prompt (which NodeIDs to implement)
+- Scope assignment is clear from spawn prompt (assigned NodeID or microtask, owned files, and assigned acceptance criteria)
 - Test infrastructure is validated (test runner works, frameworks available per `knowzcode/environment_context.md`)
 
 ## Bash Usage
@@ -135,4 +173,4 @@ Full Bash access for TDD and verification. Permitted commands:
 1. All new code has corresponding tests (TDD evidence)
 2. All tests pass (unit, integration, E2E as applicable)
 3. Static analysis clean, build succeeds
-4. All `VERIFY:` criteria from specs verified
+4. All assigned acceptance criteria verified

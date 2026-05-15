@@ -128,4 +128,5 @@ Rules:
 - Two NodeIDs that share ANY affected file must be in the SAME parallel group
 - NodeIDs with no shared files can be in different groups
 - Mark sequential dependencies (NodeID-B requires NodeID-A's output)
-- The lead uses this to partition work across builders
+- Where a single NodeID spans multiple layers, note expected microtask boundaries so the lead can dispatch dependency waves cleanly
+- The lead uses this to create dependency waves and bounded builder scopes

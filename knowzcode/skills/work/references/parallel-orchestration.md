@@ -111,103 +111,130 @@ At every spawn whose prompt contains the `{advisor_guidance}` token (see [spawn-
 
 ## Stage 2: Parallel Implementation + Incremental Review
 
-1. Lead examines dependency map from analyst:
-   - Group NodeIDs into independent partitions (no shared files between groups)
-   - Determine builder count: 1 builder per independent group, max `MAX_BUILDERS` (default 5, configurable in `knowzcode_orchestration.md`)
+1. Lead examines the dependency map from analyst and creates implementation waves:
+   - Topologically sort NodeIDs by dependency. A downstream NodeID is not ready until all upstream NodeIDs it depends on are implemented and audited clean.
+   - Within the current ready wave, identify independent work only when file ownership does not overlap.
+   - If the dependency graph is mostly serialized, run a single builder for the next ready microtask. Do not spawn extra builders just to keep concurrency high.
 
-2. Create builder tasks and spawn:
-   - `TaskCreate("Implement NodeIDs [A, B]", addBlockedBy: [spec-task-id])` → `TaskUpdate(owner: "builder-1")`
-   - `TaskCreate("Implement NodeIDs [C]", addBlockedBy: [spec-task-id])` → `TaskUpdate(owner: "builder-2")`
-   - `TaskCreate("Implement NodeIDs [D, E]", addBlockedBy: [spec-task-id])` → `TaskUpdate(owner: "builder-3")`
+2. Split oversized NodeIDs into microtasks before spawning builders. Split when any signal is true:
+   - The NodeID crosses layers such as DI + service + consumer + UI.
+   - The expected touch set is more than 5 files or more than 500 LOC including tests.
+   - The NodeID has sequential subtasks such as "interface first, then consumer, then UI".
+   - A prior builder dispatch ended partial, timed out, or stopped before wiring/tests completed.
+
+   Example splits:
+   - `N5a: service interface + registration`
+   - `N5b: EmailProcessingService wiring`
+   - `N5c: focused unit/integration tests`
+
+   Every microtask MUST include assigned acceptance criteria before dispatch:
+   - A full NodeID receives all relevant `VERIFY:` criteria from its spec.
+   - A microtask receives the exact `VERIFY:` subset or micro-acceptance criteria it is expected to satisfy.
+   - Criteria outside the assigned subset remain pending for later microtasks and must not be treated as implementation gaps for the current microtask.
+   - The lead records the microtask plan and criteria coverage in the WorkGroup file. A NodeID is complete only when the union of audited microtasks covers all required `VERIFY:` criteria and any cross-microtask integration criteria.
+
+3. Determine builder count for the current wave:
+   - `builder_count = min(MAX_BUILDERS, ready independent microtasks)`
+   - Default `MAX_BUILDERS` is 2. Use more than 3 only when `--broad-builders` was explicitly provided and the tasks are tiny, independent, and disjoint.
+   - Default `BUILDER_NODE_LIMIT` is 1. A builder receives at most one NodeID unless `builder_node_limit: 2` or `--builder-node-limit=2` is set and both NodeIDs share one bounded owned-file set.
+
+4. Create builder tasks for the current ready wave and spawn:
+   - `TaskCreate("Implement N5a: service interface + registration", addBlockedBy: [spec-task-id])` → `TaskUpdate(owner: "builder-1")`
+   - `TaskCreate("Implement N7: independent cache invalidation", addBlockedBy: [spec-task-id])` → `TaskUpdate(owner: "builder-2")`
+   Each `TaskCreate` above is a **separate builder dispatch** (one NodeID or microtask per prompt) from the ready wave only. Do not create downstream implementation tasks until their dependency audit task IDs exist. After `N5a` audits clean, create the next dependent task, for example `TaskCreate("Implement N6: PreExtractionRequestedConsumer", addBlockedBy: [audit-N5a-task-id])`.
+   The same builder slot can be reused for the next ready scope once its prior scope is audited clean — that is how a builder works through a dependency chain without exceeding `BUILDER_NODE_LIMIT` per dispatch.
    Spawn each builder with its `{task-id}` in the spawn prompt.
-   Each builder gets its partition's specs + affected files list.
+   Each builder gets only: assigned NodeID/microtask, spec path(s), assigned acceptance criteria, owned file list, and relevant prior handoff/checkpoint. Do not pass the full Change Set unless the builder needs it for a stated interface reason.
    **NO TWO BUILDERS TOUCH THE SAME FILE**
 
-3. Notify architect of builder spawn:
+5. Notify architect of builder spawn:
    - Lead DMs architect: `"Builders spawned for Stage 2. Introduce yourself to: {builder-1, builder-2, ...}"`
    - Architect sends brief availability message to each builder (see `agents/architect.md` — Proactive Availability)
 
-4. Each builder creates subtasks per NodeID in the task list:
-   - `"TDD: NodeID-A tests"` → `"TDD: NodeID-A implementation"` → `"TDD: NodeID-A verify"`
+6. Each builder creates subtasks per NodeID/microtask in the task list:
+   - `"TDD: NodeID-A tests"` → `"TDD: NodeID-A implementation"` → `"TDD: NodeID-A verify"` for one NodeID
+   - For microtasks: `"TDD: NodeID-A / microtask-name tests"` → `"implementation"` → `"verify"`
    - Builder works through subtasks, marks each complete with summary
 
-5. Create reviewer tasks and spawn — one per builder partition:
-   - `TaskCreate("Audit partition 1: NodeIDs [A, B]", addBlockedBy: [implement-A-task-id])` → `TaskUpdate(owner: "reviewer-1")`
-   - `TaskCreate("Audit partition 2: NodeIDs [C]", addBlockedBy: [implement-C-task-id])` → `TaskUpdate(owner: "reviewer-2")`
-   - `TaskCreate("Audit partition 3: NodeIDs [D, E]", addBlockedBy: [implement-D-task-id])` → `TaskUpdate(owner: "reviewer-3")`
-   Spawn each reviewer with its `{task-id}` + partition's specs + VERIFY criteria.
-   Reviewer stays idle until its paired builder marks first NodeID implementation complete.
-   Each reviewer audits incrementally within its partition.
+7. Create reviewer tasks and spawn — one per active builder scope:
+   - `TaskCreate("Audit N5a: service interface + registration", addBlockedBy: [implement-N5a-task-id])` → `TaskUpdate(owner: "reviewer-1")`
+   - `TaskCreate("Audit N7: independent cache invalidation", addBlockedBy: [implement-N7-task-id])` → `TaskUpdate(owner: "reviewer-2")`
+   Spawn each reviewer with its `{task-id}` + assigned spec(s), assigned acceptance criteria, and owned file list.
+   Reviewer stays idle until its paired builder marks the NodeID/microtask implementation complete.
+   Each reviewer audits incrementally within its assigned microtask or one-NodeID scope.
+   For a later dependent wave, create the reviewer task only after creating that wave's implementation task.
 
-6a. Create smoke-tester task and spawn (one per WorkGroup, not per partition):
+8. Create smoke-tester task and spawn (one per WorkGroup, not per builder scope):
    - `TaskCreate("Smoke test: {wgid}", addBlockedBy: [all-implement-task-ids])` → `TaskUpdate(owner: "smoke-tester")`
    Spawn smoke-tester with its `{task-id}` in the spawn prompt. The smoke-tester waits until at least one builder marks implementation complete, then launches the full app for runtime verification.
-   **Note:** Unlike reviewers, only one smoke-tester runs per WorkGroup — it needs the full app running, not individual partitions.
+   **Note:** Unlike reviewers, only one smoke-tester runs per WorkGroup — it needs the full app running, not individual builder scopes.
 
-6. **Specialist implementation reviews** (if `SPECIALISTS_ENABLED` non-empty): Create specialist review tasks alongside reviewer audit tasks, same `addBlockedBy`:
-   - If `security-officer` active — one task per partition (runs parallel to reviewer):
-     `TaskCreate("Security officer: review partition {N}", addBlockedBy: [implement-X-task-id])` → `TaskUpdate(owner: "security-officer")`
-     DM security-officer: `"**New Task**: #{task-id} — Vulnerability scan for partition {N}. NodeIDs: {list}."`
-   - If `test-advisor` active — one task per partition:
-     `TaskCreate("Test advisor: review partition {N} tests", addBlockedBy: [implement-X-task-id])` → `TaskUpdate(owner: "test-advisor")`
-     DM test-advisor: `"**New Task**: #{task-id} — Test quality review for partition {N}. NodeIDs: {list}."`
-   - If `project-advisor` active — one observation task (not per-partition):
+9. **Specialist implementation reviews** (if `SPECIALISTS_ENABLED` non-empty): Create specialist review tasks alongside reviewer audit tasks, same `addBlockedBy`:
+   - If `security-officer` active — one task per active builder scope (runs parallel to reviewer):
+     `TaskCreate("Security officer: review scope {N}", addBlockedBy: [implement-X-task-id])` → `TaskUpdate(owner: "security-officer")`
+     DM security-officer: `"**New Task**: #{task-id} — Vulnerability scan for scope {N}. NodeIDs/microtasks: {list}."`
+   - If `test-advisor` active — one task per active builder scope:
+     `TaskCreate("Test advisor: review scope {N} tests", addBlockedBy: [implement-X-task-id])` → `TaskUpdate(owner: "test-advisor")`
+     DM test-advisor: `"**New Task**: #{task-id} — Test quality review for scope {N}. NodeIDs/microtasks: {list}."`
+   - If `project-advisor` active — one observation task (not per-scope):
      `TaskCreate("Project advisor: observe implementation")` → `TaskUpdate(owner: "project-advisor")`
      DM project-advisor: `"**New Task**: #{task-id} — Observe builder progress, note patterns and ideas. Deliver backlog proposals before gap loop."`
    **Gate #3 is NOT blocked by specialists.** If a specialist hasn't finished, gate shows `[Pending: {specialist}]`. Lead proceeds.
    **Project-advisor early shutdown**: After project-advisor delivers backlog proposals, shut it down (before the gap loop begins).
 
-7. Gap flow (per-partition, parallel — persistent agents, DM messaging):
+10. Gap flow (per-scope, parallel where dependencies allow — persistent agents, DM messaging):
    a. Each reviewer marks audit task complete with structured gap report in summary
    b. Lead creates fix task and pre-assigns:
       `TaskCreate("Fix gaps: NodeID-A", addBlockedBy: [audit-task-id])` → `TaskUpdate(owner: "builder-N")`
    c. Lead sends DM to builder with task ID and gap details:
       > **New Task**: #{fix-task-id} — Fix gaps: NodeID-A
-      > **Gaps**: {file path, VERIFY criterion not met, expected vs actual}
+      > **Gaps**: {file path, assigned acceptance criterion not met, expected vs actual}
       > Fix each gap, re-run affected tests, report completion.
    d. Builder claims fix task, fixes gaps, re-runs tests, marks fix task complete
    e. Lead creates re-audit task and pre-assigns:
       `TaskCreate("Re-audit: NodeID-A", addBlockedBy: [gap-fix-task-id])` → `TaskUpdate(owner: "reviewer-N")`
    f. Lead sends DM to reviewer: `"**New Task**: #{reaudit-task-id} — Re-audit: NodeID-A. {gap list}"`
-   g. Each builder-reviewer pair repeats independently until clean — no cross-partition blocking
+   g. Each builder-reviewer pair repeats independently until clean — no cross-scope blocking unless the dependency graph requires it
    — All builders and reviewers stay alive through the entire gap loop (no respawning)
 
-   **Smoke test gap flow** (parallel with per-partition reviewer gaps):
+   **Smoke test gap flow** (parallel with per-scope reviewer gaps):
    h. Smoke-tester marks task complete with structured failure report
-   i. Lead creates smoke fix tasks: `TaskCreate("Fix smoke gap: {description}", addBlockedBy: [smoke-task-id])` → `TaskUpdate(owner: "builder-N")` (assigned to the builder whose partition owns the failing code)
+   i. Lead creates smoke fix tasks: `TaskCreate("Fix smoke gap: {description}", addBlockedBy: [smoke-task-id])` → `TaskUpdate(owner: "builder-N")` (assigned to the builder whose owned scope contains the failing code)
    j. Lead DMs builder: `"**New Task**: #{fix-task-id} — Fix smoke gap: {description}. {expected vs observed}"`
    k. Builder fixes, re-runs unit tests, marks fix task complete
    l. Lead creates re-smoke task: `TaskCreate("Re-smoke: {wgid}", addBlockedBy: [smoke-fix-task-id])` → `TaskUpdate(owner: "smoke-tester")`
    m. Lead DMs smoke-tester: `"**New Task**: #{resmoke-task-id} — Re-smoke: {wgid}. Previous failures: {list}"`
    n. 3-iteration cap — if exceeded, pause autonomous mode: `> **Autonomous Mode Paused** — Smoke test failed 3 iterations. Manual review required.`
 
-8. Enterprise compliance (if enabled):
-   - Lead creates parallel compliance task for each reviewer (scoped to their partition)
+11. Enterprise compliance (if enabled):
+   - Lead creates parallel compliance task for each reviewer (scoped to their builder scope)
    - Reviewer checks compliance requirements from vault research findings
    - Runs alongside ARC audits
 
-9. Inter-agent communication during Stage 2:
+12. Inter-agent communication during Stage 2:
    - builder → architect: Spec clarification requests (direct messages)
    - architect → builder: Design guidance and spec intent responses (direct messages)
    - builder ↔ builder: Dependency coordination (direct messages — "I changed the User interface, FYI")
-   - builder → reviewer (same partition): Implementation complete notifications (via task system)
-   - reviewer → lead: Gap reports per partition (structured format via task summaries)
+   - builder → reviewer (same scope): Implementation complete notifications (via task system)
+   - reviewer → lead: Gap reports per scope (structured format via task summaries)
    - lead → builder: Fix tasks (via task creation + DM)
    - lead → reviewer: Re-audit requests (via task creation + DM)
-   - security-officer → builder-N: Security guidance for sensitive partitions (max 2 DMs per builder)
+   - security-officer → builder-N: Security guidance for sensitive scopes (max 2 DMs per builder)
    - test-advisor → builder-N: Test improvement feedback (max 2 DMs per builder)
    - security-officer ↔ test-advisor: Cross-cutting test gaps in security paths (max 2 inter-specialist DMs)
    - project-advisor → knowledge-liaison: Idea captures (`"Consider: {idea}"` — knowledge-liaison dispatches `knowz:writer` if warranted)
    - project-advisor → lead: Backlog proposals (before gap loop)
 
-10. After all NodeIDs implemented + audited across all partitions AND smoke test complete:
+13. After all NodeIDs implemented + audited across all scopes AND smoke test complete:
+    - Lead verifies microtask coverage: every required NodeID `VERIFY:` criterion is covered by at least one completed and audited scope, and any cross-microtask integration criterion has been audited after its dependencies landed.
+    - If coverage is incomplete, create the next missing microtask or roll-up audit task before Gate #3. Do not present Gate #3 as clean while criteria remain unassigned.
     - Lead consolidates audit results from all reviewers
     - Lead consolidates smoke test results (if smoke-tester was spawned)
     - Lead consolidates specialist reports (if `SPECIALISTS_ENABLED` non-empty — include even if some specialist tasks are still pending, noting `[Pending: {specialist}]`)
     - Lead presents **Quality Gate #3** (see [quality-gates.md](quality-gates.md))
     - User decides: proceed / fix gaps / modify specs / cancel
 
-11. Shut down analyst, architect, all builders, all reviewers, and smoke-tester (if spawned)
+14. Shut down analyst, architect, all builders, all reviewers, and smoke-tester (if spawned)
 
 ---
 
@@ -239,11 +266,11 @@ In Parallel Teams mode, the WorkGroup file uses per-NodeID phase tracking instea
 
 ```markdown
 ## Change Set
-| NodeID | Phase | Builder | Status | Timestamp |
-|--------|-------|---------|--------|-----------|
-| Authentication | 2A | builder-1 | Implementing | ... |
-| UserProfile | 2B | builder-1 | Under review | ... |
-| LIB_DateFormat | 2A | builder-2 | Tests passing | ... |
+| NodeID | Scope/Microtask | Assigned Criteria | Phase | Builder | Status | Timestamp |
+|--------|-----------------|-------------------|-------|---------|--------|-----------|
+| Authentication | Auth-token-expiry | VERIFY:token_expiry | 2A | builder-1 | Implementing | ... |
+| UserProfile | Full NodeID | All VERIFY criteria | 2B | builder-1 | Under review | ... |
+| LIB_DateFormat | Full NodeID | All VERIFY criteria | 2A | builder-2 | Tests passing | ... |
 
 ## Autonomous Mode
 Active/Inactive
@@ -273,10 +300,10 @@ When creating tasks, model the dependency chain with `addBlockedBy` and pre-assi
 | Spec: NodeID-X | Phase 1A (gate approval) | architect (Path A) or spec-drafter-N (Path B) |
 | Spec consistency review | All spec drafts complete (Path B only) | architect |
 | Test advisor: spec testability review | Spec: NodeID-X | test-advisor |
-| Implement: NodeID-X | Spec: NodeID-X | builder-N |
-| Audit: NodeID-X | Implement: NodeID-X | reviewer-N |
-| Security officer: review partition N | Implement: NodeID-X | security-officer |
-| Test advisor: review partition N tests | Implement: NodeID-X | test-advisor |
+| Implement: NodeID-X or NodeID-X/microtask | Spec: NodeID-X | builder-N |
+| Audit: NodeID-X or NodeID-X/microtask | Implement: NodeID-X or microtask | reviewer-N |
+| Security officer: review scope N | Implement: NodeID-X or microtask | security-officer |
+| Test advisor: review scope N tests | Implement: NodeID-X or microtask | test-advisor |
 | Project advisor: observe implementation | (none) | project-advisor |
 | Fix gaps: NodeID-X round N | Audit: NodeID-X (or re-audit N-1) | builder-N |
 | Re-audit: NodeID-X round N | Fix gaps round N | reviewer-N |

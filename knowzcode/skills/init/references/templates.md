@@ -125,7 +125,8 @@ graph TD
 ## Builder Configuration
 
 ```yaml
-max_builders: 5
+max_builders: 2
+builder_node_limit: 1
 ```
 
 ---
@@ -151,6 +152,7 @@ mcp_agents_enabled: true
 | Setting | Config Default | Flag Override |
 |---------|---------------|--------------|
 | max_builders | `max_builders:` | `--max-builders=N` |
+| builder_node_limit | `builder_node_limit:` | `--builder-node-limit=N` |
 | default_specialists | `default_specialists:` | `--specialists`, `--no-specialists` |
 | mcp_agents_enabled | `mcp_agents_enabled:` | `--no-mcp` |
 

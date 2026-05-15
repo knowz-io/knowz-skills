@@ -119,7 +119,8 @@ If the user declines Gate C entirely, leave the file on disk but replace each `[
 Ask: "Would you like to configure agent orchestration defaults? (optional — can be changed later in knowzcode/knowzcode_orchestration.md)"
 
 If yes: prompt for:
-- Max concurrent builders (1-5, default: 5)
+- Max concurrent builders (1-3, default: 2; use more only for tiny independent scopes)
+- Builder NodeID limit per dispatch (1-2, default: 1)
 - Scout mode (full/minimal/none, default: full)
 - Default specialists (checkboxes: security-officer, test-advisor, project-advisor)
 - MCP agents enabled (yes/no, default: yes)

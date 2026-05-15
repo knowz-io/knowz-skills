@@ -154,15 +154,24 @@ For `advisor`: also print `> Builder, reviewer, closer, smoke-tester, and microf
 
 If `knowzcode/knowzcode_orchestration.md` exists, parse its YAML blocks:
 
-1. `MAX_BUILDERS` = `max_builders` value (default: 5, clamp to 1-5)
-2. `DEFAULT_SPECIALISTS` = `default_specialists` value (default: [])
-3. `MCP_AGENTS_ENABLED` = `mcp_agents_enabled` value (default: true)
-4. `CODEBASE_SCANNER_ENABLED` = `codebase_scanner_enabled` value (default: true)
-5. `PARALLEL_SPEC_THRESHOLD` = `parallel_spec_threshold` value (default: 3, clamp to 2-10)
-6. `PROFILE_CONFIG` = `profile` value (default: `"teams"`; valid: `"advisor"`, `"teams"`, `"classic"`). If the value is not one of the three, log a warning and fall back to `"teams"`. Used as the input to Step 2.3.
+1. `ALLOW_BROAD_BUILDERS` = true only when `$ARGUMENTS` contains `--broad-builders`
+2. `MAX_BUILDERS_CONFIG` = `max_builders` value (default: 2)
+3. `MAX_BUILDERS` = effective builder cap:
+   - If `--max-builders=N` is present: use `N`, clamped to 1-3 unless `ALLOW_BROAD_BUILDERS`, then clamp to 1-5.
+   - If no `--max-builders` flag and `ALLOW_BROAD_BUILDERS = false`: use `MAX_BUILDERS_CONFIG`, clamped to 1-3. Old installs with `max_builders: 5` are still capped at 3.
+   - If no `--max-builders` flag and `ALLOW_BROAD_BUILDERS = true`: use `MAX_BUILDERS_CONFIG`, clamped to 1-5.
+   - If `MAX_BUILDERS_CONFIG > 3` and `ALLOW_BROAD_BUILDERS = false`, announce: `> Builder fan-out capped at 3 for context-budget safety. Pass --max-builders=N to override (3 max without --broad-builders, up to 5 with --broad-builders) and only for tiny, disjoint, parallel-safe scopes.`
+4. `DEFAULT_SPECIALISTS` = `default_specialists` value (default: [])
+5. `MCP_AGENTS_ENABLED` = `mcp_agents_enabled` value (default: true)
+6. `CODEBASE_SCANNER_ENABLED` = `codebase_scanner_enabled` value (default: true)
+7. `PARALLEL_SPEC_THRESHOLD` = `parallel_spec_threshold` value (default: 3, clamp to 2-10)
+8. `BUILDER_NODE_LIMIT` = `builder_node_limit` value (default: 1, clamp to 1-2)
+9. `PROFILE_CONFIG` = `profile` value (default: `"teams"`; valid: `"advisor"`, `"teams"`, `"classic"`). If the value is not one of the three, log a warning and fall back to `"teams"`. Used as the input to Step 2.3.
 
 Apply flag overrides (flags win over config):
-- `--max-builders=N` in `$ARGUMENTS` → override `MAX_BUILDERS`
+- `--max-builders=N` in `$ARGUMENTS` → override `MAX_BUILDERS` per the effective builder cap rules above
+- `--builder-node-limit=N` in `$ARGUMENTS` → override `BUILDER_NODE_LIMIT`
+- `--broad-builders` in `$ARGUMENTS` → allow `BUILDER_NODE_LIMIT = 2` and `MAX_BUILDERS` up to 5 for explicitly parallel-safe work only
 - `--no-mcp` in `$ARGUMENTS` → override `MCP_AGENTS_ENABLED = false`
 - `--no-scanners` in `$ARGUMENTS` → override `CODEBASE_SCANNER_ENABLED = false`
 - `--no-parallel-specs` in `$ARGUMENTS` → override `PARALLEL_SPEC_THRESHOLD = 999` (effectively disabled)
@@ -189,7 +198,7 @@ Default: `AUTONOMOUS_MODE = false`
 
 If `AUTONOMOUS_MODE = true`, announce after the execution mode announcement:
 > **Autonomous Mode: ACTIVE** — Gates presented for transparency but auto-approved.
-> Safety exceptions still pause: critical blockers, HIGH/CRITICAL security findings, >3 same-phase failures, complex architecture discrepancies, >3 gap-fix iterations per partition.
+> Safety exceptions still pause: critical blockers, HIGH/CRITICAL security findings, >3 same-phase failures, complex architecture discrepancies, >3 gap-fix iterations per builder scope.
 
 **Autonomous + Vault Write Rule**: Autonomous mode auto-approves quality gates — it does NOT auto-skip vault writes, WorkGroup files, tracker updates, or log entries. Every gate capture and completion artifact is still MUST. "Autonomous" means "no user approval needed for gates" — it does not mean "skip the workflow structure."
 
@@ -403,7 +412,7 @@ Scan `knowzcode/knowzcode_tracker.md` for outstanding `REFACTOR_` tasks that ove
 
 - **Stage 0**: Create team, use MCP/vault baseline from Step 3.6, spawn knowledge-liaison/analyst/architect/scanner/specialist agents in parallel
 - **Stage 1**: Analyst completes Change Set → Gate #1 → Architect drafts specs → Gate #2
-- **Stage 2**: Parallel builders (1 per independent partition) + paired reviewers + gap loop
+- **Stage 2**: Dependency-wave builders (default 1 NodeID/microtask per builder) + paired reviewers + gap loop
 - **Stage 3**: Closer finalizes, dispatches writer for captures, shutdown
 
 ---
@@ -468,7 +477,9 @@ These flags override corresponding config defaults in `knowzcode/knowzcode_orche
 
 | Flag | Effect |
 |------|--------|
-| `--max-builders=N` | Cap concurrent builders in Parallel Teams (1-5) |
+| `--max-builders=N` | Cap concurrent builders in Parallel Teams (1-3 by default; up to 5 only with `--broad-builders`) |
+| `--builder-node-limit=N` | Cap NodeIDs per builder dispatch (default 1, max 2) |
+| `--broad-builders` | Explicitly allow wider builder fan-out for tiny, independent NodeIDs |
 | `--specialists[=csv]` | Enable specialist agents (security, test, project) |
 | `--no-specialists` | Disable specialists even if configured |
 | `--no-mcp` | Skip MCP vault agents |

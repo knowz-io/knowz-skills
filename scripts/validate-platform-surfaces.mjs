@@ -257,6 +257,59 @@ expect(!existsSync(join(ROOT, 'plugins', 'knowzcode', 'agents')), 'Codex package
 
 const codexExecutionGuide = join(ROOT, 'plugins', 'knowzcode', 'knowzcode', 'codex_execution.md');
 expect(existsSync(codexExecutionGuide), `Missing Codex execution guide: ${codexExecutionGuide}`);
+if (existsSync(codexExecutionGuide)) {
+  expectFileContains(
+    codexExecutionGuide,
+    /## Status\s+complete\s+\|\s+blocked\s+\|\s+partial/,
+    `Codex handoff schema must allow partial checkpoints: ${codexExecutionGuide}`
+  );
+  expectFileContains(
+    codexExecutionGuide,
+    /## Remaining Work/,
+    `Codex handoff schema must include Remaining Work for partial checkpoints: ${codexExecutionGuide}`
+  );
+  expectFileContains(
+    codexExecutionGuide,
+    /## Phase[\s\S]*## Owned Files[\s\S]*## Next Phase Inputs/,
+    `Codex handoff schema must match the work skill phase-report schema: ${codexExecutionGuide}`
+  );
+  expectFileNotContains(
+    codexExecutionGuide,
+    /## Handoff|Next Action:|Artifact Paths:/,
+    `Codex execution guide must not keep the old compact handoff schema: ${codexExecutionGuide}`
+  );
+}
+
+for (const file of [
+  join(ROOT, 'knowzcode', 'knowzcode', 'platform_adapters.md'),
+  join(ROOT, 'plugins', 'knowzcode', 'knowzcode', 'platform_adapters.md'),
+]) {
+  expectFileContains(
+    file,
+    /Stage 2 dispatches builders per ready NodeID\/microtask with assigned acceptance criteria/,
+    `Claude adapter Phase 2A must mention NodeID/microtask scope discipline: ${file}`
+  );
+  expectFileContains(
+    file,
+    /Scope implementation by dependency wave: one ready NodeID or named microtask/,
+    `Codex AGENTS.md Phase 2A must mention dependency-wave microtasks: ${file}`
+  );
+  expectFileContains(
+    file,
+    /Skills are the command surface; `AGENTS\.md` is optional supporting context/,
+    `Codex AGENTS.md adapter must keep skills as the primary Codex command surface: ${file}`
+  );
+  expectFileContains(
+    file,
+    /consolidated full test suite \+ static analysis \+ build after all waves/,
+    `Codex AGENTS.md Phase 2A must defer consolidated verification until all waves complete: ${file}`
+  );
+  expectFileContains(
+    file,
+    /Agent Teams is the expected execution mode for all KnowzCode workflows/,
+    `Claude adapter must include the full Agent Teams execution guidance: ${file}`
+  );
+}
 
 const codexWorkSkill = join(ROOT, 'plugins', 'knowzcode', 'skills', 'work', 'SKILL.md');
 expect(existsSync(codexWorkSkill), `Missing Codex work skill: ${codexWorkSkill}`);
@@ -266,7 +319,29 @@ if (existsSync(codexWorkSkill)) {
     /knowzcode\/codex_execution\.md/,
     'Codex work skill must reference knowzcode/codex_execution.md'
   );
+  expectFileContains(
+    codexWorkSkill,
+    /## Phase[\s\S]*## Status[\s\S]*complete`\s+\|\s+`blocked`\s+\|\s+`partial`[\s\S]*## Owned Files[\s\S]*## Remaining Work[\s\S]*## Next Phase Inputs/,
+    `Codex work skill handoff schema must stay aligned with codex_execution.md: ${codexWorkSkill}`
+  );
 }
+
+const parallelOrchestrationGuide = join(ROOT, 'knowzcode', 'skills', 'work', 'references', 'parallel-orchestration.md');
+expectFileNotContains(
+  parallelOrchestrationGuide,
+  /N5-audit-task-id|N6-audit-task-id|Audit N6: PreExtractionRequestedConsumer/,
+  `Stage 2 examples must not reference future dependency tasks before those tasks exist: ${parallelOrchestrationGuide}`
+);
+expectFileContains(
+  parallelOrchestrationGuide,
+  /Do not create downstream implementation tasks until their dependency audit task IDs exist/,
+  `Stage 2 examples must explicitly defer downstream task creation until dependency audit IDs exist: ${parallelOrchestrationGuide}`
+);
+expectFileContains(
+  parallelOrchestrationGuide,
+  /create the reviewer task only after creating that wave's implementation task/,
+  `Stage 2 examples must defer downstream reviewer tasks until their implementation tasks exist: ${parallelOrchestrationGuide}`
+);
 
 const codexSkillRoot = join(ROOT, 'plugins', 'knowzcode', 'skills');
 if (existsSync(codexSkillRoot)) {

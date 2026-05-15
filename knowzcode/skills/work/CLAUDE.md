@@ -13,7 +13,7 @@ Agents are invoked as `general-purpose` subagents that read their agent `.md` fi
 | `knowledge-liaison` | Persistent (Stage 0+) | Context, vault research, knowledge capture |
 | `analyst` | Phase 1A | Impact analysis, Change Set, dependency map |
 | `architect` | Phase 1B | Spec drafting, VERIFY criteria |
-| `builder` | Phase 2A | TDD implementation (1–5 per partition) |
+| `builder` | Phase 2A | TDD implementation (dependency-wave scopes, default 1 NodeID/microtask each) |
 | `reviewer` | Phase 2B | ARC audit, gap report |
 | `smoke-tester` | Phase 2B (opt-in) | Runtime smoke testing |
 | `closer` | Phase 3 | Finalization, tracker update, log entry, commit |
@@ -38,7 +38,7 @@ Agents are invoked as `general-purpose` subagents that read their agent `.md` fi
 
 ## Parallelism
 
-- **Parallel Teams (Tier 3 default)**: Stage 0 spawns knowledge-liaison + analyst + architect + scanners/specialists simultaneously; Stage 2 spawns one builder per independent NodeID partition plus paired reviewer
+- **Parallel Teams (Tier 3 default)**: Stage 0 spawns knowledge-liaison + analyst + architect + scanners/specialists simultaneously; Stage 2 spawns dependency-wave builders for ready independent NodeIDs/microtasks plus paired reviewers
 - **Sequential Teams**: one agent per phase, spawned and shut down sequentially
 - **Lightweight Teams (Tier 2)**: knowledge-liaison (persistent) + builder; skips analyst, architect, reviewer, closer
 
@@ -48,6 +48,7 @@ Agents are invoked as `general-purpose` subagents that read their agent `.md` fi
 - Every WorkGroup task item MUST start with `KnowzCode:` prefix
 - `AUTONOMOUS_MODE` auto-approves gates but NEVER skips vault writes, WorkGroup updates, tracker updates, or log entries
 - `--profile advisor` requires Parallel Teams; incompatible with `--sequential` or `--subagent`
+- Builder dispatch is intentionally narrow: effective default `max_builders: 2`, `builder_node_limit: 1`; split dependency-heavy work into microtasks with assigned acceptance criteria rather than spawning broad builders
 - Gap loop cap: >3 failures on the same phase → pause and ask user (safety exception, applies even in Autonomous Mode)
 - Announce execution mode, profile, autonomous mode, and active specialists before any phase work begins
 - Tier 1 (micro, <50 LOC) → redirect immediately to `/knowzcode:fix`; do not proceed
