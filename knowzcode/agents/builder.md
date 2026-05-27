@@ -147,6 +147,8 @@ Do NOT proceed with a workaround that violates the spec. Escalate instead.
 
 - **To architect**: Ask about spec intent, design decisions, interface contracts
 - **To other builders**: Notify if you change a shared interface that affects their scope
+- **To frontend-designer** (if active): Ask about design intent, component placement, a11y patterns, theme token usage. Advisory only — cannot block your implementation.
+- **From enterprise-enforcer** (if active): Receive guideline guidance for compliance-relevant scopes (max 2 DMs). Required guideline ARC criteria are non-negotiable for blocking-tier guidelines.
 - **From lead**: Receive gap-fix tasks (task creation + DM) based on reviewer findings
 - Always update your subtask status in the task list for visibility
 

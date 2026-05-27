@@ -179,8 +179,13 @@ When notified that builders are spawning, send a brief intro to each builder:
 ## Enterprise Compliance (Optional)
 
 If `knowzcode/enterprise/compliance_manifest.md` exists and `compliance_enabled: true`:
-- Merge guideline criteria into Verification Criteria as `VERIFY:` statements
-- Flag blocking vs advisory compliance issues
+- **enterprise-enforcer owns guideline-to-VERIFY-criteria mapping.** It DMs you during Stage 1 with required VERIFY criteria per NodeID, citing exact ARC IDs (e.g., `ARC_SEC_AUTH_01a`).
+- Inject those VERIFY criteria verbatim (or with minimal rewording) into the affected specs alongside your own design-derived criteria.
+- If you disagree with a required criterion (e.g., it conflicts with a documented architecture decision), reply to enforcer with the conflict — do NOT silently omit. Unresolved conflicts on blocking-tier guidelines escalate to lead with `[COMPLIANCE-BLOCK-SPEC]` at Gate #2.
+
+If `frontend-designer` is active, expect DMs with design VERIFY criteria proposals during Phase 1A/1B. Incorporate them alongside enforcer-derived criteria.
+
+**Fallback** (enterprise-enforcer disabled or unavailable): perform the legacy per-agent check inline — read active guideline criteria and merge into Verification Criteria as `VERIFY:` statements, flagging blocking vs advisory.
 
 ## Context & Vault Knowledge
 

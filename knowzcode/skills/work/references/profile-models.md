@@ -23,10 +23,12 @@ Profile resolution order: CLI flag `--profile={advisor|teams|classic}` wins over
 | architect | opus | opus | opus | Pure strategic reasoning — advisor adds no value |
 | analyst | opus | opus | opus | Pure strategic reasoning |
 | security-officer | opus | opus | opus | Deep analysis (OWASP scanning) needs full power |
+| enterprise-enforcer | opus | opus | opus | Officer authority with gate-blocking — needs full reasoning for guideline interpretation |
 | builder | **sonnet** | opus | opus | Heavy mechanical token generation with periodic strategic decisions |
 | reviewer | **sonnet** | opus | opus | Heavy mechanical token generation with periodic strategic analysis |
 | closer | **sonnet** | opus | opus | Mechanical finalization work (writing docs, commits) |
 | smoke-tester | **sonnet** | opus | opus | Mechanical test execution |
+| frontend-designer | **sonnet** | opus | opus | Mechanical browser-based E2E verification with periodic design judgment |
 | microfix-specialist | **sonnet** | opus | opus | Small, localized changes |
 | knowledge-liaison | sonnet | sonnet | sonnet | Already Sonnet — no change |
 | test-advisor | sonnet | sonnet | sonnet | Already Sonnet — no change |
@@ -44,7 +46,7 @@ Apply at every agent spawn site (Stage 0, 1, 2, 3 in Parallel Teams; each spawn 
 
 ```
 MODEL_FOR(agent_name, profile):
-  IF profile == "advisor" AND agent_name IN {builder, reviewer, closer, smoke-tester, microfix-specialist}:
+  IF profile == "advisor" AND agent_name IN {builder, reviewer, closer, smoke-tester, microfix-specialist, frontend-designer}:
     RETURN "sonnet"
   ELSE:
     RETURN null  # use agent frontmatter default
