@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.16.0] - 2026-05-27
+
+### Added
+- New persistent specialist agent `frontend-designer` — design questioning, ASCII/Mermaid mockup proposals, design VERIFY criteria contribution, and deep end-to-end browser-based UI/UX verification across all phases (Stage 0–3). Conditional auto-activation when a UI surface is detected (`index.html`, JSX/TSX, Vue, Svelte, Razor, Blazor, Flutter, browser-extension `manifest.json`, MAUI XAML); skipped on CLI-only / library projects.
+- New persistent officer agent `enterprise-enforcer` — centralized owner of enterprise-compliance enforcement across Stages 0–3. Auto-spawns when `knowzcode/enterprise/compliance_manifest.md` has `compliance_enabled: true` and at least one active non-empty guideline. Officer authority: blocking-tier guideline violations tagged `[COMPLIANCE-BLOCK]` pause autonomous mode at Gate #3.
+- New conditional **Group D** at Stage 0 for the two officers (parallel to existing Group A and Group C).
+- New `[DESIGN-QUESTIONS]` bundle protocol: frontend-designer batches up to 8 design questions with ASCII/Mermaid mockups and recommended defaults, surfaced to the user via `AskUserQuestion` through the lead. Hard cap of 3 bundles per WorkGroup.
+- New design guidelines template at `knowzcode/enterprise/guidelines/design.md` with sections for design system conventions, accessibility (WCAG), responsive breakpoints, empty/loading/error states, copy/microcopy, theme tokens, and component reuse.
+- Orchestration flags: `--frontend-designer` / `--no-frontend-designer` / `--frontend-designer-blocking` / `--enterprise-enforcer` / `--no-enterprise-enforcer`.
+- Orchestration config keys in `knowzcode_orchestration.md`: `frontend_designer` (auto/true/false), `frontend_designer_blocking`, `frontend_designer_autonomous_defaults` (pause/accept-recommendations).
+- ID-ownership coordination protocol between `enterprise-enforcer` and `security-officer`: enforcer owns guideline-ID/ARC-coverage mapping; security-officer owns vulnerability detection and severity. Stage 0 handshake; disagreements escalate to lead.
+- Gate #3 autonomous-mode safety check now includes `[COMPLIANCE-BLOCK]` (alongside `[SECURITY-BLOCK]`) and `[DESIGN-CONCERN-BLOCK]` (when frontend-designer officer mode is enabled).
+
+### Changed
+- Per-agent compliance hooks in `reviewer.md`, `architect.md`, `test-advisor.md`, and `security-officer.md` are now delegation notes plus preserved fallback paragraphs — the fallback runs only when `enterprise-enforcer` is disabled (`--no-enterprise-enforcer`) or unavailable (Tier 2 Light, Sequential Teams). Default behavior with the enforcer active: the four agents defer compliance audit to it.
+- `compliance_manifest.md` status promoted from "Experimental" to "Beta — centralized enforcement via enterprise-enforcer". Added explicit `design.md` row to the Active Guidelines table.
+- `compliance_status.md` writer changed: with enforcer active, the closer writes the entry on the enforcer's behalf at Phase 3 (enforcer is read-only); fallback mode keeps reviewer as writer.
+- `smoke-tester.md` now coordinates with `frontend-designer` when both are active: smoke-tester owns boot/happy-path and does not tear down the app until frontend-designer marks its E2E audit complete.
+- `architect.md`, `builder.md`, `reviewer.md` cross-references updated to acknowledge the new officers.
+- Profile-models mapping extends to `frontend-designer` (Sonnet under advisor profile, matching builder/reviewer pattern). `enterprise-enforcer` stays opus (officer authority needs full reasoning).
+- Repo agent count: 13 → 15 (`CLAUDE.md`, plugin manifest).
+
 ## [0.15.0] - 2026-05-15
 
 ### Changed

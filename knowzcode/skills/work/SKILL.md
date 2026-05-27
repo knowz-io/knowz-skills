@@ -167,6 +167,9 @@ If `knowzcode/knowzcode_orchestration.md` exists, parse its YAML blocks:
 7. `PARALLEL_SPEC_THRESHOLD` = `parallel_spec_threshold` value (default: 3, clamp to 2-10)
 8. `BUILDER_NODE_LIMIT` = `builder_node_limit` value (default: 1, clamp to 1-2)
 9. `PROFILE_CONFIG` = `profile` value (default: `"teams"`; valid: `"advisor"`, `"teams"`, `"classic"`). If the value is not one of the three, log a warning and fall back to `"teams"`. Used as the input to Step 2.3.
+10. `FRONTEND_DESIGNER_CONFIG` = `frontend_designer` value (default: `"auto"`; valid: `"auto"`, `"true"`, `"false"`)
+11. `FRONTEND_DESIGNER_BLOCKING_CONFIG` = `frontend_designer_blocking` value (default: `false`)
+12. `FRONTEND_DESIGNER_AUTONOMOUS_DEFAULTS_CONFIG` = `frontend_designer_autonomous_defaults` value (default: `"pause"`; valid: `"pause"`, `"accept-recommendations"`)
 
 Apply flag overrides (flags win over config):
 - `--max-builders=N` in `$ARGUMENTS` → override `MAX_BUILDERS` per the effective builder cap rules above
@@ -175,6 +178,11 @@ Apply flag overrides (flags win over config):
 - `--no-mcp` in `$ARGUMENTS` → override `MCP_AGENTS_ENABLED = false`
 - `--no-scanners` in `$ARGUMENTS` → override `CODEBASE_SCANNER_ENABLED = false`
 - `--no-parallel-specs` in `$ARGUMENTS` → override `PARALLEL_SPEC_THRESHOLD = 999` (effectively disabled)
+- `--frontend-designer` in `$ARGUMENTS` → force `FRONTEND_DESIGNER_CONFIG = "true"` (force-on even without UI detection)
+- `--no-frontend-designer` in `$ARGUMENTS` → force `FRONTEND_DESIGNER_CONFIG = "false"` (force-skip)
+- `--frontend-designer-blocking` in `$ARGUMENTS` → set `FRONTEND_DESIGNER_BLOCKING_CONFIG = true` (officer mode)
+- `--enterprise-enforcer` in `$ARGUMENTS` → force-enable enterprise-enforcer even when manifest absent (skeleton mode — see Step 2.6.1)
+- `--no-enterprise-enforcer` in `$ARGUMENTS` → force-skip enterprise-enforcer even when manifest enables it (use per-agent fallback paths)
 
 (Profile flag handling — `--profile=...` — is applied in Step 2.3, not here, because it affects execution-mode selection which runs before orchestration config load.)
 
@@ -211,17 +219,19 @@ If `DEFAULT_SPECIALISTS` is non-empty (from Step 2.4), initialize:
 
 Determine which specialists to activate (flags and natural language add to or override the baseline):
 - `--specialists` → enable all 3: `[security-officer, test-advisor, project-advisor]`
-- `--specialists=csv` → enable specific subset (comma-separated, e.g., `--specialists=security,test`):
+- `--specialists=csv` → enable specific subset (comma-separated, e.g., `--specialists=security,test,design`):
   - `security` → `security-officer`
   - `test` → `test-advisor`
   - `project` → `project-advisor`
-- `--no-specialists` → explicit opt-out, `SPECIALISTS_ENABLED = []`
+  - `design` → `frontend-designer` (also adds to `SPECIALISTS_ENABLED` for announcement consistency; full activation logic for frontend-designer is below)
+- `--no-specialists` → explicit opt-out, `SPECIALISTS_ENABLED = []` (does NOT affect frontend-designer or enterprise-enforcer — those have their own opt-outs)
 
 **Natural language detection** (case-insensitive match in `$ARGUMENTS` OR the user's preceding conversation message):
 - All specialists: "with specialists", "with officers", "full specialist panel"
 - security-officer: "security review", "threat model", "vulnerability scan", "pentest"
 - test-advisor: "test quality", "TDD enforcement", "test coverage", "test rigor"
 - project-advisor: "backlog", "future work", "brainstorm", "ideas"
+- frontend-designer: "design review", "UX review", "frontend design", "wireframe", "mockup", "ui/ux", "accessibility review", "a11y", "responsive review"
 
 **Mode constraints:**
 - Tier 3 Parallel Teams: Full support (Group C)
@@ -232,6 +242,46 @@ Default: `SPECIALISTS_ENABLED = []` (specialists are opt-in).
 
 If `SPECIALISTS_ENABLED` is non-empty, announce after the autonomous mode announcement (or after the execution mode announcement if autonomous is not active):
 > **Specialists: ACTIVE** — {comma-separated list of enabled specialists}
+
+## Step 2.6.1: Frontend Designer Auto-Detection
+
+Set `FRONTEND_DESIGNER_ENABLED = false`.
+
+**Mode constraint (checked first)**: Group D officers require Parallel Teams. If execution mode (set in Step 2) is Sequential Teams, Lightweight Teams, or Subagent Delegation: skip detection entirely. If user explicitly passed `--frontend-designer` flag in an unsupported mode, announce `> **Frontend Designer: SKIPPED** — Group D officers require Parallel Teams. Drop the flag or use Parallel Teams.`. Tier 2 Light forces Lightweight Teams downstream, so Tier 2 inherits this skip.
+
+**Resolution order** (first match wins; only runs if mode constraint passes):
+1. If `--no-frontend-designer` flag OR `FRONTEND_DESIGNER_CONFIG == "false"` → SKIP. Announce: `> **Frontend Designer: SKIPPED** — disabled via flag/config.`
+2. If `--frontend-designer` flag OR `FRONTEND_DESIGNER_CONFIG == "true"` → `FRONTEND_DESIGNER_ENABLED = true`. Reason: forced via flag/config.
+3. If `--specialists=design` shorthand OR NL trigger (`"design review"`, `"ui/ux"`, `"mockup"`, `"a11y"`, etc.) detected → `FRONTEND_DESIGNER_ENABLED = true`. Reason: requested via specialist alias or NL.
+4. If `FRONTEND_DESIGNER_CONFIG == "auto"` (default) — probe for UI surface:
+   - `Glob: "**/index.html"`, `"**/*.razor"`, `"**/_Host.cshtml"`, `"**/*.vue"`, `"**/*.svelte"`, `"**/*.tsx"`, `"**/*.jsx"`, `"**/main.dart"`, `"**/manifest.json"`, `"**/*.xaml"`
+   - If ANY match → `FRONTEND_DESIGNER_ENABLED = true`. Reason: UI surface detected.
+   - Else → SKIP. Announce: `> **Frontend Designer: SKIPPED** — no UI surface detected.`
+
+Note: `--no-specialists` does NOT affect this step. Frontend-designer activation is independent of `SPECIALISTS_ENABLED` — adding `design` to `--specialists=csv` is a convenience alias only. To opt out of frontend-designer, use `--no-frontend-designer`.
+
+If `FRONTEND_DESIGNER_ENABLED = true`, announce:
+> **Frontend Designer: ACTIVE** — {reason}{; officer-mode (HIGH = [DESIGN-CONCERN-BLOCK]) if FRONTEND_DESIGNER_BLOCKING_CONFIG is true}
+
+## Step 2.6.2: Enterprise Enforcer Auto-Detection
+
+Set `ENTERPRISE_ENFORCER_ENABLED = false`.
+
+**Mode constraint (checked first)**: Group D officers require Parallel Teams. If execution mode is Sequential Teams, Lightweight Teams, or Subagent Delegation: skip detection entirely. If user explicitly passed `--enterprise-enforcer` flag in an unsupported mode, announce `> **Enterprise Enforcer: SKIPPED** — Group D officers require Parallel Teams; per-agent compliance fallback paths in reviewer/architect/test-advisor/security-officer will handle compliance instead.`. Tier 2 Light forces Lightweight Teams downstream, so Tier 2 inherits this skip.
+
+**Resolution order** (first match wins; only runs if mode constraint passes):
+1. If `--no-enterprise-enforcer` flag → SKIP. Announce: `> **Enterprise Enforcer: SKIPPED** — disabled via flag (per-agent fallback paths active).`
+2. If `--enterprise-enforcer` flag → `ENTERPRISE_ENFORCER_ENABLED = true`. If manifest is absent, enforcer runs in skeleton mode (reports `[COMPLIANCE-CONFIG-GAP]` to lead and shuts down). Reason: forced via flag.
+3. Auto-detect: if `knowzcode/enterprise/compliance_manifest.md` exists:
+   - Parse the YAML configuration block — read `compliance_enabled`
+   - If `compliance_enabled == true`:
+     - Parse Active Guidelines table
+     - For each row with `Active: true`, check the referenced file exists and is non-empty (per `skip_empty_guidelines`). "Empty" includes a file with only commented-out template sections (default state of `design.md` and `code-quality.md` until populated).
+     - If ≥1 active non-empty guideline → `ENTERPRISE_ENFORCER_ENABLED = true`. Reason: compliance enabled with N active guidelines.
+     - Else → SKIP. Announce: `> **Enterprise Enforcer: SKIPPED** — compliance enabled but no active non-empty guidelines.`
+
+If `ENTERPRISE_ENFORCER_ENABLED = true`, announce:
+> **Enterprise Enforcer: ACTIVE** — {reason}
 
 ## Step 3: Load Context Files (ONCE)
 
@@ -432,7 +482,11 @@ Scan `knowzcode/knowzcode_tracker.md` for outstanding `REFACTOR_` tasks that ove
 | 2A | builder(s) | — | Implementation + tests |
 | 2B | reviewer(s) | #3: Audit Results | ARC completion, gap reports |
 | 2B | smoke-tester | #3: Audit Results | Runtime verification, smoke pass/fail |
+| 0–3 | frontend-designer | All gates | Design Questions Bundle, Design Impact Report, Design Audit Report (conditional, UI projects) |
+| 0–3 | enterprise-enforcer | All gates | Compliance posture, ARC coverage, [COMPLIANCE-BLOCK] tagging (conditional, compliance_enabled) |
 | 3 | closer | — | Final specs, tracker updates, log entry, commit |
+
+When `frontend-designer` is active alongside `smoke-tester`: smoke-tester owns app boot and basic happy path; frontend-designer waits for app readiness and performs spec-driven E2E. Smoke-tester does not tear down the app until frontend-designer reports complete.
 
 ---
 
@@ -491,6 +545,11 @@ These flags override corresponding config defaults in `knowzcode/knowzcode_orche
 | `--autonomous` / `--auto` | Autonomous mode — gates auto-approved |
 | `--tier {light\|full}` | Override complexity tier |
 | `--smoke-test` | Request smoke testing in Tier 2 |
+| `--frontend-designer` | Force-enable frontend-designer even without UI detection |
+| `--no-frontend-designer` | Force-skip frontend-designer even if UI detected |
+| `--frontend-designer-blocking` | Elevate frontend-designer to officer mode (HIGH = [DESIGN-CONCERN-BLOCK]) |
+| `--enterprise-enforcer` | Force-enable enterprise-enforcer (skeleton mode if no manifest) |
+| `--no-enterprise-enforcer` | Force-skip enterprise-enforcer (use per-agent compliance fallback) |
 
 The `advisor` profile forces Parallel Teams and requires Claude Code v2.1.100+ with direct Anthropic API access. See `references/profile-models.md` for the full profile → agent-model mapping.
 

@@ -34,6 +34,10 @@ Present the Change Set for user approval:
 **Architect**: {architecture impact, layer touch points, pattern alignment}
 **Test Advisor**: {coverage baseline, test strategy recommendations per NodeID}
 
+### Group D Officer Reports               [only when Group D officers active]
+**Frontend Designer**: {per-NodeID UI impact rating, design questions surfaced via Design Questions Bundle, design VERIFY needs proposed to architect}  [if FRONTEND_DESIGNER_ENABLED]
+**Enterprise Enforcer**: {active guidelines count, goal-relevant guideline IDs, per-NodeID guideline map}                                              [if ENTERPRISE_ENFORCER_ENABLED]
+
 Approve this Change Set to proceed to specification?
 ```
 
@@ -68,6 +72,10 @@ Present specs for batch approval:
 ### Specialist Reports                    [only when SPECIALISTS_ENABLED non-empty]
 **Architect**: {specs align with component map, drift concerns, pattern consistency}
 **Test Advisor**: {spec testability assessment, recommended test types per NodeID}
+
+### Group D Officer Reports               [only when Group D officers active]
+**Frontend Designer**: {spec design VERIFY coverage — a11y, responsive, empty/loading/error, theme tokens}                                                                  [if FRONTEND_DESIGNER_ENABLED]
+**Enterprise Enforcer**: {spec coverage: covered VERIFY criteria from blocking guidelines / required; advisory coverage; [COMPLIANCE-BLOCK-SPEC] flagged if blocking-tier ignored}  [if ENTERPRISE_ENFORCER_ENABLED]
 
 Review specs and approve to proceed to implementation?
 ```
@@ -129,6 +137,10 @@ Present audit results:
 **Test Advisor**: TDD Compliance: {%} | Missing Edge Cases: {N} | Quality: {Good/Adequate/Poor} | {details or [Pending]}
 **Project Advisor**: New REFACTOR tasks: {N} | Ideas captured to vault: {N}
 
+### Group D Officer Reports               [only when Group D officers active]
+**Frontend Designer**: E2E Flows: {count} | Design VERIFY: {met}/{total} | Wiring: {COMPLETE/GAPS} | a11y: {PASS/CONCERNS} | Responsive: {360/768/1280 verified} | Console: {clean/N warnings} | {[DESIGN-CONCERN] HIGH findings or PASS}                [if FRONTEND_DESIGNER_ENABLED]
+**Enterprise Enforcer**: Blocking violations: {N} | Advisory violations: {N} | ARC coverage: {X}% (blocking) / {Y}% (advisory) | {[COMPLIANCE-BLOCK] tagged or PASS}                                                                              [if ENTERPRISE_ENFORCER_ENABLED]
+
 ### Smoke Test Results                      [only when smoke-tester was spawned]
 **Status**: {PASS / FAIL}
 **Method**: {API / Chrome / Playwright}
@@ -143,6 +155,8 @@ How would you like to proceed?
 
 **Autonomous Mode**: If `AUTONOMOUS_MODE = true`:
 - **Safety check**: If any security finding rated HIGH or CRITICAL (from reviewer OR security-officer `[SECURITY-BLOCK]`) → **PAUSE** autonomous mode for this gate. Announce: `> **Autonomous Mode Paused** — HIGH/CRITICAL security finding requires manual review.`
+- **Safety check**: If any `[COMPLIANCE-BLOCK]` tag is present (from enterprise-enforcer) → **PAUSE** autonomous mode for this gate. Announce: `> **Autonomous Mode Paused** — blocking-tier compliance violation requires manual review.`
+- **Safety check**: If `FRONTEND_DESIGNER_BLOCKING_CONFIG = true` AND any `[DESIGN-CONCERN-BLOCK]` tag is present (frontend-designer officer mode) → **PAUSE** autonomous mode for this gate. Announce: `> **Autonomous Mode Paused** — blocking design concern requires manual review.`
 - **Safety check**: If ARC completion < 50% → **PAUSE** autonomous mode for this gate. Announce: `> **Autonomous Mode Paused** — ARC completion below 50% requires manual review.`
 - **Safety check**: If criteria coverage is incomplete or any scope-definition gaps remain → **PAUSE** autonomous mode for this gate. Announce: `> **Autonomous Mode Paused** — assigned acceptance criteria coverage is incomplete.`
 - If safety checks pass and gaps found → log `[AUTO-APPROVED] Gate #3 — proceeding to gap loop`, auto-proceed to gap loop.
