@@ -1,6 +1,7 @@
 {
   "name": "knowz-skills",
   "owner": { "name": "Alex Headscarf", "email": "alexheadscarf@gmail.com" },
+  "description": "Knowz plugin marketplace for knowledge management and structured AI development workflows",
   "metadata": {
     "description": "Official Knowz plugin marketplace — development methodology and knowledge management for AI coding assistants"
   },
@@ -9,15 +10,19 @@
       "name": "knowzcode",
       "source": "./knowzcode",
       "description": "Platform-agnostic AI development methodology with TDD and quality gates. Skills: /work (full feature loop), /explore (research & plan), /fix (micro-fix), /audit (spec/architecture/security scans), /init (setup), /regroup (handoff), /status, /telemetry (Sentry/AppInsights), /telemetry-setup, /continue (resume WorkGroup), plus regroup-trigger and start-work triggers.",
-      "version": "0.15.0",
-      "author": { "name": "Alex Headscarf" }
+      "version": "0.16.0",
+      "author": { "name": "Alex Headscarf" },
+      "homepage": "https://github.com/knowz-io/knowz-skills/tree/main/knowzcode",
+      "repository": "https://github.com/knowz-io/knowz-skills"
     },
     {
       "name": "knowz",
       "source": "./knowz",
       "description": "Frictionless knowledge management via the Knowz MCP server — search, save, and query knowledge across vaults",
       "version": "0.7.1",
-      "author": { "name": "Alex Headscarf" }
+      "author": { "name": "Alex Headscarf" },
+      "homepage": "https://github.com/knowz-io/knowz-skills/tree/main/knowz",
+      "repository": "https://github.com/knowz-io/knowz-skills"
     }
   ]
 }

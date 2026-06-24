@@ -1,0 +1,8 @@
+# Repository License Notice
+
+This public repository contains multiple plugin packages with different license terms.
+
+- `knowz/` is licensed under the MIT License. See `knowz/LICENSE`.
+- `knowzcode/` is licensed under the MIT License with Commons Clause because it derives from Noderr. See `knowzcode/LICENSE`.
+
+Unless a file states otherwise, use the license for the package directory that contains it.

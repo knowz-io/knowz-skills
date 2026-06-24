@@ -7,7 +7,7 @@
 [![License: MIT + Commons Clause](https://img.shields.io/badge/License-MIT_+_Commons_Clause-yellow.svg)](LICENSE)
 [![Claude Code Plugin](https://img.shields.io/badge/Claude_Code-Plugin-purple)](https://github.com/knowz-io/knowz-skills)
 
-[What You Get](#what-you-get) · [How It Works](#how-it-works) · [Install](#install) · [Quick Start](#quick-start) · [Platforms](#platform-support)
+[What You Get](#what-you-get) · [How It Works](#how-it-works) · [Install](#install) · [Quick Start](#quick-start) · [Platforms](#platform-support) · [Privacy](#privacy--support)
 
 </div>
 
@@ -195,6 +195,17 @@ KnowzCode optionally connects to [Knowz](https://knowz.io) for persistent knowle
 - Conventions from one project inform work on another
 
 Works fully without Knowz. The connection adds memory, not dependency.
+
+---
+
+## Privacy & Support
+
+KnowzCode stores workflow state in local project files by default. It only sends data to Knowz when the user has configured Knowz and chooses a workflow that queries or writes vault knowledge. Telemetry workflows only connect to user-configured telemetry providers.
+
+- Privacy policy: [../PRIVACY.md](../PRIVACY.md) and https://knowz.io/privacy
+- Support contact: support@knowz.io
+- Security reports: [../SECURITY.md](../SECURITY.md)
+- Status: https://status.knowz.io
 
 ---
 

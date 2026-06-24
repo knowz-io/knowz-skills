@@ -50,7 +50,7 @@ For product overview, see [README.md](README.md). For detailed docs, see `docs/`
 │   ├── specs/                   # Component specification templates
 │   └── ...                      # (vault config lives in knowz-vaults.md at project root, not here)
 ├── docs/                        # Documentation
-├── CLAUDE.md                    # This file (framework dev guide)
+├── DEV_GUIDE.md                 # This file (framework dev guide)
 └── README.md                    # Product overview
 ```
 
