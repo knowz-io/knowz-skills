@@ -85,4 +85,4 @@ Works across 6 AI platforms — Claude Code, OpenAI Codex, Gemini CLI, GitHub Co
 
 ---
 
-This is a public source repository. `knowz/` is MIT licensed; `knowzcode/` is MIT with Commons Clause because it derives from Noderr. See [LICENSE](./LICENSE) and the package directories for details.
+This is a public source repository. `knowz/` and `knowzcode/` are MIT licensed. See [LICENSE](./LICENSE) and the package directories for details.
