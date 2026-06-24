@@ -89,8 +89,8 @@ The email {email} is already associated with an account.
 
 Options:
 1. Use a different email — run /knowz register again
-2. Retrieve existing API key — visit https://knowz.io/api-keys
-3. Reset password — https://knowz.io/forgot-password
+2. Retrieve existing API key — visit https://app.knowz.io/settings/api-keys
+3. Reset password — https://app.knowz.io/forgot-password
 
 If this is your account, you can configure your existing key:
   /knowz setup <your-existing-api-key>
@@ -114,7 +114,7 @@ Too many requests. Registration is temporarily rate limited.
 Please wait a few minutes and try again.
 
 If you continue to see this error, contact support:
-  https://knowz.io/support
+  support@knowz.io
 ```
 
 ### Network Error
@@ -128,7 +128,7 @@ Troubleshooting:
 3. Try again in a few moments
 
 Status page: https://status.knowz.io
-Support: https://knowz.io/support
+Support: support@knowz.io
 ```
 
 ### Server Error (HTTP 500+)
@@ -139,7 +139,7 @@ Server encountered an error. This is not your fault.
 Please:
 1. Try again in a few minutes
 2. Check status: https://status.knowz.io
-3. Contact support if persists: https://knowz.io/support
+3. Contact support if persists: support@knowz.io
 ```
 
 ### MCP Configuration Failed (registration succeeded)
@@ -154,7 +154,7 @@ Your account:
 Configure manually:
   /knowz setup {masked_key}
 
-Or visit https://knowz.io/api-keys to retrieve your key later.
+Or visit https://app.knowz.io/settings/api-keys to retrieve your key later.
 ```
 
 ## Security Considerations
@@ -177,4 +177,4 @@ Or visit https://knowz.io/api-keys to retrieve your key later.
 - **Knowledge Capture** — save insights with automatic formatting
 
 Free tier: 1,000 API calls/month, single user, basic vector search.
-Upgrades: https://knowz.io/pricing
+Plan and account details are available in the Knowz app: https://app.knowz.io

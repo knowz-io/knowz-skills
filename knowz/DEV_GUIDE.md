@@ -1,4 +1,4 @@
-# knowz-skill - Plugin Development Guide
+# knowz - Plugin Development Guide
 
 This is a Claude Code plugin that provides frictionless interaction with the Knowz MCP server.
 
@@ -21,7 +21,7 @@ knowz-skill/
 |- knowz-vaults.example.md     # Template for user's vault config file
 |- knowz-pending.example.md    # Template for pending captures queue
 |- platform_adapters.md        # Codex/Gemini generated skill templates
-|- CLAUDE.md                   # This file
+|- DEV_GUIDE.md                # This file
 `- README.md                   # Usage docs
 ```
 
