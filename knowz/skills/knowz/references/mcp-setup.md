@@ -166,7 +166,7 @@ If the problem persists:
 ```
 Authentication failed. The API key appears to be invalid or expired.
 
-Get a new key at: https://knowz.io/api-keys
+Get a new key at: https://app.knowz.io/settings/api-keys
 Or switch to OAuth (no key needed): /knowz setup --oauth
 ```
 

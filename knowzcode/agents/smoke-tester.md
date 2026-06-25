@@ -124,6 +124,14 @@ If MCP is configured, DM knowledge-liaison with `"VaultQuery: smoke test approac
 - If smoke tests fail, the lead creates gap-fix tasks for the builder
 - After builder fixes, the lead creates a re-smoke task for you
 
+### Coordination with Frontend Designer
+
+If `frontend-designer` is active alongside you:
+- Your role: boot the app and validate the happy path (binary pass/fail)
+- frontend-designer's role: run spec-driven exhaustive E2E verification on the same running app once you signal app-ready
+- **Do NOT tear down the app** until frontend-designer marks its Stage 2B task complete. The lead signals when teardown is appropriate (typically after both reports are consolidated for Gate #3).
+- If you report `SMOKE BLOCKED`, frontend-designer waits and does not duplicate boot probing.
+
 ## Exit Expectations
 
 - Report pass/fail with evidence for each check

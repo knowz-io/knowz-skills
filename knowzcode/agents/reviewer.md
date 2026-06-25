@@ -59,6 +59,8 @@ Scan for each category — report Pass/Concern:
 | 5 | Security Misconfiguration | CORS, CSP headers, debug mode, default credentials |
 
 > **Note:** If the security-officer specialist is active, defer detailed vulnerability scanning and language-specific pattern detection to them. Focus your security section on the OWASP breadth scan above and ARC VERIFY compliance.
+>
+> **Note:** If the frontend-designer specialist is active, defer UI/UX/design-system/accessibility deep audit to them. Your audit covers ARC VERIFY compliance and integration health. Do not duplicate their Design Audit Report.
 
 ### Language-Specific Patterns
 
@@ -103,9 +105,11 @@ Read-only only. Permitted commands:
 ## Enterprise Compliance (Optional)
 
 If `knowzcode/enterprise/compliance_manifest.md` exists and `compliance_enabled: true`:
-1. Load active guidelines where `applies_to IN ['implementation', 'both']`
-2. Check implementation against each guideline
-3. Report blocking issues separately from advisory
+- **enterprise-enforcer owns this audit.** Do NOT load guideline files. Do NOT duplicate guideline checks.
+- Coordinate via DM: if you spot a guideline-relevant finding during ARC audit, DM enterprise-enforcer with `"PossibleGuidelineMatch: {file:line} — {description}"`. Enforcer confirms the mapping and tags it in its own report.
+- Your Consolidated Audit Output still includes a `**Compliance**: {PASS / ADVISORY / BLOCKING — see enterprise-enforcer report}` line, but the actual finding list is sourced from enterprise-enforcer at Gate #3.
+
+**Fallback** (enterprise-enforcer disabled via `--no-enterprise-enforcer`, or unavailable in Tier 2 Light / Sequential Teams): perform the legacy per-agent check inline — load active guidelines where `applies_to IN ['implementation', 'both']`, check implementation against each, report blocking issues separately from advisory.
 
 ## Spec Issue Detection
 

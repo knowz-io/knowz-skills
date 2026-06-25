@@ -25,7 +25,7 @@ Knowz fixes this. Ask a question and get an answer grounded in what your team ac
 
 ## Auto-Detection
 
-The standout feature. When you ask about a past decision, Knowz silently searches your vaults and weaves the answer into the conversation — no command needed. When you share an insight worth keeping, Knowz offers to save it.
+The standout feature. After you opt in by configuring vault routing, Knowz can perform a lightweight read-only vault lookup when you ask about a past decision and weave relevant results into the conversation. When you share an insight worth keeping, Knowz offers to save it.
 
 It's like having a team member with perfect memory sitting alongside you.
 
@@ -87,6 +87,24 @@ The Knowz MCP server works with any AI model and any MCP-compatible agent. This 
 Knowz integrates with the [KnowzCode](../knowzcode/) development methodology — past decisions are searchable during planning, and durable learnings are captured automatically after each feature ships. KnowzCode owns local workflow continuity such as `/knowzcode:regroup` and `/knowzcode:continue`.
 
 Works fully standalone too. No KnowzCode required.
+
+---
+
+## Privacy & Support
+
+The Knowz plugin is a local Claude Code plugin. It connects to the Knowz MCP server only after the user configures Knowz and invokes or enables vault workflows. It never writes to a vault without confirmation.
+
+- Privacy policy: [../PRIVACY.md](../PRIVACY.md) and https://knowz.io/privacy
+- Support contact: support@knowz.io
+- Security reports: [../SECURITY.md](../SECURITY.md)
+- API keys: https://app.knowz.io/settings/api-keys
+- Status: https://status.knowz.io
+
+---
+
+## License
+
+MIT License — see [LICENSE](./LICENSE).
 
 ---
 

@@ -126,19 +126,18 @@ Scan completed implementation for vulnerabilities — deeper and more targeted t
 ## Enterprise Compliance (Optional)
 
 If `knowzcode/enterprise/compliance_manifest.md` exists and `compliance_enabled: true`:
+- **enterprise-enforcer owns guideline-ID ownership and ARC-coverage scoring.** You retain ownership of: STRIDE-lite threat modeling, vulnerability detection, language-specific scanning, severity rating.
+- **Stage 0 handshake**: enterprise-enforcer DMs you the active `SEC-*` guideline IDs and their ARC criteria. Incorporate the requirement context into your STRIDE-lite model. Do NOT load `guidelines/security.md` yourself — enforcer has it loaded and will DM relevant excerpts on request.
+- **Stage 2 cross-reference**: when your vulnerability scan finds an issue at a location matching a known guideline requirement (from enforcer's Stage 0 handshake), add the guideline ID to your finding table's `Enterprise ID` column:
+  `| SEC-E-001 | CRITICAL | auth.ts:45 | JWT secret hardcoded | Move to env var | **SEC-AUTH-01** |`
+- Severity (CRITICAL/HIGH/MEDIUM/LOW) remains your call. Tier (blocking/advisory) is the enforcer's call. Both can appear on the same finding.
+- **Disagreement protocol**: any conflict (e.g., enforcer says ARC criterion is satisfied, you say the implementation is still vulnerable) is escalated to lead at gate with both POVs — do not negotiate silently.
 
-1. Read the manifest's Active Guidelines table — load guidelines where `Active: true`
-2. Read active security guidelines (e.g., `knowzcode/enterprise/guidelines/security.md`)
-3. **Stage 0**: Incorporate enterprise security requirements into the STRIDE-lite threat model. Note which enterprise guideline IDs (SEC-AUTH-01, SEC-INJ-01, etc.) apply to the goal's scope.
-4. **Stage 2**: Cross-reference vulnerability findings with enterprise guideline IDs. When a finding matches an enterprise requirement, tag it:
-   `| SEC-E-001 | CRITICAL | auth.ts:45 | JWT secret hardcoded | Move to env var | **SEC-AUTH-01** |`
-5. **Finding Report**: Add column `Enterprise ID` to the finding table when enterprise compliance is active. Report which enterprise ARC criteria are satisfied vs violated.
+**Fallback** (enterprise-enforcer disabled or unavailable): perform the legacy per-agent cross-reference inline — load active security guidelines yourself, cross-reference findings with guideline IDs in your `Enterprise ID` column. Also read any custom guidelines in `knowzcode/enterprise/guidelines/custom/` with security-related categories.
 
-If `mcp_compliance_enabled: true`: query enterprise vault for organization-specific security standards using `search_knowledge({compliance_vault_id}, "security standards for {domain}")`.
+If `mcp_compliance_enabled: true`: query enterprise vault for organization-specific security standards using `search_knowledge({compliance_vault_id}, "security standards for {domain}")` (unchanged — this is an MCP capability, not a guideline-mapping responsibility).
 
-**Relationship to Reviewer**: The reviewer performs the official compliance checklist audit. You provide deeper threat context and cross-reference. Do not duplicate the reviewer's compliance checklist — add depth.
-
-Also read any custom guidelines in `knowzcode/enterprise/guidelines/custom/` that have security-related categories.
+**Relationship to Reviewer**: The reviewer performs ARC VERIFY compliance audit. You provide depth via vulnerability detection. Do not duplicate the reviewer's checklist — add depth.
 
 ## Bash Usage
 

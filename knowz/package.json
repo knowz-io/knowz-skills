@@ -1,6 +1,6 @@
 {
   "name": "knowz-mcp",
-  "version": "0.7.1",
+  "version": "0.8.0",
   "description": "Frictionless knowledge management via the Knowz MCP server -- search, save, and query knowledge across vaults",
   "type": "module",
   "bin": {
@@ -32,15 +32,16 @@
     "semantic-search"
   ],
   "author": {
-    "name": "Alex Headscarf"
+    "name": "Alex Headscarf",
+    "url": "https://github.com/knowz-io"
   },
-  "homepage": "https://github.com/knowz-io/knowz-skills",
+  "homepage": "https://github.com/knowz-io/knowz",
   "bugs": {
-    "url": "https://github.com/knowz-io/knowz-skills/issues"
+    "url": "https://github.com/knowz-io/knowz/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/knowz-io/knowz-skills.git"
+    "url": "git+https://github.com/knowz-io/knowz.git"
   },
   "publishConfig": {
     "access": "public"

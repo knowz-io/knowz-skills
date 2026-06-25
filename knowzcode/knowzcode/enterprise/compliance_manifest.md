@@ -1,8 +1,16 @@
 # Enterprise Compliance Manifest
 
-> **Status: Experimental** — This feature is partially implemented. Security guidelines are functional; code-quality guidelines are templates only. No automated tests exist yet. Use at your own discretion.
+> **Status: Beta** — Centralized enforcement via the `enterprise-enforcer` agent (introduced in v0.16.0). When `compliance_enabled: true` and at least one active non-empty guideline exists, the enforcer is auto-spawned at Stage 0 of `/knowzcode:work` Tier 3 workflows. Per-agent compliance hooks in `reviewer`, `architect`, `test-advisor`, and `security-officer` remain as fallback paths used when the enforcer is disabled via `--no-enterprise-enforcer` or unavailable (Tier 2 Light, Sequential Teams).
 
 **Purpose:** Defines which enterprise guidelines are active and their enforcement level.
+
+---
+
+## Enforcement Owner
+
+When `compliance_enabled: true`, the `enterprise-enforcer` agent (`agents/enterprise-enforcer.md`) is the sole owner of guideline loading, spec injection, builder guidance, and the Gate #3 compliance audit. Other agents defer compliance work to it via the coordination protocols documented in their agent files. See `knowzcode/skills/work/SKILL.md` Step 2.6.2 for activation logic.
+
+To opt out of centralized enforcement and use the per-agent fallback paths: pass `--no-enterprise-enforcer` on the `/knowzcode:work` invocation.
 
 ---
 
@@ -12,6 +20,7 @@
 |:---------------|:------------|:-----------|:-------|
 | security.md | blocking | both | false |
 | code-quality.md | advisory | implementation | false |
+| design.md | advisory | both | false |
 
 > **Note:** Set `Active` to `true` to enable a guideline. Guidelines with empty content are skipped.
 
@@ -115,6 +124,8 @@ When `mcp_compliance_enabled: true`:
 | security-officer | search_knowledge | Stage 0, Stage 2 | Organization security standards, past security findings |
 | test-advisor | (read-only) | Stage 2 | Enterprise ARC criteria for test coverage check |
 | project-advisor | (read-only) | Stage 0 | Compliance config gaps for backlog proposals |
+| enterprise-enforcer | search_knowledge | Stage 0, Stage 2 | Organization-specific guideline interpretations, past compliance findings |
+| frontend-designer | search_knowledge | Stage 0, Stage 2B | Organization design standards, past UI/UX decisions |
 
 ---
 

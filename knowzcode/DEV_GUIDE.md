@@ -27,7 +27,7 @@ For product overview, see [README.md](README.md). For detailed docs, see `docs/`
 │   ├── continue/SKILL.md        # Trigger skill
 │   ├── start-work/SKILL.md      # Trigger skill
 │   └── *.json                   # JSON skill definitions
-├── agents/                      # Agent definitions (13)
+├── agents/                      # Agent definitions (15)
 │   ├── analyst.md               # Phase 1A — impact analysis
 │   ├── architect.md             # Phase 1B — specification drafting
 │   ├── builder.md               # Phase 2A — TDD implementation
@@ -40,7 +40,9 @@ For product overview, see [README.md](README.md). For detailed docs, see `docs/`
 │   ├── update-coordinator.md    # Utility — plugin update coordination
 │   ├── project-advisor.md       # Specialist (opt-in) — backlog curation
 │   ├── security-officer.md      # Specialist (opt-in) — threat modeling
-│   └── test-advisor.md          # Specialist (opt-in) — TDD enforcement
+│   ├── test-advisor.md          # Specialist (opt-in) — TDD enforcement
+│   ├── frontend-designer.md     # Officer (auto on UI surface) — UI/UX design Q&A, mockups, E2E audit
+│   └── enterprise-enforcer.md   # Officer (auto when compliance_enabled) — guideline mapping, gate-blocking compliance
 ├── knowzcode/                   # Template files (copied into user projects on /knowzcode:setup)
 │   ├── knowzcode_loop.md        # Core methodology (platform-neutral)
 │   ├── platform_adapters.md     # Templates for all 6 platform instruction files
@@ -48,7 +50,7 @@ For product overview, see [README.md](README.md). For detailed docs, see `docs/`
 │   ├── specs/                   # Component specification templates
 │   └── ...                      # (vault config lives in knowz-vaults.md at project root, not here)
 ├── docs/                        # Documentation
-├── CLAUDE.md                    # This file (framework dev guide)
+├── DEV_GUIDE.md                 # This file (framework dev guide)
 └── README.md                    # Product overview
 ```
 
