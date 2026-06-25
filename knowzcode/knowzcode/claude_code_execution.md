@@ -173,6 +173,20 @@ Use mailbox messaging for coordination between teammates:
 | test-advisor | security-officer | Cross-cutting: security scenarios needing test coverage (max 2 inter-specialist DMs) |
 | project-advisor | lead | Backlog context (Stage 0) and proposals (late Stage 2) |
 | project-advisor | knowledge-liaison | Idea captures: `"Consider: {idea}"` (knowledge-liaison dispatches knowz:writer if warranted) |
+| frontend-designer | lead | `[DESIGN-QUESTIONS]` bundles (Stage 0+), Design Impact Report (Gate #1), Design Audit Report (Gate #3) |
+| frontend-designer | architect | Design VERIFY criteria needs during Phase 1A/1B |
+| frontend-designer | builder-N | Design guidance for UI-touching scopes (max 2 per builder) |
+| frontend-designer | smoke-tester | App-readiness coordination |
+| frontend-designer | knowledge-liaison | `"VaultQuery: design conventions"` / `"Consider: design pattern"` |
+| lead | user | Relay frontend-designer `[DESIGN-QUESTIONS]` bundles via `AskUserQuestion` (or auto-accept recommendations per `frontend_designer_autonomous_defaults`) |
+| enterprise-enforcer | lead | Compliance Posture (Stage 0), gate reports, `[COMPLIANCE-BLOCK]` tags at Gate #3 |
+| enterprise-enforcer | architect | Required VERIFY criteria with ARC IDs (Stage 1) |
+| enterprise-enforcer | builder-N | Guideline guidance for compliance-relevant scopes (max 2 per builder) |
+| enterprise-enforcer | test-advisor | ARC criteria handoff for test-coverage verification |
+| enterprise-enforcer | reviewer-N | Scope-coverage handoff (Stage 2) |
+| enterprise-enforcer | security-officer | SEC-* guideline ID handshake (Stage 0); cross-reference reconciliation (Stage 2) |
+| enterprise-enforcer | frontend-designer | DSN-* design guideline ID handshake (Stage 0) |
+| enterprise-enforcer | closer | Compliance audit summary for `compliance_status.md` append (Stage 3) |
 
 ### Gap Communication Flow
 In Parallel Teams mode, gap communication goes through the lead:
@@ -229,6 +243,8 @@ Agents must NOT create new tasks for work already assigned to them via task ID.
 | security-officer | Stage 0 (Group C) | After Gate #3 | Threat modeling + vulnerability scanning (officer — can block gates) |
 | test-advisor | Stage 0 (Group C) | After Gate #3 | TDD enforcement + test quality review (advisor — informational) |
 | project-advisor | Stage 0 (Group C) | Mid-Stage 2 | Backlog curation + idea capture (advisor — informational) |
+| frontend-designer | Stage 0 (Group D, conditional) | After Gate #3 (before knowledge-liaison) | UI/UX design Q&A, ASCII mockups, design VERIFY criteria, E2E UI audit (advisor by default; officer with `--frontend-designer-blocking`) |
+| enterprise-enforcer | Stage 0 (Group D, auto when compliance_enabled) | After Gate #3 (before knowledge-liaison) | Compliance posture, guideline-to-ARC mapping, gate-blocking on blocking-tier violations (officer) |
 | knowledge-liaison | Stage 0 (Group A) | Last before team cleanup | Persistent context & vault coordinator — reads local context, dispatches vault readers, routes vault I/O |
 | closer | Stage 3 | End of workflow | Finalization |
 
@@ -314,18 +330,22 @@ When the approved Change Set contains 3+ NodeIDs (configurable via `PARALLEL_SPE
 When specialists are enabled, three additional agents spawn at Stage 0 alongside Group A:
 
 ```
-Group A (always):           knowledge-liaison + analyst + architect      (3 agents)
-Group A (if scanners):      + scanner-direct + scanner-tests            (+2 agents)
-Group C (if --specialists): security-officer + test-advisor + project-advisor  (3 agents)
+Group A (always):                       knowledge-liaison + analyst + architect      (3 agents)
+Group A (if scanners):                  + scanner-direct + scanner-tests             (+2 agents)
+Group C (if --specialists):             security-officer + test-advisor + project-advisor  (+3 agents)
+Group D (if FRONTEND_DESIGNER_ENABLED): frontend-designer                            (+1 agent)
+Group D (if ENTERPRISE_ENFORCER_ENABLED): enterprise-enforcer                        (+1 agent)
 ```
 
-Max Stage 0 concurrent: 3-8 agents depending on orchestration config (scanners, specialists). Scanners shut down after Stage 1, so Stage 2 peak is manageable.
+Max Stage 0 concurrent: 3-10 agents depending on orchestration config (scanners, specialists, Group D officers). Scanners shut down after Stage 1, so Stage 2 peak is manageable.
 
 ##### Officer vs Advisor Authority
 
 | Role | Authority | Gate Impact |
 |------|-----------|-------------|
 | **Officer** (security-officer) | CRITICAL/HIGH findings block gates | `[SECURITY-BLOCK]` tag pauses autonomous mode |
+| **Officer** (enterprise-enforcer) | Blocking-tier guideline violations block Gate #3 | `[COMPLIANCE-BLOCK]` tag pauses autonomous mode |
+| **Conditional Advisor/Officer** (frontend-designer) | HIGH findings are advisory by default; officer mode opt-in via `--frontend-designer-blocking` | `[DESIGN-CONCERN]` advisory; `[DESIGN-CONCERN-BLOCK]` pauses autonomous mode in officer mode |
 | **Advisor** (test-advisor, project-advisor) | Informational only | Findings included in gate reports, do not block |
 
 ##### Direct DM Protocol
@@ -338,6 +358,17 @@ Specialists communicate directly with builders, architect, and each other — no
 - **test-advisor → builder-N**: Specific test improvement feedback (max 2 DMs per builder)
 - **project-advisor → knowledge-liaison**: Idea captures (`"Consider: {idea}"` — knowledge-liaison dispatches knowz:writer if warranted)
 - **security-officer ↔ test-advisor**: Cross-cutting test gaps in security paths (max 2 inter-specialist DMs total)
+- **frontend-designer → architect**: Design VERIFY criteria proposals (Stage 1)
+- **frontend-designer → builder-N**: Design guidance for UI scopes (max 2 DMs per builder)
+- **frontend-designer → smoke-tester**: App-readiness coordination (Stage 2B)
+- **frontend-designer → lead**: `[DESIGN-QUESTIONS]` bundles relayed to user via `AskUserQuestion`; Design Impact + Design Audit reports at gates
+- **enterprise-enforcer → architect**: Required VERIFY criteria citing ARC IDs (Stage 1)
+- **enterprise-enforcer → builder-N**: Guideline guidance (max 2 DMs per builder)
+- **enterprise-enforcer → test-advisor**: ARC criteria handoff for test-coverage verification
+- **enterprise-enforcer → reviewer-N**: Scope-coverage handoff so reviewer skips guideline duplication
+- **enterprise-enforcer ↔ security-officer**: SEC-* guideline ID handshake (Stage 0); cross-reference reconciliation (Stage 2)
+- **enterprise-enforcer → frontend-designer**: DSN-* design guideline ID handshake (Stage 0)
+- **enterprise-enforcer → closer**: Compliance audit summary payload for `compliance_status.md` append (Stage 3)
 
 ##### Communication Discipline
 

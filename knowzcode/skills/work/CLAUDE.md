@@ -20,6 +20,8 @@ Agents are invoked as `general-purpose` subagents that read their agent `.md` fi
 | `security-officer` | Phase 1 (opt-in) | Threat model, OWASP scan |
 | `test-advisor` | Phase 1 (opt-in) | TDD enforcement, test quality |
 | `project-advisor` | Phase 1 (opt-in) | Backlog curation |
+| `frontend-designer` | Persistent 0–3 (conditional, auto on UI surface) | Design questioning, ASCII mockups, design VERIFY criteria, E2E UI audit |
+| `enterprise-enforcer` | Persistent 0–3 (auto when compliance_enabled) | Compliance posture, guideline-to-ARC mapping, gate-blocking on blocking-tier violations |
 
 ## Workflow Phases (Tier 3)
 

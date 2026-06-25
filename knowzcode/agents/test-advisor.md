@@ -133,17 +133,19 @@ DM builders with specific test improvement feedback:
 ## Enterprise Compliance (Optional)
 
 If `knowzcode/enterprise/compliance_manifest.md` exists and `compliance_enabled: true`:
+- **enterprise-enforcer owns guideline loading and ARC-criterion enumeration.** It DMs you in Stage 2 with the list of enterprise ARC criteria in scope per NodeID.
+- For each ARC criterion in the handoff list, search test files for matching coverage and report covered/missing in your `Enterprise ARC Coverage` subsection:
+  ```
+  **Enterprise ARC Coverage**: {X}/{N} criteria have test coverage
+  | ARC Criterion | Guideline | Test File | Covered | Notes |
+  ```
+- Source the criterion list from the enforcer DM — do NOT read guideline files yourself.
 
+**Fallback** (enterprise-enforcer disabled or unavailable): perform the legacy per-agent check inline:
 1. Read the manifest's Active Guidelines table — load guidelines where `Active: true`
-2. Read active guidelines and extract all `ARC Verification` criteria (e.g., `ARC_SEC_AUTH_01a`, `ARC_CQ_PATTERN_01a`)
-3. **Stage 2**: For each enterprise ARC criterion in scope, check if a corresponding test exists:
-   - Search test files for references to the ARC ID or the behavior it describes
-   - Flag ARC criteria that have no test coverage
-4. **Finding Report**: Add `Enterprise ARC Coverage` subsection when enterprise compliance is active:
-   ```
-   **Enterprise ARC Coverage**: {X}/{N} criteria have test coverage
-   | ARC Criterion | Guideline | Test File | Covered | Notes |
-   ```
+2. Read active guidelines and extract all `ARC Verification` criteria
+3. For each enterprise ARC criterion in scope, check if a corresponding test exists — search test files for references to the ARC ID or the behavior it describes
+4. Flag ARC criteria that have no test coverage; include the `Enterprise ARC Coverage` subsection as above
 5. Check `knowzcode/enterprise/guidelines/code-quality.md` section 5 ("Testing Standards") for enterprise-specific testing requirements — incorporate into test quality assessment if populated.
 
 ## Bash Usage

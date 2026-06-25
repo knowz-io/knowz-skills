@@ -1323,7 +1323,7 @@ Report connection status, available vaults, and remind user:
 
 ### Error Handling
 - If `gemini` CLI not found → use manual `.gemini/settings.json` fallback with JSON snippet
-- If API key is invalid → report error, suggest checking key at https://knowz.io/api-keys
+- If API key is invalid → report error, suggest checking key at https://app.knowz.io/settings/api-keys
 - If network error → suggest checking connectivity and firewall
 ```
 

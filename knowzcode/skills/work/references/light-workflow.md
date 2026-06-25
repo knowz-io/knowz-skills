@@ -120,4 +120,8 @@ After builder completes successfully:
 
    Do NOT silently skip. "Light mode" means fewer agents — not fewer artifacts.
 
-**DONE** — Lightweight team: knowledge-liaison (persistent) + builder. Skipped: analyst, architect, reviewer, closer.
+**DONE** — Lightweight team: knowledge-liaison (persistent) + builder. Skipped: analyst, architect, reviewer, closer, scanners (scanner-direct, scanner-tests), all Group C specialists, and both Group D officers (frontend-designer, enterprise-enforcer).
+
+> **Note on compliance in Tier 2**: enterprise-enforcer is not spawned in Light mode. If `compliance_enabled: true`, the lead announces `> **Enterprise Enforcer: SKIPPED** — not supported in Tier 2 Light; compliance checks are not performed in Light mode. For compliance enforcement, use Tier 3.`
+>
+> **Note on UI design in Tier 2**: frontend-designer is not spawned in Light mode. If the user explicitly requests design review in a Light workflow, the lead recommends `--tier full` for the design-intensive scope.

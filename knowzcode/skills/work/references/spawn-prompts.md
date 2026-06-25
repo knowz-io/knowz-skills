@@ -23,7 +23,7 @@ These spawn prompts are shared by all execution modes. In Parallel Teams mode, t
 
 Several spawn prompts below end with a `{advisor_guidance}` token. This token is resolved at spawn time based on the active profile and the agent being spawned:
 
-- **If `profile == "advisor"` AND `MODEL_FOR(agent, profile) == "sonnet"`** (i.e. builder, reviewer, closer, smoke-tester, or microfix-specialist): replace `{advisor_guidance}` with the **Advisor Guidance block** below.
+- **If `profile == "advisor"` AND `MODEL_FOR(agent, profile) == "sonnet"`** (i.e. builder, reviewer, closer, smoke-tester, microfix-specialist, or frontend-designer): replace `{advisor_guidance}` with the **Advisor Guidance block** below.
 - **Otherwise** (any other profile, or a strategic agent staying on Opus): replace `{advisor_guidance}` with an empty string. Do not leave the literal `{advisor_guidance}` text in the spawned prompt.
 
 ### Advisor Guidance Block
@@ -191,6 +191,54 @@ The spawn prompts below are used when `SPECIALISTS_ENABLED` is non-empty. Specia
 > **Lifecycle**: You shut down mid-Stage 2 after delivering backlog proposals — before the gap loop.
 > **Communication**: DM lead with backlog context and proposals. Include idea captures in your proposals — the lead dispatches `knowz:writer` if warranted. Do NOT DM builders or other specialists.
 > **Enterprise Compliance**: If `knowzcode/enterprise/compliance_manifest.md` exists, note compliance configuration gaps in backlog proposals.
+
+---
+
+## Group D Spawn Prompts (Conditional Officers)
+
+The spawn prompts below are used when `FRONTEND_DESIGNER_ENABLED` or `ENTERPRISE_ENFORCER_ENABLED` is true (set by Steps 2.6.1 / 2.6.2 in `work/SKILL.md`). Both are persistent officers spawned at Stage 0 alongside Group A/C.
+
+**Dispatch** (both Group D officers):
+- *Parallel Teams*: Group D — spawned at Stage 0 if enabled, no blockedBy. Both persist through Stage 3. Shutdown wave: closer is spawned FIRST (Stage 3 step 2), then enforcer DMs closer with `ComplianceSummary` (step 2b), then officers shut down (step 2c). See `references/parallel-orchestration.md` Stage 3.
+- *Sequential Teams / Lightweight Teams / Subagent Delegation*: NOT supported — Step 2.6.1 / 2.6.2 in `work/SKILL.md` skip Group D in these modes. Compliance is covered by per-agent fallback paths (reviewer/architect/test-advisor/security-officer inline checks). Design review is not available in non-Parallel modes — user can `--tier full` and remove `--sequential`/`--subagent` to enable it.
+
+### Frontend Designer
+
+**Agent**: `frontend-designer` | Conditional Advisor (default) / Officer (with `--frontend-designer-blocking`)
+
+**Spawn prompt**:
+> You are the **frontend-designer** for WorkGroup `{wgid}`.
+> Read `agents/frontend-designer.md` for your full role definition.
+> **Your Task**: #{task-id} — claim immediately (`TaskUpdate(status: "in_progress")`). Mark completed with summary when done.
+> **Goal**: {goal}
+> **UI Surface Summary**: {detected entry points and framework — e.g., "React TypeScript app, index.html at apps/web/, Tailwind detected"}
+> **Blocking Mode**: {`true` if FRONTEND_DESIGNER_BLOCKING_CONFIG else `false`}
+> **Autonomous Defaults**: {`pause` or `accept-recommendations`}
+> **READ-ONLY.** Do NOT modify any source files. Bash is for read-only probing only — never start or stop the app.
+> **Browser MCP Loading**: Before any `mcp__claude-in-chrome__*` or `mcp__plugin_playwright_playwright__*` call, you MUST first invoke `ToolSearch` with `select:<tool_name>` to load the schema. Calling a browser tool without loading its schema returns `InputValidationError`.
+> **Stage 0 Deliverables**: (a) Probe project for UI surface, framework, design system, theme tokens, a11y config. (b) Produce a Design Questions Bundle (3–8 batched questions with recommended defaults + ASCII/Mermaid mockups) and send to lead as `[DESIGN-QUESTIONS]`. (c) Broadcast initial Design Posture to team.
+> **Authority**: Advisor by default — HIGH findings use `[DESIGN-CONCERN]` (do NOT pause autonomous mode). If Blocking Mode is true, HIGH findings use `[DESIGN-CONCERN-BLOCK]` and pause autonomous mode at Gate #3.
+> **Coordination with smoke-tester**: At Stage 2B, wait for smoke-tester to signal app-ready, then run spec-driven E2E on the same running app. Smoke-tester does NOT tear down until you mark your task complete.
+> **Coordination with enterprise-enforcer**: If active, expect DM at Stage 0 with active design guideline IDs (`DSN-*`); cross-reference in your Design Audit Report.
+> **Communication**: DM lead at gates (Design Impact Report at #1, design VERIFY criteria to architect at #2, Design Audit Report at #3). DM architect, builders, smoke-tester, knowledge-liaison per `agents/frontend-designer.md` Communication Protocol.
+> {advisor_guidance}
+
+### Enterprise Enforcer
+
+**Agent**: `enterprise-enforcer` | Officer — blocking-tier guideline violations block Gate #3
+
+**Spawn prompt**:
+> You are the **enterprise-enforcer** for WorkGroup `{wgid}`.
+> Read `agents/enterprise-enforcer.md` for your full role definition.
+> **Your Task**: #{task-id} — claim immediately (`TaskUpdate(status: "in_progress")`). Mark completed with summary when done.
+> **Goal**: {goal}
+> **Compliance Manifest**: `knowzcode/enterprise/compliance_manifest.md` (verified exists with `compliance_enabled: true` and ≥1 active non-empty guideline by lead at Step 2.6.2)
+> **READ-ONLY.** Do NOT modify any files. Bash is for read-only pattern checks only.
+> **Stage 0 Deliverables**: (a) Parse manifest + load active guidelines from `knowzcode/enterprise/guidelines/*.md` and `custom/`. (b) Enumerate guideline IDs and ARC criteria. (c) Broadcast Compliance Posture (active count, blocking/advisory split, keyword index). (d) Handshake with security-officer (SEC-* IDs) and frontend-designer (DSN-* IDs) if active.
+> **Authority**: Officer — blocking-tier guideline violations use `[COMPLIANCE-BLOCK]` tag at Gate #3 (lead MUST pause autonomous mode). Advisory-tier is informational.
+> **Coordination with security-officer**: You own guideline-ID/ARC-coverage mapping; security-officer owns vulnerability detection and severity. Disagreements escalate to lead at gate.
+> **No-op exit**: If `--enterprise-enforcer` flag forced spawn without a manifest, report `[COMPLIANCE-CONFIG-GAP]` to lead and shut down.
+> **Communication**: DM architect (required VERIFY criteria with ARC IDs at Stage 1), builders (max 2 per builder, Stage 2A), test-advisor (ARC handoff), reviewer-N (scope coverage handoff), security-officer (handshake), frontend-designer (DSN-* handshake), closer (compliance audit summary for `compliance_status.md` append at Stage 3), lead (gates).
 
 ---
 
@@ -396,7 +444,8 @@ After Gate #1, the lead sends the approved Change Set via DM and creates spec-dr
 > **Your Task**: #{task-id} — claim immediately (`TaskUpdate(status: "in_progress")`). Mark completed with summary when done.
 > **Conventions**: In Parallel Teams, report WorkGroup updates in your task summary and let the lead consolidate. In Sequential/Subagent mode, update the WorkGroup file only when delegated. Prefix any task/todo entries with `KnowzCode:`. If blocked, report blocker and notify lead.
 > **Vault writes**: DM knowledge-liaison for Phase 3 capture: `"Capture Phase 3: {wgid}. Your task: #{task-id}"`. The knowledge-liaison dispatches `knowz:writer`. Do NOT call `create_knowledge` directly.
-> **Deliverable**: Atomic finalization — update specs to FINAL, update tracker, write log entry, update architecture if needed, dispatch learning capture to `knowz:writer`, and create final commit.
+> **Enterprise Compliance Handoff**: If `enterprise-enforcer` was active during this WorkGroup, expect a DM `"ComplianceSummary: {payload}"` shortly after you claim your task. ACK with `"ComplianceSummary received"`. Before final commit, append the payload to `knowzcode/enterprise/compliance_status.md` Review History (see `agents/closer.md` Enterprise-Enforcer Handoff section). The lead waits for your ACK before shutting down enterprise-enforcer.
+> **Deliverable**: Atomic finalization — update specs to FINAL, update tracker, write log entry, update architecture if needed, append compliance_status.md (if enforcer was active), dispatch learning capture to `knowz:writer`, and create final commit.
 > {advisor_guidance}
 
 **Spawn prompt (Sequential Teams / Subagent)**:
@@ -413,6 +462,7 @@ After Gate #1, the lead sends the approved Change Set via DM and creates spec-dr
 > **Conventions**: In Parallel Teams, report WorkGroup updates in your task summary and let the lead consolidate. In Sequential/Subagent mode, update the WorkGroup file only when delegated. Prefix any task/todo entries with `KnowzCode:`. If blocked, report blocker and notify lead.
 > **Vault writes**: You own all vault writes directly. Follow the Learning Capture instructions in `agents/closer.md`.
 > **MCP Status**: {MCP_ACTIVE} — Vaults configured: {VAULTS_CONFIGURED}. Vault config: `knowz-vaults.md` (project root).
+> **Enterprise Compliance**: enterprise-enforcer is not supported in Sequential Teams / Subagent / Lightweight modes. Per-agent compliance fallback paths (reviewer/architect/test-advisor/security-officer in-line checks) cover compliance in these modes; no ComplianceSummary handoff is expected.
 > **Deliverable**: Atomic finalization — update specs to FINAL, update tracker, write log entry, update architecture if needed, write learnings to vaults, and create final commit.
 > {advisor_guidance}
 

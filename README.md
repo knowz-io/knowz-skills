@@ -6,7 +6,7 @@
 
 Your knowledge base, accessible to every AI tool you use. Structured development that actually ships quality code.
 
-[MCP Server](#mcp-server) · [Knowz Plugin](#knowz--knowledge-management) · [KnowzCode Plugin](#knowzcode--structured-development) · [Install](#install) · [Full Features](https://github.com/knowz-io/knowz-platform/blob/develop/FEATURES.md)
+[MCP Server](#mcp-server) · [Knowz Plugin](#knowz--knowledge-management) · [KnowzCode Plugin](#knowzcode--structured-development) · [Install](#install) · [Privacy](#privacy--support) · [Full Features](https://github.com/knowz-io/knowz-platform/blob/develop/FEATURES.md)
 
 </div>
 
@@ -76,4 +76,13 @@ Works across 6 AI platforms — Claude Code, OpenAI Codex, Gemini CLI, GitHub Co
 
 ---
 
-MIT License with Commons Clause — See individual plugin directories for details.
+## Privacy & Support
+
+- Privacy policy: [PRIVACY.md](./PRIVACY.md) and https://knowz.io/privacy
+- Security reports: [SECURITY.md](./SECURITY.md)
+- Support contact: support@knowz.io
+- Status: https://status.knowz.io
+
+---
+
+This is a public source repository. `knowz/` and `knowzcode/` are MIT licensed. See [LICENSE](./LICENSE) and the package directories for details.

@@ -56,8 +56,13 @@ At every spawn whose prompt contains the `{advisor_guidance}` token (see [spawn-
    - If `project-advisor` in list: `TaskCreate("Project advisor: backlog context")` → `TaskUpdate(owner: "project-advisor")`
    Spawn each enabled specialist with its `{task-id}` in the spawn prompt (use spawn prompts from [spawn-prompts.md](spawn-prompts.md)).
    If `SPECIALISTS_ENABLED` is empty, skip Group C.
-7. **Roster confirmation** — lead lists every spawned agent by name to the user. Include scanners and Group C specialists if active.
-8. All spawned agents work immediately in parallel (knowledge-liaison reads local context directly and dispatches vault readers as subagents; scanners are lightweight general-purpose agents; specialists are Sonnet read-only agents). Agent count depends on orchestration config: 2-8 agents at Stage 0.
+6b. **Spawn Group D** (conditional officers — same turn as Group A):
+   - If `FRONTEND_DESIGNER_ENABLED` (from Step 2.6.1): `TaskCreate("Frontend designer: design discovery & questioning")` → `TaskUpdate(owner: "frontend-designer")`
+   - If `ENTERPRISE_ENFORCER_ENABLED` (from Step 2.6.2): `TaskCreate("Enterprise enforcer: load compliance posture")` → `TaskUpdate(owner: "enterprise-enforcer")`
+   Spawn each with its `{task-id}` (use spawn prompts from [spawn-prompts.md](spawn-prompts.md)).
+   If neither is enabled, skip Group D.
+7. **Roster confirmation** — lead lists every spawned agent by name to the user. Include scanners, Group C specialists, and Group D officers if active.
+8. All spawned agents work immediately in parallel (knowledge-liaison reads local context directly and dispatches vault readers as subagents; scanners are lightweight general-purpose agents; specialists are Sonnet read-only agents; Group D officers are Opus read-only). Agent count depends on orchestration config: 3-10 agents at Stage 0.
 9. Knowledge-liaison pushes Context Briefings to analyst and architect as results arrive. Specialists work independently on their Stage 0 tasks.
 
 **Key**: The analyst does NOT wait for the knowledge-liaison, scanners, or specialists to finish. It starts scanning the codebase immediately. The knowledge-liaison pushes Context Briefings to analyst and architect as local context and vault results arrive. Scanner findings arrive as broadcasts. The analyst streams `[PRELIMINARY]` NodeID findings to the architect as it discovers them (see Preliminary Findings Protocol). Specialist findings are consumed by the lead at gates.
@@ -72,6 +77,9 @@ At every spawn whose prompt contains the `{advisor_guidance}` token (see [spawn-
 4. **Specialist Change Set reviews** (if `SPECIALISTS_ENABLED` non-empty): Create review tasks blocked on analysis:
    - If `security-officer` active: `TaskCreate("Security officer: Change Set review", addBlockedBy: [analysis-task-id])` → `TaskUpdate(owner: "security-officer")`. DM security-officer: `"**New Task**: #{task-id} — Review Change Set for security risk. Rate each NodeID."`
    - If `test-advisor` active: `TaskCreate("Test advisor: Change Set test strategy", addBlockedBy: [analysis-task-id])` → `TaskUpdate(owner: "test-advisor")`. DM test-advisor: `"**New Task**: #{task-id} — Recommend test types per NodeID."`
+4b. **Group D Change Set reviews** (if Group D officers active):
+   - If `FRONTEND_DESIGNER_ENABLED`: `TaskCreate("Frontend designer: Change Set design review", addBlockedBy: [analysis-task-id])` → `TaskUpdate(owner: "frontend-designer")`. DM frontend-designer: `"**New Task**: #{task-id} — Rate each NodeID's UI impact. DM architect with design VERIFY needs for Significant/New-surface NodeIDs."`
+   - If `ENTERPRISE_ENFORCER_ENABLED`: `TaskCreate("Enterprise enforcer: Change Set guideline map", addBlockedBy: [analysis-task-id])` → `TaskUpdate(owner: "enterprise-enforcer")`. DM enforcer: `"**New Task**: #{task-id} — Map active guidelines to NodeIDs. DM architect with required VERIFY criteria citing ARC IDs."`
 4. Lead presents **Quality Gate #1** to user (see [quality-gates.md](quality-gates.md))
 5. User approves (or rejects → re-run analyst with feedback)
 6. Lead sends DM to architect with the approved Change Set
@@ -101,6 +109,9 @@ At every spawn whose prompt contains the `{advisor_guidance}` token (see [spawn-
 9. **Test-advisor spec review** (if `test-advisor` in `SPECIALISTS_ENABLED`): After specs drafted, create spec testability review task:
    - `TaskCreate("Test advisor: spec testability review", addBlockedBy: [spec-task-id])` → `TaskUpdate(owner: "test-advisor")`
    - DM test-advisor: `"**New Task**: #{task-id} — Review specs for testability. Check VERIFY criteria are automatable."`
+9b. **Group D spec reviews** (after specs drafted):
+   - If `FRONTEND_DESIGNER_ENABLED`: `TaskCreate("Frontend designer: spec design review", addBlockedBy: [spec-task-id])` → `TaskUpdate(owner: "frontend-designer")`. DM frontend-designer: `"**New Task**: #{task-id} — Verify UI-touching specs include design VERIFY criteria (a11y, responsive, empty/loading/error). DM architect with proposed additions."`
+   - If `ENTERPRISE_ENFORCER_ENABLED`: `TaskCreate("Enterprise enforcer: spec compliance audit", addBlockedBy: [spec-task-id])` → `TaskUpdate(owner: "enterprise-enforcer")`. DM enforcer: `"**New Task**: #{task-id} — Audit specs for required VERIFY-criteria injection. Tag [COMPLIANCE-BLOCK-SPEC] if blocking-tier guideline criteria are missing after re-DM round."`
 10. Lead presents **Quality Gate #2** to user (see [quality-gates.md](quality-gates.md))
 11. User approves (or rejects → architect revises)
 12. Pre-implementation commit: `git add knowzcode/ && git commit -m "KnowzCode: Specs approved for {wgid}"`
@@ -179,8 +190,17 @@ At every spawn whose prompt contains the `{advisor_guidance}` token (see [spawn-
    - If `project-advisor` active — one observation task (not per-scope):
      `TaskCreate("Project advisor: observe implementation")` → `TaskUpdate(owner: "project-advisor")`
      DM project-advisor: `"**New Task**: #{task-id} — Observe builder progress, note patterns and ideas. Deliver backlog proposals before gap loop."`
-   **Gate #3 is NOT blocked by specialists.** If a specialist hasn't finished, gate shows `[Pending: {specialist}]`. Lead proceeds.
+   **Gate #3 is NOT blocked by Group C specialists.** If a Group C specialist hasn't finished, gate shows `[Pending: {specialist}]`. Lead proceeds.
    **Project-advisor early shutdown**: After project-advisor delivers backlog proposals, shut it down (before the gap loop begins).
+
+9b. **Group D implementation reviews** (if Group D officers active):
+   - If `ENTERPRISE_ENFORCER_ENABLED` — one task per active builder scope (parallel to reviewer):
+     `TaskCreate("Enterprise enforcer: compliance audit scope {N}", addBlockedBy: [implement-X-task-id])` → `TaskUpdate(owner: "enterprise-enforcer")`
+     DM enforcer: `"**New Task**: #{task-id} — Compliance audit for scope {N}. NodeIDs/microtasks: {list}. Guideline IDs in scope: {from Stage 0 map}."`
+   - If `FRONTEND_DESIGNER_ENABLED` — one E2E task per WorkGroup (not per scope, like smoke-tester):
+     `TaskCreate("Frontend designer: E2E UI audit", addBlockedBy: [all-implement-task-ids, smoke-task-id])` → `TaskUpdate(owner: "frontend-designer")`
+     DM frontend-designer: `"**New Task**: #{task-id} — Wait for smoke-tester app-ready signal, then run spec-driven E2E design audit on the running app."`
+   **Gate #3 IS blocked by enterprise-enforcer's blocking-tier findings** (officer authority — analogous to security-officer). frontend-designer is advisor by default; gate is blocked only if `FRONTEND_DESIGNER_BLOCKING_CONFIG = true` (officer mode).
 
 10. Gap flow (per-scope, parallel where dependencies allow — persistent agents, DM messaging):
    a. Each reviewer marks audit task complete with structured gap report in summary
@@ -206,10 +226,9 @@ At every spawn whose prompt contains the `{advisor_guidance}` token (see [spawn-
    m. Lead DMs smoke-tester: `"**New Task**: #{resmoke-task-id} — Re-smoke: {wgid}. Previous failures: {list}"`
    n. 3-iteration cap — if exceeded, pause autonomous mode: `> **Autonomous Mode Paused** — Smoke test failed 3 iterations. Manual review required.`
 
-11. Enterprise compliance (if enabled):
-   - Lead creates parallel compliance task for each reviewer (scoped to their builder scope)
-   - Reviewer checks compliance requirements from vault research findings
-   - Runs alongside ARC audits
+11. Enterprise compliance:
+   - **If `ENTERPRISE_ENFORCER_ENABLED`**: enterprise-enforcer owns compliance audit per scope (see step 9b above). Reviewer does NOT duplicate guideline checks — it only flags potential matches via DM.
+   - **Fallback** (enterprise-enforcer disabled / Tier 2 Light / Sequential): Lead creates parallel compliance task for each reviewer (scoped to their builder scope); reviewer checks compliance requirements from active guidelines inline.
 
 12. Inter-agent communication during Stage 2:
    - builder → architect: Spec clarification requests (direct messages)
@@ -224,6 +243,17 @@ At every spawn whose prompt contains the `{advisor_guidance}` token (see [spawn-
    - security-officer ↔ test-advisor: Cross-cutting test gaps in security paths (max 2 inter-specialist DMs)
    - project-advisor → knowledge-liaison: Idea captures (`"Consider: {idea}"` — knowledge-liaison dispatches `knowz:writer` if warranted)
    - project-advisor → lead: Backlog proposals (before gap loop)
+   - frontend-designer → architect: Design VERIFY criteria proposals (Stage 1)
+   - frontend-designer → builder-N: Design guidance for UI scopes (max 2 DMs per builder)
+   - frontend-designer → smoke-tester: App-readiness coordination
+   - frontend-designer → lead: `[DESIGN-QUESTIONS]` bundles (relayed to user via `AskUserQuestion`); Design Impact + Design Audit reports at gates
+   - enterprise-enforcer → security-officer: SEC-* guideline ID handshake (Stage 0) + cross-reference reconciliation (Stage 2)
+   - enterprise-enforcer → frontend-designer: DSN-* design guideline ID handshake (Stage 0)
+   - enterprise-enforcer → architect: Required VERIFY criteria citing ARC IDs (Stage 1)
+   - enterprise-enforcer → builder-N: Guideline guidance (max 2 DMs per builder)
+   - enterprise-enforcer → test-advisor: ARC criteria handoff for test-coverage verification
+   - enterprise-enforcer → reviewer-N: Scope-coverage handoff so reviewer skips guideline duplication
+   - enterprise-enforcer → closer: Compliance audit summary payload for `compliance_status.md` append (Stage 3)
 
 13. After all NodeIDs implemented + audited across all scopes AND smoke test complete:
     - Lead verifies microtask coverage: every required NodeID `VERIFY:` criterion is covered by at least one completed and audited scope, and any cross-microtask integration criterion has been audited after its dependencies landed.
@@ -240,15 +270,26 @@ At every spawn whose prompt contains the `{advisor_guidance}` token (see [spawn-
 
 ## Stage 3: Finalization
 
-1. Shut down remaining specialists (security-officer, test-advisor) if still active. Project-advisor should already be shut down from mid-Stage 2.
+> **Shutdown wave ordering** (canonical — referenced by all officer agent files): closer is spawned BEFORE Group C/D officers shut down so officers can hand off final artifacts directly to closer. Order:
+> 1. Shut down `project-advisor` (already done mid-Stage 2)
+> 2. Spawn `closer`
+> 3. (If enterprise-enforcer active) Enforcer DMs closer `"ComplianceSummary: {payload}"`; wait for closer's ack DM
+> 4. Shut down `security-officer`, `test-advisor`, `frontend-designer`, `enterprise-enforcer` (any order)
+> 5. Closer completes finalization and DMs knowledge-liaison for Phase 3 capture
+> 6. Shut down `knowledge-liaison` (last — before team cleanup)
+
+1. (Project-advisor was shut down mid-Stage 2.)
 2. `TaskCreate("Phase 3: Finalize {wgid}", addBlockedBy: [last-audit-task-id])` → `TaskUpdate(owner: "closer")`
-   Spawn `closer` with `{task-id}` in spawn prompt.
+   Spawn `closer` with `{task-id}` in spawn prompt. **Spawn closer before shutting down Group C/D officers** so they can DM final artifacts.
+2b. **Enterprise-enforcer handoff** (if `ENTERPRISE_ENFORCER_ENABLED`): once closer is alive and has claimed its task, DM enterprise-enforcer: `"Closer ready at task #{closer-task-id}. Send ComplianceSummary."` Enforcer DMs closer with `"ComplianceSummary: {payload — Compliance Report, ARC coverage, finding table}"`. Closer ACKs and queues the writeback to `compliance_status.md` for inclusion in its final commit.
+2c. **Shut down Group C/D officers**: security-officer, test-advisor, frontend-designer (if active), enterprise-enforcer (if active). Any order — they're all read-only and have delivered their final reports.
 3. Closer tasks (can be parallel subtasks):
    - Update all specs to FINAL as-built
    - Update `knowzcode_tracker.md`: all NodeIDs `[WIP]` → `[VERIFIED]`
    - Write ARC-Completion log entry
    - Review architecture docs for discrepancies
    - Schedule REFACTOR tasks for tech debt
+   - **If enterprise-enforcer was active**: append the compliance audit summary (received via DM at Stage 3 step 1b) to `knowzcode/enterprise/compliance_status.md` review history
    - DM knowledge-liaison for Phase 3 capture (if vaults configured): `"Capture Phase 3: {wgid}. Your task: #{task-id}"` — knowledge-liaison dispatches writer
    - Create final atomic commit
 4. Lead presents completion summary
@@ -295,15 +336,23 @@ When creating tasks, model the dependency chain with `addBlockedBy` and pre-assi
 | Security officer: initial threat scan | (none — Group C) | security-officer |
 | Test advisor: coverage baseline | (none — Group C) | test-advisor |
 | Project advisor: backlog context | (none — Group C) | project-advisor |
+| Frontend designer: design discovery & questioning | (none — Group D, conditional) | frontend-designer |
+| Enterprise enforcer: load compliance posture | (none — Group D, conditional) | enterprise-enforcer |
 | Security officer: Change Set review | Phase 1A analysis | security-officer |
 | Test advisor: Change Set test strategy | Phase 1A analysis | test-advisor |
+| Frontend designer: Change Set design review | Phase 1A analysis | frontend-designer |
+| Enterprise enforcer: Change Set guideline map | Phase 1A analysis | enterprise-enforcer |
 | Spec: NodeID-X | Phase 1A (gate approval) | architect (Path A) or spec-drafter-N (Path B) |
 | Spec consistency review | All spec drafts complete (Path B only) | architect |
 | Test advisor: spec testability review | Spec: NodeID-X | test-advisor |
+| Frontend designer: spec design review | Spec: NodeID-X | frontend-designer |
+| Enterprise enforcer: spec compliance audit | Spec: NodeID-X | enterprise-enforcer |
 | Implement: NodeID-X or NodeID-X/microtask | Spec: NodeID-X | builder-N |
 | Audit: NodeID-X or NodeID-X/microtask | Implement: NodeID-X or microtask | reviewer-N |
 | Security officer: review scope N | Implement: NodeID-X or microtask | security-officer |
 | Test advisor: review scope N tests | Implement: NodeID-X or microtask | test-advisor |
+| Enterprise enforcer: compliance audit scope N | Implement: NodeID-X or microtask | enterprise-enforcer |
+| Frontend designer: E2E UI audit | All implement tasks complete + Smoke test | frontend-designer |
 | Project advisor: observe implementation | (none) | project-advisor |
 | Fix gaps: NodeID-X round N | Audit: NodeID-X (or re-audit N-1) | builder-N |
 | Re-audit: NodeID-X round N | Fix gaps round N | reviewer-N |

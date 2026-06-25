@@ -164,6 +164,18 @@ If `knowzcode/enterprise/compliance_manifest.md` exists and `mcp_compliance_enab
 2. Push completion record with goal, NodeIDs, audit score, and decisions
 3. Push architecture drift findings if any detected during finalization
 
+## Enterprise-Enforcer Handoff (v0.16.0+)
+
+If `enterprise-enforcer` was active during this WorkGroup, you will receive a DM from it during Stage 3 with the compliance audit summary payload (it is read-only and cannot write `compliance_status.md` itself).
+
+When you receive `"ComplianceSummary: {payload}"` from enterprise-enforcer:
+1. Append a row to `knowzcode/enterprise/compliance_status.md` Review History table:
+   `| {timestamp} | {wgid} | {scope} | {guidelines-list} | {blocking-count} | {advisory-count} | {PASS / BLOCK / ADVISORY} |`
+2. Include the enforcer's full Compliance Report (ARC coverage, findings table) in your final commit's diff context so it is preserved in git history
+3. If enforcer reported `[COMPLIANCE-BLOCK]` violations that were resolved during gap loop, mark the result as `PASS (was BLOCK)` in the history table
+
+In **fallback mode** (enterprise-enforcer disabled or unavailable), the reviewer appends `compliance_status.md` directly during Phase 2B — you do not need to do this writeback.
+
 ### MCP Graceful Degradation
 
 If MCP calls fail during vault writes (or MCP was unavailable at startup):
