@@ -32,15 +32,16 @@
     "semantic-search"
   ],
   "author": {
-    "name": "Alex Headscarf"
+    "name": "Alex Headscarf",
+    "url": "https://github.com/knowz-io"
   },
-  "homepage": "https://github.com/knowz-io/knowz-skills",
+  "homepage": "https://github.com/knowz-io/knowz",
   "bugs": {
-    "url": "https://github.com/knowz-io/knowz-skills/issues"
+    "url": "https://github.com/knowz-io/knowz/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/knowz-io/knowz-skills.git"
+    "url": "git+https://github.com/knowz-io/knowz.git"
   },
   "publishConfig": {
     "access": "public"
