@@ -19,7 +19,7 @@
       "name": "knowz",
       "source": "./knowz",
       "description": "Frictionless knowledge management via the Knowz MCP server — search, save, and query knowledge across vaults",
-      "version": "0.7.1",
+      "version": "0.8.0",
       "author": { "name": "Alex Headscarf" },
       "homepage": "https://github.com/knowz-io/knowz-skills/tree/main/knowz",
       "repository": "https://github.com/knowz-io/knowz-skills"
