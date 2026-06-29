@@ -115,7 +115,7 @@ frontend_designer_autonomous_defaults: pause
 
 ## Enterprise Enforcer Configuration
 
-The enterprise-enforcer agent (v0.16.0+) auto-activates when `knowzcode/enterprise/compliance_manifest.md` exists with `compliance_enabled: true` and at least one active non-empty guideline. No additional config key is needed — the manifest itself declares intent. Per-invocation flags `--enterprise-enforcer` (force-on) and `--no-enterprise-enforcer` (force-skip, use per-agent fallback paths) override.
+The enterprise-enforcer agent (v0.16.0+) auto-activates when `knowzcode/enterprise/compliance_manifest.md` exists with `compliance_enabled: true` and at least one enforcement source is present — an active non-empty guideline, a `knowzcode/enterprise.md` file, or a configured vault/KnowledgeId guideline source (`skills/work/SKILL.md` Step 2.6.2 holds the authoritative logic). No additional config key is needed — the manifest itself declares intent. Per-invocation flags `--enterprise-enforcer` (force-on) and `--no-enterprise-enforcer` (force-skip, use per-agent fallback paths) override.
 
 ---
 

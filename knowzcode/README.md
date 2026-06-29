@@ -83,12 +83,12 @@ Claude Code's advisor tool lets a Sonnet-based agent consult Opus mid-generation
 
 | Agent | `advisor` | `teams` | `classic` |
 |-------|-----------|---------|-----------|
-| architect, analyst, security-officer | opus | opus | opus |
-| builder, reviewer, closer, smoke-tester, microfix-specialist | **sonnet** | opus | opus |
+| architect, analyst, security-officer, enterprise-enforcer | opus | opus | opus |
+| builder, reviewer, closer, smoke-tester, microfix-specialist, frontend-designer | **sonnet** | opus | opus |
 | knowledge-liaison, test-advisor, project-advisor | sonnet | sonnet | sonnet |
 | knowledge-migrator, update-coordinator (utility) | opus | opus | opus |
 
-Strategic agents (architect, analyst, security-officer) stay on Opus — the advisor tool adds no value where the whole task is reasoning.
+Strategic agents (architect, analyst, security-officer, enterprise-enforcer) stay on Opus — the advisor tool adds no value where the whole task is reasoning.
 
 ### Configure
 
@@ -116,6 +116,31 @@ When `profile: advisor` is set but the environment can't support the advisor too
 ### Roll back
 
 Delete the `profile:` line from `knowzcode/knowzcode_orchestration.md` (or omit `--profile` on the CLI). Default is `teams`. No migration needed.
+
+## Enterprise Compliance & Custom Guidelines
+
+**Beta.** Wire your organization's own guidelines — security rules, API conventions, code-quality patterns, accessibility/design standards — into the workflow so they're enforced at the same quality gates you already approve.
+
+You author guidelines as markdown, register them in a manifest, and a persistent `enterprise-enforcer` officer injects the required checks into specs and **blocks the audit gate** on violations of anything you mark *blocking*.
+
+```
+knowzcode/enterprise/
+├── compliance_manifest.md     # master switch + which guidelines are active
+├── guidelines/
+│   ├── security.md            # ships with real rules
+│   └── custom/                # your org's guidelines go here
+└── templates/guideline-template.md
+```
+
+Three steps to turn it on:
+
+1. Author a guideline from `templates/guideline-template.md` (or edit `security.md`).
+2. Register it in the manifest's **Active Guidelines** table with `Active: true`.
+3. Set `compliance_enabled: true`, then run `/knowzcode:audit compliance` to verify.
+
+Guidelines are **blocking** (violations stop the workflow) or **advisory** (reported only). It's opt-in and off by default. Full guide: **[docs/enterprise-compliance.md](./docs/enterprise-compliance.md)**.
+
+> Note: the white-label `enterprise.json` (brand + MCP/API endpoints) is a *separate* feature, unrelated to compliance guidelines.
 
 ## Install
 
@@ -162,7 +187,7 @@ KnowzCode can also offer regroup automatically when you say things like "wrap up
 | `/knowzcode:regroup [next step]` | Save a local handoff for clearing context |
 | `/knowzcode:regroup-trigger` | (Trigger) Detects pause/wrap-up intent and offers regroup |
 | `/knowzcode:start-work` | (Trigger) Detects "implement the plan" intent and invokes `/knowzcode:work` |
-| `/knowzcode:audit [type]` | Run quality audits |
+| `/knowzcode:audit [type]` | Run quality audits (`spec`, `architecture`, `security`, `integration`, `compliance`) |
 | `/knowzcode:setup` | Initialize in your project |
 | `/knowzcode:status` | Check project status |
 | `/knowzcode:telemetry` | Investigate production errors |

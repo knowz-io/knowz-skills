@@ -109,7 +109,7 @@ If `knowzcode/enterprise/compliance_manifest.md` exists and `compliance_enabled:
 - Coordinate via DM: if you spot a guideline-relevant finding during ARC audit, DM enterprise-enforcer with `"PossibleGuidelineMatch: {file:line} — {description}"`. Enforcer confirms the mapping and tags it in its own report.
 - Your Consolidated Audit Output still includes a `**Compliance**: {PASS / ADVISORY / BLOCKING — see enterprise-enforcer report}` line, but the actual finding list is sourced from enterprise-enforcer at Gate #3.
 
-**Fallback** (enterprise-enforcer disabled via `--no-enterprise-enforcer`, or unavailable in Tier 2 Light / Sequential Teams): perform the legacy per-agent check inline — load active guidelines where `applies_to IN ['implementation', 'both']`, check implementation against each, report blocking issues separately from advisory.
+**Fallback** (enterprise-enforcer disabled via `--no-enterprise-enforcer`, or unavailable in Tier 2 Light / Sequential Teams): perform the legacy per-agent check inline — load active guidelines where `applies_to IN ['implementation', 'both']`, check implementation against each, report blocking issues separately from advisory. **Tag each unresolved blocking-tier violation with `[COMPLIANCE-BLOCK]` (or `[COMPLIANCE-BLOCK-SPEC]` for a spec-scope gap)** — the Phase 3 Compliance Sign-Off gate keys on those tags, so an untagged "Compliance: BLOCKING" line would let finalization proceed. Honor the manifest behavior keys: when `show_advisory_issues: false` report blocking issues only, and respect `require_signoff_for_finalization` (unresolved blocking issues block Phase 3).
 
 ## Spec Issue Detection
 
