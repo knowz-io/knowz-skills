@@ -83,7 +83,7 @@ During finalization:
 
 ## Learning Capture
 
-Scan the WorkGroup for insight-worthy patterns using the signal types from `knowzcode_loop.md` section 7 (Pattern, Decision, Workaround, Performance, Security, Convention, Integration, Scope).
+Scan the WorkGroup for insight-worthy patterns using the signal types from `knowzcode_loop.md` section 7 (Spec, Component, System Boundary, Diagram, Integration Contract, Pattern, Decision, Workaround, Performance, Security, Convention, Integration, Scope, Correction/Deprecation, Completion).
 
 ### Writer Dispatch (Parallel Teams)
 
@@ -98,6 +98,8 @@ If in Parallel Teams mode with MCP connected, vaults configured, and knowledge-l
 If in Sequential/Subagent mode and MCP is available (verified at startup):
 
 > **Content Detail Principle**: Vault entries are retrieved via semantic search — write detailed, self-contained content with full reasoning, technology names, and code examples. See `knowz-vaults.md` (project root) for vault descriptions and "When to save" rules.
+>
+> **Freshness Principle**: Vault entries are historical context. When Phase 3 contradicts older retrieved knowledge, capture a correction/deprecation with the old guidance, current verified behavior, date observed, and evidence.
 
 #### Step 1: Read Context
 
@@ -112,6 +114,11 @@ Use the **Learning Category Routing** table to map each detected learning to the
 
 | Learning Category | Target Vault Type | Title Prefix |
 |-------------------|-------------------|--------------|
+| Spec | `ecosystem` or `code` | `Spec:` |
+| Component | `ecosystem` or `code` | `Component:` |
+| System Boundary | `ecosystem` | `System Boundary:` |
+| Diagram | `ecosystem` | `Diagram:` |
+| Integration Contract | `ecosystem` or `code` | `Integration:` |
 | Pattern | `code` | `Pattern:` |
 | Workaround | `code` | `Workaround:` |
 | Performance | `code` | `Performance:` |
@@ -120,6 +127,7 @@ Use the **Learning Category Routing** table to map each detected learning to the
 | Security | `ecosystem` | `Security:` |
 | Integration | `ecosystem` | `Integration:` |
 | Scope | `ecosystem` | `Scope:` |
+| Correction/Deprecation | `ecosystem` or `code` | `Correction:` |
 | Completion record | `finalizations` | `Completion:` |
 | Audit trail | user's enterprise vault (if configured) | `Audit:` |
 
@@ -133,7 +141,7 @@ For each target vault, apply its **Content Filter** (describe **what** to captur
 - `ecosystem` vault: `[CONTEXT]` / `[INSIGHT]` / `[RATIONALE]` / `[TAGS]`
 - `finalizations` vault: `[GOAL]` / `[OUTCOME]` / `[NODES]` / `[DURATION]` / `[SUMMARY]` / `[TAGS]`
 
-Follow the Content Detail Principle: write self-contained entries with full reasoning, specific technology names, code examples, and file paths. Every entry must be useful without any other context — it will be found via semantic search months later.
+Follow the Content Detail Principle: write self-contained entries with full reasoning, specific technology names, code examples, and file paths. Every entry must be useful without any other context — it will be found via semantic search months later. Include `[FRESHNESS]` with date observed, created/updated date when known, and superseded guidance when relevant.
 
 - **Title**: Use the prefix from the routing table + descriptive summary with technology names
 - **Tags**: learning category, `phase-3`, domain tags, technology names
@@ -150,19 +158,27 @@ Call `create_knowledge` with the formatted payload for each target vault.
 #### Phase 3 Extraction Guide
 
 When scanning the WorkGroup for learnings, extract:
+- **As-built specs**: Final NodeID/component purpose, interfaces, VERIFY criteria, material differences from approved specs
+- **Component details**: Purpose, ownership boundary, dependencies, data flow, config, error behavior, affected files
+- **System boundaries and diagrams**: Component relationships, Mermaid/data-flow diagrams, dependency direction, known omissions
+- **Integration contracts**: APIs, events, schemas, queues, MCP/tool surfaces, producer/consumer expectations
 - **Architectural learnings**: Structural discoveries, component relationships that were not obvious, integration patterns that emerged during implementation
 - **Convention patterns established**: New team conventions with full rationale and examples
 - **Consolidation decisions**: What was merged or refactored during finalization and why
 - **Implementation patterns**: Any Pattern/Workaround/Performance insights captured in the WorkGroup during Phase 2A that were not already written by a writer
 - **Scope decisions**: What was included/excluded and the rationale (from Phase 1A)
 - **Security findings**: From Phase 2B audit, with severity and remediation
+- **Corrections/deprecations**: Any older vault guidance that was contradicted by live code, tests, current docs, or this WorkGroup's verified behavior
 
 #### Enterprise Audit Trail
 
 If `knowzcode/enterprise/compliance_manifest.md` exists and `mcp_compliance_enabled: true`:
 1. Find vault whose description contains "enterprise", "compliance", or "audit" in `knowz-vaults.md` (project root)
-2. Push completion record with goal, NodeIDs, audit score, and decisions
-3. Push architecture drift findings if any detected during finalization
+2. If `push_audit_results: true` (manifest default), push the Phase 2B audit results (security findings, compliance status, ARC coverage, gap summary) to the audit-trail vault.
+3. If `push_completion_records: true` (manifest default), push the completion record with goal, NodeIDs, audit score, and decisions.
+4. Push architecture drift findings if any detected during finalization (included with the completion record, so gated by `push_completion_records`).
+
+When a key is `false`, skip that push and note the skip in the finalization report — never push silently against the operator's setting.
 
 ## Enterprise-Enforcer Handoff (v0.16.0+)
 
@@ -176,6 +192,8 @@ When you receive `"ComplianceSummary: {payload}"` from enterprise-enforcer:
 
 In **fallback mode** (enterprise-enforcer disabled or unavailable), the reviewer appends `compliance_status.md` directly during Phase 2B — you do not need to do this writeback.
 
+> **Sign-off precondition**: When `require_signoff_for_finalization: true`, the lead must clear the Compliance Sign-Off (see `skills/work/references/quality-gates.md` "Compliance Sign-Off (Phase 3 Entry)") before dispatching you. If you are finalizing and discover an unresolved `[COMPLIANCE-BLOCK]` while that flag is set, stop and report it to the lead rather than completing finalization.
+
 ### MCP Graceful Degradation
 
 If MCP calls fail during vault writes (or MCP was unavailable at startup):
@@ -187,7 +205,7 @@ If MCP calls fail during vault writes (or MCP was unavailable at startup):
    ### {timestamp} -- {title}
    - **Operation**: create
    - **Intent**: Phase 3 capture
-   - **Category**: {Pattern|Decision|Workaround|Performance|Security|Convention|Integration|Scope|Completion}
+	   - **Category**: {Spec|Component|System Boundary|Diagram|Integration Contract|Pattern|Decision|Workaround|Performance|Security|Convention|Integration|Scope|Correction/Deprecation|Completion}
    - **Target Vault Type**: {code|ecosystem|enterprise|finalizations}
    - **Source**: closer / WorkGroup {wgid}
    - **Payload**: {full formatted content that would have been written to the vault}

@@ -47,6 +47,7 @@ BLOCKING_COUNT=0
 ADVISORY_COUNT=0
 PASSED_COUNT=0
 CHECKED_COUNT=0
+REVIEW_COUNT=0
 
 log() {
     echo -e "${BLUE}[KC-COMPLIANCE]${NC} $1"
@@ -54,17 +55,22 @@ log() {
 
 log_pass() {
     echo -e "${GREEN}[PASS]${NC} $1"
-    ((PASSED_COUNT++))
+    PASSED_COUNT=$((PASSED_COUNT + 1))
 }
 
 log_fail() {
     echo -e "${RED}[BLOCKING]${NC} $1"
-    ((BLOCKING_COUNT++))
+    BLOCKING_COUNT=$((BLOCKING_COUNT + 1))
 }
 
 log_warn() {
     echo -e "${YELLOW}[ADVISORY]${NC} $1"
-    ((ADVISORY_COUNT++))
+    ADVISORY_COUNT=$((ADVISORY_COUNT + 1))
+}
+
+log_review() {
+    echo -e "${YELLOW}[REVIEW]${NC} $1"
+    REVIEW_COUNT=$((REVIEW_COUNT + 1))
 }
 
 log_verbose() {
@@ -142,7 +148,7 @@ has_content() {
 check_guideline_requirements() {
     local guideline_file="$1"
     local enforcement="$2"
-    local check_type="$3"  # spec or impl
+    local check_type="$3"  # spec or implementation (matches the guideline's **Applies To:** vocabulary)
 
     if [[ ! -f "$guideline_file" ]]; then
         log_verbose "Guideline file not found: $guideline_file (skipping)"
@@ -157,13 +163,16 @@ check_guideline_requirements() {
     local guideline_name=$(basename "$guideline_file" .md)
     log "Checking guideline: $guideline_name ($enforcement)"
 
-    # Extract requirement IDs and their applies_to scope
-    grep -E "^### [A-Z]+-[A-Z]+-[0-9]+:" "$guideline_file" 2>/dev/null | while read -r req_line; do
+    # Extract requirement IDs and their applies_to scope.
+    # NOTE: read from a process substitution, NOT a pipe — a `grep | while` pipe runs the
+    # loop body in a subshell, so counter increments (CHECKED_COUNT, etc.) would be lost.
+    while read -r req_line; do
         local req_id=$(echo "$req_line" | grep -oE "[A-Z]+-[A-Z]+-[0-9]+")
-        ((CHECKED_COUNT++))
+        CHECKED_COUNT=$((CHECKED_COUNT + 1))
 
-        # Get the applies_to for this specific requirement
-        local req_applies_to=$(grep -A5 "^### ${req_id}:" "$guideline_file" | grep -oP "(?<=\*\*Applies To:\*\* ).*" | tr -d ' ' | head -1)
+        # Get the applies_to for this specific requirement.
+        # Use sed (portable) rather than `grep -oP` — BSD/macOS grep has no -P (Perl) flag.
+        local req_applies_to=$(grep -A5 "^### ${req_id}:" "$guideline_file" | sed -n 's/.*\*\*Applies To:\*\* *//p' | tr -d ' ' | head -1)
 
         # Check if this requirement applies to current check type
         if [[ "$req_applies_to" != "$check_type" ]] && [[ "$req_applies_to" != "both" ]]; then
@@ -177,10 +186,10 @@ check_guideline_requirements() {
         fi
 
         # For impl checks
-        if [[ "$check_type" == "impl" ]]; then
+        if [[ "$check_type" == "implementation" ]]; then
             check_impl_compliance "$req_id" "$enforcement" "$guideline_file"
         fi
-    done
+    done < <(grep -E "^### [A-Z]+-[A-Z]+-[0-9]+:" "$guideline_file" 2>/dev/null)
 }
 
 # Check spec compliance for a requirement
@@ -197,11 +206,15 @@ check_spec_compliance() {
         return
     fi
 
-    # Check if any spec files reference this ARC criteria
+    # ARC IDs use underscores (ARC_SEC_AUTH_01a), but requirement IDs are hyphenated
+    # (SEC-AUTH-01). Convert hyphens to underscores so the spec grep can actually match.
+    local arc_prefix="ARC_${req_id//-/_}"
+
+    # Check if any spec files reference this requirement's ARC criteria
     local found=false
     for spec_file in "$SPECS_DIR"/*.md; do
         if [[ -f "$spec_file" ]]; then
-            if grep -q "ARC_${req_id}" "$spec_file" 2>/dev/null; then
+            if grep -q "$arc_prefix" "$spec_file" 2>/dev/null; then
                 found=true
                 break
             fi
@@ -219,24 +232,19 @@ check_spec_compliance() {
     fi
 }
 
-# Check implementation compliance for a requirement
+# Check implementation compliance for a requirement.
+#
+# This script statically inspects specs and guideline structure; it cannot reliably
+# decide whether changed source code satisfies a requirement's intent. Rather than
+# emit a FALSE PASS (which would mask real violations and give false CI confidence),
+# we report implementation-tier requirements as needing review by the
+# enterprise-enforcer agent (`/knowzcode:work`) or `/knowzcode:audit compliance`.
 check_impl_compliance() {
     local req_id="$1"
     local enforcement="$2"
     local guideline_file="$3"
 
-    # Extract non-compliant patterns from guideline
-    local non_compliant_section=$(grep -A30 "^\*\*Non-Compliant Example:\*\*" "$guideline_file" | grep -A20 '```' | head -20)
-
-    # Extract compliant patterns
-    local compliant_section=$(grep -A30 "^\*\*Compliant Example:\*\*" "$guideline_file" | grep -A20 '```' | head -20)
-
-    # Simple pattern checks (basic implementation)
-    # In a real implementation, you'd parse the patterns more carefully
-
-    # For now, just log that we checked
-    log_verbose "  $req_id: Pattern checking (implementation)"
-    log_pass "$req_id: Implementation check completed"
+    log_review "$req_id ($enforcement): implementation check requires agent/manual review — run \`/knowzcode:audit compliance\`"
 }
 
 # Main execution
@@ -280,7 +288,11 @@ main() {
         exit 0
     fi
 
-    echo "$guidelines" | while IFS='|' read -r filename enforcement applies_to; do
+    # Iterate via a here-string, NOT `echo "$guidelines" | while` — a pipe would run the
+    # loop (and all log_*/counter increments) in a subshell, so the summary and exit code
+    # would always read 0 blocking. A here-string keeps the loop in the current shell.
+    while IFS='|' read -r filename enforcement applies_to; do
+        [[ -z "$filename" ]] && continue
         local guideline_path="${GUIDELINES_DIR}/${filename}"
 
         if [[ "$SCOPE" == "spec" ]] || [[ "$SCOPE" == "full" ]]; then
@@ -288,9 +300,9 @@ main() {
         fi
 
         if [[ "$SCOPE" == "impl" ]] || [[ "$SCOPE" == "full" ]]; then
-            check_guideline_requirements "$guideline_path" "$enforcement" "impl"
+            check_guideline_requirements "$guideline_path" "$enforcement" "implementation"
         fi
-    done
+    done <<< "$guidelines"
 
     echo ""
     echo "========================================"
@@ -300,6 +312,7 @@ main() {
     echo -e "  ${GREEN}Passed:${NC}   $PASSED_COUNT"
     echo -e "  ${RED}Blocking:${NC} $BLOCKING_COUNT"
     echo -e "  ${YELLOW}Advisory:${NC} $ADVISORY_COUNT"
+    echo -e "  ${YELLOW}Review:${NC}   $REVIEW_COUNT (implementation checks deferred to /knowzcode:audit compliance)"
     echo ""
 
     # Determine exit code

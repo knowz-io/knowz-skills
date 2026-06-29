@@ -51,6 +51,27 @@ Add custom guidelines to `knowzcode/enterprise/guidelines/custom/` following the
 
 To activate a custom guideline, add it to the Active Guidelines table above.
 
+## Additional Guideline Sources
+
+Enterprise rules can also be supplied outside the Active Guidelines table:
+
+- `knowzcode/enterprise.md` — single-file enterprise policy for smaller teams.
+- Enterprise/compliance vault entries resolved from `knowz-vaults.md`.
+- Explicit vault IDs provided by the user or workflow.
+- Explicit Knowz `KnowledgeId` values provided by the user or workflow.
+
+When a vault or KnowledgeId source is marked as enterprise guidance, it is an enforcement input. The enforcer or Codex coordinator must retrieve it at kickoff, preserve provenance, translate it into NodeID/component mappings and `VERIFY:` criteria, and check it at the appropriate gates.
+
+Precedence:
+
+1. Explicit user-provided KnowledgeIds or vault IDs for the current WorkGroup.
+2. Local manifest entries and active guideline files.
+3. `knowzcode/enterprise.md`.
+4. Configured enterprise/compliance vault standards.
+5. General vault search results.
+
+If sources conflict, surface the conflict at the next gate. Blocking-tier conflicts pause autonomous mode until the user or lead resolves which source applies.
+
 ---
 
 ## Configuration
@@ -72,6 +93,14 @@ show_advisory_issues: true
 skip_empty_guidelines: true
 ```
 
+> **Where these keys are honored** (wired as of v0.16.0+):
+> - `compliance_enabled` / `skip_empty_guidelines` → enterprise-enforcer Stage 0 + `skills/work/SKILL.md` Step 2.6.2.
+> - `include_in_audit` → `/knowzcode:audit` gates the auto-compliance reviewer in a *general* audit (an explicit `/knowzcode:audit compliance` always runs).
+> - `require_signoff_for_finalization` → the Phase 3 "Compliance Sign-Off" gate in `skills/work/references/quality-gates.md` blocks finalization on unresolved blocking-tier violations.
+> - `show_advisory_issues` → the enterprise-enforcer report and the quality gates omit advisory-tier rows/counts when false.
+>
+> MCP keys below are honored at the work/closer/enforcer sites described in "How It Works".
+
 ---
 
 ## MCP-Based Compliance (Optional)
@@ -85,11 +114,20 @@ mcp_compliance_enabled: false
 # Enterprise vault ID for standards and audit trails
 compliance_vault_id: ""
 
+# Optional explicit guideline KnowledgeIds to enforce at kickoff
+guideline_knowledge_ids: []
+
+# Optional explicit vault IDs/names to search for enterprise guidelines at kickoff
+guideline_vault_sources: []
+
 # Audit trail vault ID (can be same as compliance vault)
 audit_trail_vault_id: ""
 
 # Pull team-wide standards from enterprise vault at workflow start
 pull_standards_at_start: true
+
+# Preserve vault/KnowledgeId provenance in WorkGroup and compliance reports
+preserve_guideline_provenance: true
 
 # Push audit results to enterprise vault after Phase 2B
 push_audit_results: true
@@ -104,7 +142,10 @@ When `mcp_compliance_enabled: true`:
 
 **At workflow start (before Phase 1A):**
 - Query enterprise vault for team-wide standards: `ask_question(compliance_vault, "team standards for {project_type}")`
+- Fetch each `guideline_knowledge_ids` item with `get_knowledge_item(id)` and treat it as an active enterprise guideline source.
+- Search each `guideline_vault_sources` vault for goal-relevant policies, standards, and active requirements.
 - Merge returned standards into quality gate criteria for the WorkGroup
+- Preserve provenance for every vault-sourced rule: vault ID/name, KnowledgeId, title, created/updated date when available, retrieval date, and enforcement level.
 
 **After Phase 2B audit:**
 - Push audit results to enterprise vault: `create_knowledge(audit_trail_vault, "Audit: {wgid} - {score}%")`
@@ -146,3 +187,9 @@ When `mcp_compliance_enabled: true`:
 2. Use `templates/guideline-template.md` as starting point
 3. Add entry to Active Guidelines table above
 4. Run `/knowzcode:audit compliance` to verify guideline loads correctly
+
+### Adding Vault-Backed Guidelines
+1. Save or identify the guideline in a Knowz enterprise/compliance vault.
+2. Add its KnowledgeId to `guideline_knowledge_ids` OR add the source vault to `guideline_vault_sources`.
+3. Set `mcp_compliance_enabled: true`.
+4. Run `/knowzcode:work --enterprise-enforcer` or `/knowzcode:audit compliance` to verify it loads and maps to concrete criteria.

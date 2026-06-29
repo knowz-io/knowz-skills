@@ -317,8 +317,14 @@ On platforms without multi-agent orchestration, the closer handles vault writes 
 
 At workflow start, if an enterprise vault is configured (read `knowz-vaults.md` to find a vault whose description mentions "enterprise", "compliance", or "audit", then check `knowzcode/enterprise/compliance_manifest.md` for `mcp_compliance_enabled: true`):
 - Pull team-wide standards and merge into quality gate criteria
+- Fetch explicit guideline KnowledgeIds from `guideline_knowledge_ids` or user/workflow input with `get_knowledge_item(id)`
+- Search configured guideline vault sources for active standards, policies, enterprise guidelines, and compliance requirements
+- Preserve provenance for vault-sourced rules: vault ID/name, KnowledgeId, title, created/updated date when available, retrieval date, applies-to scope, and enforcement level
+- Convert active local/vault/KnowledgeId guidelines into Phase 1A NodeID mappings, Phase 1B spec VERIFY criteria, Phase 2A builder guidance, and Phase 2B audit checks
 - Push audit results to the resolved enterprise vault after Phase 2B
 - Push completion records to the resolved enterprise vault after Phase 3
+
+Enterprise guidelines may also live in `knowzcode/enterprise.md` or `knowzcode/enterprise/guidelines/**/*.md`. When the user, manifest, or workflow marks vault/KnowledgeId rules as active, they are enforcement inputs, not optional background context. If guideline sources conflict, surface the conflict at the next gate; blocking-tier conflicts pause autonomous mode until resolved.
 
 ### Graceful Degradation
 
@@ -335,6 +341,7 @@ All phases work without MCP. MCP enhances analysis depth and organizational lear
 > - Specific technology names, library versions, framework details
 > - Code examples, file paths, error messages where relevant
 > - Consequences and alternatives considered
+> - Freshness/provenance: date observed, created/updated date when known, source, and whether this supersedes older guidance
 >
 > Write vault content as if the reader has no project context — they will find this entry via a search query months from now.
 
@@ -344,12 +351,19 @@ Agents MUST capture these categories at quality gates:
 
 | Category | When | What |
 |----------|------|------|
-| Scope decisions | Phase 1A gate | What included/excluded, risk reasoning |
+| Scope | Phase 1A gate | What included/excluded, risk reasoning |
+| Spec | Phase 1B gate and Phase 3 | Approved and as-built NodeID specs, VERIFY criteria, constraints |
+| Component | Phase 1B and Phase 3 | Purpose, boundaries, dependencies, data flow, config, files |
+| System Boundary | Phase 1B and Phase 3 | Ownership, dependency direction, forbidden coupling |
+| Diagram | Phase 1B and Phase 3 | Mermaid/data-flow/architecture sketches that document real structure |
+| Integration Contract | Phase 1B and Phase 2A | APIs, events, schemas, queues, MCP/tool surfaces |
 | Implementation patterns | Phase 2A | Patterns, workarounds, performance from TDD |
 | Security & audit findings | Phase 2B gate | Vulnerabilities, audit gaps, remediation |
 | Conventions established | Phase 3 | New conventions with rationale and examples |
 | Architecture discoveries | Phase 3 | Structural insights, component relationships |
-| Completion record | Phase 3 | Goal, outcome, NodeIDs, duration, learnings |
+| Lesson Learned | Any phase | Durable insight, pitfall, or proven workaround discovered during execution |
+| Correction/Deprecation | Any phase | Older vault guidance that is stale, contradicted, or superseded |
+| Completion | Phase 3 | Goal, outcome, NodeIDs, duration, learnings |
 
 ### Mid-Work Discovery Signals
 
@@ -363,6 +377,7 @@ Agents should watch for these during any phase and queue via knowledge-liaison (
 | Configuration gotcha | Non-obvious defaults, env-specific settings |
 | Performance finding | Before/after measurements |
 | API quirk | Undocumented behavior, version differences |
+| Stale vault guidance | Retrieved knowledge contradicted by live code/tests/docs |
 
 When detected, capture immediately — do not defer to finalization. Sessions can end unexpectedly.
 
@@ -392,6 +407,10 @@ During finalization, scan the WorkGroup for insight-worthy patterns:
 | Convention | "established convention", "team standard", "naming pattern", "agreed to always" |
 | Integration | "API integration", "upstream API changed", "service dependency", "webhook" |
 | Scope | "included because", "excluded because", "out of scope", "deferred to" |
+| Spec | "approved spec", "VERIFY criteria", "as-built", "interface contract" |
+| Component | "new component", "boundary", "responsibility", "data flow" |
+| Diagram | "Mermaid", "architecture diagram", "flowchart", "sequence" |
+| Correction/Deprecation | "stale", "superseded", "no longer applies", "replaced by" |
 
 ### Auto-Capture Triggers
 
@@ -401,6 +420,7 @@ Learning candidates are detected at each quality gate. **The lead/outer orchestr
 
 The lead DMs the knowledge-liaison at each quality gate. The knowledge-liaison dispatches `knowz:writer` with a self-contained prompt:
 - After Phase 1A approval: DM knowledge-liaison: `"Capture Phase 1A: {wgid}. Your task: #{task-id}"`
+- After Phase 1B approval: DM knowledge-liaison: `"Capture Phase 1B: {wgid}. Your task: #{task-id}"`
 - After Phase 2A completion: DM knowledge-liaison: `"Capture Phase 2A: {wgid}. Your task: #{task-id}"`
 - After Phase 2B audit: DM knowledge-liaison: `"Capture Phase 2B: {wgid}. Your task: #{task-id}"`
 - After Phase 3 finalization: Closer DMs knowledge-liaison: `"Capture Phase 3: {wgid}. Your task: #{task-id}"`
@@ -420,6 +440,7 @@ The knowledge-liaison handles routing and dispatch. If MCP is unavailable, captu
 If MCP is available but no `knowz:writer`, resolve vault IDs from `knowz-vaults.md` (project root) before writing:
 
 - After Phase 1A: `create_knowledge({ecosystem_vault}, title="Scope: {descriptive goal summary}", content="[CONTEXT] {problem description, what prompted this work, constraints}\n[INSIGHT] {scope decisions — what's included/excluded and why}\n[RATIONALE] {risk assessment with full reasoning, affected files, mitigation}\n[TAGS] scope, {domain}", tags=["scope", "{domain}"])`
+- After Phase 1B: Capture approved specs, component/system boundaries, integration contracts, diagrams, and spec decisions — include NodeIDs, spec paths, VERIFY criteria, source files, and enterprise guideline provenance when applicable
 - After Phase 2A: Capture implementation patterns and workarounds discovered during TDD cycles — include specific file paths, code examples, and the problem each pattern solves
 - After Phase 2B: `create_knowledge({ecosystem_vault}, title="Audit: {wgid} - {score}% — {key finding summary}", content="[CONTEXT] {what was audited, scope of the review}\n[INSIGHT] {specific gaps with file paths and line references, security findings with severity reasoning}\n[RATIONALE] {gap resolution decisions — what was deferred vs fixed and why}\n[TAGS] audit, {domain}", tags=["audit", "{domain}"])`
 - After Phase 2B (enterprise): If enterprise vault configured and compliance enabled, push audit results to enterprise vault
