@@ -48,6 +48,77 @@ mcp_agents_enabled: true
 
 ---
 
+## Execution Profile
+
+```yaml
+# Controls model assignments and execution strategy (default: teams).
+#
+# advisor: Cost-optimized using Claude Code's advisor tool.
+#          Builder, reviewer, closer, smoke-tester, and microfix-specialist
+#          run on Sonnet; the advisor tool provides Opus-level guidance when
+#          strategic decisions arise. Strategic agents (architect, analyst,
+#          security-officer) stay on Opus.
+#          FORCES: Parallel Teams mode.
+#          REQUIRES: Claude Code v2.1.100+, direct Anthropic API access.
+#
+# teams:   Current behavior (default). All agents use their frontmatter
+#          model assignments. Works on any Claude Code version, any API
+#          provider. No advisor dependency.
+#
+# classic: Forces Subagent Delegation mode. No Agent Teams, no advisor.
+#          Use when Agent Teams is unavailable or you want deterministic
+#          single-threaded execution.
+profile: teams
+```
+
+See `knowzcode/skills/work/references/profile-models.md` for the full profile → agent-model mapping.
+
+---
+
+## Frontend Designer Configuration
+
+```yaml
+# Frontend designer activation (default: auto).
+#
+# auto:  Auto-activate when UI surface is detected (Glob for index.html, *.tsx,
+#        *.jsx, *.vue, *.svelte, *.razor, _Host.cshtml, main.dart, manifest.json,
+#        *.xaml). Skip on CLI-only / library projects.
+# true:  Force-enable even on CLI/library projects.
+# false: Force-skip entirely.
+#
+# Per-invocation flags: --frontend-designer / --no-frontend-designer override.
+# Mode constraints: Tier 3 only. Skipped in Tier 2 Light and Sequential Teams.
+frontend_designer: auto
+
+# Officer mode for frontend-designer (default: false).
+# When true: HIGH design findings are tagged [DESIGN-CONCERN-BLOCK] and pause
+# autonomous mode at Gate #3 (analogous to security-officer's [SECURITY-BLOCK]).
+# When false (default): HIGH findings are advisory ([DESIGN-CONCERN] tag) and
+# do not pause gates.
+#
+# Per-invocation flag: --frontend-designer-blocking overrides to true.
+frontend_designer_blocking: false
+
+# Behavior for Design Questions Bundle in autonomous mode (default: pause).
+#
+# pause:                   Lead pauses autonomous mode and surfaces questions to
+#                          the user via AskUserQuestion (safety default — avoids
+#                          building the wrong UI silently).
+# accept-recommendations:  Lead auto-replies with the frontend-designer's
+#                          recommended option per question and logs
+#                          [AUTO-DESIGN-DEFAULTED]. Use only when you trust the
+#                          recommendations and want fully unattended runs.
+frontend_designer_autonomous_defaults: pause
+```
+
+---
+
+## Enterprise Enforcer Configuration
+
+The enterprise-enforcer agent (v0.16.0+) auto-activates when `knowzcode/enterprise/compliance_manifest.md` exists with `compliance_enabled: true` and at least one enforcement source is present — an active non-empty guideline, a `knowzcode/enterprise.md` file, or a configured vault/KnowledgeId guideline source (`skills/work/SKILL.md` Step 2.6.2 holds the authoritative logic). No additional config key is needed — the manifest itself declares intent. Per-invocation flags `--enterprise-enforcer` (force-on) and `--no-enterprise-enforcer` (force-skip, use per-agent fallback paths) override.
+
+---
+
 ## Override Precedence
 
 | Setting | Config Default | Flag Override |
@@ -56,5 +127,9 @@ mcp_agents_enabled: true
 | builder_node_limit | `builder_node_limit:` | `--builder-node-limit=N` |
 | default_specialists | `default_specialists:` | `--specialists`, `--no-specialists` |
 | mcp_agents_enabled | `mcp_agents_enabled:` | `--no-mcp` |
+| profile | `profile:` | `--profile={advisor\|teams\|classic}` |
+| frontend_designer | `frontend_designer:` | `--frontend-designer`, `--no-frontend-designer` |
+| frontend_designer_blocking | `frontend_designer_blocking:` | `--frontend-designer-blocking` |
+| enterprise-enforcer (auto from manifest) | `compliance_manifest.md` `compliance_enabled:` | `--enterprise-enforcer`, `--no-enterprise-enforcer` |
 
 Per-invocation flags always win. `--specialists` adds to defaults; `--no-specialists` clears all.
