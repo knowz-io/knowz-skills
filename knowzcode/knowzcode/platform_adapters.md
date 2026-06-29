@@ -131,7 +131,7 @@ Create `AGENTS.md` in project root when the repository wants a project-level met
 # KnowzCode Development Methodology
 
 This project uses KnowzCode for structured TDD development.
-Read `knowzcode/knowzcode_loop.md` before starting any feature work.
+Read `knowzcode/knowzcode_loop.md` before starting any feature work. If `knowzcode/codex_execution.md` exists, read it too for Codex-native delegation, structured disk handoffs, Knowz MCP usage, and enterprise enforcement.
 
 ## Phase Walkthrough
 
@@ -139,6 +139,7 @@ Read `knowzcode/knowzcode_loop.md` before starting any feature work.
 1. Read `knowzcode/knowzcode_tracker.md` — check for active WorkGroups
 2. Read `knowzcode/knowzcode_project.md` — understand project context
 3. Read `knowzcode/knowzcode_architecture.md` — understand current architecture
+4. Read `knowzcode/codex_execution.md` when present — apply Codex-specific execution rules
 
 ### Phase 1A: Impact Analysis
 - Analyze what needs to change for the given goal
@@ -165,11 +166,12 @@ Read `knowzcode/knowzcode_loop.md` before starting any feature work.
 - Maximum 10 verification iterations before pausing
 - **STOP**: Report implementation results
 
-### Phase 2B: Completeness Audit
+### Phase 2B: Completeness Audit + Smoke Testing
 - READ-ONLY audit — do NOT modify source files
 - Compare implementation against the assigned VERIFY statements for each scope (full NodeID or microtask). The lead consolidates per-scope coverage into overall completion; do not fail unrelated parent NodeID criteria when auditing a microtask.
 - Calculate completion percentage
 - Report gaps, security concerns, integration issues
+- When suitable, boot the application and smoke-test runtime behavior against the specs
 - **STOP**: Present audit results for user decision
 
 ### Phase 3: Finalization
@@ -204,6 +206,7 @@ For single-file, <50 line, no-ripple-effect changes:
 
 ## Key Files
 - `knowzcode/knowzcode_loop.md` — Complete methodology
+- `knowzcode/codex_execution.md` — Codex-native delegation, handoffs, MCP, and enterprise enforcement
 - `knowzcode/knowzcode_project.md` — Project context
 - `knowzcode/knowzcode_architecture.md` — Architecture docs
 - `knowzcode/knowzcode_tracker.md` — WorkGroup tracking
@@ -232,6 +235,7 @@ Start a structured KnowzCode development workflow for the given goal.
 
 Read these files for methodology and project context:
 - `knowzcode/knowzcode_loop.md` — Complete methodology
+- `knowzcode/codex_execution.md` — Codex-native delegation, handoffs, MCP, and enterprise enforcement (if present)
 - `knowzcode/knowzcode_project.md` — Project context
 - `knowzcode/knowzcode_tracker.md` — Active WorkGroups
 - `knowzcode/knowzcode_architecture.md` — Architecture docs
@@ -334,6 +338,7 @@ Perform a READ-ONLY audit comparing implementation against specs.
 
 Read these files:
 - `knowzcode/knowzcode_loop.md` — Phase 2B methodology
+- `knowzcode/codex_execution.md` — Codex-native audit delegation and enterprise enforcement (if present)
 - `knowzcode/knowzcode_tracker.md` — Find active WorkGroups
 
 **CRITICAL: This is a READ-ONLY audit. Do NOT modify source files.**
@@ -689,7 +694,7 @@ Do not treat `.agents/agents/` as part of the supported Codex package surface fo
 
 If a future Codex surface needs agent definitions, add them intentionally and validate them separately. Until then, keep Codex packaging focused on discoverable skills plus the `knowzcode/` support files those skills read.
 
-When Codex workflows need parallel or delegated execution, use the Codex runtime's native delegation model instead of assuming Claude-style team APIs.
+When Codex workflows need parallel or delegated execution, use the Codex runtime's native delegation model instead of assuming Claude-style team APIs. See `knowzcode/codex_execution.md` for the coordinator/subagent contract, structured handoffs, direct Knowz MCP usage, and enterprise compliance handling.
 
 ---
 
