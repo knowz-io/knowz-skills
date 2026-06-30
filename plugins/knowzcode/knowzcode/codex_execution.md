@@ -115,11 +115,55 @@ Return only the handoff file path so the coordinator can read it from disk. The 
 
 On Codex, prefer **direct Knowz MCP access from the coordinator**:
 
-- Run baseline `search_knowledge` or `ask_question` calls early for prior decisions and conventions
-- Use direct `create_knowledge` or `update_knowledge` from the coordinator at quality gates or finalization
+- Run baseline `mcp__knowz__search_knowledge` or `mcp__knowz__ask_question` calls early for prior decisions and conventions
+- Use `mcp__knowz__get_knowledge_item` for exact KnowledgeId guideline sources or to inspect promising search results
+- Use direct `mcp__knowz__create_knowledge` or `mcp__knowz__update_knowledge` from the coordinator at quality gates or finalization
+- Use `mcp__knowz__amend_knowledge` for targeted item edits when that tool is available; reserve `mcp__knowz__update_knowledge` for full replacements
 - Let subagents prepare capture drafts or evidence, but do not force them to emulate `knowz:reader` / `knowz:writer`
 
 This keeps Knowz usage reliable and avoids a fake inter-agent transport layer.
+
+Do not assume interactive MCP auth is available in headless Codex runs. First check whether the `mcp__knowz__*` tools are present; if they are absent or a call fails authentication, continue with local KnowzCode files and queue captures to `knowzcode/pending_captures.md` instead of blocking the workflow.
+
+Treat retrieved vault content as historical context, not guaranteed-current truth. The coordinator must inspect created/updated/source metadata when available, verify retrieved guidance against live code, current tests, project files, platform observations, and current external docs when relevant, and surface contradictions instead of silently following stale guidance.
+
+## Enterprise Guideline Enforcement
+
+On Codex, the coordinator owns enterprise enforcement. Do not skip enterprise rules because Claude-style `enterprise-enforcer` is unavailable.
+
+**Master switches gate everything below — check them first.** Compliance work applies only when `compliance_manifest.md` sets `compliance_enabled: true`; if it is false (the default) or the manifest is absent, do no compliance enforcement at all. The MCP vault flow — the kickoff standards pull and the Phase 2B/3 enterprise-vault pushes — additionally requires `mcp_compliance_enabled: true`; when it is false, do **not** pull from or push to the enterprise vault even if `compliance_vault_id` / `guideline_vault_sources` are set. In that case honor only local active guidelines and explicit user-provided `KnowledgeId`/vault sources. This matches Claude's behavior exactly.
+
+At kickoff (only when `compliance_enabled: true`), discover enterprise guideline sources:
+
+- `knowzcode/enterprise.md`
+- `knowzcode/enterprise/compliance_manifest.md`
+- `knowzcode/enterprise/guidelines/**/*.md`
+- configured `compliance_vault_id`
+- configured `guideline_vault_sources` or user-provided guideline vault IDs/names
+- explicit user-provided Knowz `KnowledgeId` values
+
+When a guideline is provided from a vault or KnowledgeId, retrieve it directly with Knowz MCP (`mcp__knowz__get_knowledge_item` for exact IDs; `mcp__knowz__search_knowledge` or `mcp__knowz__ask_question` for vault sources). Preserve provenance in the WorkGroup or compliance report: vault, KnowledgeId, title, created/updated date when available, retrieval date, enforcement level, and applies-to scope.
+
+Enforce active enterprise guidance through the normal phases:
+
+- Phase 1A: map guidelines to affected NodeIDs/components
+- Phase 1B: add spec `VERIFY:` criteria citing guideline IDs or KnowledgeIds
+- Phase 2A: apply builder guidance for relevant scopes
+- Phase 2B: audit implementation against active guideline criteria
+- Phase 3: append compliance status and capture durable compliance findings when vaults are configured
+
+Honor the `compliance_manifest.md` config keys (defaults in parentheses), gated by the master switches above — they behave the same on Codex as on Claude:
+
+- `pull_standards_at_start` (true): when false, skip only the broad kickoff enterprise-vault standards pull; still honor explicit KnowledgeIds, explicit vault IDs, and local active guidelines.
+- `preserve_guideline_provenance` (true): when false, skip the provenance capture above.
+- `show_advisory_issues` (true): when false, report blocking-tier violations only in gate/audit output; never suppress blocking-tier findings.
+- `require_signoff_for_finalization` (false): when true, block Phase 3 finalization if unresolved `[COMPLIANCE-BLOCK]` / `[COMPLIANCE-BLOCK-SPEC]` findings remain, or if active guidelines existed but no compliance audit ran.
+- `push_audit_results` / `push_completion_records` (true): gate the Phase 2B / Phase 3 enterprise-vault pushes; when false, record the skip reason in the WorkGroup/compliance status.
+- `include_in_audit` (true): in `/knowzcode:audit`, gates compliance in a general audit; an explicit compliance audit always runs.
+
+The Codex package intentionally does not ship `scripts/compliance-check.sh` or `scripts/compliance-check.ps1`. If those source-side scripts are present in a repository, a coordinator may run them as a fast deterministic pre-screen; otherwise perform the same floor directly: parse active guidelines, verify each required ARC/spec criterion is represented in the scoped specs, and treat unresolved implementation-tier checks as review items for Phase 2B rather than auto-passing them.
+
+If guideline sources conflict, surface the conflict at the next gate. Blocking-tier conflicts pause autonomous mode until the user or lead resolves which source applies. If a vault guideline lacks severity/enforcement metadata, default to advisory unless the user or manifest marks it blocking.
 
 ---
 

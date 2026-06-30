@@ -1,6 +1,6 @@
 ---
 name: audit
-description: "Run read-only quality audits on the existing codebase — spec completeness, architecture health, OWASP security scanning, integration consistency. Use when the user wants to AUDIT or SCAN existing code, not build new features."
+description: "Run read-only quality audits on the existing codebase — spec completeness, architecture health, OWASP security scanning, integration consistency, and enterprise compliance. Use when the user wants to AUDIT or SCAN existing code (including compliance reviews), not build new features."
 user-invocable: true
 allowed-tools: Read, Write, Bash, Glob, Grep, Task
 # Note: Also uses MCP tools (search_knowledge, ask_question) when MCP is configured
@@ -52,6 +52,8 @@ Read:
 - `knowzcode/knowzcode_architecture.md`
 - `knowzcode/knowzcode_project.md`
 - `knowzcode/knowzcode_orchestration.md` (if exists)
+- `knowzcode/enterprise.md` (if exists)
+- `knowzcode/enterprise/compliance_manifest.md` (if exists)
 
 ## Step 1.1: Parse Orchestration Config (Optional)
 
@@ -101,6 +103,21 @@ Before spawning agents, determine vault availability:
 
 If no vaults are configured, suggest `/knowz setup`.
 
+### Enterprise Guideline Sources
+
+Before spawning reviewers, discover enterprise guideline sources:
+
+0. Parse the `compliance_manifest.md` config block into `COMPLIANCE_CONFIG`. Audit-relevant behavior keys:
+   - `include_in_audit` (default true) gates the compliance reviewer in a *general* full audit; an explicit `/knowzcode:audit compliance` ignores it and always runs.
+   - `preserve_guideline_provenance` (default true) skips provenance capture in step 4 when false.
+   - `show_advisory_issues` (default true) suppresses advisory-tier compliance rows/counts when false; blocking-tier findings are never suppressed.
+   - `push_audit_results` (default true) gates enterprise-vault audit-result writes in Step 5.
+1. Read local guidelines from `knowzcode/enterprise.md`, `knowzcode/enterprise/compliance_manifest.md`, and `knowzcode/enterprise/guidelines/**/*.md` when present.
+2. If the manifest, user request, or `$ARGUMENTS` provides `guideline_knowledge_ids`, call `get_knowledge_item(id)` for each and treat the item as an active enterprise guideline source.
+3. If `mcp_compliance_enabled: true` AND (`compliance_vault_id`, `guideline_vault_sources`, or a user-provided vault ID/name exists), query those vaults for goal-relevant policies, standards, active requirements, and past compliance findings. When `mcp_compliance_enabled: false`, use only local guideline files — do not query the enterprise vault.
+4. Preserve provenance for vault-sourced rules unless `preserve_guideline_provenance: false`: vault ID/name, KnowledgeId, title, created/updated date when available, retrieval date, applies-to scope, and enforcement level.
+5. Treat retrieved vault guidance as historical context. Verify it against live code, tests, local enterprise files, official docs, and current observations. If sources conflict, surface the conflict in the audit report. Blocking-tier conflicts are HIGH severity until resolved.
+
 > **Vault research is mandatory when available.** If `VAULTS_CONFIGURED = true` and `MCP_AGENTS_ENABLED = true`, the `knowz:reader` dispatch MUST execute in both Exploration and Planning modes. The 10-tool-call budget in Exploration Mode is a scope limit, not a reason to skip. Only skip when MCP is genuinely unavailable (`MCP_ACTIVE = false`).
 
 ### Agent Teams Mode
@@ -136,7 +153,7 @@ The reviewer focuses on the requested type with type-specific depth:
 Create tasks first, pre-assign, then spawn with task IDs:
 - `TaskCreate("Audit: spec + architecture")` → `TaskUpdate(owner: "reviewer-spec-arch")`
 - `TaskCreate("Audit: security + integration")` → `TaskUpdate(owner: "reviewer-sec-int")`
-- (Optional) `TaskCreate("Audit: compliance")` → `TaskUpdate(owner: "reviewer-compliance")` (if enterprise configured)
+- (Optional) `TaskCreate("Audit: compliance")` → `TaskUpdate(owner: "reviewer-compliance")` (if enterprise configured AND `COMPLIANCE_CONFIG.include_in_audit != false`)
 - Dispatch `knowz:reader` for vault standards (if `VAULTS_CONFIGURED = true`)
 
 Spawn reviewers with their task IDs:
@@ -169,16 +186,16 @@ Spawn reviewers with their task IDs:
    > Deliverable: Audit report with security posture, integration health, critical issues.
    > {advisor_guidance}
 
-3. (Optional) If enterprise compliance configured, spawn `reviewer` (name: `reviewer-compliance`):
+3. (Optional) If enterprise compliance configured AND `COMPLIANCE_CONFIG.include_in_audit != false` (default true), spawn `reviewer` (name: `reviewer-compliance`). An explicit `/knowzcode:audit compliance` invocation ignores `include_in_audit` and always runs the compliance reviewer:
    > **Your Task**: #{task-id} — claim immediately (`TaskUpdate(status: "in_progress")`). Mark completed with summary when done.
    > **Audit scope**: Enterprise compliance ONLY.
-   > Check against guidelines in `knowzcode/enterprise/compliance_manifest.md`.
+   > Check against local guidelines in `knowzcode/enterprise.md`, `knowzcode/enterprise/compliance_manifest.md`, `knowzcode/enterprise/guidelines/**/*.md`, and any vault/KnowledgeId guideline sources discovered by the lead. Preserve provenance and cite guideline IDs or KnowledgeIds in findings.
    > {advisor_guidance}
 
 4. If `VAULTS_CONFIGURED = true` AND `MCP_AGENTS_ENABLED = true`, dispatch `knowz:reader` for standards lookup in parallel with reviewers:
    > Read `knowz-vaults.md` (project root) to discover configured vaults — their IDs, types, descriptions.
-   > Query for team standards: search ecosystem-type vaults for standards, conventions, and past audit decisions.
-   > Return synthesized findings.
+   > Query for team standards: search ecosystem/enterprise/compliance-type vaults for standards, conventions, active policies, enterprise guidelines, compliance requirements, and past audit decisions.
+   > Return synthesized findings with KnowledgeId/item references, created/updated/source metadata when available, and any stale or contradictory guidance.
 
 Wait for all to complete.
 
@@ -235,7 +252,7 @@ Wait for all reviewers and specialists to complete. Synthesize results in Step 4
 Launch knowledge-liaison + reviewer in parallel via `Task()`:
 
 1. **knowledge-liaison** — Local context + vault knowledge:
-   - `Task(subagent_type="knowzcode:knowledge-liaison", description="Liaison: audit context", prompt="Research audit scope: {audit_type}. Gather local context (specs, workgroups, tracker, log, architecture) and vault knowledge (standards, conventions, past audit decisions). Push Context Briefing with findings. Max 15 tool calls. Write findings to a concise summary.")`
+   - `Task(subagent_type="knowzcode:knowledge-liaison", description="Liaison: audit context", prompt="Research audit scope: {audit_type}. Gather local context (specs, workgroups, tracker, log, architecture) and vault knowledge (standards, conventions, enterprise guidelines, active policies, past audit decisions). Preserve KnowledgeId/item references, created/updated/source metadata, and contradictions. Push Context Briefing with findings. Max 15 tool calls. Write findings to a concise summary.")`
 
 2. **reviewer** — The audit itself:
    - `subagent_type`: `"reviewer"`
@@ -255,12 +272,12 @@ All launched in parallel. Synthesize knowledge-liaison context alongside reviewe
 Launch knowledge-liaison + parallel reviewers via `Task()`:
 
 1. **knowledge-liaison** — Local context + vault knowledge:
-   - `Task(subagent_type="knowzcode:knowledge-liaison", description="Liaison: audit context", prompt="Research for comprehensive audit. Gather local context (specs, workgroups, tracker, log, architecture) and vault knowledge (standards, conventions, security policies, compliance requirements). Push Context Briefing with findings. Max 15 tool calls. Write findings to a concise summary.")`
+   - `Task(subagent_type="knowzcode:knowledge-liaison", description="Liaison: audit context", prompt="Research for comprehensive audit. Gather local context (specs, workgroups, tracker, log, architecture) and vault knowledge (standards, conventions, security policies, compliance requirements, enterprise guidelines, active policies). Preserve KnowledgeId/item references, created/updated/source metadata, and contradictions. Push Context Briefing with findings. Max 15 tool calls. Write findings to a concise summary.")`
 
 2. **Parallel reviewers** (append `{advisor_guidance}` resolution to each `prompt` per Step 1.1):
    - `Task(subagent_type="reviewer", description="Audit: spec + architecture", prompt="Audit scope: Specification quality AND architecture health ONLY. ... {advisor_guidance}")`
    - `Task(subagent_type="reviewer", description="Audit: security + integration", prompt="Audit scope: Security vulnerability scan AND integration consistency ONLY. ... {advisor_guidance}")`
-   - `Task(subagent_type="reviewer", description="Audit: compliance", prompt="Audit scope: Enterprise compliance ONLY. ... {advisor_guidance}")` (if enterprise configured)
+   - `Task(subagent_type="reviewer", description="Audit: compliance", prompt="Audit scope: Enterprise compliance ONLY. ... {advisor_guidance}")` (if enterprise configured AND `COMPLIANCE_CONFIG.include_in_audit != false`; an explicit `/knowzcode:audit compliance` ignores this toggle and always runs)
 
 Synthesize knowledge-liaison context alongside reviewer results.
 
@@ -308,6 +325,9 @@ Synthesize specialist findings alongside reviewer results.
 ### Specialist Reports                    [only when --specialists active]
 **Security Officer**: {finding count, severity breakdown, SECURITY-BLOCK tags}
 **Test Advisor**: {coverage %, TDD compliance, quality assessment}
+
+### Enterprise Guideline Provenance        [when enterprise guidelines active]
+{local files, vaults, KnowledgeIds, created/updated dates when available, retrieval date, enforcement level}
 ```
 
 ## Step 4.5: Vault Capture Prompt
@@ -335,7 +355,7 @@ Log to `knowzcode/knowzcode_log.md`:
 | {timestamp} | AUDIT | {audit_type} | {summary} |
 ```
 
-If MCP is configured and enterprise vault exists: push audit results via `create_knowledge` for team audit trail.
+If `mcp_compliance_enabled: true`, MCP is configured, an enterprise vault exists, and `COMPLIANCE_CONFIG.push_audit_results != false` (default true): push audit results via `create_knowledge` for team audit trail. If `mcp_compliance_enabled: false` or `push_audit_results: false`, record that the enterprise-vault audit push was skipped by manifest config.
 
 ## Related Skills
 
