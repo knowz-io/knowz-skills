@@ -31,6 +31,7 @@ $SpecsDir = "$KnowzCodeDir/specs"
 $script:BlockingCount = 0
 $script:AdvisoryCount = 0
 $script:PassedCount = 0
+$script:ReviewCount = 0
 
 function Write-Log {
     param([string]$Message)
@@ -53,6 +54,12 @@ function Write-Warn {
     param([string]$Message)
     Write-Host "[ADVISORY] $Message" -ForegroundColor Yellow
     $script:AdvisoryCount++
+}
+
+function Write-Review {
+    param([string]$Message)
+    Write-Host "[REVIEW] $Message" -ForegroundColor Yellow
+    $script:ReviewCount++
 }
 
 function Write-VerboseLog {
@@ -124,7 +131,9 @@ function Test-GuidelineHasContent {
     }
 
     $content = Get-Content $FilePath -Raw
-    return $content -match "^### [A-Z]+-[A-Z]+-[0-9]+:" -or $content -match "\*\*Requirement:\*\*"
+    # `(?m)` (Multiline) is required: on a -Raw single string, a bare `^` anchors to the
+    # start of the whole file, so `^###` would only match a header at the very top.
+    return $content -match "(?m)^### [A-Z]+-[A-Z]+-[0-9]+:" -or $content -match "\*\*Requirement:\*\*"
 }
 
 function Test-SpecCompliance {
@@ -133,15 +142,17 @@ function Test-SpecCompliance {
         [string]$Enforcement
     )
 
+    # ARC IDs use underscores (ARC_SEC_AUTH_01a), but requirement IDs are hyphenated
+    # (SEC-AUTH-01). Convert hyphens to underscores so the spec match can actually succeed.
+    $arcPrefix = "ARC_" + ($ReqId -replace '-', '_')
     $found = $false
 
     if (Test-Path $SpecsDir) {
-        Get-ChildItem "$SpecsDir/*.md" -ErrorAction SilentlyContinue | ForEach-Object {
-            $content = Get-Content $_.FullName -Raw -ErrorAction SilentlyContinue
-            if ($content -match "ARC_$ReqId") {
-                $found = $true
-            }
-        }
+        # Use the pipeline result, NOT a $found assignment inside ForEach-Object — that
+        # block runs in a child scope, so the assignment would not propagate out.
+        $found = [bool](Get-ChildItem "$SpecsDir/*.md" -ErrorAction SilentlyContinue | Where-Object {
+            (Get-Content $_.FullName -Raw -ErrorAction SilentlyContinue) -match [regex]::Escape($arcPrefix)
+        })
     }
 
     if ($found) {
@@ -181,13 +192,26 @@ function Test-GuidelineRequirements {
     foreach ($match in $reqMatches) {
         $reqId = $match.Groups[1].Value
 
+        # Honor each requirement's own **Applies To:** scope, matching compliance-check.sh.
+        # Without this, a spec check would (incorrectly) flag implementation-only requirements
+        # as blocking, diverging from the bash script and failing CI only on Windows.
+        $reqAppliesTo = ''
+        $scopeMatch = [regex]::Match($content, "(?ms)^### $([regex]::Escape($reqId)):.*?\*\*Applies To:\*\*\s*(\w+)")
+        if ($scopeMatch.Success) { $reqAppliesTo = $scopeMatch.Groups[1].Value }
+        if ($reqAppliesTo -ne $CheckType -and $reqAppliesTo -ne 'both') {
+            Write-VerboseLog "  $reqId`: N/A (applies to $reqAppliesTo, checking $CheckType)"
+            continue
+        }
+
         if ($CheckType -eq "spec") {
             Test-SpecCompliance -ReqId $reqId -Enforcement $Enforcement
         }
 
-        if ($CheckType -eq "impl") {
-            Write-VerboseLog "  $reqId`: Implementation check (pattern matching)"
-            Write-Pass "$reqId`: Implementation check completed"
+        if ($CheckType -eq "implementation") {
+            # Static inspection cannot reliably decide whether changed source satisfies a
+            # requirement's intent. Emit a REVIEW (deferred to the enterprise-enforcer agent)
+            # rather than a FALSE PASS that would mask real violations.
+            Write-Review "$reqId ($Enforcement)`: implementation check requires agent/manual review — run /knowzcode:audit compliance"
         }
     }
 }
@@ -224,7 +248,7 @@ foreach ($guideline in $guidelines) {
     }
 
     if ($Scope -eq "impl" -or $Scope -eq "full") {
-        Test-GuidelineRequirements -GuidelineFile $guidelinePath -Enforcement $guideline.Enforcement -CheckType "impl"
+        Test-GuidelineRequirements -GuidelineFile $guidelinePath -Enforcement $guideline.Enforcement -CheckType "implementation"
     }
 }
 
@@ -236,6 +260,7 @@ Write-Host ""
 Write-Host "  Passed:   $script:PassedCount" -ForegroundColor Green
 Write-Host "  Blocking: $script:BlockingCount" -ForegroundColor Red
 Write-Host "  Advisory: $script:AdvisoryCount" -ForegroundColor Yellow
+Write-Host "  Review:   $script:ReviewCount (implementation checks deferred to /knowzcode:audit compliance)" -ForegroundColor Yellow
 Write-Host ""
 
 if ($script:BlockingCount -gt 0) {

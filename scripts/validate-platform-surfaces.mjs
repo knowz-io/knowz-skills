@@ -68,12 +68,34 @@ function validateSkillDirectory(...parts) {
   }
 }
 
+// These helpers run on hardcoded surface paths. Guard the read: if a surface is renamed,
+// moved, or deleted (exactly the drift this validator exists to catch), push a clean error
+// and continue instead of crashing with an uncaught ENOENT before the report/exit path.
 function expectFileContains(filePath, pattern, message) {
+  if (!existsSync(filePath)) {
+    expect(false, `Surface file is missing: ${filePath}`);
+    return;
+  }
   const raw = readFileSync(filePath, 'utf8');
   expect(pattern.test(raw), message);
 }
 
+function expectFileContainsAll(filePath, checks, messagePrefix) {
+  if (!existsSync(filePath)) {
+    expect(false, `${messagePrefix} file is missing: ${filePath}`);
+    return;
+  }
+  const raw = readFileSync(filePath, 'utf8');
+  for (const [label, pattern] of checks) {
+    expect(pattern.test(raw), `${messagePrefix} must mention ${label}: ${filePath}`);
+  }
+}
+
 function expectFileNotContains(filePath, pattern, message) {
+  if (!existsSync(filePath)) {
+    expect(false, `Surface file is missing: ${filePath}`);
+    return;
+  }
   const raw = readFileSync(filePath, 'utf8');
   expect(!pattern.test(raw), message);
 }
@@ -156,6 +178,22 @@ if (claudeMarketplace?.plugins && codexMarketplace?.plugins) {
       expect(
         typeof prompt === 'string' && prompt.length <= 128,
         `Codex defaultPrompt entries must be strings <= 128 chars for ${productName}`
+      );
+    }
+  }
+}
+
+if (sourcePackages.knowzcode?.version) {
+  const expectedVersion = sourcePackages.knowzcode.version;
+  for (const file of [
+    join(ROOT, 'knowzcode', 'knowzcode', '.knowzcode-version'),
+    join(ROOT, 'plugins', 'knowzcode', 'knowzcode', '.knowzcode-version'),
+  ]) {
+    expect(existsSync(file), `Missing KnowzCode version marker: ${file}`);
+    if (existsSync(file)) {
+      expect(
+        readFileSync(file, 'utf8').trim() === expectedVersion,
+        `KnowzCode version marker drift: ${file} !== ${expectedVersion}`
       );
     }
   }
@@ -255,6 +293,25 @@ const codexSupportDir = join(ROOT, 'plugins', 'knowzcode', 'knowzcode');
 expect(existsSync(codexSupportDir) && statSync(codexSupportDir).isDirectory(), `Missing KnowzCode support directory: ${codexSupportDir}`);
 expect(!existsSync(join(ROOT, 'plugins', 'knowzcode', 'agents')), 'Codex package should not ship Claude-only agents/ as active support content');
 
+for (const rel of [
+  'knowzcode_loop.md',
+  'knowzcode_orchestration.md',
+  'platform_adapters.md',
+  'claude_code_execution.md',
+  'gitignore.template',
+]) {
+  const sourceFile = join(ROOT, 'knowzcode', 'knowzcode', rel);
+  const pluginFile = join(ROOT, 'plugins', 'knowzcode', 'knowzcode', rel);
+  expect(existsSync(sourceFile), `Missing source KnowzCode framework file: ${sourceFile}`);
+  expect(existsSync(pluginFile), `Missing Codex KnowzCode framework file: ${pluginFile}`);
+  if (existsSync(sourceFile) && existsSync(pluginFile)) {
+    expect(
+      readFileSync(sourceFile, 'utf8') === readFileSync(pluginFile, 'utf8'),
+      `Codex framework file drifted from source: ${rel}`
+    );
+  }
+}
+
 const codexExecutionGuide = join(ROOT, 'plugins', 'knowzcode', 'knowzcode', 'codex_execution.md');
 expect(existsSync(codexExecutionGuide), `Missing Codex execution guide: ${codexExecutionGuide}`);
 if (existsSync(codexExecutionGuide)) {
@@ -326,6 +383,114 @@ if (existsSync(codexWorkSkill)) {
   );
 }
 
+// VaultCaptureReinforcement capture-surface assertions (vault-capture spec, dual-queue flush,
+// retrieval-freshness, capture-taxonomy) are parked on the feature/vault-capture branch with
+// that work; re-add them here when it merges into this release.
+
+for (const file of [
+  join(ROOT, 'knowzcode', 'agents', 'enterprise-enforcer.md'),
+  join(ROOT, 'knowzcode', 'skills', 'work', 'SKILL.md'),
+  join(ROOT, 'knowzcode', 'skills', 'audit', 'SKILL.md'),
+  join(ROOT, 'knowzcode', 'knowzcode', 'enterprise', 'compliance_manifest.md'),
+  join(ROOT, 'plugins', 'knowzcode', 'skills', 'work', 'SKILL.md'),
+  join(ROOT, 'plugins', 'knowzcode', 'skills', 'audit', 'SKILL.md'),
+  join(ROOT, 'plugins', 'knowzcode', 'knowzcode', 'codex_execution.md'),
+  join(ROOT, 'plugins', 'knowzcode', 'knowzcode', 'enterprise', 'compliance_manifest.md'),
+]) {
+  expectFileContainsAll(
+    file,
+    [
+      ['local enterprise.md discovery', /enterprise\.md/],
+      ['guideline KnowledgeIds', /guideline_knowledge_ids|KnowledgeId/],
+      ['guideline vault sources', /guideline_vault_sources|guideline vault sources|vault ID\/name/i],
+      ['compliance vault', /compliance_vault_id|compliance vault/i],
+      ['provenance', /provenance/i],
+      ['created/updated metadata', /created\/updated|created date[\s\S]*updated date/i],
+    ],
+    'Enterprise guideline enforcement surface'
+  );
+}
+
+const complianceBehaviorKeys = [
+  'include_in_audit',
+  'require_signoff_for_finalization',
+  'show_advisory_issues',
+  'pull_standards_at_start',
+  'push_audit_results',
+  'push_completion_records',
+  'preserve_guideline_provenance',
+];
+for (const file of [
+  join(ROOT, 'knowzcode', 'skills', 'work', 'SKILL.md'),
+  join(ROOT, 'plugins', 'knowzcode', 'skills', 'work', 'SKILL.md'),
+  join(ROOT, 'plugins', 'knowzcode', 'knowzcode', 'codex_execution.md'),
+  join(ROOT, 'knowzcode', 'knowzcode', 'enterprise', 'compliance_manifest.md'),
+  join(ROOT, 'plugins', 'knowzcode', 'knowzcode', 'enterprise', 'compliance_manifest.md'),
+]) {
+  expectFileContainsAll(
+    file,
+    complianceBehaviorKeys.map((key) => [key, new RegExp(`\\b${key}\\b`)]),
+    'Compliance config behavior surface'
+  );
+}
+
+for (const file of [
+  join(ROOT, 'knowzcode', 'skills', 'audit', 'SKILL.md'),
+  join(ROOT, 'plugins', 'knowzcode', 'skills', 'audit', 'SKILL.md'),
+]) {
+  expectFileContainsAll(
+    file,
+    [
+      ['include_in_audit', /\binclude_in_audit\b/],
+      ['show_advisory_issues', /\bshow_advisory_issues\b/],
+      ['push_audit_results', /\bpush_audit_results\b/],
+      ['preserve_guideline_provenance', /\bpreserve_guideline_provenance\b/],
+      ['mcp_compliance_enabled master switch', /\bmcp_compliance_enabled\b/],
+    ],
+    'Audit compliance config behavior surface'
+  );
+}
+
+// Trigger-term coverage: a capability the body supports must be advertised in the frontmatter
+// `description`, because Codex (and the Claude skill router) selects skills from the description
+// before loading the body. The audit skill performs compliance audits, so "compliance" must
+// appear in its description or the capability is undiscoverable. (Reads the frontmatter directly
+// rather than via parseFrontmatter, which rejects the source skill's `#`-comment lines.)
+for (const skillFile of [
+  join(ROOT, 'knowzcode', 'skills', 'audit', 'SKILL.md'),
+  join(ROOT, 'plugins', 'knowzcode', 'skills', 'audit', 'SKILL.md'),
+]) {
+  if (!existsSync(skillFile)) {
+    expect(false, `Missing audit skill: ${skillFile}`);
+    continue;
+  }
+  const fm = readFileSync(skillFile, 'utf8').match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  const description = fm ? (fm[1].match(/^description:\s*(.+)$/m)?.[1] ?? '') : '';
+  expect(
+    /compliance/i.test(description),
+    `audit skill frontmatter description must advertise "compliance" (trigger term — Codex selects on frontmatter before the body): ${skillFile}`
+  );
+}
+
+// The core loop is read early by the skills; if it describes enterprise vault pulls/pushes
+// without naming the manifest gates, it silently overrides the wired config flags. Require the
+// gating keys to appear (both byte-coupled copies).
+for (const file of [
+  join(ROOT, 'knowzcode', 'knowzcode', 'knowzcode_loop.md'),
+  join(ROOT, 'plugins', 'knowzcode', 'knowzcode', 'knowzcode_loop.md'),
+]) {
+  expectFileContainsAll(
+    file,
+    [
+      ['mcp_compliance_enabled master switch', /\bmcp_compliance_enabled\b/],
+      ['pull_standards_at_start gate', /\bpull_standards_at_start\b/],
+      ['push_audit_results gate', /\bpush_audit_results\b/],
+      ['push_completion_records gate', /\bpush_completion_records\b/],
+    ],
+    'Enterprise vault-write gating in the core loop'
+  );
+}
+
 const parallelOrchestrationGuide = join(ROOT, 'knowzcode', 'skills', 'work', 'references', 'parallel-orchestration.md');
 expectFileNotContains(
   parallelOrchestrationGuide,
@@ -354,6 +519,62 @@ if (existsSync(codexSkillRoot)) {
       /\b(TeamCreate|TaskCreate|TaskUpdate|TaskGet|SendMessage|ExitPlanMode)\b/,
       `Codex skill must not rely on Claude-only team APIs: ${skillPath}`
     );
+    const generated = readFileSync(skillPath, 'utf8').match(/Generated by KnowzCode v([0-9]+\.[0-9]+\.[0-9]+)/);
+    if (generated && sourcePackages.knowzcode?.version) {
+      expect(
+        generated[1] === sourcePackages.knowzcode.version,
+        `Codex skill generated-version comment drift for ${skillPath}: ${generated[1]} !== ${sourcePackages.knowzcode.version}`
+      );
+    }
+  }
+}
+
+// --- Enterprise compliance parity: source (knowzcode/) is canonical; the Codex plugin
+// copy must mirror it byte-for-byte. The enterprise/ tree is pure config + guideline
+// templates with no platform-specific content, so full content equality is the correct
+// (and strongest) invariant — a set/path-only check let value/content drift through
+// (e.g. the missing design.md AND the stale pre-v0.16.0 manifest both shipped green). ---
+const srcEnterprise = join(ROOT, 'knowzcode', 'knowzcode', 'enterprise');
+const pluginEnterprise = join(ROOT, 'plugins', 'knowzcode', 'knowzcode', 'enterprise');
+
+if (existsSync(srcEnterprise)) {
+  // Do NOT silently skip when the plugin copy is missing entirely — that is the worst drift.
+  expect(
+    existsSync(pluginEnterprise),
+    `Codex enterprise copy is missing entirely: ${pluginEnterprise} (source exists at ${srcEnterprise})`
+  );
+
+  if (existsSync(pluginEnterprise)) {
+    const listFiles = (base) => {
+      const out = [];
+      const walk = (d, prefix) => {
+        for (const e of readdirSync(d, { withFileTypes: true })) {
+          if (e.isDirectory()) walk(join(d, e.name), `${prefix}${e.name}/`);
+          else out.push(`${prefix}${e.name}`);
+        }
+      };
+      walk(base, '');
+      return out.sort();
+    };
+    const srcFiles = listFiles(srcEnterprise);
+    const pluginFiles = listFiles(pluginEnterprise);
+
+    // 1) Same file set (catches a missing design.md, or an extra/stale plugin-only file).
+    expect(
+      srcFiles.join(',') === pluginFiles.join(','),
+      `Enterprise file set drifted between source and Codex plugin.\n    source: [${srcFiles.join(', ')}]\n    plugin: [${pluginFiles.join(', ')}]`
+    );
+
+    // 2) Identical contents for every shared file (catches a stale manifest/status/guideline
+    //    whose name is unchanged but body diverged — the form set-comparison missed).
+    for (const rel of srcFiles) {
+      const pluginPath = join(pluginEnterprise, rel);
+      if (!existsSync(pluginPath)) continue; // already reported by the set-diff above
+      expect(
+        readFileSync(join(srcEnterprise, rel), 'utf8') === readFileSync(pluginPath, 'utf8'),
+        `Enterprise file content drifted between source and Codex plugin: ${rel} (re-sync plugins/knowzcode/knowzcode/enterprise/ from knowzcode/knowzcode/enterprise/)`
+      );
+    }
   }
 }
 

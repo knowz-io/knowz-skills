@@ -94,6 +94,7 @@ git commit -m "KnowzCode: Specs approved for {WorkGroupID}"
 After gate approval, the lead MUST trigger progress capture for spec design decisions:
 - **If vaults configured + knowledge-liaison active**: DM knowledge-liaison: `"Capture Phase 1B: {wgid}. Your task: #{task-id}"`
   Include the WorkGroup file's `**KnowledgeId:**` value (if present) so knowledge-liaison can pass it to knowz:writer for update mode.
+  The knowledge-liaison MUST capture approved specs, component/system boundaries, integration contracts, diagrams, spec decisions, and applicable enterprise guideline provenance (local file, vault, or KnowledgeId) when present.
 - **If vaults configured + no knowledge-liaison**: call MCP directly (direct write fallback per `knowzcode_loop.md` Section 7).
 - **If MCP unavailable**: Queue capture to `knowzcode/pending_captures.md` AND announce to user: `**Vault capture skipped — MCP unavailable at Gate #2. Queued to pending_captures.md.**`
 
@@ -152,6 +153,8 @@ Present audit results:
 
 How would you like to proceed?
 ```
+
+> **Advisory visibility**: When `COMPLIANCE_CONFIG.show_advisory_issues: false` (default true), the Enterprise Enforcer report shows blocking-tier violations and counts only — advisory-tier rows and the "Advisory violations" count are omitted across Gates #1–#3. Blocking-tier reporting and `[COMPLIANCE-BLOCK]` are never suppressed.
 
 **Autonomous Mode**: If `AUTONOMOUS_MODE = true`:
 - **Safety check**: If any security finding rated HIGH or CRITICAL (from reviewer OR security-officer `[SECURITY-BLOCK]`) → **PAUSE** autonomous mode for this gate. Announce: `> **Autonomous Mode Paused** — HIGH/CRITICAL security finding requires manual review.`
@@ -223,6 +226,19 @@ Do NOT silently skip this step.
 
 ---
 
+## Compliance Sign-Off (Phase 3 Entry)
+
+Applies only when enterprise compliance is enabled AND `COMPLIANCE_CONFIG.require_signoff_for_finalization: true` (manifest default: `false`). Checked by the lead at the transition from Gate #3 to Phase 3, before dispatching the closer. Evaluate in order:
+
+1. **Nothing to enforce → PROCEED.** If there were no active enforcement sources this WorkGroup (the enterprise-enforcer was legitimately SKIPPED for "no active non-empty guidelines" and no `enterprise.md`/vault source applied), the sign-off is vacuously satisfied — record "no active guidelines; sign-off N/A" and proceed to Phase 3. Do NOT block.
+2. **Unresolved blocking violation → BLOCK.** Otherwise, if any blocking-tier compliance finding (`[COMPLIANCE-BLOCK]` / `[COMPLIANCE-BLOCK-SPEC]`) is still unresolved, **block finalization** and route back to the gap loop. Announce: `> **Finalization blocked** — require_signoff_for_finalization is true and {N} blocking compliance violation(s) are unresolved.`
+3. **Active guidelines but no audit ran → BLOCK once.** If active guidelines/sources existed but no compliance audit executed (enforcer disabled/unavailable AND the reviewer fallback did not run), block and run `/knowzcode:audit compliance` (or re-enable the enforcer) to produce a result to sign off. Announce: `> **Finalization blocked** — compliance is enabled with active guidelines but no compliance audit ran; running one now.`
+4. **Audit ran, no unresolved blocking → PROCEED.** Record the sign-off in WorkGroup context and proceed to Phase 3.
+
+This gate is a safety exception: cases 2–3 pause even when `AUTONOMOUS_MODE = true`. When `require_signoff_for_finalization: false`, Phase 3 proceeds normally; advisory violations never block.
+
+---
+
 ## Phase 3 Output
 
 ### Vault Write — MUST (before reporting completion)
@@ -241,6 +257,7 @@ Before reporting "Workflow Complete", verify:
 - [ ] `knowzcode_log.md` ARC-Completion entry written
 - [ ] MCP progress capture attempted (or failure queued to `pending_captures.md` and announced to user)
 - [ ] Specs updated to As-Built / FINAL status
+- [ ] As-built specs, components, diagrams, integration contracts, corrections/deprecations, and enterprise guideline provenance captured or explicitly skipped with reason
 - [ ] Smoke test approach captured (if smoke testing ran): launch method, endpoints tested, test method, project-specific quirks
 
 Update workgroup to "Closed" and report:

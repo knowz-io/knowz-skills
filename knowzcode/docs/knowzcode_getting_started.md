@@ -526,4 +526,6 @@ If you used KnowzCode during pre-release with `.claude/` directories:
 
 Removed commands: `/knowzcode:step`, `/knowzcode:continue` (command), `/knowzcode:compliance`, `/knowzcode:resolve-conflicts`, `/knowzcode:migrate-knowledge`. The `continue` skill still works — just say "continue" in conversation to resume active WorkGroups.
 
+> **Enterprise compliance was re-homed, not removed.** The standalone `/knowzcode:compliance` command is gone, but the capability is current and stronger: run it via `/knowzcode:audit compliance`, and during `/knowzcode:work` it's enforced automatically by the `enterprise-enforcer` agent driven by `knowzcode/enterprise/compliance_manifest.md`. See [enterprise-compliance.md](enterprise-compliance.md).
+
 See the [full documentation](../docs/) for more details on version changes.

@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Enterprise compliance is now documented for users.** New deep-dive guide `docs/enterprise-compliance.md` (folder layout, guideline format, manifest, enforcement at gates, config keys, alternate sources, CI). New "Enterprise Compliance & Custom Guidelines" section in `README.md` (after Execution Profiles). The feature existed since v0.16.0 but was effectively undiscoverable — README/docs/marketplace were silent, and `knowzcode_getting_started.md` listed the old `/knowzcode:compliance` command under "Removed commands" with no follow-up, leading users to believe the capability was gone.
+
+### Changed
+- **Wired the 7 documented-but-unenforced manifest config keys.** `include_in_audit` (gates the compliance reviewer in a general `/knowzcode:audit`), `require_signoff_for_finalization` (new Phase 3 "Compliance Sign-Off" gate in `quality-gates.md`), `show_advisory_issues` (suppresses advisory-tier rows in enforcer + gate reports), `pull_standards_at_start` (gates the Step 3.5 vault pull), `push_audit_results` / `push_completion_records` (gate the closer's enterprise-vault pushes), and `preserve_guideline_provenance` (gates provenance capture) are now honored across `skills/work/SKILL.md`, `skills/audit/SKILL.md`, `agents/enterprise-enforcer.md`, `agents/closer.md`, `agents/reviewer.md`, and `references/quality-gates.md`. `compliance_manifest.md` now documents where each key is honored. Codex parity note added to `codex_execution.md`.
+- Corrected stale agent rosters that omitted the v0.16.0 officers: `README.md` advisor-profile table now lists `enterprise-enforcer` (opus) and `frontend-designer` (sonnet under advisor); `docs/workflow-reference.md` Agent Roster now includes `enterprise-enforcer`, `frontend-designer`, `security-officer`, `test-advisor`, `project-advisor`, and `smoke-tester`.
+- `getting_started.md` now carries a "re-homed, not removed" note next to the removed `/knowzcode:compliance` line, pointing to `/knowzcode:audit compliance` + the enforcer.
+- `init/SKILL.md` step 10 expanded from a one-line "experimental" stub to a proper Beta scaffolding step (skeleton source, activation steps, blocking/advisory, link to the guide), and disambiguated from the unrelated white-label `enterprise.json` "Enterprise Configuration" section.
+- Marketplace/plugin discoverability: added `compliance` / `governance` / `enterprise` keywords and compliance mentions to `marketplace.json`, `.claude-plugin/plugin.json`, `package.json`, and the Codex `.codex-plugin/plugin.json`.
+- Activation-summary wording in `agents/enterprise-enforcer.md` and `knowzcode_orchestration.md` corrected to match the authoritative Step 2.6.2 logic (enforcement source is an active guideline **OR** `enterprise.md` **OR** a vault/KnowledgeId source — not a strict AND on local guidelines).
+- `scripts/compliance-check.sh` / `compliance-check.ps1` documented and de-orphaned via `DEV_GUIDE.md` + the new guide; reported as the deterministic CI entry point.
+
+### Fixed
+- **Source→Codex enterprise drift.** The Codex plugin copy (`plugins/knowzcode/knowzcode/enterprise/`) was a stale pre-v0.16.0 generation: missing `guidelines/design.md`, and an outdated `compliance_manifest.md` / `compliance_status.md`. Re-synced to match the canonical source.
+- `scripts/validate-platform-surfaces.mjs` hardened to catch enterprise drift: now asserts the Codex copy ships `design.md`, that the `guidelines/` file set matches source↔plugin, and that the manifest config-key set matches. (The previous presence-only token check let the drift through.)
+- `scripts/compliance-check.sh`: fixed the ARC-ID lookup (requirement IDs are hyphenated `SEC-AUTH-01` but ARC IDs use underscores `ARC_SEC_AUTH_01a` — the spec grep could never match); fixed the subshell counter bug (counters incremented inside a piped `while` loop never propagated, so the summary and exit code always read 0 blocking); replaced the no-op implementation check that always emitted a false PASS with an honest REVIEW status; replaced non-portable `grep -oP` with `sed`; made counter increments `set -e`-safe. Same ARC-ID + false-PASS + `$found` closure-scope fixes applied to `compliance-check.ps1`.
+
 ## [0.16.0] - 2026-05-27
 
 ### Added
