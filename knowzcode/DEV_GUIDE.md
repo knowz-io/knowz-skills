@@ -66,6 +66,7 @@ For product overview, see [README.md](README.md). For detailed docs, see `docs/`
 - **`knowzcode/platform_adapters.md`** holds the adapter templates for all 6 platforms (Claude Code, Gemini, Codex, Cursor, Copilot, Windsurf)
 - **`knowzcode/prompts/`** holds phase prompt templates used by commands and agents
 - **`knowzcode/knowzcode_loop.md`** is the core methodology — must stay platform-neutral (no Task tool, no subagent references, no Claude Code-specific syntax)
+- **`scripts/compliance-check.sh` / `compliance-check.ps1`** are a deterministic spec-presence pre-screen for enterprise compliance in CI/CD — a fast floor, not the whole gate. Run from a project root: `bash scripts/compliance-check.sh [spec|impl|full]` (or `pwsh -File scripts/compliance-check.ps1 -Scope <...>`). They no-op (exit 0) unless `knowzcode/enterprise/compliance_manifest.md` has `compliance_enabled: true`. Spec-tier checks verify each active guideline's ARC criteria appear in `knowzcode/specs/`; implementation-tier checks are reported as REVIEW (deferred to the `enterprise-enforcer` agent via `/knowzcode:work` or `/knowzcode:audit compliance`), never auto-passed. Exit 1 on blocking **spec** violations (or advisory under `KC_COMPLIANCE_STRICT` / `-Strict`). A green run does **not** assert implementation-tier compliance — that requires the agent audit. See [docs/enterprise-compliance.md](docs/enterprise-compliance.md).
 
 ## Agent Teams (Teammate Instructions)
 
