@@ -114,7 +114,7 @@ Before spawning reviewers, discover enterprise guideline sources:
    - `push_audit_results` (default true) gates enterprise-vault audit-result writes in Step 5.
 1. Read local guidelines from `knowzcode/enterprise.md`, `knowzcode/enterprise/compliance_manifest.md`, and `knowzcode/enterprise/guidelines/**/*.md` when present.
 2. If the manifest, user request, or `$ARGUMENTS` provides `guideline_knowledge_ids`, call `get_knowledge_item(id)` for each and treat the item as an active enterprise guideline source.
-3. If `compliance_vault_id`, `guideline_vault_sources`, or a user-provided vault ID/name exists, query those vaults for goal-relevant policies, standards, active requirements, and past compliance findings.
+3. If `mcp_compliance_enabled: true` AND (`compliance_vault_id`, `guideline_vault_sources`, or a user-provided vault ID/name exists), query those vaults for goal-relevant policies, standards, active requirements, and past compliance findings. When `mcp_compliance_enabled: false`, use only local guideline files — do not query the enterprise vault.
 4. Preserve provenance for vault-sourced rules unless `preserve_guideline_provenance: false`: vault ID/name, KnowledgeId, title, created/updated date when available, retrieval date, applies-to scope, and enforcement level.
 5. Treat retrieved vault guidance as historical context. Verify it against live code, tests, local enterprise files, official docs, and current observations. If sources conflict, surface the conflict in the audit report. Blocking-tier conflicts are HIGH severity until resolved.
 
@@ -355,7 +355,7 @@ Log to `knowzcode/knowzcode_log.md`:
 | {timestamp} | AUDIT | {audit_type} | {summary} |
 ```
 
-If MCP is configured, an enterprise vault exists, and `COMPLIANCE_CONFIG.push_audit_results != false` (default true): push audit results via `create_knowledge` for team audit trail. If `push_audit_results: false`, record that the enterprise-vault audit push was skipped by manifest config.
+If `mcp_compliance_enabled: true`, MCP is configured, an enterprise vault exists, and `COMPLIANCE_CONFIG.push_audit_results != false` (default true): push audit results via `create_knowledge` for team audit trail. If `mcp_compliance_enabled: false` or `push_audit_results: false`, record that the enterprise-vault audit push was skipped by manifest config.
 
 ## Related Skills
 

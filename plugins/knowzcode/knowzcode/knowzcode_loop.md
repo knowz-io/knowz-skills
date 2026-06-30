@@ -316,13 +316,13 @@ On platforms without multi-agent orchestration, the closer handles vault writes 
 ### Enterprise: Team Standards
 
 At workflow start, if an enterprise vault is configured (read `knowz-vaults.md` to find a vault whose description mentions "enterprise", "compliance", or "audit", then check `knowzcode/enterprise/compliance_manifest.md` for `mcp_compliance_enabled: true`):
-- Pull team-wide standards and merge into quality gate criteria
+- When `pull_standards_at_start: true` (default), pull team-wide standards and merge into quality gate criteria
 - Fetch explicit guideline KnowledgeIds from `guideline_knowledge_ids` or user/workflow input with `get_knowledge_item(id)`
 - Search configured guideline vault sources for active standards, policies, enterprise guidelines, and compliance requirements
-- Preserve provenance for vault-sourced rules: vault ID/name, KnowledgeId, title, created/updated date when available, retrieval date, applies-to scope, and enforcement level
+- When `preserve_guideline_provenance: true` (default), preserve provenance for vault-sourced rules: vault ID/name, KnowledgeId, title, created/updated date when available, retrieval date, applies-to scope, and enforcement level
 - Convert active local/vault/KnowledgeId guidelines into Phase 1A NodeID mappings, Phase 1B spec VERIFY criteria, Phase 2A builder guidance, and Phase 2B audit checks
-- Push audit results to the resolved enterprise vault after Phase 2B
-- Push completion records to the resolved enterprise vault after Phase 3
+- When `push_audit_results: true` (default), push audit results to the resolved enterprise vault after Phase 2B
+- When `push_completion_records: true` (default), push completion records to the resolved enterprise vault after Phase 3
 
 Enterprise guidelines may also live in `knowzcode/enterprise.md` or `knowzcode/enterprise/guidelines/**/*.md`. When the user, manifest, or workflow marks vault/KnowledgeId rules as active, they are enforcement inputs, not optional background context. If guideline sources conflict, surface the conflict at the next gate; blocking-tier conflicts pause autonomous mode until resolved.
 
@@ -443,7 +443,7 @@ If MCP is available but no `knowz:writer`, resolve vault IDs from `knowz-vaults.
 - After Phase 1B: Capture approved specs, component/system boundaries, integration contracts, diagrams, and spec decisions — include NodeIDs, spec paths, VERIFY criteria, source files, and enterprise guideline provenance when applicable
 - After Phase 2A: Capture implementation patterns and workarounds discovered during TDD cycles — include specific file paths, code examples, and the problem each pattern solves
 - After Phase 2B: `create_knowledge({ecosystem_vault}, title="Audit: {wgid} - {score}% — {key finding summary}", content="[CONTEXT] {what was audited, scope of the review}\n[INSIGHT] {specific gaps with file paths and line references, security findings with severity reasoning}\n[RATIONALE] {gap resolution decisions — what was deferred vs fixed and why}\n[TAGS] audit, {domain}", tags=["audit", "{domain}"])`
-- After Phase 2B (enterprise): If enterprise vault configured and compliance enabled, push audit results to enterprise vault
+- After Phase 2B (enterprise): If `mcp_compliance_enabled: true`, an enterprise vault is configured, and `push_audit_results: true` (default), push audit results to enterprise vault
 - After Phase 3: Capture architectural learnings and consolidation decisions (handled by closer agent)
 
 ### Capture Protocol
@@ -465,7 +465,7 @@ If MCP is available but no `knowz:writer`, resolve vault IDs from `knowz-vaults.
 
 After Phase 3:
 1. Read `knowz-vaults.md` to find a vault whose description mentions "enterprise", "compliance", or "audit"
-2. Only push if an enterprise vault is configured
+2. Only push if `mcp_compliance_enabled: true`, an enterprise vault is configured, and `push_completion_records: true` (default)
 - Push WorkGroup completion record with goal, NodeIDs, audit score, and decisions
 - Push architecture drift findings if any detected during finalization
 
