@@ -11,6 +11,8 @@ You are the **KnowzCode Initialization Agent**. Set up the KnowzCode framework i
 
 ## Enterprise Configuration
 
+> **Note:** This section is about **white-label** config (brand + endpoints) only. The separate **enterprise compliance** feature (custom guidelines enforced at quality gates) is set up in step 10 and documented in `knowzcode/docs/enterprise-compliance.md`.
+
 Before using any endpoints or brand names in this skill, check for an `enterprise.json` file in the plugin root directory (the directory containing `.claude-plugin/plugin.json`). Read it once at the start of initialization.
 
 If the file exists, use its values:
@@ -391,11 +393,19 @@ Note: On Windows, Agent Teams runs in "in-process" mode by default
 This works correctly — no action needed.
 ```
 
-### 10. Optional: Set up enterprise compliance (experimental)
+### 10. Optional: Set up enterprise compliance (Beta)
 
-- Ask: "Would you like to set up enterprise compliance features? (optional)"
-- If yes: create `knowzcode/enterprise/` directory with manifest and templates
-- Compliance is disabled by default
+> This is the **compliance guidelines** feature — custom rules (security, API, code-quality, design) enforced at the quality gates. It is distinct from the white-label `enterprise.json` covered in the "Enterprise Configuration" section above.
+
+- Ask: "Would you like to set up enterprise compliance? It lets your org enforce its own guidelines at the quality gates. (optional)"
+- If yes, scaffold `knowzcode/enterprise/` by copying the enterprise skeleton that ships in the KnowzCode framework files (the `enterprise/` directory alongside the other `knowzcode/` templates in the installed plugin; the `npx knowzcode install` path copies it automatically). It includes:
+  - `compliance_manifest.md` — the control file (Active Guidelines table + config keys)
+  - `compliance_status.md` — audit history
+  - `guidelines/security.md` (real rules), `guidelines/code-quality.md` + `guidelines/design.md` (starter templates), and `guidelines/custom/`
+  - `templates/guideline-template.md`
+- Then tell the user how to turn it on: author or edit a guideline, register it in the manifest's **Active Guidelines** table with `Active: true`, set `compliance_enabled: true`, and run `/knowzcode:audit compliance` to verify. Guidelines are **blocking** (stop the workflow) or **advisory** (reported only).
+- Compliance is **disabled by default** (`compliance_enabled: false`) — nothing runs until the user opts in.
+- Point the user at `knowzcode/docs/enterprise-compliance.md` for the full guide.
 
 ### 11. Optional: Configure MCP
 

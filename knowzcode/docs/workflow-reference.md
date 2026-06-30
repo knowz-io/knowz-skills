@@ -350,6 +350,12 @@ The KnowzCode workflow is orchestrated by **commands** (not a spawnable agent) t
 | `reviewer` | 2B | Quality audit, security review |
 | `closer` | 3 | Finalization, learning capture |
 | `knowledge-liaison` | 0 | Context & vault coordination |
+| `security-officer` | 1–3 (opt-in) | Threat model, OWASP scan, gate-blocking on CRITICAL/HIGH |
+| `enterprise-enforcer` | 0–3 (auto when compliance enabled) | Guideline-to-ARC mapping, gate-blocking on blocking-tier violations |
+| `frontend-designer` | 0–3 (auto on UI surface) | Design questioning, ASCII mockups, design VERIFY, E2E UI audit |
+| `test-advisor` | 1–3 (opt-in) | TDD enforcement, test quality, ARC coverage (persists through Gate #3) |
+| `project-advisor` | 1 (opt-in) | Backlog curation, idea capture |
+| `smoke-tester` | 2B (opt-in) | Runtime smoke testing |
 | `microfix-specialist` | utility | Quick targeted fixes |
 | `knowledge-migrator` | utility | Knowledge import/migration |
 | `update-coordinator` | utility | Coordinated updates |

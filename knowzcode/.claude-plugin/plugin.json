@@ -1,8 +1,8 @@
 {
   "name": "knowzcode",
-  "description": "KnowzCode - Platform-agnostic AI development methodology with TDD, quality gates, and structured workflows",
+  "description": "KnowzCode - Platform-agnostic AI development methodology with TDD, quality gates, structured workflows, and enterprise compliance (custom guidelines enforced at quality gates)",
   "version": "0.16.0",
-  "keywords": ["tdd", "development-methodology", "quality-gates", "agents", "code-review"],
+  "keywords": ["tdd", "development-methodology", "quality-gates", "agents", "code-review", "compliance", "governance", "enterprise"],
   "author": {
     "name": "Alex Headscarf"
   },

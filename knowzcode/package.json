@@ -29,7 +29,10 @@
     "cursor",
     "copilot",
     "windsurf",
-    "development"
+    "development",
+    "compliance",
+    "governance",
+    "enterprise"
   ],
   "author": {
     "name": "Alex Headscarf"

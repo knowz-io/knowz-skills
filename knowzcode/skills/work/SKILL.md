@@ -277,8 +277,16 @@ Set `ENTERPRISE_ENFORCER_ENABLED = false`.
    - If `compliance_enabled == true`:
      - Parse Active Guidelines table
      - For each row with `Active: true`, check the referenced file exists and is non-empty (per `skip_empty_guidelines`). "Empty" includes a file with only commented-out template sections (default state of `design.md` and `code-quality.md` until populated).
-     - If ≥1 active non-empty guideline → `ENTERPRISE_ENFORCER_ENABLED = true`. Reason: compliance enabled with N active guidelines.
+     - Also check for `knowzcode/enterprise.md`, configured `guideline_knowledge_ids`, configured `guideline_vault_sources`, or `mcp_compliance_enabled: true` with `compliance_vault_id`.
+     - If ≥1 active non-empty guideline OR enterprise.md OR vault/KnowledgeId guideline source exists → `ENTERPRISE_ENFORCER_ENABLED = true`. Reason: compliance enabled with N local guidelines and/or vault/KnowledgeId sources.
      - Else → SKIP. Announce: `> **Enterprise Enforcer: SKIPPED** — compliance enabled but no active non-empty guidelines.`
+   - **Parse the full compliance config block** (the `## Configuration` and `## MCP-Based Compliance` YAML in `compliance_manifest.md`) into `COMPLIANCE_CONFIG` and carry it in WorkGroup context. Honor the documented defaults. These keys are load-bearing — downstream consumers MUST respect them:
+     - `pull_standards_at_start` (default true) → gates the Step 3.5 enterprise-vault standards pull.
+     - `preserve_guideline_provenance` (default true) → when false, skip provenance capture for vault/KnowledgeId-sourced guidelines.
+     - `show_advisory_issues` (default true) → when false, the enforcer and gate reports omit advisory-tier rows/counts (blocking-tier only).
+     - `require_signoff_for_finalization` (default false) → when true, Phase 3 finalization is blocked until blocking-tier compliance is resolved (see `references/quality-gates.md` "Compliance Sign-Off").
+     - `push_audit_results` / `push_completion_records` (default true) → gate the closer's enterprise-vault audit/completion pushes.
+     - `include_in_audit` (default true) → honored by `/knowzcode:audit` (gates the auto-compliance reviewer in a general audit).
 
 If `ENTERPRISE_ENFORCER_ENABLED = true`, announce:
 > **Enterprise Enforcer: ACTIVE** — {reason}
@@ -293,10 +301,14 @@ Read these files ONCE (do NOT re-read between phases):
 
 ## Step 3.5: Pull Team Standards (MCP — Optional)
 
-If MCP is configured and enterprise compliance is enabled:
+If MCP is configured and enterprise compliance is enabled AND `COMPLIANCE_CONFIG.pull_standards_at_start != false` (default true):
 1. Check `knowzcode/enterprise/compliance_manifest.md` for `mcp_compliance_enabled: true`
-2. If enabled: Read `knowz-vaults.md` from project root, find vault with enterprise/compliance description, then `ask_question({resolved_enterprise_vault_id}, "team standards for {project_type}")`
-3. Merge returned standards into WorkGroup context for quality gate criteria
+2. If enabled: Read `knowz-vaults.md` from project root, find vault with enterprise/compliance/policy/guidelines description, then `ask_question({resolved_enterprise_vault_id}, "team standards, enterprise guidelines, policies, and compliance requirements for {project_type} and {goal}")`
+3. If `guideline_knowledge_ids` are configured or provided in `$ARGUMENTS`, call `get_knowledge_item(id)` for each and treat the returned item as an active enterprise guideline source.
+4. If `guideline_vault_sources` are configured or a user-provided vault ID/name is present, search those vaults for goal-relevant policies, standards, and active requirements.
+5. Preserve provenance for every vault-sourced guideline in WorkGroup context: vault name/ID, KnowledgeId, title, created/updated date when available, retrieval date, and enforcement level. (Skip this provenance capture only when `COMPLIANCE_CONFIG.preserve_guideline_provenance: false` — default is true.)
+6. Merge returned standards into WorkGroup context for quality gate criteria. Treat retrieved enterprise standards as enforcement inputs when the user, manifest, or workflow marks them active; otherwise treat them as advisory context.
+7. If vault-sourced guidance conflicts with local enterprise files, current code, tests, or official docs, surface the conflict at the next gate. Blocking-tier conflicts pause autonomous mode.
 
 If MCP is not configured or enterprise is not enabled, skip this step.
 
@@ -325,11 +337,12 @@ If `VAULTS_CONFIGURED = true` AND `MCP_ACTIVE = true`:
    - One broad query per vault — the goal is baseline coverage, not exhaustive research.
 2. Store all results as `VAULT_BASELINE`:
    ```
-   VAULT_BASELINE:
-   - {vault_name} ({vault_type}): {summary of results, or "No relevant results found"}
-   ```
-3. **Failure handling**: If `search_knowledge` fails for a vault, log failure and continue with remaining vaults. If ALL queries fail, set `VAULT_BASELINE = "Vault queries failed — MCP may be degraded"` and continue.
-4. Announce: `**Vault Baseline: {N} vault(s) queried — {M} results found**`
+	   VAULT_BASELINE:
+	   - {vault_name} ({vault_type}): {summary of results, item refs/KnowledgeIds, created/updated/source metadata when available, or "No relevant results found"}
+	   ```
+	3. **Failure handling**: If `search_knowledge` fails for a vault, log failure and continue with remaining vaults. If ALL queries fail, set `VAULT_BASELINE = "Vault queries failed — MCP may be degraded"` and continue.
+	4. Announce: `**Vault Baseline: {N} vault(s) queried — {M} results found**`
+	5. Treat baseline vault results as historical context. Verify retrieved guidance against live code, tests, project files, current docs, and user instructions before relying on it. If baseline items conflict, preserve the conflict in WorkGroup context for the gate discussion.
 
 If `VAULTS_CONFIGURED = false` OR `MCP_ACTIVE = false`, set `VAULT_BASELINE = null` and skip the baseline query.
 
