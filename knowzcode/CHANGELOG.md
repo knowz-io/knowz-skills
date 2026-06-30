@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.17.0] - 2026-06-29
+
 ### Added
 - **Enterprise compliance is now documented for users.** New deep-dive guide `docs/enterprise-compliance.md` (folder layout, guideline format, manifest, enforcement at gates, config keys, alternate sources, CI). New "Enterprise Compliance & Custom Guidelines" section in `README.md` (after Execution Profiles). The feature existed since v0.16.0 but was effectively undiscoverable — README/docs/marketplace were silent, and `knowzcode_getting_started.md` listed the old `/knowzcode:compliance` command under "Removed commands" with no follow-up, leading users to believe the capability was gone.
 
@@ -20,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `scripts/compliance-check.sh` / `compliance-check.ps1` documented and de-orphaned via `DEV_GUIDE.md` + the new guide; reported as the deterministic CI entry point.
 
 ### Fixed
+- **Enterprise vault pull/push now respects the `mcp_compliance_enabled` master switch.** `knowzcode_loop.md` and `skills/audit/SKILL.md` previously pulled team standards and pushed audit/completion records unconditionally, overriding the wired `pull_standards_at_start` / `push_audit_results` / `push_completion_records` / `preserve_guideline_provenance` flags; they are now gated on `mcp_compliance_enabled: true` plus the relevant per-operation flag. `validate-platform-surfaces.mjs` asserts the loop and audit surfaces name the gating keys so it can't regress.
 - **Source→Codex enterprise drift.** The Codex plugin copy (`plugins/knowzcode/knowzcode/enterprise/`) was a stale pre-v0.16.0 generation: missing `guidelines/design.md`, and an outdated `compliance_manifest.md` / `compliance_status.md`. Re-synced to match the canonical source.
 - `scripts/validate-platform-surfaces.mjs` hardened to catch enterprise drift: now asserts the Codex copy ships `design.md`, that the `guidelines/` file set matches source↔plugin, and that the manifest config-key set matches. (The previous presence-only token check let the drift through.)
 - `scripts/compliance-check.sh`: fixed the ARC-ID lookup (requirement IDs are hyphenated `SEC-AUTH-01` but ARC IDs use underscores `ARC_SEC_AUTH_01a` — the spec grep could never match); fixed the subshell counter bug (counters incremented inside a piped `while` loop never propagated, so the summary and exit code always read 0 blocking); replaced the no-op implementation check that always emitted a false PASS with an honest REVIEW status; replaced non-portable `grep -oP` with `sed`; made counter increments `set -e`-safe. Same ARC-ID + false-PASS + `$found` closure-scope fixes applied to `compliance-check.ps1`.
