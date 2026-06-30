@@ -445,6 +445,7 @@ for (const file of [
       ['show_advisory_issues', /\bshow_advisory_issues\b/],
       ['push_audit_results', /\bpush_audit_results\b/],
       ['preserve_guideline_provenance', /\bpreserve_guideline_provenance\b/],
+      ['mcp_compliance_enabled master switch', /\bmcp_compliance_enabled\b/],
     ],
     'Audit compliance config behavior surface'
   );
@@ -468,6 +469,25 @@ for (const skillFile of [
   expect(
     /compliance/i.test(description),
     `audit skill frontmatter description must advertise "compliance" (trigger term — Codex selects on frontmatter before the body): ${skillFile}`
+  );
+}
+
+// The core loop is read early by the skills; if it describes enterprise vault pulls/pushes
+// without naming the manifest gates, it silently overrides the wired config flags. Require the
+// gating keys to appear (both byte-coupled copies).
+for (const file of [
+  join(ROOT, 'knowzcode', 'knowzcode', 'knowzcode_loop.md'),
+  join(ROOT, 'plugins', 'knowzcode', 'knowzcode', 'knowzcode_loop.md'),
+]) {
+  expectFileContainsAll(
+    file,
+    [
+      ['mcp_compliance_enabled master switch', /\bmcp_compliance_enabled\b/],
+      ['pull_standards_at_start gate', /\bpull_standards_at_start\b/],
+      ['push_audit_results gate', /\bpush_audit_results\b/],
+      ['push_completion_records gate', /\bpush_completion_records\b/],
+    ],
+    'Enterprise vault-write gating in the core loop'
   );
 }
 

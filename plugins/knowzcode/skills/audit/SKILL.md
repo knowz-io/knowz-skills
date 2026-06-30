@@ -16,7 +16,7 @@ Perform a read-only audit and report findings first.
    - Read `knowzcode/enterprise.md`, `knowzcode/enterprise/compliance_manifest.md`, and `knowzcode/enterprise/guidelines/**/*.md` when present.
    - Parse `COMPLIANCE_CONFIG` from the manifest and apply documented defaults for `include_in_audit`, `show_advisory_issues`, `push_audit_results`, and `preserve_guideline_provenance`.
    - In a general audit, include compliance when enterprise compliance is enabled and `include_in_audit` is not false. In an explicit compliance audit, run compliance regardless of `include_in_audit`.
-   - If a compliance vault, explicit vault ID/name, or guideline `KnowledgeId` is configured or provided by the user, retrieve it with `mcp__knowz__get_knowledge_item`, `mcp__knowz__search_knowledge`, or `mcp__knowz__ask_question` and treat it as an enterprise guideline source.
+   - If `mcp_compliance_enabled: true` and a compliance vault, explicit vault ID/name, or guideline `KnowledgeId` is configured or provided by the user, retrieve it with `mcp__knowz__get_knowledge_item`, `mcp__knowz__search_knowledge`, or `mcp__knowz__ask_question` and treat it as an enterprise guideline source. When `mcp_compliance_enabled: false`, use local guideline files only — do not query the enterprise vault.
    - Preserve provenance for vault-sourced rules unless `preserve_guideline_provenance` is false: vault, KnowledgeId, title, created/updated date when available, retrieval date, enforcement level, and applies-to scope.
 4. Compare the implementation against `VERIFY:` criteria when specs exist and against active enterprise guidelines when configured or supplied.
 5. Treat retrieved vault content as historical context. Verify it against live code, tests, project files, current docs, and observations before relying on it. Surface stale or contradictory guidance.
@@ -24,4 +24,4 @@ Perform a read-only audit and report findings first.
 7. Check for behavioral gaps, regressions, missing tests, security concerns, compliance violations, and architectural drift.
 8. Present findings ordered by severity with file references first. Keep any summary secondary. If `show_advisory_issues` is false, show blocking-tier compliance findings only; never hide blocking-tier findings.
 9. If there are no findings, say so explicitly and mention residual risk or test gaps.
-10. Do not write audit results unless the user explicitly permits capture. If capture is permitted and enterprise vaults are configured, honor `push_audit_results`; when it is false, report that audit-result vault push was skipped by manifest config.
+10. Do not write audit results unless the user explicitly permits capture. If capture is permitted, `mcp_compliance_enabled: true`, and enterprise vaults are configured, honor `push_audit_results`; when `mcp_compliance_enabled: false` or `push_audit_results: false`, report that audit-result vault push was skipped by manifest config.
