@@ -1,0 +1,26 @@
+{
+  "name": "remotion-videos",
+  "version": "1.0.0",
+  "description": "Local Remotion video project — write React, render video locally for free.",
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "dev": "remotion studio",
+    "studio": "remotion studio",
+    "render": "remotion render",
+    "still": "remotion still",
+    "build": "remotion bundle",
+    "upgrade": "remotion upgrade"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.484",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "remotion": "4.0.484"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.8.0"
+  }
+}
