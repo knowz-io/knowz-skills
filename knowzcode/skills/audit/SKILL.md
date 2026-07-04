@@ -72,7 +72,7 @@ If the file doesn't exist, use hardcoded defaults; `PROFILE = "frontier"` (the d
 
 If `PROFILE == "advisor"`, apply the same detection/fallback checks as `/knowzcode:work` Step 2.3 (CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS, ANTHROPIC_BASE_URL). On fallback, reset `PROFILE = "teams"` and announce.
 
-If `PROFILE == "frontier"`, apply the Fable detection from `/knowzcode:work` Step 2.3: if `ANTHROPIC_BASE_URL` is set and does NOT contain `"anthropic.com"` (case-insensitive), set `FABLE_DOWNGRADE = true` and announce that the reviewer/specialists fall back to Opus. When `FABLE_DOWNGRADE = true`, treat every `MODEL_FOR(...) == "fable"` result as `"opus"` at spawn time.
+If `PROFILE == "frontier"`, apply the Fable detection from `/knowzcode:work` Step 2.3: if `ANTHROPIC_BASE_URL` is set and does NOT contain `"anthropic.com"` (case-insensitive), set `FABLE_DOWNGRADE = true` and announce that the reviewer/specialists fall back to Opus. When `FABLE_DOWNGRADE = true`, treat every `MODEL_FOR(...) == "fable"` result as `"opus"` at spawn time. Additionally — regardless of `FABLE_DOWNGRADE` — if a `fable` spawn is rejected at runtime for any reason (no Fable entitlement, a zero-data-retention org, or an older Claude Code that doesn't recognize the alias), re-spawn that agent with `model: opus` and continue. The audit never fails because Fable is unavailable.
 
 See `knowzcode/skills/work/references/profile-models.md` for profile semantics and `MODEL_FOR()` resolution.
 

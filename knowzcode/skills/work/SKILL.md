@@ -67,6 +67,7 @@ Runs BEFORE Step 2 so profile-related flag conflicts halt without side effects (
    Conflicting flag: --sequential (or --subagent).
    Remove the conflicting flag, or choose --profile teams instead.
    ```
+4. Parse `EXECUTE_ON_FABLE` (affects only `frontier`): `true` if `$ARGUMENTS` contains `--fable-execution`; else read `knowzcode/knowzcode_orchestration.md` with a targeted grep for `^execute_on_fable:\s*(\S+)` (`true`/`false`, default `false`). Pure metadata like the profile parse above — resolving it here (not in Step 2.4) makes it available to the Step 2.3 announcement and downstream-use directive, both of which run before the Step 2.4 config load.
 
 This step is a pure-metadata parse (no TeamCreate, no spawns). The full orchestration-config load happens later in Step 2.4 and supersedes `PROFILE_PREFLIGHT` by setting `PROFILE` through the same logic. Step 2.3 then runs advisor-specific env detection and final announcement. See `knowzcode/skills/work/references/profile-models.md` for profile semantics.
 
@@ -161,7 +162,7 @@ After any fallback resolution, announce the final profile to the user:
 
 For `advisor`: also print `> Builder, reviewer, closer, smoke-tester, and microfix-specialist will run on Sonnet with advisor-tool guidance. Other agents stay on Opus.`
 
-For `frontier` (when `FABLE_DOWNGRADE == false`): also print `> Planning, analysis, specification, and review (analyst, architect, reviewer, security-officer, test-advisor, project-advisor, enterprise-enforcer) run on Fable; execution (builder, closer, smoke-tester, frontend-designer, microfix-specialist, knowledge-migrator, update-coordinator) runs on Opus. knowledge-liaison stays on Sonnet.` If `$ARGUMENTS` contains `--fable-execution` (or `execute_on_fable: true` in `knowzcode/knowzcode_orchestration.md`), append `> High-value job: execution also runs on Fable.` (When `FABLE_DOWNGRADE == true`, the Fable-unavailable notice above already covers the fallback — skip this line.)
+For `frontier` (when `FABLE_DOWNGRADE == false`): also print `> Planning, analysis, specification, and review (analyst, architect, reviewer, security-officer, test-advisor, project-advisor, enterprise-enforcer) run on Fable; execution (builder, closer, smoke-tester, frontend-designer, microfix-specialist, knowledge-migrator, update-coordinator) runs on Opus. knowledge-liaison stays on Sonnet.` If `EXECUTE_ON_FABLE == true` (from Step 1.5), append `> High-value job: execution also runs on Fable.` (When `FABLE_DOWNGRADE == true`, the Fable-unavailable notice above already covers the fallback — skip this line.)
 
 ### Downstream use
 
@@ -189,7 +190,7 @@ If `knowzcode/knowzcode_orchestration.md` exists, parse its YAML blocks:
 10. `FRONTEND_DESIGNER_CONFIG` = `frontend_designer` value (default: `"auto"`; valid: `"auto"`, `"true"`, `"false"`)
 11. `FRONTEND_DESIGNER_BLOCKING_CONFIG` = `frontend_designer_blocking` value (default: `false`)
 12. `FRONTEND_DESIGNER_AUTONOMOUS_DEFAULTS_CONFIG` = `frontend_designer_autonomous_defaults` value (default: `"pause"`; valid: `"pause"`, `"accept-recommendations"`)
-13. `EXECUTE_ON_FABLE` = `execute_on_fable` value (default: `false`), overridden by the `--fable-execution` flag below. Only meaningful under `PROFILE == "frontier"` — routes the execution agents (builder, closer, smoke-tester, frontend-designer, microfix-specialist, knowledge-migrator, update-coordinator) to Fable for high-value jobs.
+13. `EXECUTE_ON_FABLE` was already resolved in Step 1.5 (flag `--fable-execution` over the `execute_on_fable:` config key; default `false`). It only affects `PROFILE == "frontier"`, where it routes the execution agents (builder, closer, smoke-tester, frontend-designer, microfix-specialist, knowledge-migrator, update-coordinator) to Fable for high-value jobs.
 
 Apply flag overrides (flags win over config):
 - `--max-builders=N` in `$ARGUMENTS` → override `MAX_BUILDERS` per the effective builder cap rules above
@@ -203,9 +204,8 @@ Apply flag overrides (flags win over config):
 - `--frontend-designer-blocking` in `$ARGUMENTS` → set `FRONTEND_DESIGNER_BLOCKING_CONFIG = true` (officer mode)
 - `--enterprise-enforcer` in `$ARGUMENTS` → force-enable enterprise-enforcer even when manifest absent (skeleton mode — see Step 2.6.1)
 - `--no-enterprise-enforcer` in `$ARGUMENTS` → force-skip enterprise-enforcer even when manifest enables it (use per-agent fallback paths)
-- `--fable-execution` in `$ARGUMENTS` → set `EXECUTE_ON_FABLE = true` (only affects `frontier`; routes execution agents to Fable for high-value jobs)
 
-(Profile flag handling — `--profile=...` — is applied in Step 2.3, not here, because it affects execution-mode selection which runs before orchestration config load.)
+(Profile flag handling — `--profile=...` — is applied in Step 2.3, and `--fable-execution` is parsed in Step 1.5 — not here — because both feed the profile announcement and downstream directive in Step 2.3, which run before this orchestration-config load.)
 
 If the file doesn't exist, use hardcoded defaults; `PROFILE_CONFIG = "frontier"` (the default profile).
 
