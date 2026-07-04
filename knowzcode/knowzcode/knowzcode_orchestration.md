@@ -71,12 +71,12 @@ mcp_agents_enabled: true
 #
 # frontier: Frontier-grade planning. Planning, analysis, specification, and
 #          review (analyst, architect, reviewer, security-officer,
-#          test-advisor, project-advisor, enterprise-enforcer) run on Fable 5
+#          test-advisor, project-advisor, enterprise-enforcer) run on Fable
 #          and produce an exhaustive per-change spec; execution (builder,
 #          closer, smoke-tester, frontend-designer, microfix-specialist,
-#          knowledge-migrator, update-coordinator) runs on Opus 4.8.
+#          knowledge-migrator, update-coordinator) runs on Opus.
 #          knowledge-liaison stays on Sonnet. Any orchestration
-#          mode. Opt-in — Fable 5 is the most expensive model.
+#          mode. Opt-in — Fable is the most expensive model.
 #          REQUIRES: direct Anthropic API (or Claude Platform on AWS); falls
 #          back to Opus if Fable is unavailable.
 profile: teams
@@ -84,7 +84,7 @@ profile: teams
 # High-value escape hatch for the `frontier` profile (default: false).
 # When true, the execution agents (builder, closer, smoke-tester,
 # frontend-designer, microfix-specialist, knowledge-migrator,
-# update-coordinator) ALSO run on Fable 5 — for the rare job where the
+# update-coordinator) ALSO run on Fable — for the rare job where the
 # implementation itself needs frontier-level reasoning. No effect unless
 # profile is `frontier`. Per-invocation flag: --fable-execution.
 execute_on_fable: false

@@ -73,7 +73,7 @@ The `analyst` (Phase 1A) and `architect` (Phase 1B, incl. spec-drafters) spawn p
 ## Spec-Depth Guidance (frontier profile)
 
 You are running on a frontier reasoning model. The Change Set / spec you produce is the contract the
-Opus 4.8 builder implements against — make it exhaustive and unambiguous so execution is a faithful
+Opus builder implements against — make it exhaustive and unambiguous so execution is a faithful
 translation of your intent, not a re-derivation of it.
 
 For **every** change — each NodeID, and each distinct file/symbol within it — your deliverable must cover:
@@ -90,7 +90,7 @@ A change with no verification criterion, or a bundled "misc" change, is an incom
 ---
 ```
 
-> **Why conditional:** the extra spec depth is the whole point of the `frontier` profile (Fable 5 plans, Opus 4.8 executes a fully-specified change). Injecting it under other profiles would over-inflate specs for agents that also do the building.
+> **Why conditional:** the extra spec depth is the whole point of the `frontier` profile (Fable plans, Opus executes a fully-specified change). Injecting it under other profiles would over-inflate specs for agents that also do the building.
 
 See `references/profile-models.md` for the `{spec_depth_guidance}` resolution rule.
 

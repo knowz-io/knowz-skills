@@ -76,7 +76,7 @@ KnowzCode on Claude Code supports four execution profiles that trade cost, quali
 | `teams` (default) | Standard work. No external dependencies. | Parallel / Sequential / Subagent (your choice) | Any Claude Code version, any provider |
 | `advisor` | Cost-sensitive work where Sonnet + advisor-tool is acceptable quality. ~12% cheaper on coding tasks (per Anthropic benchmarks). | Parallel Teams (forced) | Claude Code v2.1.100+, direct Anthropic API |
 | `classic` | Agent Teams unavailable, or you want deterministic single-threaded execution. | Subagent Delegation (forced) | — |
-| `frontier` | Highest-stakes work. Fable 5 plans/specs/reviews every change; Opus 4.8 executes. Opt-in (Fable is the most expensive model). | Parallel / Sequential / Subagent (your choice) | Direct Anthropic API (or Claude Platform on AWS) |
+| `frontier` | Highest-stakes work. Fable plans/specs/reviews every change; Opus executes. Opt-in (Fable is the most expensive model). | Parallel / Sequential / Subagent (your choice) | Direct Anthropic API (or Claude Platform on AWS) |
 
 ### How the `advisor` profile works
 
@@ -93,7 +93,7 @@ Strategic agents (architect, analyst, security-officer, enterprise-enforcer) sta
 
 ### How the `frontier` profile works
 
-`frontier` routes the reasoning-heavy phases to Fable 5 and the build to Opus 4.8:
+`frontier` routes the reasoning-heavy phases to Fable and the build to Opus:
 
 | Agent | `frontier` |
 |-------|-----------|
@@ -101,7 +101,7 @@ Strategic agents (architect, analyst, security-officer, enterprise-enforcer) sta
 | builder, closer, smoke-tester, frontend-designer, microfix-specialist, knowledge-migrator, update-coordinator | opus |
 | knowledge-liaison | sonnet |
 
-The idea: Fable 5 produces an *exhaustive, per-change specification* (every change enumerated, each with a dedicated VERIFY criterion), then Opus 4.8 — itself state-of-the-art at agentic execution — implements against it. You get frontier judgment on both ends (Fable writes the spec at Gate #2 and audits the build as reviewer at Gate #3) without paying Fable's premium on the highest-token phase, building. `/knowzcode:explore` also runs its research agents on Fable under this profile.
+The idea: Fable produces an *exhaustive, per-change specification* (every change enumerated, each with a dedicated VERIFY criterion), then Opus — itself state-of-the-art at agentic execution — implements against it. You get frontier judgment on both ends (Fable writes the spec at Gate #2 and audits the build as reviewer at Gate #3) without paying Fable's premium on the highest-token phase, building. `/knowzcode:explore` also runs its research agents on Fable under this profile.
 
 For the rare job where the implementation itself needs frontier reasoning, add `--fable-execution` (or set `execute_on_fable: true`) to run the execution agents on Fable too.
 
@@ -125,7 +125,7 @@ Or override per-invocation:
 
 When `profile: advisor` is set but the environment can't support the advisor tool (e.g., `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1`, or `ANTHROPIC_BASE_URL` pointing to Bedrock/Vertex/custom endpoints), `/work` and `/audit` automatically fall back to `teams` with a clear message. Your workflow proceeds — you just don't get the cost savings.
 
-Similarly, `profile: frontier` requires Fable 5, which runs on the direct Anthropic API (or Claude Platform on AWS) and needs 30-day data retention. If Fable is unavailable (e.g. `ANTHROPIC_BASE_URL` pointing at Bedrock/Vertex/Foundry), the planning/review agents fall back to Opus 4.8 with a clear message and the run proceeds as an all-Opus flow.
+Similarly, `profile: frontier` requires Fable, which runs on the direct Anthropic API (or Claude Platform on AWS) and needs 30-day data retention. If Fable is unavailable (e.g. `ANTHROPIC_BASE_URL` pointing at Bedrock/Vertex/Foundry), the planning/review agents fall back to Opus with a clear message and the run proceeds as an all-Opus flow.
 
 ### Conflicts
 

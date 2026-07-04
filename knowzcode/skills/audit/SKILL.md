@@ -76,7 +76,7 @@ If `PROFILE == "frontier"`, apply the Fable detection from `/knowzcode:work` Ste
 
 See `knowzcode/skills/work/references/profile-models.md` for profile semantics and `MODEL_FOR()` resolution.
 
-At each reviewer/specialist spawn below, resolve `model` via `MODEL_FOR(agent_name, PROFILE)`. Include `model: <value>` when non-null; otherwise omit. Under `PROFILE == "advisor"`, the reviewer runs on Sonnet; append the Advisor Guidance block from `knowzcode/skills/work/references/spawn-prompts.md` to its spawn prompt (resolve the `{advisor_guidance}` placeholder appended to each inline prompt below — substitute the block when `MODEL_FOR` returns `"sonnet"`, else substitute an empty string). Under `PROFILE == "frontier"`, audit is pure review reasoning, so the reviewer, security-officer, and test-advisor run on Fable 5 (or Opus 4.8 when `FABLE_DOWNGRADE`); the `{advisor_guidance}` placeholder resolves to empty (advisor guidance is advisor-profile only).
+At each reviewer/specialist spawn below, resolve `model` via `MODEL_FOR(agent_name, PROFILE)`. Include `model: <value>` when non-null; otherwise omit. Under `PROFILE == "advisor"`, the reviewer runs on Sonnet; append the Advisor Guidance block from `knowzcode/skills/work/references/spawn-prompts.md` to its spawn prompt (resolve the `{advisor_guidance}` placeholder appended to each inline prompt below — substitute the block when `MODEL_FOR` returns `"sonnet"`, else substitute an empty string). Under `PROFILE == "frontier"`, audit is pure review reasoning, so the reviewer, security-officer, and test-advisor run on Fable (or Opus when `FABLE_DOWNGRADE`); the `{advisor_guidance}` placeholder resolves to empty (advisor guidance is advisor-profile only).
 
 ## Step 2: Set Up Execution Mode
 
