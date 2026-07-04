@@ -68,7 +68,26 @@ mcp_agents_enabled: true
 # classic: Forces Subagent Delegation mode. No Agent Teams, no advisor.
 #          Use when Agent Teams is unavailable or you want deterministic
 #          single-threaded execution.
+#
+# frontier: Frontier-grade planning. Planning, analysis, specification, and
+#          review (analyst, architect, reviewer, security-officer,
+#          test-advisor, project-advisor, enterprise-enforcer) run on Fable 5
+#          and produce an exhaustive per-change spec; execution (builder,
+#          closer, smoke-tester, frontend-designer, microfix-specialist,
+#          knowledge-migrator, update-coordinator) runs on Opus 4.8.
+#          knowledge-liaison stays on Sonnet. Any orchestration
+#          mode. Opt-in — Fable 5 is the most expensive model.
+#          REQUIRES: direct Anthropic API (or Claude Platform on AWS); falls
+#          back to Opus if Fable is unavailable.
 profile: teams
+
+# High-value escape hatch for the `frontier` profile (default: false).
+# When true, the execution agents (builder, closer, smoke-tester,
+# frontend-designer, microfix-specialist, knowledge-migrator,
+# update-coordinator) ALSO run on Fable 5 — for the rare job where the
+# implementation itself needs frontier-level reasoning. No effect unless
+# profile is `frontier`. Per-invocation flag: --fable-execution.
+execute_on_fable: false
 ```
 
 See `knowzcode/skills/work/references/profile-models.md` for the full profile → agent-model mapping.
@@ -127,7 +146,8 @@ The enterprise-enforcer agent (v0.16.0+) auto-activates when `knowzcode/enterpri
 | builder_node_limit | `builder_node_limit:` | `--builder-node-limit=N` |
 | default_specialists | `default_specialists:` | `--specialists`, `--no-specialists` |
 | mcp_agents_enabled | `mcp_agents_enabled:` | `--no-mcp` |
-| profile | `profile:` | `--profile={advisor\|teams\|classic}` |
+| profile | `profile:` | `--profile={advisor\|teams\|classic\|frontier}` |
+| execute_on_fable | `execute_on_fable:` | `--fable-execution` |
 | frontend_designer | `frontend_designer:` | `--frontend-designer`, `--no-frontend-designer` |
 | frontend_designer_blocking | `frontend_designer_blocking:` | `--frontend-designer-blocking` |
 | enterprise-enforcer (auto from manifest) | `compliance_manifest.md` `compliance_enabled:` | `--enterprise-enforcer`, `--no-enterprise-enforcer` |

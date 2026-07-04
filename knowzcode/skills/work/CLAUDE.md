@@ -50,6 +50,7 @@ Agents are invoked as `general-purpose` subagents that read their agent `.md` fi
 - Every WorkGroup task item MUST start with `KnowzCode:` prefix
 - `AUTONOMOUS_MODE` auto-approves gates but NEVER skips vault writes, WorkGroup updates, tracker updates, or log entries
 - `--profile advisor` requires Parallel Teams; incompatible with `--sequential` or `--subagent`
+- `--profile frontier` runs Fable 5 for planning/analysis/spec/review and Opus 4.8 for execution (any orchestration mode); `--fable-execution` also routes execution to Fable for high-value jobs; falls back to Opus if Fable is unavailable
 - Builder dispatch is intentionally narrow: effective default `max_builders: 2`, `builder_node_limit: 1`; split dependency-heavy work into microtasks with assigned acceptance criteria rather than spawning broad builders
 - Gap loop cap: >3 failures on the same phase → pause and ask user (safety exception, applies even in Autonomous Mode)
 - Announce execution mode, profile, autonomous mode, and active specialists before any phase work begins
