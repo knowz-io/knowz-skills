@@ -108,9 +108,9 @@ REPEAT until all checks pass:
 | Flag | Effect |
 |------|--------|
 | `--profile={advisor\|teams\|classic\|frontier}` | Select execution profile — see `knowzcode/skills/work/references/profile-models.md` |
-| `--fable-execution` | (frontier only) Run the micro-fix on Fable 5 for a high-value job |
+| `--fable-execution` | (frontier only) Run the micro-fix on Fable for a high-value job |
 
-The `advisor` profile routes the micro-fix through Sonnet with advisor-tool guidance (per spec). `teams`, `classic`, and `frontier` use the agent's frontmatter default (Opus) with no guidance injection — the micro-fix is execution work, so `frontier` keeps it on Opus 4.8 by default. Add `--fable-execution` under `frontier` to run a high-value micro-fix on Fable 5.
+The `advisor` profile routes the micro-fix through Sonnet with advisor-tool guidance (per spec). `teams`, `classic`, and `frontier` use the agent's frontmatter default (Opus) with no guidance injection — the micro-fix is execution work, so `frontier` keeps it on Opus by default. Add `--fable-execution` under `frontier` to run a high-value micro-fix on Fable.
 
 ## Profile Resolution (pre-dispatch)
 

@@ -13,7 +13,7 @@ Profile resolution order: CLI flag `--profile={advisor|teams|classic|frontier}` 
 | `advisor` | Cost-optimized via advisor tool; near-Opus quality at Sonnet prices | Parallel Teams (forced) | Yes |
 | `teams` (default) | Current behavior; all agents use frontmatter model assignments | Any (Parallel/Sequential/Subagent) | No |
 | `classic` | Force Subagent Delegation mode; no teams, no advisor | Subagent Delegation (forced) | No |
-| `frontier` | Frontier-grade planning: **Fable 5** for planning/analysis/spec/review, **Opus 4.8** for execution. Opt-in; higher cost. | Any (Parallel/Sequential/Subagent) | No |
+| `frontier` | Frontier-grade planning: **Fable** for planning/analysis/spec/review, **Opus** for execution. Opt-in; higher cost. | Any (Parallel/Sequential/Subagent) | No |
 
 ---
 
@@ -28,7 +28,7 @@ Profile resolution order: CLI flag `--profile={advisor|teams|classic|frontier}` 
 | reviewer | **sonnet** | opus | opus | **fable** | Completeness/quality audit — review reasoning (audits the Opus build) |
 | test-advisor | sonnet | sonnet | sonnet | **fable** | Test-quality review — review reasoning |
 | project-advisor | sonnet | sonnet | sonnet | **fable** | Backlog / future-work brainstorming — planning reasoning |
-| builder | **sonnet** | opus | opus | opus | Execution — implements the detailed spec (Opus 4.8) |
+| builder | **sonnet** | opus | opus | opus | Execution — implements the detailed spec (Opus) |
 | closer | **sonnet** | opus | opus | opus | Execution — mechanical finalization (docs, commits) |
 | smoke-tester | **sonnet** | opus | opus | opus | Execution — runtime verification |
 | frontend-designer | **sonnet** | opus | opus | opus | Execution — browser-based E2E verification |
@@ -61,7 +61,7 @@ MODEL_FOR(agent_name, profile, execute_on_fable=false):
     #                   microfix-specialist, knowledge-migrator, update-coordinator
     IF execute_on_fable:
       RETURN "fable"        # high-value escape hatch (--fable-execution / execute_on_fable: true)
-    RETURN "opus"           # default: execution on Opus 4.8
+    RETURN "opus"           # default: execution on Opus
 
   RETURN null               # teams / classic → agent frontmatter default
 ```
@@ -94,11 +94,13 @@ Two placeholder blocks are resolved at spawn time based on the active profile (s
 
 ## `frontier` Requirements & Graceful Fallback
 
-Fable 5 (the `fable` alias → `claude-fable-5`) requires the direct Anthropic API (or Claude Platform on AWS) — it is **not** available on Amazon Bedrock, Google Vertex AI, or Microsoft Foundry — and requires 30-day data retention (not available under zero-data-retention orgs).
+Fable (the `fable` alias → `claude-fable-5`) requires the direct Anthropic API (or Claude Platform on AWS) — it is **not** available on Amazon Bedrock, Google Vertex AI, or Microsoft Foundry — and requires 30-day data retention (not available under zero-data-retention orgs).
 
-When `frontier` is requested but Fable can't be used, `/knowzcode:work` (Step 2.3) resolves the would-be `fable` spawns to `opus` and announces the downgrade — the run proceeds as an all-Opus flow rather than failing. Detection mirrors the advisor env-guard: if `ANTHROPIC_BASE_URL` is set and does NOT contain `"anthropic.com"` (case-insensitive; likely Bedrock/Vertex/custom endpoint), downgrade `fable → opus`. (Retention/ZDR can't be probed at runtime; if a `fable` spawn is rejected at runtime, fall back to `--profile=teams`.)
+When `frontier` is requested but Fable can't be used, `/knowzcode:work` (Step 2.3) resolves the would-be `fable` spawns to `opus` and announces the downgrade — the run proceeds as an all-Opus flow rather than failing. Detection mirrors the advisor env-guard: if `ANTHROPIC_BASE_URL` is set and does NOT contain `"anthropic.com"` (case-insensitive; likely Bedrock/Vertex/custom endpoint), downgrade `fable → opus` up front. The other unavailability cases — a zero-data-retention org, no Fable entitlement, or an older Claude Code that doesn't recognize the `fable` alias — can't be probed in advance, so they're caught at spawn time: **if any `fable` spawn is rejected at runtime for any reason, re-spawn that agent with `model: opus` and continue.** The run always degrades to Opus rather than failing — no restart and no `--profile` change needed.
 
-Model identifiers use the bare aliases `fable` and `opus` (forward-compatible, matching the repo convention). To version-lock, replace them with pinned IDs (`claude-fable-5`, `claude-opus-4-8`) in the mapping above.
+Model identifiers use the bare aliases `fable` and `opus` (never pinned versions), so routing always targets the latest Fable and the latest Opus — a new model release can't break it. Version-locking is possible but discouraged: replace the aliases with pinned IDs (e.g. `claude-fable-5`, `claude-opus-4-8`) in the mapping above only if you deliberately want to freeze a version.
+
+**Effort.** The profile selects *models*, not reasoning effort. In Claude Code, Opus runs at `xhigh` effort by default — the recommended setting for agentic coding — so frontier execution gets high effort automatically. Effort is a Claude Code session-level setting, not something the profile pins per agent; if you lower the session effort, it applies to every agent regardless of profile.
 
 ---
 

@@ -137,17 +137,17 @@ We do NOT perform an API probe (see spec §5.4 — rationale). Runtime `advisor_
 
 ### Frontier detection & graceful fallback
 
-Only when `PROFILE == "frontier"`, determine whether Fable 5 can be used and set `FABLE_DOWNGRADE`:
+Only when `PROFILE == "frontier"`, determine whether Fable can be used and set `FABLE_DOWNGRADE`:
 
-1. If environment variable `ANTHROPIC_BASE_URL` is set AND does NOT contain `"anthropic.com"` (case-insensitive) → `FABLE_DOWNGRADE = true`. Reason: `"ANTHROPIC_BASE_URL points to {value}, not *.anthropic.com — Fable 5 is only available on the direct Anthropic API / Claude Platform on AWS, not Bedrock/Vertex/Foundry."` Workaround: `"unset ANTHROPIC_BASE_URL, or route through the Anthropic API directly."`
-2. Otherwise → `FABLE_DOWNGRADE = false`. (Fable 5 also requires 30-day data retention — this is not probeable. If a `fable` spawn is rejected at runtime, retry with `--profile=teams`.)
+1. If environment variable `ANTHROPIC_BASE_URL` is set AND does NOT contain `"anthropic.com"` (case-insensitive) → `FABLE_DOWNGRADE = true`. Reason: `"ANTHROPIC_BASE_URL points to {value}, not *.anthropic.com — Fable is only available on the direct Anthropic API / Claude Platform on AWS, not Bedrock/Vertex/Foundry."` Workaround: `"unset ANTHROPIC_BASE_URL, or route through the Anthropic API directly."`
+2. Otherwise → `FABLE_DOWNGRADE = false`. (Fable also requires 30-day data retention, and older Claude Code versions may not recognize the `fable` alias — neither is probeable in advance. If a `fable` spawn is rejected at runtime for any reason, re-spawn that agent with `model: opus` and continue — the run degrades to Opus, no restart or `--profile` change needed.)
 
 When `FABLE_DOWNGRADE = true`, keep `PROFILE = "frontier"` but treat every `MODEL_FOR(...) == "fable"` result as `"opus"` at spawn time — the run proceeds as an all-Opus flow (equivalent to `teams`). Announce:
 
 ```
 **Profile: FRONTIER — Fable unavailable, planning agents fall back to Opus**
 > Reason: {specific reason from check}
-> Fable 5 requires the direct Anthropic API (or Claude Platform on AWS) and 30-day data retention.
+> Fable requires the direct Anthropic API (or Claude Platform on AWS) and 30-day data retention.
 > To force Fable anyway: {specific workaround}, then retry.
 ```
 
@@ -161,7 +161,7 @@ After any fallback resolution, announce the final profile to the user:
 
 For `advisor`: also print `> Builder, reviewer, closer, smoke-tester, and microfix-specialist will run on Sonnet with advisor-tool guidance. Other agents stay on Opus.`
 
-For `frontier` (when `FABLE_DOWNGRADE == false`): also print `> Planning, analysis, specification, and review (analyst, architect, reviewer, security-officer, test-advisor, project-advisor, enterprise-enforcer) run on Fable 5; execution (builder, closer, smoke-tester, frontend-designer, microfix-specialist, knowledge-migrator, update-coordinator) runs on Opus 4.8. knowledge-liaison stays on Sonnet.` If `$ARGUMENTS` contains `--fable-execution` (or `execute_on_fable: true` in `knowzcode/knowzcode_orchestration.md`), append `> High-value job: execution also runs on Fable 5.` (When `FABLE_DOWNGRADE == true`, the Fable-unavailable notice above already covers the fallback — skip this line.)
+For `frontier` (when `FABLE_DOWNGRADE == false`): also print `> Planning, analysis, specification, and review (analyst, architect, reviewer, security-officer, test-advisor, project-advisor, enterprise-enforcer) run on Fable; execution (builder, closer, smoke-tester, frontend-designer, microfix-specialist, knowledge-migrator, update-coordinator) runs on Opus. knowledge-liaison stays on Sonnet.` If `$ARGUMENTS` contains `--fable-execution` (or `execute_on_fable: true` in `knowzcode/knowzcode_orchestration.md`), append `> High-value job: execution also runs on Fable.` (When `FABLE_DOWNGRADE == true`, the Fable-unavailable notice above already covers the fallback — skip this line.)
 
 ### Downstream use
 
@@ -189,7 +189,7 @@ If `knowzcode/knowzcode_orchestration.md` exists, parse its YAML blocks:
 10. `FRONTEND_DESIGNER_CONFIG` = `frontend_designer` value (default: `"auto"`; valid: `"auto"`, `"true"`, `"false"`)
 11. `FRONTEND_DESIGNER_BLOCKING_CONFIG` = `frontend_designer_blocking` value (default: `false`)
 12. `FRONTEND_DESIGNER_AUTONOMOUS_DEFAULTS_CONFIG` = `frontend_designer_autonomous_defaults` value (default: `"pause"`; valid: `"pause"`, `"accept-recommendations"`)
-13. `EXECUTE_ON_FABLE` = `execute_on_fable` value (default: `false`), overridden by the `--fable-execution` flag below. Only meaningful under `PROFILE == "frontier"` — routes the execution agents (builder, closer, smoke-tester, frontend-designer, microfix-specialist, knowledge-migrator, update-coordinator) to Fable 5 for high-value jobs.
+13. `EXECUTE_ON_FABLE` = `execute_on_fable` value (default: `false`), overridden by the `--fable-execution` flag below. Only meaningful under `PROFILE == "frontier"` — routes the execution agents (builder, closer, smoke-tester, frontend-designer, microfix-specialist, knowledge-migrator, update-coordinator) to Fable for high-value jobs.
 
 Apply flag overrides (flags win over config):
 - `--max-builders=N` in `$ARGUMENTS` → override `MAX_BUILDERS` per the effective builder cap rules above
@@ -203,7 +203,7 @@ Apply flag overrides (flags win over config):
 - `--frontend-designer-blocking` in `$ARGUMENTS` → set `FRONTEND_DESIGNER_BLOCKING_CONFIG = true` (officer mode)
 - `--enterprise-enforcer` in `$ARGUMENTS` → force-enable enterprise-enforcer even when manifest absent (skeleton mode — see Step 2.6.1)
 - `--no-enterprise-enforcer` in `$ARGUMENTS` → force-skip enterprise-enforcer even when manifest enables it (use per-agent fallback paths)
-- `--fable-execution` in `$ARGUMENTS` → set `EXECUTE_ON_FABLE = true` (only affects `frontier`; routes execution agents to Fable 5 for high-value jobs)
+- `--fable-execution` in `$ARGUMENTS` → set `EXECUTE_ON_FABLE = true` (only affects `frontier`; routes execution agents to Fable for high-value jobs)
 
 (Profile flag handling — `--profile=...` — is applied in Step 2.3, not here, because it affects execution-mode selection which runs before orchestration config load.)
 
@@ -576,7 +576,7 @@ These flags override corresponding config defaults in `knowzcode/knowzcode_orche
 | `--sequential` | Prefer Sequential Teams (incompatible with `--profile advisor`) |
 | `--subagent` | Force Subagent Delegation (incompatible with `--profile advisor`) |
 | `--profile={advisor\|teams\|classic\|frontier}` | Select execution profile — see `references/profile-models.md` |
-| `--fable-execution` | (frontier only) Also route execution agents to Fable 5 for high-value jobs |
+| `--fable-execution` | (frontier only) Also route execution agents to Fable for high-value jobs |
 | `--autonomous` / `--auto` | Autonomous mode — gates auto-approved |
 | `--tier {light\|full}` | Override complexity tier |
 | `--smoke-test` | Request smoke testing in Tier 2 |
@@ -586,7 +586,7 @@ These flags override corresponding config defaults in `knowzcode/knowzcode_orche
 | `--enterprise-enforcer` | Force-enable enterprise-enforcer (skeleton mode if no manifest) |
 | `--no-enterprise-enforcer` | Force-skip enterprise-enforcer (use per-agent compliance fallback) |
 
-The `advisor` profile forces Parallel Teams and requires Claude Code v2.1.100+ with direct Anthropic API access. The `frontier` profile routes planning/analysis/spec/review to Fable 5 and execution to Opus 4.8 (add `--fable-execution` to also execute on Fable for high-value jobs); it needs the direct Anthropic API (or Claude Platform on AWS) and gracefully falls back to Opus if Fable is unavailable. See `references/profile-models.md` for the full profile → agent-model mapping.
+The `advisor` profile forces Parallel Teams and requires Claude Code v2.1.100+ with direct Anthropic API access. The `frontier` profile routes planning/analysis/spec/review to Fable and execution to Opus (add `--fable-execution` to also execute on Fable for high-value jobs); it needs the direct Anthropic API (or Claude Platform on AWS) and gracefully falls back to Opus if Fable is unavailable. See `references/profile-models.md` for the full profile → agent-model mapping.
 
 ## Related Skills
 
