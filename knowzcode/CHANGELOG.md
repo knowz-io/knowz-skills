@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.18.0] - 2026-07-04
+
+### Added
+- **New `frontier` execution profile: Fable 5 for planning, Opus 4.8 for execution.** A fourth profile (alongside `advisor`/`teams`/`classic`) routes the reasoning-heavy phases — impact analysis, specification, and all review agents (analyst, architect, reviewer, security-officer, test-advisor, project-advisor, enterprise-enforcer) — to Claude Fable 5, and keeps execution (builder, closer, smoke-tester, frontend-designer, microfix-specialist, knowledge-migrator, update-coordinator) on Claude Opus 4.8. knowledge-liaison stays on Sonnet. Opt-in via `--profile=frontier` or `profile: frontier` in `knowzcode_orchestration.md`; `teams` remains the default. Works in any orchestration mode (Parallel/Sequential/Subagent).
+- **Per-change spec depth under `frontier`.** A new `{spec_depth_guidance}` spawn-prompt injection (analogous to `{advisor_guidance}`) holds the analyst's Change Set and the architect's specs to a higher bar under `frontier`: every change enumerated with file/symbol, before→after behavior, rationale, edge cases, and a dedicated `VERIFY:` criterion — so the Opus builder implements an exhaustive, unambiguous spec. Emphasizes coverage, not line-by-line pseudocode.
+- **High-value escape hatch (`--fable-execution` / `execute_on_fable: true`).** Under `frontier`, also routes the execution agents to Fable 5, for the rare job where implementation itself needs frontier reasoning. Off by default.
+- **`/knowzcode:explore` honors `--profile=frontier`** — its analyst/architect/reviewer research agents run on Fable 5 (the highest-value place for frontier planning); knowledge-liaison stays on Sonnet.
+
+### Changed
+- `MODEL_FOR()` gained a `frontier` branch and an `execute_on_fable` parameter; `references/profile-models.md` documents the new mapping, requirements, and graceful fallback. `skills/work/SKILL.md`, `skills/audit/SKILL.md`, and `skills/fix/SKILL.md` recognize `frontier`; `references/parallel-orchestration.md` resolves `{spec_depth_guidance}` and the Fable→Opus downgrade at spawn sites.
+- **Graceful fallback:** when Fable 5 is unavailable (e.g. `ANTHROPIC_BASE_URL` pointing at Bedrock/Vertex/Foundry, or a zero-data-retention org), `frontier` degrades the would-be Fable spawns to Opus 4.8 with a clear announcement rather than failing — mirroring the existing advisor→teams fallback.
+- Docs: README "Execution Profiles" section retitled and extended with the `frontier` profile, its per-agent table, and the escape hatch; `knowzcode_orchestration.md` documents `profile: frontier` and the `execute_on_fable` key. Model routing uses the bare `fable`/`opus` aliases (forward-compatible, matching the repo convention).
+
 ## [0.17.0] - 2026-06-29
 
 ### Added

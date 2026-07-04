@@ -10,7 +10,7 @@
       "name": "knowzcode",
       "source": "./knowzcode",
       "description": "Platform-agnostic AI development methodology with TDD, quality gates, and optional enterprise compliance (custom guidelines enforced at quality gates). Skills: /work (full feature loop), /explore (research & plan), /fix (micro-fix), /audit (spec/architecture/security/compliance scans), /init (setup), /regroup (handoff), /status, /telemetry (Sentry/AppInsights), /telemetry-setup, /continue (resume WorkGroup), plus regroup-trigger and start-work triggers.",
-      "version": "0.17.0",
+      "version": "0.18.0",
       "author": { "name": "Alex Headscarf" },
       "homepage": "https://github.com/knowz-io/knowz-skills/tree/main/knowzcode",
       "repository": "https://github.com/knowz-io/knowz-skills"

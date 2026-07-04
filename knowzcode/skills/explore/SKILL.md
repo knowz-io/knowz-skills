@@ -89,10 +89,20 @@ The user MUST see the execution mode announcement before investigation begins.
 
 If `knowzcode/knowzcode_orchestration.md` exists, parse:
 1. `MCP_AGENTS_ENABLED` = `mcp_agents_enabled` value (default: true)
+2. `PROFILE` = `--profile=<value>` flag if present (valid: `advisor`, `teams`, `classic`, `frontier`), else the `^profile:\s*(\S+)` line in config, else `teams`. Invalid value → warn + `teams`.
 
 Flag overrides: `--no-mcp` -> `MCP_AGENTS_ENABLED = false`
 
 If file doesn't exist, use defaults. Other config settings (`max_builders`, `default_specialists`) are not applicable to `/knowzcode:explore`.
+
+### Model routing (frontier profile)
+
+`/knowzcode:explore` is pure planning/analysis, so it honors only the profile's **model routing** — not advisor tooling or forced execution modes. Only `frontier` changes behavior here:
+
+- **`frontier`**: the three researchers (analyst, architect, reviewer) run on **Fable 5** — spawn/dispatch each with `model: "fable"`. The knowledge-liaison keeps its frontmatter model (Sonnet — retrieval/IO), so omit `model` on its spawn. Apply the Fable detection from `/knowzcode:work` Step 2.3: if `ANTHROPIC_BASE_URL` is set AND does NOT contain `"anthropic.com"` (case-insensitive), set `FABLE_DOWNGRADE = true`, use `model: "opus"` for the researchers instead, and announce the downgrade.
+- **`advisor` / `teams` / `classic`**: unchanged — omit the `model` parameter on all spawns (research runs on frontmatter defaults; the advisor tool is not wired into explore).
+
+When `PROFILE == "frontier"` and not downgraded, announce: `**Execution Profile: FRONTIER** — analyst, architect, and reviewer research on Fable 5.`
 
 ## Step 4: Launch Parallel Investigation
 
