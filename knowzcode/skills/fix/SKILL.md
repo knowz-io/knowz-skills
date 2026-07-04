@@ -116,9 +116,9 @@ The `advisor` profile routes the micro-fix through Sonnet with advisor-tool guid
 
 Before the `Task()` dispatch, resolve `PROFILE`:
 
-1. **Flag**: if `$ARGUMENTS` contains `--profile=<value>`, set `PROFILE = <value>`. Valid: `advisor`, `teams`, `classic`, `frontier`. Invalid → warn + fall back to `teams`.
-2. **Config**: else read `knowzcode/knowzcode_orchestration.md` for the `^profile:\s*(\S+)` line. Use that value if valid; else `teams`.
-3. **Default**: if config file is absent or line is missing, `PROFILE = "teams"`.
+1. **Flag**: if `$ARGUMENTS` contains `--profile=<value>`, set `PROFILE = <value>`. Valid: `advisor`, `teams`, `classic`, `frontier`. Invalid → warn + fall back to `frontier`.
+2. **Config**: else read `knowzcode/knowzcode_orchestration.md` for the `^profile:\s*(\S+)` line. Use that value if valid; else `frontier`.
+3. **Default**: if config file is absent or line is missing, `PROFILE = "frontier"`.
 4. **Advisor detection** (only when `PROFILE == "advisor"`):
    - If `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS == "1"` → fall back to `teams`, announce reason.
    - If `ANTHROPIC_BASE_URL` is set AND does NOT contain `"anthropic.com"` → fall back to `teams`, announce reason.

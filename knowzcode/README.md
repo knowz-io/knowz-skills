@@ -69,14 +69,14 @@ KnowzCode automatically classifies tasks by complexity:
 
 ## Execution Profiles (advisor / teams / classic / frontier)
 
-KnowzCode on Claude Code supports four execution profiles that trade cost, quality, and parallelism. Pick one by setting `profile:` in `knowzcode/knowzcode_orchestration.md` or passing `--profile=<name>` on the command line.
+KnowzCode on Claude Code supports four execution profiles that trade cost, quality, and parallelism. **`frontier` is the default** (Fable plans/specs/reviews, Opus builds); set `profile:` in `knowzcode/knowzcode_orchestration.md` or pass `--profile=<name>` to choose another. Set `profile: teams` to opt out of frontier's Fable cost.
 
 | Profile | When to Use | Mode | Requires |
 |---------|-------------|------|----------|
-| `teams` (default) | Standard work. No external dependencies. | Parallel / Sequential / Subagent (your choice) | Any Claude Code version, any provider |
+| `frontier` (default) | Fable plans/specs/reviews every change; Opus executes. The most capable planning, at higher cost; auto-falls back to Opus if Fable is unavailable. | Parallel / Sequential / Subagent (your choice) | Direct Anthropic API (or Claude Platform on AWS) for Fable |
+| `teams` | Opt OUT of frontier's Fable cost — all agents use their frontmatter defaults (mostly Opus). No external dependencies. | Parallel / Sequential / Subagent (your choice) | Any Claude Code version, any provider |
 | `advisor` | Cost-sensitive work where Sonnet + advisor-tool is acceptable quality. ~12% cheaper on coding tasks (per Anthropic benchmarks). | Parallel Teams (forced) | Claude Code v2.1.100+, direct Anthropic API |
 | `classic` | Agent Teams unavailable, or you want deterministic single-threaded execution. | Subagent Delegation (forced) | — |
-| `frontier` | Highest-stakes work. Fable plans/specs/reviews every change; Opus executes. Opt-in (Fable is the most expensive model). | Parallel / Sequential / Subagent (your choice) | Direct Anthropic API (or Claude Platform on AWS) |
 
 ### How the `advisor` profile works
 
@@ -110,7 +110,7 @@ For the rare job where the implementation itself needs frontier reasoning, add `
 In `knowzcode/knowzcode_orchestration.md`:
 
 ```yaml
-profile: teams    # or: advisor, classic
+profile: frontier    # default; or: teams, advisor, classic
 ```
 
 Or override per-invocation:
@@ -133,7 +133,7 @@ Similarly, `profile: frontier` requires Fable, which runs on the direct Anthropi
 
 ### Roll back
 
-Delete the `profile:` line from `knowzcode/knowzcode_orchestration.md` (or omit `--profile` on the CLI). Default is `teams`. No migration needed.
+Delete the `profile:` line from `knowzcode/knowzcode_orchestration.md` (or omit `--profile` on the CLI) to use the default (`frontier`). To restore the pre-0.19 all-Opus behavior, set `profile: teams`. No migration needed.
 
 ## Enterprise Compliance & Custom Guidelines
 

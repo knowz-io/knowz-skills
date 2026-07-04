@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.19.0] - 2026-07-04
+
+### Changed
+- **`frontier` is now the default execution profile** (was `teams`). Every `/knowzcode:work`, `/audit`, `/explore`, and `/fix` run now plans, analyzes, specs, and reviews on Claude Fable and executes on Claude Opus unless a profile is set explicitly. Set `profile: teams` in `knowzcode_orchestration.md` (or `--profile=teams`) to opt out and run all-Opus. Fable is the most expensive model; if it is unavailable (Bedrock/Vertex/Foundry, a zero-data-retention org, no entitlement, or an older Claude Code that doesn't recognize the alias), the run automatically falls back to Opus with a clear message — it never fails.
+- **Hardened the Fable-unavailable fallback:** any `fable` spawn rejected at runtime now re-spawns on `opus` and continues; previously only the wrong-`ANTHROPIC_BASE_URL` case auto-downgraded up front. This matters more now that frontier is the default.
+- **Version-agnostic model references.** Prose and the runtime profile announcement now say "Fable"/"Opus" rather than "Fable 5"/"Opus 4.8"; routing already used the forward-compatible `fable`/`opus` aliases (= latest of each), so a new model release won't break the profile or its fallback. Documented that the profile selects models only — Claude Code runs Opus at `xhigh` effort by default, so execution gets high effort automatically.
+
 ## [0.18.0] - 2026-07-04
 
 ### Added

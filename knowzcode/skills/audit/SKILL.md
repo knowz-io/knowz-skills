@@ -61,14 +61,14 @@ If `knowzcode/knowzcode_orchestration.md` exists, parse its YAML blocks:
 
 1. `DEFAULT_SPECIALISTS` = `default_specialists` value (default: [])
 2. `MCP_AGENTS_ENABLED` = `mcp_agents_enabled` value (default: true)
-3. `PROFILE` = `profile` value (default: `"teams"`). Valid: `"advisor"`, `"teams"`, `"classic"`, `"frontier"`. Fall back to `"teams"` on invalid value.
+3. `PROFILE` = `profile` value (default: `"frontier"`). Valid: `"advisor"`, `"teams"`, `"classic"`, `"frontier"`. Fall back to `"frontier"` on invalid value.
 
 Apply flag overrides (flags win over config):
 - `--no-specialists` in `$ARGUMENTS` → override `DEFAULT_SPECIALISTS = []`
 - `--no-mcp` in `$ARGUMENTS` → override `MCP_AGENTS_ENABLED = false`
 - `--profile={advisor|teams|classic|frontier}` in `$ARGUMENTS` → override `PROFILE`
 
-If the file doesn't exist, use hardcoded defaults (current behavior); `PROFILE = "teams"`.
+If the file doesn't exist, use hardcoded defaults; `PROFILE = "frontier"` (the default profile).
 
 If `PROFILE == "advisor"`, apply the same detection/fallback checks as `/knowzcode:work` Step 2.3 (CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS, ANTHROPIC_BASE_URL). On fallback, reset `PROFILE = "teams"` and announce.
 

@@ -89,7 +89,7 @@ The user MUST see the execution mode announcement before investigation begins.
 
 If `knowzcode/knowzcode_orchestration.md` exists, parse:
 1. `MCP_AGENTS_ENABLED` = `mcp_agents_enabled` value (default: true)
-2. `PROFILE` = `--profile=<value>` flag if present (valid: `advisor`, `teams`, `classic`, `frontier`), else the `^profile:\s*(\S+)` line in config, else `teams`. Invalid value → warn + `teams`.
+2. `PROFILE` = `--profile=<value>` flag if present (valid: `advisor`, `teams`, `classic`, `frontier`), else the `^profile:\s*(\S+)` line in config, else `frontier` (the default profile). Invalid value → warn + `frontier`.
 
 Flag overrides: `--no-mcp` -> `MCP_AGENTS_ENABLED = false`
 

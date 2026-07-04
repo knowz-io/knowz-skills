@@ -51,7 +51,22 @@ mcp_agents_enabled: true
 ## Execution Profile
 
 ```yaml
-# Controls model assignments and execution strategy (default: teams).
+# Controls model assignments and execution strategy (default: frontier).
+#
+# frontier: (default) Frontier-grade planning. Planning, analysis, specification,
+#          and review (analyst, architect, reviewer, security-officer,
+#          test-advisor, project-advisor, enterprise-enforcer) run on Fable
+#          and produce an exhaustive per-change spec; execution (builder,
+#          closer, smoke-tester, frontend-designer, microfix-specialist,
+#          knowledge-migrator, update-coordinator) runs on Opus.
+#          knowledge-liaison stays on Sonnet. Any orchestration mode. Fable is
+#          the most expensive model; the run falls back to Opus automatically if
+#          Fable is unavailable (no error).
+#          REQUIRES (for Fable): direct Anthropic API or Claude Platform on AWS.
+#
+# teams:   All agents use their frontmatter model assignments (mostly Opus).
+#          Works on any Claude Code version, any API provider. No Fable or
+#          advisor dependency — set this to opt OUT of frontier's Fable cost.
 #
 # advisor: Cost-optimized using Claude Code's advisor tool.
 #          Builder, reviewer, closer, smoke-tester, and microfix-specialist
@@ -61,25 +76,10 @@ mcp_agents_enabled: true
 #          FORCES: Parallel Teams mode.
 #          REQUIRES: Claude Code v2.1.100+, direct Anthropic API access.
 #
-# teams:   Current behavior (default). All agents use their frontmatter
-#          model assignments. Works on any Claude Code version, any API
-#          provider. No advisor dependency.
-#
 # classic: Forces Subagent Delegation mode. No Agent Teams, no advisor.
 #          Use when Agent Teams is unavailable or you want deterministic
 #          single-threaded execution.
-#
-# frontier: Frontier-grade planning. Planning, analysis, specification, and
-#          review (analyst, architect, reviewer, security-officer,
-#          test-advisor, project-advisor, enterprise-enforcer) run on Fable
-#          and produce an exhaustive per-change spec; execution (builder,
-#          closer, smoke-tester, frontend-designer, microfix-specialist,
-#          knowledge-migrator, update-coordinator) runs on Opus.
-#          knowledge-liaison stays on Sonnet. Any orchestration
-#          mode. Opt-in — Fable is the most expensive model.
-#          REQUIRES: direct Anthropic API (or Claude Platform on AWS); falls
-#          back to Opus if Fable is unavailable.
-profile: teams
+profile: frontier
 
 # High-value escape hatch for the `frontier` profile (default: false).
 # When true, the execution agents (builder, closer, smoke-tester,
