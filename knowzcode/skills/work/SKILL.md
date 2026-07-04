@@ -58,9 +58,9 @@ Runs BEFORE Step 2 so profile-related flag conflicts halt without side effects (
    - Present but value is none of the four → halt with: `**Error:** --profile value "{value}" is invalid. Use advisor, teams, classic, or frontier.`
    - Absent → continue to config fallback
 2. If flag absent, read `knowzcode/knowzcode_orchestration.md` with a targeted grep for `^profile:\s*(\S+)`:
-   - File absent or line absent → `PROFILE_PREFLIGHT = "teams"`
+   - File absent or line absent → `PROFILE_PREFLIGHT = "frontier"` (the default profile)
    - Value is `advisor`, `teams`, `classic`, or `frontier` → `PROFILE_PREFLIGHT = <value>`
-   - Invalid value → log warning, `PROFILE_PREFLIGHT = "teams"`
+   - Invalid value → log warning, `PROFILE_PREFLIGHT = "frontier"`
 3. Mode-conflict validation. If `PROFILE_PREFLIGHT == "advisor"` AND (`$ARGUMENTS` contains `--sequential` OR `--subagent`), halt with this exact error and do NOT proceed to Step 2:
    ```
    **Error:** --profile advisor requires Parallel Teams mode.
@@ -185,7 +185,7 @@ If `knowzcode/knowzcode_orchestration.md` exists, parse its YAML blocks:
 6. `CODEBASE_SCANNER_ENABLED` = `codebase_scanner_enabled` value (default: true)
 7. `PARALLEL_SPEC_THRESHOLD` = `parallel_spec_threshold` value (default: 3, clamp to 2-10)
 8. `BUILDER_NODE_LIMIT` = `builder_node_limit` value (default: 1, clamp to 1-2)
-9. `PROFILE_CONFIG` = `profile` value (default: `"teams"`; valid: `"advisor"`, `"teams"`, `"classic"`, `"frontier"`). If the value is not one of the four, log a warning and fall back to `"teams"`. Used as the input to Step 2.3.
+9. `PROFILE_CONFIG` = `profile` value (default: `"frontier"`; valid: `"advisor"`, `"teams"`, `"classic"`, `"frontier"`). If the value is not one of the four, log a warning and fall back to `"frontier"`. Used as the input to Step 2.3.
 10. `FRONTEND_DESIGNER_CONFIG` = `frontend_designer` value (default: `"auto"`; valid: `"auto"`, `"true"`, `"false"`)
 11. `FRONTEND_DESIGNER_BLOCKING_CONFIG` = `frontend_designer_blocking` value (default: `false`)
 12. `FRONTEND_DESIGNER_AUTONOMOUS_DEFAULTS_CONFIG` = `frontend_designer_autonomous_defaults` value (default: `"pause"`; valid: `"pause"`, `"accept-recommendations"`)
@@ -207,7 +207,7 @@ Apply flag overrides (flags win over config):
 
 (Profile flag handling — `--profile=...` — is applied in Step 2.3, not here, because it affects execution-mode selection which runs before orchestration config load.)
 
-If the file doesn't exist, use hardcoded defaults (current behavior); `PROFILE_CONFIG = "teams"`.
+If the file doesn't exist, use hardcoded defaults; `PROFILE_CONFIG = "frontier"` (the default profile).
 
 ## Step 2.5: Autonomous Mode Detection
 

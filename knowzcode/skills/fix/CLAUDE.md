@@ -30,7 +30,7 @@ If ANY scope criterion fails, stop immediately and suggest `/knowzcode:work`. Do
 |--------|----------|
 | `--profile=<value>` flag | Highest |
 | `profile:` in `knowzcode/knowzcode_orchestration.md` | Config fallback |
-| Default: `teams` | Lowest |
+| Default: `frontier` | Lowest |
 
 Advisor profile: routes `microfix-specialist` to Sonnet with advisor-tool guidance block. Advisor falls back to `teams` if `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1` or `ANTHROPIC_BASE_URL` points outside `anthropic.com`.
 

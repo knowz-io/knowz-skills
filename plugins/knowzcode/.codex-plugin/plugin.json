@@ -1,6 +1,6 @@
 {
   "name": "knowzcode",
-  "version": "0.18.0",
+  "version": "0.19.0",
   "description": "Platform-agnostic AI development methodology with TDD, quality gates, structured workflows, and enterprise compliance (custom guidelines enforced at quality gates) for Codex.",
   "author": {
     "name": "Alex Headscarf",

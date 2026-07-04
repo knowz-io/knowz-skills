@@ -2,7 +2,7 @@
 
 **Purpose:** Single source of truth for profile → agent-model mappings. Read by `/knowzcode:work` (Step 2.3, Stage 0-3 spawns) and `/knowzcode:audit` (Step 1.1) at startup.
 
-Profile resolution order: CLI flag `--profile={advisor|teams|classic|frontier}` wins over `profile:` in `knowzcode/knowzcode_orchestration.md`. If neither is set, default is `teams`.
+Profile resolution order: CLI flag `--profile={advisor|teams|classic|frontier}` wins over `profile:` in `knowzcode/knowzcode_orchestration.md`. If neither is set, default is `frontier`.
 
 ---
 
@@ -11,9 +11,9 @@ Profile resolution order: CLI flag `--profile={advisor|teams|classic|frontier}` 
 | Profile | Purpose | Execution Mode | Advisor Required |
 |---------|---------|----------------|------------------|
 | `advisor` | Cost-optimized via advisor tool; near-Opus quality at Sonnet prices | Parallel Teams (forced) | Yes |
-| `teams` (default) | Current behavior; all agents use frontmatter model assignments | Any (Parallel/Sequential/Subagent) | No |
+| `teams` | All agents use frontmatter model assignments (mostly Opus). Set this to opt OUT of frontier's Fable cost. | Any (Parallel/Sequential/Subagent) | No |
 | `classic` | Force Subagent Delegation mode; no teams, no advisor | Subagent Delegation (forced) | No |
-| `frontier` | Frontier-grade planning: **Fable** for planning/analysis/spec/review, **Opus** for execution. Opt-in; higher cost. | Any (Parallel/Sequential/Subagent) | No |
+| `frontier` (default) | Frontier-grade planning: **Fable** for planning/analysis/spec/review, **Opus** for execution. Higher cost; auto-falls back to Opus if Fable is unavailable. | Any (Parallel/Sequential/Subagent) | No |
 
 ---
 
