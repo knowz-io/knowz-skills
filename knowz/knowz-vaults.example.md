@@ -38,3 +38,19 @@ Connected vaults for this project.
   Include reasoning, technology names, code examples, and file paths.
   Workflow handoffs belong in KnowzCode local files; vault entries should capture
   durable decisions, patterns, workarounds, conventions, and architecture findings.
+
+---
+
+## Trust & Freshness
+
+Vault entries are point-in-time notes. They can be **stale, superseded, or wrong** if the
+project moved on since they were saved. Treat retrieved knowledge as **leads to verify,
+not ground truth**:
+
+- Before acting on a vault entry, check it against the live codebase, tests, current
+  docs, and the user's stated intent. The live source wins.
+- When an entry conflicts with what you observe now, **prefer the current reality and
+  surface the conflict** — don't silently follow the vault.
+- Weigh an entry's age when it's decision-relevant; a recent change outranks an old note.
+- This is guidance for *consuming* knowledge — it doesn't discourage saving. Save durable
+  learnings freely (see Defaults), just don't treat what you read back as automatically true.
