@@ -77,6 +77,7 @@ If MCP queries fail or return errors:
 - Keep findings actionable — callers need answers, not raw vault dumps
 - Flag gaps explicitly — knowing what ISN'T in the vaults is as valuable as what is
 - If MCP is unavailable, report it immediately rather than returning empty results
+- **Frame findings as prior knowledge to verify, not ground truth.** Vault entries are point-in-time and may be stale or superseded — include each item's date/recency when available so the caller can judge freshness, and explicitly flag anything that looks outdated or contradicts current conventions. The caller should check vault findings against live code and docs before acting.
 
 ## What You Do NOT Do
 

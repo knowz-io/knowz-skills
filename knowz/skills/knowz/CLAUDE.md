@@ -59,6 +59,7 @@ For single-query or single-save operations, execute inline — do not dispatch a
 - **Never auto-save** knowledge without explicit user confirmation.
 - **Never auto-amend** an existing vault item without showing the target and proposed delta to the user first.
 - **Never block the conversation** — if vault lookup fails, continue with the normal response. Vault operations are enhancement, not gate.
+- **Treat vault knowledge as verify-first** — retrieved entries are point-in-time and may be stale or superseded. Present them as prior context to check against live code, tests, and current docs, not as authoritative answers, and surface any conflict with current reality. Prefer the live source when they disagree.
 - **Zero-config mode is valid** — all actions work without `knowz-vaults.md`; just omit `vaultId` parameters and suggest setup at the end.
 - **Enterprise config takes precedence** — if `enterprise.json` exists in the plugin root, use its `brand`, `mcp_endpoint`, and `api_endpoint` values over all defaults. The `--dev` flag is ignored when enterprise config is present.
 - **Do not surface internal phase labels** to the user — present only results and actionable next steps.
