@@ -58,9 +58,13 @@ Runs BEFORE Step 2 so profile-related flag conflicts halt without side effects (
    - Present but value is none of the four → halt with: `**Error:** --profile value "{value}" is invalid. Use advisor, teams, classic, or frontier.`
    - Absent → continue to config fallback
 2. If flag absent, read `knowzcode/knowzcode_orchestration.md` with a targeted grep for `^profile:\s*(\S+)`:
-   - File absent or line absent → `PROFILE_PREFLIGHT = "frontier"` (the default profile)
-   - Value is `advisor`, `teams`, `classic`, or `frontier` → `PROFILE_PREFLIGHT = <value>`
+   - Value is `advisor`, `teams`, `classic`, or `frontier` → `PROFILE_PREFLIGHT = <value>` (a persisted choice — never re-ask)
    - Invalid value → log warning, `PROFILE_PREFLIGHT = "frontier"`
+   - File absent or line absent → **one-time profile choice** (ask once, persist forever):
+     - If autonomous intent is present (the `--autonomous`/`--auto` flags or the natural-language signals from Step 2.5, checked against `$ARGUMENTS` and the user's preceding message): do NOT prompt. `PROFILE_PREFLIGHT = "frontier"`, log `[AUTO-DEFAULT] profile: frontier — set profile: in knowzcode_orchestration.md to change`, and do not write the config (the user hasn't chosen).
+     - Otherwise, ask once via AskUserQuestion: **"Execution profile for this project?"** — **Frontier (Recommended)**: Fable plans/specs/reviews, Opus executes; most capable planning, premium cost, auto-falls back to Opus if Fable is unavailable. **Teams**: all agents on standard models (mostly Opus); standard cost, no Fable dependency.
+     - Set `PROFILE_PREFLIGHT` to the answer and **persist it** so no future run asks: update the `profile:` line in `knowzcode/knowzcode_orchestration.md` (or append an `## Execution Profile` block with the line if the file exists without one; create the file with a minimal header + the line if absent).
+     - This prompt is `/work`-only — `/audit`, `/explore`, and `/fix` never ask; they read the persisted value or use the `frontier` default silently.
 3. Mode-conflict validation. If `PROFILE_PREFLIGHT == "advisor"` AND (`$ARGUMENTS` contains `--sequential` OR `--subagent`), halt with this exact error and do NOT proceed to Step 2:
    ```
    **Error:** --profile advisor requires Parallel Teams mode.
