@@ -51,6 +51,7 @@ Agents are invoked as `general-purpose` subagents that read their agent `.md` fi
 - `AUTONOMOUS_MODE` auto-approves gates but NEVER skips vault writes, WorkGroup updates, tracker updates, or log entries
 - `--profile advisor` requires Parallel Teams; incompatible with `--sequential` or `--subagent`
 - `--profile frontier` runs Fable for planning/analysis/spec/review and Opus for execution (any orchestration mode); `--fable-execution` also routes execution to Fable for high-value jobs; falls back to Opus if Fable is unavailable
+- Profile choice is ask-once: when no `--profile` flag and no `profile:` line in `knowzcode_orchestration.md`, Step 1.5 asks one question (Frontier recommended / Teams) and persists the answer to the config; autonomous runs skip the prompt (`[AUTO-DEFAULT]` frontier, config untouched); no run ever re-asks
 - Builder dispatch is intentionally narrow: effective default `max_builders: 2`, `builder_node_limit: 1`; split dependency-heavy work into microtasks with assigned acceptance criteria rather than spawning broad builders
 - Gap loop cap: >3 failures on the same phase → pause and ask user (safety exception, applies even in Autonomous Mode)
 - Announce execution mode, profile, autonomous mode, and active specialists before any phase work begins

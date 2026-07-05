@@ -52,6 +52,9 @@ mcp_agents_enabled: true
 
 ```yaml
 # Controls model assignments and execution strategy (default: frontier).
+# This value is chosen ONCE: /knowzcode:init asks at setup; if the line is
+# missing, the first /knowzcode:work asks and persists the answer here.
+# No workflow run re-asks — edit this line (or pass --profile) to change.
 #
 # frontier: (default) Frontier-grade planning. Planning, analysis, specification,
 #          and review (analyst, architect, reviewer, security-officer,
