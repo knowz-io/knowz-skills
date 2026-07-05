@@ -17,14 +17,17 @@ When Parallel Teams mode is active, follow these 4 stages instead of spawning on
 
 ## Model Overrides (applies to every spawn below)
 
-At every agent spawn call in Stages 0, 1, 2, and 3 (and in the Sequential/Subagent fallback at the bottom of this file), resolve the model via `MODEL_FOR(agent_name, PROFILE)` from [profile-models.md](profile-models.md):
+At every agent spawn call in Stages 0, 1, 2, and 3 (and in the Sequential/Subagent fallback at the bottom of this file), resolve the model via `MODEL_FOR(agent_name, PROFILE, EXECUTE_ON_FABLE)` from [profile-models.md](profile-models.md):
 
-- If `MODEL_FOR` returns non-null (e.g. `"sonnet"` under `PROFILE == "advisor"` for builder/reviewer/closer/smoke-tester): include `model: <value>` in the spawn call.
+- If `MODEL_FOR` returns non-null (e.g. `"sonnet"` under `PROFILE == "advisor"` for builder/reviewer/closer/smoke-tester; `"fable"` for planning/analysis/spec/review agents and `"opus"` for execution agents under `PROFILE == "frontier"`): include `model: <value>` in the spawn call.
 - If `MODEL_FOR` returns null: omit the `model` parameter entirely — the agent's frontmatter default is used.
+- When `FABLE_DOWNGRADE == true` (Fable unavailable — see `/knowzcode:work` Step 2.3): substitute `"opus"` for any `"fable"` result before spawning.
 
 At every spawn whose prompt contains the `{advisor_guidance}` token (see [spawn-prompts.md](spawn-prompts.md#advisor_guidance-placeholder)): substitute the Advisor Guidance block when `PROFILE == "advisor"` AND `MODEL_FOR(agent, PROFILE) == "sonnet"`; otherwise substitute an empty string.
 
-`PROFILE` is resolved in `/knowzcode:work` Step 2.3. It does not change mid-workflow.
+At every spawn whose prompt contains the `{spec_depth_guidance}` token (analyst, architect, and spec-drafters — see [spawn-prompts.md](spawn-prompts.md#spec_depth_guidance-placeholder)): substitute the Spec-Depth Guidance block when `PROFILE == "frontier"`; otherwise substitute an empty string.
+
+`PROFILE`, `EXECUTE_ON_FABLE`, and `FABLE_DOWNGRADE` are resolved in `/knowzcode:work` Steps 2.3–2.4. They do not change mid-workflow.
 
 ---
 

@@ -5,6 +5,7 @@ These spawn prompts are shared by all execution modes. In Parallel Teams mode, t
 ## Contents
 
 - [`{advisor_guidance}` Placeholder](#advisor_guidance-placeholder)
+- [`{spec_depth_guidance}` Placeholder](#spec_depth_guidance-placeholder)
 - [Stage 0: Codebase Scanners](#stage-0-codebase-scanners-2-instances--conditional)
 - [Stage 0: Context & Knowledge Liaison (Persistent)](#stage-0-context--knowledge-liaison-persistent)
 - [Quality Gate Writer Dispatches](#quality-gate-writer-dispatches)
@@ -55,6 +56,43 @@ rather than silently switching.
 > **Why conditional:** The advisor tool is only available to agents running on Sonnet under the `advisor` profile. Adding the guidance to Opus-based or non-advisor spawns would mislead the agent about a tool it cannot use.
 
 See `references/profile-models.md` for the full `MODEL_FOR()` resolution rule.
+
+---
+
+## `{spec_depth_guidance}` Placeholder
+
+The `analyst` (Phase 1A) and `architect` (Phase 1B, incl. spec-drafters) spawn prompts end with a `{spec_depth_guidance}` token. Resolve it at spawn time based on the active profile:
+
+- **If `profile == "frontier"` AND the agent is `analyst` or `architect`** (including `spec-drafter-N`, which uses the architect definition): replace `{spec_depth_guidance}` with the **Spec-Depth Guidance block** below.
+- **Otherwise** (any other profile, or any other agent): replace `{spec_depth_guidance}` with an empty string. Do not leave the literal `{spec_depth_guidance}` text in the spawned prompt.
+
+### Spec-Depth Guidance Block
+
+```markdown
+---
+## Spec-Depth Guidance (frontier profile)
+
+You are running on a frontier reasoning model. The Change Set / spec you produce is the contract the
+Opus builder implements against — make it exhaustive and unambiguous so execution is a faithful
+translation of your intent, not a re-derivation of it.
+
+For **every** change — each NodeID, and each distinct file/symbol within it — your deliverable must cover:
+- The exact file(s) and symbol(s) touched, with change type (new / modify / delete).
+- The before → after behavior and the design rationale for the change.
+- Edge cases, failure modes, and boundary conditions the builder must handle.
+- Verification: (architect) write at least one dedicated `VERIFY:` criterion per change, each independently
+  testable; (analyst) record each change atomically so no change is bundled into a vague group and every
+  change is spec-able per-change downstream.
+
+Prioritize **coverage over prescription**: state *what* must change, *why*, and *how it will be verified* —
+do NOT write line-by-line pseudocode or dictate the implementation. Leave the builder room to implement well.
+A change with no verification criterion, or a bundled "misc" change, is an incomplete spec.
+---
+```
+
+> **Why conditional:** the extra spec depth is the whole point of the `frontier` profile (Fable plans, Opus executes a fully-specified change). Injecting it under other profiles would over-inflate specs for agents that also do the building.
+
+See `references/profile-models.md` for the `{spec_depth_guidance}` resolution rule.
 
 ---
 
@@ -260,6 +298,7 @@ The spawn prompts below are used when `FRONTEND_DESIGNER_ENABLED` or `ENTERPRISE
 > **Codebase scanners**: Scanner agents are running in parallel — their findings will arrive as broadcast messages. Incorporate them into your analysis but do NOT wait for them.
 > **Preliminary Findings Protocol**: As you discover high-confidence NodeIDs, DM the architect with `[PRELIMINARY]` messages (max 3 — see `agents/analyst.md` for format). This lets the architect start speculative research early.
 > **Deliverable**: Change Set proposal with NodeIDs, descriptions, affected files, risk assessment, and dependency map. In Parallel Teams, return it in task summary for lead consolidation; in Sequential/Subagent mode, write it to the WorkGroup file when delegated.
+> {spec_depth_guidance}
 
 **Dispatch**:
 - *Parallel Teams*: Spawned at Stage 0 alongside knowledge-liaison, scanners, and architect. Starts immediately (no blockedBy).
@@ -309,6 +348,7 @@ After Gate #1, the lead sends the approved Change Set via DM and creates spec-dr
 > **Your Task**: #{task-id} — claim immediately (`TaskUpdate(status: "in_progress")`). Mark completed with summary when done.
 > **Conventions**: In Parallel Teams, report WorkGroup updates in your task summary and let the lead consolidate. In Sequential/Subagent mode, update the WorkGroup file only when delegated. Prefix any task/todo entries with `KnowzCode:`. If blocked, report blocker and notify lead.
 > **Deliverable**: Finalized specs for all NodeIDs written to `knowzcode/specs/`.
+> {spec_depth_guidance}
 
 **Spec-drafter spawn prompt** (Path B — 3+ NodeIDs, Parallel Teams only):
 > You are `spec-drafter-{N}` for WorkGroup `{wgid}`.
@@ -324,6 +364,7 @@ After Gate #1, the lead sends the approved Change Set via DM and creates spec-dr
 >
 > **Your Task**: #{task-id} — claim immediately (`TaskUpdate(status: "in_progress")`). Mark completed with summary when done.
 > **Deliverable**: Draft specs for your assigned NodeIDs written to `knowzcode/specs/`. The architect will review for consistency after all drafters finish.
+> {spec_depth_guidance}
 
 **Dispatch**:
 - *Parallel Teams*:

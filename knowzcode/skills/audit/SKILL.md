@@ -61,18 +61,22 @@ If `knowzcode/knowzcode_orchestration.md` exists, parse its YAML blocks:
 
 1. `DEFAULT_SPECIALISTS` = `default_specialists` value (default: [])
 2. `MCP_AGENTS_ENABLED` = `mcp_agents_enabled` value (default: true)
-3. `PROFILE` = `profile` value (default: `"teams"`). Valid: `"advisor"`, `"teams"`, `"classic"`. Fall back to `"teams"` on invalid value.
+3. `PROFILE` = `profile` value (default: `"frontier"`). Valid: `"advisor"`, `"teams"`, `"classic"`, `"frontier"`. Fall back to `"frontier"` on invalid value.
 
 Apply flag overrides (flags win over config):
 - `--no-specialists` in `$ARGUMENTS` → override `DEFAULT_SPECIALISTS = []`
 - `--no-mcp` in `$ARGUMENTS` → override `MCP_AGENTS_ENABLED = false`
-- `--profile={advisor|teams|classic}` in `$ARGUMENTS` → override `PROFILE`
+- `--profile={advisor|teams|classic|frontier}` in `$ARGUMENTS` → override `PROFILE`
 
-If the file doesn't exist, use hardcoded defaults (current behavior); `PROFILE = "teams"`.
+If the file doesn't exist, use hardcoded defaults; `PROFILE = "frontier"` (the default profile).
 
-If `PROFILE == "advisor"`, apply the same detection/fallback checks as `/knowzcode:work` Step 2.3 (CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS, ANTHROPIC_BASE_URL). On fallback, reset `PROFILE = "teams"` and announce. See `knowzcode/skills/work/references/profile-models.md` for profile semantics and `MODEL_FOR()` resolution.
+If `PROFILE == "advisor"`, apply the same detection/fallback checks as `/knowzcode:work` Step 2.3 (CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS, ANTHROPIC_BASE_URL). On fallback, reset `PROFILE = "teams"` and announce.
 
-At each reviewer/specialist spawn below, resolve `model` via `MODEL_FOR(agent_name, PROFILE)`. Include `model: <value>` when non-null; otherwise omit. Under `PROFILE == "advisor"`, the reviewer runs on Sonnet; append the Advisor Guidance block from `knowzcode/skills/work/references/spawn-prompts.md` to its spawn prompt (resolve the `{advisor_guidance}` placeholder appended to each inline prompt below — substitute the block when `MODEL_FOR` returns `"sonnet"`, else substitute an empty string).
+If `PROFILE == "frontier"`, apply the Fable detection from `/knowzcode:work` Step 2.3: if `ANTHROPIC_BASE_URL` is set and does NOT contain `"anthropic.com"` (case-insensitive), set `FABLE_DOWNGRADE = true` and announce that the reviewer/specialists fall back to Opus. When `FABLE_DOWNGRADE = true`, treat every `MODEL_FOR(...) == "fable"` result as `"opus"` at spawn time. Additionally — regardless of `FABLE_DOWNGRADE` — if a `fable` spawn is rejected at runtime for any reason (no Fable entitlement, a zero-data-retention org, or an older Claude Code that doesn't recognize the alias), re-spawn that agent with `model: opus` and continue. The audit never fails because Fable is unavailable.
+
+See `knowzcode/skills/work/references/profile-models.md` for profile semantics and `MODEL_FOR()` resolution.
+
+At each reviewer/specialist spawn below, resolve `model` via `MODEL_FOR(agent_name, PROFILE)`. Include `model: <value>` when non-null; otherwise omit. Under `PROFILE == "advisor"`, the reviewer runs on Sonnet; append the Advisor Guidance block from `knowzcode/skills/work/references/spawn-prompts.md` to its spawn prompt (resolve the `{advisor_guidance}` placeholder appended to each inline prompt below — substitute the block when `MODEL_FOR` returns `"sonnet"`, else substitute an empty string). Under `PROFILE == "frontier"`, audit is pure review reasoning, so the reviewer, security-officer, and test-advisor run on Fable (or Opus when `FABLE_DOWNGRADE`); the `{advisor_guidance}` placeholder resolves to empty (advisor guidance is advisor-profile only).
 
 ## Step 2: Set Up Execution Mode
 

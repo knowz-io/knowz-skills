@@ -42,6 +42,7 @@ All four agents run in parallel (Agent Teams or `Task()`).
 - Do NOT trigger when user wants to build immediately (→ `/knowzcode:work`) or fix a specific bug (→ `/knowzcode:fix`)
 - After cleanup, remain responsive to vault-write intent in follow-up messages
 - Team cleanup (shut down all teammates + delete team) is required after Agent Teams mode completes or is cancelled
+- `--profile frontier` runs the analyst/architect/reviewer research on Fable (falls back to Opus if Fable is unavailable); knowledge-liaison stays on Sonnet; other profiles are unchanged in explore (research-only, no advisor tool)
 
 ## Output Paths
 

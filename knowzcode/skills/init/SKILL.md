@@ -116,9 +116,17 @@ Rewrite `user_preferences.md` so the filled copy contains only real answers. Spe
 
 If the user declines Gate C entirely, leave the file on disk but replace each `[…]` placeholder with `Not configured during init — edit this file or re-run /knowzcode:setup to fill.`
 
-### 6. Configure orchestration defaults (optional)
+### 6. Configure orchestration defaults
 
-Ask: "Would you like to configure agent orchestration defaults? (optional — can be changed later in knowzcode/knowzcode_orchestration.md)"
+**6a. Execution profile (always ask — one question).** This is the project's cost/quality choice, asked exactly once here and persisted; no workflow run will ask again. Use AskUserQuestion:
+
+> **Execution profile for this project?**
+> - **Frontier (Recommended)** — Fable plans, specs, and reviews every change; Opus executes. The most capable planning, at premium cost. Falls back to Opus automatically if Fable is unavailable.
+> - **Teams** — all agents on their standard models (mostly Opus). Standard cost, no Fable dependency.
+
+Write the answer as the `profile:` value in the generated `knowzcode_orchestration.md` (Step 6c). (On non-Claude-Code platforms the setting is informational-only — see the Codex note in the template — but persist it anyway for cross-platform parity.)
+
+**6b. Other orchestration defaults (optional).** Ask: "Would you like to configure agent orchestration defaults? (optional — can be changed later in knowzcode/knowzcode_orchestration.md)"
 
 If yes: prompt for:
 - Max concurrent builders (1-3, default: 2; use more only for tiny independent scopes)
@@ -129,7 +137,7 @@ If yes: prompt for:
 
 If no: generate with all defaults.
 
-Generate `knowzcode/knowzcode_orchestration.md` from the template (always — it's part of the standard file set).
+**6c.** Generate `knowzcode/knowzcode_orchestration.md` from the template (always — it's part of the standard file set), with `profile:` set to the Step 6a answer.
 
 ### 7. Create .gitignore
 

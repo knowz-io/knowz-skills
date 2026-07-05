@@ -21,7 +21,7 @@ If `enterprise.json` exists in the project root, use its `brand` value instead o
    - `vaultId`: the vault ID when known
    - `limit`: 10
 5. If titles or snippets are too thin, open the top 1-2 promising matches with `mcp__knowz__get_knowledge_item` before summarizing.
-6. Present results grouped by vault with title, short summary, and why they are relevant.
+6. Present results grouped by vault with title, short summary, and why they are relevant. Note that vault entries are point-in-time and may be stale or superseded — treat them as leads to verify against the live codebase and current docs, not authoritative current fact.
 7. If nothing useful is found, suggest broader search terms, `/knowz-browse`, or `/knowz-ask`.
 
 If Knowz MCP tools are unavailable, report: "{brand} MCP not connected. Run /knowz-setup and restart Codex."
