@@ -67,7 +67,8 @@ Generate `knowz-vaults.md` at the project root if it does not already exist. Thi
    - **When to save** — concrete situations that should write to this vault
    - **Content template** — the `[CONTEXT] / [INSIGHT] / [RATIONALE] / [TAGS]` shape
 3. Set a **Default vault** at the bottom for cases that match no rule.
-4. Do not invent fields; if information is missing for a vault, leave the section short and let the user fill it in later.
+4. Add a **Trust & Freshness** section: vault entries are point-in-time and may be stale or superseded — consumers must treat retrieved knowledge as leads to verify against the live codebase, tests, and current docs, prefer the live source on any conflict, and weigh an entry's age. (Mirror the block in the Claude Code `knowz-vaults.example.md`.)
+5. Do not invent fields; if information is missing for a vault, leave the section short and let the user fill it in later.
 
 If `knowz-vaults.md` already exists, offer to refresh it: re-read `mcp__knowz__list_vaults`, append any new vaults, and flag any vaults present in the file but absent from the server.
 

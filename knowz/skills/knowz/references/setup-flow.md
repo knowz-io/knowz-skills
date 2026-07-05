@@ -58,7 +58,7 @@ Use AskUserQuestion to get their selection. For each selected vault, ask (or inf
 - When to query it (plain English rules)
 - When to save to it (plain English rules)
 
-Generate `knowz-vaults.md` using the format from `knowz-vaults.example.md`. Write the file to the project root.
+Generate `knowz-vaults.md` using the format from `knowz-vaults.example.md` — including its **Trust & Freshness** block, so every consumer treats vault knowledge as verify-first (point-in-time, may be stale, check against live code/docs). Write the file to the project root.
 
 **Case B — server has NO vaults:** Offer to create one:
 

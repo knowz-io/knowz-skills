@@ -25,6 +25,6 @@ If `enterprise.json` exists in the project root, use its `brand` value instead o
    - No specific vault -> call `mcp__knowz__ask_question` once without `vaultId` or against the default vault when known
    - Set `researchMode: true` for multi-part, comparative, architectural, or "why" questions; otherwise `false`
 5. If the answer is still too thin, open the top cited items with `mcp__knowz__get_knowledge_item` before responding.
-6. Answer naturally and mention which vaults informed the result when possible.
+6. Answer naturally and mention which vaults informed the result when possible. Frame vault knowledge as **point-in-time and to be verified, not current fact** — for time-sensitive or code-specific answers, note the user should confirm against the live codebase/tests/docs, and prefer the live source when it conflicts with a vault entry.
 
 If Knowz MCP tools are unavailable, report: "{brand} MCP not connected. Run /knowz-setup and restart Codex."

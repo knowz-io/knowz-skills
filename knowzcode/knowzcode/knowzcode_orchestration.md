@@ -51,7 +51,25 @@ mcp_agents_enabled: true
 ## Execution Profile
 
 ```yaml
-# Controls model assignments and execution strategy (default: teams).
+# Controls model assignments and execution strategy (default: frontier).
+# This value is chosen ONCE: /knowzcode:init asks at setup; if the line is
+# missing, the first /knowzcode:work asks and persists the answer here.
+# No workflow run re-asks — edit this line (or pass --profile) to change.
+#
+# frontier: (default) Frontier-grade planning. Planning, analysis, specification,
+#          and review (analyst, architect, reviewer, security-officer,
+#          test-advisor, project-advisor, enterprise-enforcer) run on Fable
+#          and produce an exhaustive per-change spec; execution (builder,
+#          closer, smoke-tester, frontend-designer, microfix-specialist,
+#          knowledge-migrator, update-coordinator) runs on Opus.
+#          knowledge-liaison stays on Sonnet. Any orchestration mode. Fable is
+#          the most expensive model; the run falls back to Opus automatically if
+#          Fable is unavailable (no error).
+#          REQUIRES (for Fable): direct Anthropic API or Claude Platform on AWS.
+#
+# teams:   All agents use their frontmatter model assignments (mostly Opus).
+#          Works on any Claude Code version, any API provider. No Fable or
+#          advisor dependency — set this to opt OUT of frontier's Fable cost.
 #
 # advisor: Cost-optimized using Claude Code's advisor tool.
 #          Builder, reviewer, closer, smoke-tester, and microfix-specialist
@@ -61,17 +79,23 @@ mcp_agents_enabled: true
 #          FORCES: Parallel Teams mode.
 #          REQUIRES: Claude Code v2.1.100+, direct Anthropic API access.
 #
-# teams:   Current behavior (default). All agents use their frontmatter
-#          model assignments. Works on any Claude Code version, any API
-#          provider. No advisor dependency.
-#
 # classic: Forces Subagent Delegation mode. No Agent Teams, no advisor.
 #          Use when Agent Teams is unavailable or you want deterministic
 #          single-threaded execution.
-profile: teams
+profile: frontier
+
+# High-value escape hatch for the `frontier` profile (default: false).
+# When true, the execution agents (builder, closer, smoke-tester,
+# frontend-designer, microfix-specialist, knowledge-migrator,
+# update-coordinator) ALSO run on Fable — for the rare job where the
+# implementation itself needs frontier-level reasoning. No effect unless
+# profile is `frontier`. Per-invocation flag: --fable-execution.
+execute_on_fable: false
 ```
 
 See `knowzcode/skills/work/references/profile-models.md` for the full profile → agent-model mapping.
+
+> **Codex note:** profile-based per-agent model routing (frontier's Fable/Opus split, advisor's Sonnet routing, and `execute_on_fable`) is a **Claude Code** capability. The Codex skills run their native coordinator/subagent flow and do not switch models per agent, so on Codex `profile:` and `execute_on_fable:` are informational only — kept for cross-platform config parity — and do not change behavior. (Claude Code honors them in full.)
 
 ---
 
@@ -127,7 +151,8 @@ The enterprise-enforcer agent (v0.16.0+) auto-activates when `knowzcode/enterpri
 | builder_node_limit | `builder_node_limit:` | `--builder-node-limit=N` |
 | default_specialists | `default_specialists:` | `--specialists`, `--no-specialists` |
 | mcp_agents_enabled | `mcp_agents_enabled:` | `--no-mcp` |
-| profile | `profile:` | `--profile={advisor\|teams\|classic}` |
+| profile | `profile:` | `--profile={advisor\|teams\|classic\|frontier}` |
+| execute_on_fable | `execute_on_fable:` | `--fable-execution` |
 | frontend_designer | `frontend_designer:` | `--frontend-designer`, `--no-frontend-designer` |
 | frontend_designer_blocking | `frontend_designer_blocking:` | `--frontend-designer-blocking` |
 | enterprise-enforcer (auto from manifest) | `compliance_manifest.md` `compliance_enabled:` | `--enterprise-enforcer`, `--no-enterprise-enforcer` |

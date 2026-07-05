@@ -38,6 +38,7 @@ Agents are invoked as `general-purpose` subagents that read their agent `.md` fi
 - Announce execution mode before any audit work begins
 - `--no-specialists` overrides `default_specialists` from `knowzcode_orchestration.md`
 - Profile `advisor` routes `reviewer` through Sonnet with advisor-tool guidance; strategic agents stay on Opus
+- Profile `frontier` routes the reviewer and specialists through Fable (audit is review reasoning); falls back to Opus if Fable is unavailable
 
 ## Output Paths
 

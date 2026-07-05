@@ -54,19 +54,24 @@ If missing: inform user to run `/knowzcode:setup` first. STOP.
 Runs BEFORE Step 2 so profile-related flag conflicts halt without side effects (no orphan teams).
 
 1. Parse `--profile=<value>` from `$ARGUMENTS`:
-   - Present and value is `advisor`, `teams`, or `classic` → `PROFILE_PREFLIGHT = <value>`
-   - Present but value is none of the three → halt with: `**Error:** --profile value "{value}" is invalid. Use advisor, teams, or classic.`
+   - Present and value is `advisor`, `teams`, `classic`, or `frontier` → `PROFILE_PREFLIGHT = <value>`
+   - Present but value is none of the four → halt with: `**Error:** --profile value "{value}" is invalid. Use advisor, teams, classic, or frontier.`
    - Absent → continue to config fallback
 2. If flag absent, read `knowzcode/knowzcode_orchestration.md` with a targeted grep for `^profile:\s*(\S+)`:
-   - File absent or line absent → `PROFILE_PREFLIGHT = "teams"`
-   - Value is `advisor`, `teams`, or `classic` → `PROFILE_PREFLIGHT = <value>`
-   - Invalid value → log warning, `PROFILE_PREFLIGHT = "teams"`
+   - Value is `advisor`, `teams`, `classic`, or `frontier` → `PROFILE_PREFLIGHT = <value>` (a persisted choice — never re-ask)
+   - Invalid value → log warning, `PROFILE_PREFLIGHT = "frontier"`
+   - File absent or line absent → **one-time profile choice** (ask once, persist forever):
+     - If autonomous intent is present (the `--autonomous`/`--auto` flags or the natural-language signals from Step 2.5, checked against `$ARGUMENTS` and the user's preceding message): do NOT prompt. `PROFILE_PREFLIGHT = "frontier"`, log `[AUTO-DEFAULT] profile: frontier — set profile: in knowzcode_orchestration.md to change`, and do not write the config (the user hasn't chosen).
+     - Otherwise, ask once via AskUserQuestion: **"Execution profile for this project?"** — **Frontier (Recommended)**: Fable plans/specs/reviews, Opus executes; most capable planning, premium cost, auto-falls back to Opus if Fable is unavailable. **Teams**: all agents on standard models (mostly Opus); standard cost, no Fable dependency.
+     - Set `PROFILE_PREFLIGHT` to the answer and **persist it** so no future run asks: update the `profile:` line in `knowzcode/knowzcode_orchestration.md` (or append an `## Execution Profile` block with the line if the file exists without one; create the file with a minimal header + the line if absent).
+     - This prompt is `/work`-only — `/audit`, `/explore`, and `/fix` never ask; they read the persisted value or use the `frontier` default silently.
 3. Mode-conflict validation. If `PROFILE_PREFLIGHT == "advisor"` AND (`$ARGUMENTS` contains `--sequential` OR `--subagent`), halt with this exact error and do NOT proceed to Step 2:
    ```
    **Error:** --profile advisor requires Parallel Teams mode.
    Conflicting flag: --sequential (or --subagent).
    Remove the conflicting flag, or choose --profile teams instead.
    ```
+4. Parse `EXECUTE_ON_FABLE` (affects only `frontier`): `true` if `$ARGUMENTS` contains `--fable-execution`; else read `knowzcode/knowzcode_orchestration.md` with a targeted grep for `^execute_on_fable:\s*(\S+)` (`true`/`false`, default `false`). Pure metadata like the profile parse above — resolving it here (not in Step 2.4) makes it available to the Step 2.3 announcement and downstream-use directive, both of which run before the Step 2.4 config load.
 
 This step is a pure-metadata parse (no TeamCreate, no spawns). The full orchestration-config load happens later in Step 2.4 and supersedes `PROFILE_PREFLIGHT` by setting `PROFILE` through the same logic. Step 2.3 then runs advisor-specific env detection and final announcement. See `knowzcode/skills/work/references/profile-models.md` for profile semantics.
 
@@ -135,6 +140,22 @@ If a fallback is triggered, set `PROFILE = "teams"` and announce:
 
 We do NOT perform an API probe (see spec §5.4 — rationale). Runtime `advisor_tool_result_error` during a spawn is handled by the Claude Code runtime — the executor continues without advice for that call.
 
+### Frontier detection & graceful fallback
+
+Only when `PROFILE == "frontier"`, determine whether Fable can be used and set `FABLE_DOWNGRADE`:
+
+1. If environment variable `ANTHROPIC_BASE_URL` is set AND does NOT contain `"anthropic.com"` (case-insensitive) → `FABLE_DOWNGRADE = true`. Reason: `"ANTHROPIC_BASE_URL points to {value}, not *.anthropic.com — Fable is only available on the direct Anthropic API / Claude Platform on AWS, not Bedrock/Vertex/Foundry."` Workaround: `"unset ANTHROPIC_BASE_URL, or route through the Anthropic API directly."`
+2. Otherwise → `FABLE_DOWNGRADE = false`. (Fable also requires 30-day data retention, and older Claude Code versions may not recognize the `fable` alias — neither is probeable in advance. If a `fable` spawn is rejected at runtime for any reason, re-spawn that agent with `model: opus` and continue — the run degrades to Opus, no restart or `--profile` change needed.)
+
+When `FABLE_DOWNGRADE = true`, keep `PROFILE = "frontier"` but treat every `MODEL_FOR(...) == "fable"` result as `"opus"` at spawn time — the run proceeds as an all-Opus flow (equivalent to `teams`). Announce:
+
+```
+**Profile: FRONTIER — Fable unavailable, planning agents fall back to Opus**
+> Reason: {specific reason from check}
+> Fable requires the direct Anthropic API (or Claude Platform on AWS) and 30-day data retention.
+> To force Fable anyway: {specific workaround}, then retry.
+```
+
 ### Announce profile
 
 After any fallback resolution, announce the final profile to the user:
@@ -145,10 +166,13 @@ After any fallback resolution, announce the final profile to the user:
 
 For `advisor`: also print `> Builder, reviewer, closer, smoke-tester, and microfix-specialist will run on Sonnet with advisor-tool guidance. Other agents stay on Opus.`
 
+For `frontier` (when `FABLE_DOWNGRADE == false`): also print `> Planning, analysis, specification, and review (analyst, architect, reviewer, security-officer, test-advisor, project-advisor, enterprise-enforcer) run on Fable; execution (builder, closer, smoke-tester, frontend-designer, microfix-specialist, knowledge-migrator, update-coordinator) runs on Opus. knowledge-liaison stays on Sonnet.` If `EXECUTE_ON_FABLE == true` (from Step 1.5), append `> High-value job: execution also runs on Fable.` (When `FABLE_DOWNGRADE == true`, the Fable-unavailable notice above already covers the fallback — skip this line.)
+
 ### Downstream use
 
-- Every spawn site (Stage 0/1/2/3 in Parallel Teams, each spawn in Sequential/Subagent) MUST resolve `MODEL_FOR(agent_name, PROFILE)` per `references/profile-models.md` and include `model: <value>` in the spawn call when non-null, or omit the `model` parameter when null.
+- Every spawn site (Stage 0/1/2/3 in Parallel Teams, each spawn in Sequential/Subagent) MUST resolve `MODEL_FOR(agent_name, PROFILE, EXECUTE_ON_FABLE)` per `references/profile-models.md` and include `model: <value>` in the spawn call when non-null, or omit the `model` parameter when null. When `FABLE_DOWNGRADE == true`, substitute `"opus"` for any `"fable"` result before spawning.
 - Every spawn prompt with a `{advisor_guidance}` placeholder MUST substitute the Advisor Guidance block (from `references/spawn-prompts.md`) when `PROFILE == "advisor"` AND `MODEL_FOR(agent, PROFILE) == "sonnet"`; otherwise substitute an empty string.
+- Every spawn prompt with a `{spec_depth_guidance}` placeholder MUST substitute the Spec-Depth Guidance block (from `references/spawn-prompts.md`) when `PROFILE == "frontier"` AND the agent is `analyst` or `architect` (including spec-drafters); otherwise substitute an empty string.
 
 ## Step 2.4: Load Orchestration Config (Optional)
 
@@ -166,10 +190,11 @@ If `knowzcode/knowzcode_orchestration.md` exists, parse its YAML blocks:
 6. `CODEBASE_SCANNER_ENABLED` = `codebase_scanner_enabled` value (default: true)
 7. `PARALLEL_SPEC_THRESHOLD` = `parallel_spec_threshold` value (default: 3, clamp to 2-10)
 8. `BUILDER_NODE_LIMIT` = `builder_node_limit` value (default: 1, clamp to 1-2)
-9. `PROFILE_CONFIG` = `profile` value (default: `"teams"`; valid: `"advisor"`, `"teams"`, `"classic"`). If the value is not one of the three, log a warning and fall back to `"teams"`. Used as the input to Step 2.3.
+9. `PROFILE_CONFIG` = `profile` value (default: `"frontier"`; valid: `"advisor"`, `"teams"`, `"classic"`, `"frontier"`). If the value is not one of the four, log a warning and fall back to `"frontier"`. Used as the input to Step 2.3.
 10. `FRONTEND_DESIGNER_CONFIG` = `frontend_designer` value (default: `"auto"`; valid: `"auto"`, `"true"`, `"false"`)
 11. `FRONTEND_DESIGNER_BLOCKING_CONFIG` = `frontend_designer_blocking` value (default: `false`)
 12. `FRONTEND_DESIGNER_AUTONOMOUS_DEFAULTS_CONFIG` = `frontend_designer_autonomous_defaults` value (default: `"pause"`; valid: `"pause"`, `"accept-recommendations"`)
+13. `EXECUTE_ON_FABLE` was already resolved in Step 1.5 (flag `--fable-execution` over the `execute_on_fable:` config key; default `false`). It only affects `PROFILE == "frontier"`, where it routes the execution agents (builder, closer, smoke-tester, frontend-designer, microfix-specialist, knowledge-migrator, update-coordinator) to Fable for high-value jobs.
 
 Apply flag overrides (flags win over config):
 - `--max-builders=N` in `$ARGUMENTS` → override `MAX_BUILDERS` per the effective builder cap rules above
@@ -184,9 +209,9 @@ Apply flag overrides (flags win over config):
 - `--enterprise-enforcer` in `$ARGUMENTS` → force-enable enterprise-enforcer even when manifest absent (skeleton mode — see Step 2.6.1)
 - `--no-enterprise-enforcer` in `$ARGUMENTS` → force-skip enterprise-enforcer even when manifest enables it (use per-agent fallback paths)
 
-(Profile flag handling — `--profile=...` — is applied in Step 2.3, not here, because it affects execution-mode selection which runs before orchestration config load.)
+(Profile flag handling — `--profile=...` — is applied in Step 2.3, and `--fable-execution` is parsed in Step 1.5 — not here — because both feed the profile announcement and downstream directive in Step 2.3, which run before this orchestration-config load.)
 
-If the file doesn't exist, use hardcoded defaults (current behavior); `PROFILE_CONFIG = "teams"`.
+If the file doesn't exist, use hardcoded defaults; `PROFILE_CONFIG = "frontier"` (the default profile).
 
 ## Step 2.5: Autonomous Mode Detection
 
@@ -554,7 +579,8 @@ These flags override corresponding config defaults in `knowzcode/knowzcode_orche
 | `--no-parallel-specs` | Force Path A spec drafting regardless of NodeID count |
 | `--sequential` | Prefer Sequential Teams (incompatible with `--profile advisor`) |
 | `--subagent` | Force Subagent Delegation (incompatible with `--profile advisor`) |
-| `--profile={advisor\|teams\|classic}` | Select execution profile — see `references/profile-models.md` |
+| `--profile={advisor\|teams\|classic\|frontier}` | Select execution profile — see `references/profile-models.md` |
+| `--fable-execution` | (frontier only) Also route execution agents to Fable for high-value jobs |
 | `--autonomous` / `--auto` | Autonomous mode — gates auto-approved |
 | `--tier {light\|full}` | Override complexity tier |
 | `--smoke-test` | Request smoke testing in Tier 2 |
@@ -564,7 +590,7 @@ These flags override corresponding config defaults in `knowzcode/knowzcode_orche
 | `--enterprise-enforcer` | Force-enable enterprise-enforcer (skeleton mode if no manifest) |
 | `--no-enterprise-enforcer` | Force-skip enterprise-enforcer (use per-agent compliance fallback) |
 
-The `advisor` profile forces Parallel Teams and requires Claude Code v2.1.100+ with direct Anthropic API access. See `references/profile-models.md` for the full profile → agent-model mapping.
+The `advisor` profile forces Parallel Teams and requires Claude Code v2.1.100+ with direct Anthropic API access. The `frontier` profile routes planning/analysis/spec/review to Fable and execution to Opus (add `--fable-execution` to also execute on Fable for high-value jobs); it needs the direct Anthropic API (or Claude Platform on AWS) and gracefully falls back to Opus if Fable is unavailable. See `references/profile-models.md` for the full profile → agent-model mapping.
 
 ## Related Skills
 
