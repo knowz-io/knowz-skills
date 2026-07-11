@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.20.1] - 2026-07-11
+
 ### Added
 - **Bidirectional cross-agent relay.** Claude Code and Codex can now keep orchestration/review ownership while delegating implementation and bounded fix rounds to the other agent. New selectors `--relay=auto|other|claude|codex|none`, natural-language target detection, portable `relay: other` configuration, provider-neutral schema-2 state, and legacy v0.20 relay-state migration make the same project work from either supported host.
 - **Codex-hosted Claude adapter.** The Codex package now ships `/knowzcode:relay` and a Claude CLI exec/JSONL transport with live auth detection, early session capture, explicit same-directory resume, strict non-interactive permissions/Bash sandboxing, target-qualified artifacts, and in-turn process polling. Claude MCP is deliberately not presented as an agent transport.
