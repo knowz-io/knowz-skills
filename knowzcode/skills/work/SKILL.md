@@ -75,6 +75,19 @@ Runs BEFORE Step 2 so profile-related flag conflicts halt without side effects (
 
 This step is a pure-metadata parse (no TeamCreate, no spawns). The full orchestration-config load happens later in Step 2.4 and supersedes `PROFILE_PREFLIGHT` by setting `PROFILE` through the same logic. Step 2.3 then runs advisor-specific env detection and final announcement. See `knowzcode/skills/work/references/profile-models.md` for profile semantics.
 
+## Step 1.6: Relay Pre-flight Parse
+
+Pure-metadata parse like Step 1.5 (no spawns, no side effects). Full protocol: [references/relay-execution.md](references/relay-execution.md).
+
+1. Resolve `RELAY_ACTIVE`: `--relay=codex` in `$ARGUMENTS` → `true`; else grep `knowzcode/knowzcode_orchestration.md` for `^relay:\s*(\S+)` — `codex` → `true`; anything else or absent → `false`. If `false`, skip the rest of this step entirely.
+2. Resolve relay settings (flag > config key > default): `RELAY_TRANSPORT` (`relay_transport:` / `auto` — `auto` uses the codex MCP server when registered and callable, else exec), `RELAY_MODEL` (`--relay-model=` / `relay_model:` / `gpt-5.6-sol`), `RELAY_EFFORT` (`--relay-effort=` / `relay_effort:` / `xhigh`), `RELAY_FIX_EFFORT` (`relay_fix_effort:` / `high`), `RELAY_SANDBOX` (`relay_sandbox:` / `workspace-write`), `RELAY_MAX_FIX_ROUNDS` (`--relay-max-fix-rounds=` / `relay_max_fix_rounds:` / `2`, clamp 1-3), `RELAY_TIMEOUT` (`relay_timeout_minutes:` / `45`, floor 7).
+3. Conflict validation:
+   - `RELAY_ACTIVE` AND profile resolves to `advisor` → halt with: `**Error:** --relay=codex is incompatible with --profile advisor (advisor routes the builder to Sonnet; relay removes the builder). Use frontier or teams.`
+   - `RELAY_ACTIVE` AND `EXECUTE_ON_FABLE == true` → continue, but announce later: `> execute_on_fable ignored for the implementation leg — Codex executes.`
+4. **Existence check only** (cheap — full detection happens later at the point of execution): run `command -v codex`. Missing → `RELAY_ACTIVE = false`; announce `[RELAY-FALLBACK] Codex CLI not found — running standard Phase 2A` (autonomous mode proceeds automatically; interactive mode may offer abort). Do NOT run the full `RELAY_DETECT` (version/auth probes) here — it runs once at relay preflight (relay-execution.md Preflight step 1), after the tier is known to be 3 and immediately before the leg's branch setup. That is also where an `installed-unauthed` result pauses (even in autonomous mode) with the `codex login` remediation, and where `broken-install` falls back. This ordering means a Tier 2 run never probes auth for a relay it won't use, and a `/knowzcode:relay` invocation doesn't double-probe.
+5. If `RELAY_ACTIVE`, announce alongside the Step 2.3 profile announcement: `**Relay: Codex ({RELAY_MODEL}, {RELAY_EFFORT}) — implementation leg runs on the Codex CLI**`. In Parallel Teams also announce `> max_builders ignored under relay — Codex is a single process.`
+6. Tier interaction: relay requires Tier 3. The Tier 2 Light section owns the skip (single authoritative spot — see its `> **Relay**` note); no other relay logic runs before tier classification.
+
 ## Step 2: Select Execution Mode
 
 **Agent Teams is the expected execution mode for Tier 2+ workflows.** It enables persistent knowledge-liaison coverage, parallel orchestration, and consistent vault capture. Subagent delegation is a degraded fallback — it works, but knowledge capture is reduced and orchestration is single-threaded.
@@ -450,6 +463,8 @@ When Tier 2 is selected, execute this streamlined workflow instead of the 5-phas
 
 > **Tier 2 still requires**: WorkGroup file (Step 4), tracker updates, log entry, and vault capture attempt. "Light" means fewer agents and phases — not fewer artifacts or vault writes.
 
+> **Relay**: not supported in Tier 2. If `RELAY_ACTIVE`, announce `> **Relay: SKIPPED** — Tier 2 Light uses the standard builder flow.` and proceed normally.
+
 Read [references/light-workflow.md](references/light-workflow.md) for complete phase details (team setup, Light Phase 1 through Light Phase 3, vault write checklist).
 
 **Phase summary**:
@@ -505,6 +520,21 @@ Scan `knowzcode/knowzcode_tracker.md` for outstanding `REFACTOR_` tasks that ove
 
 ---
 
+## Relay Execution (Tier 3, when `RELAY_ACTIVE`)
+
+When `RELAY_ACTIVE = true` (Step 1.6), Phase 2A and the builder gap loop are replaced by the Claude↔Codex relay — read [references/relay-execution.md](references/relay-execution.md) and follow it exactly. Phases 1A/1B (Gates #1/#2), Phase 2B (Gate #3), and Phase 3 run unchanged.
+
+Summary (authoritative detail lives in the reference):
+1. **Preflight + branch**: RELAY_DETECT already passed (Step 1.6). Refuse the default branch — create/reuse `kc-relay/{wgid}`; require a clean tree; record checkpoint C0. Create `knowzcode/workgroups/{wgid}-relay/` with `state.md` and add the `## Relay` section to the WorkGroup file.
+2. **Brief**: after Gate #2 approval, write `brief-r0.md` from the Change Set + spec *path* references — Codex reads the spec files in-repo; do not inline spec bodies (schema in the reference).
+3. **Codex leg**: delegate to the **relay-runner** agent (teammate in Teams modes; `Task()` in Subagent Delegation; lead runs the same protocol itself as degraded fallback). Transport per `RELAY_TRANSPORT`: a synchronous `codex` MCP tool call, or `codex exec` with the exit-marker wrapper and **in-turn polling — the runner never ends its turn to await a background notification** (that wake-up is unreliable; see the reference's IRON RULE). Persist the `thread_id` (`structuredContent.threadId` on MCP; `thread.started` JSONL event on exec) to `state.md` + WorkGroup the moment it appears. No builders are spawned — `max_builders` does not apply.
+4. **Checkpoint + review**: on exit 0 the lead commits `KnowzCode relay: Codex round {N} for {wgid}`; Phase 2B reviews exactly that checkpoint diff; Gate #3 as usual.
+5. **Fix rounds**: gaps → `feedback-r{N}.md` + self-contained `fix-prompt-r{N}.md` → `codex-reply {thread_id}` (MCP) or `codex exec resume {thread_id}` (exec — narrower flag set: no `-C`/`-s`/`-a`; sandbox/approval via `-c` overrides), at `RELAY_FIX_EFFORT`, up to `RELAY_MAX_FIX_ROUNDS`.
+6. **Claude takeover**: cap reached, a gap repeats two rounds, or Codex fails twice → remaining gaps enter the normal builder gap loop (existing 3-iteration cap and pauses apply). This is the designed final leg, not an error.
+7. **Finalize**: Phase 3 closer unchanged. Failures and fallbacks follow the reference's matrix; autonomous mode auto-proceeds rounds but keeps all Gate #3 safety exceptions and pauses on auth failures.
+
+---
+
 ## Phase Prompt Reference
 
 **Spawn Prompts**: Read [references/spawn-prompts.md](references/spawn-prompts.md) before spawning any agent. Contains spawn/dispatch prompts for all phases: knowledge-liaison, codebase scanners, knowz:reader, knowz:writer dispatches, specialists (security-officer, test-advisor, project-advisor), analyst (Phase 1A), architect (Phase 1B), builder (Phase 2A), reviewer (Phase 2B), and closer (Phase 3).
@@ -517,7 +547,7 @@ Scan `knowzcode/knowzcode_tracker.md` for outstanding `REFACTOR_` tasks that ove
 |-------|-------|------|------------|
 | 1A | analyst | #1: Change Set | NodeIDs, dependency map, risk assessment |
 | 1B | architect | #2: Specifications | Specs with VERIFY criteria |
-| 2A | builder(s) | — | Implementation + tests |
+| 2A | builder(s) — or Codex CLI via relay-runner when `RELAY_ACTIVE` | — | Implementation + tests |
 | 2B | reviewer(s) | #3: Audit Results | ARC completion, gap reports |
 | 2B | smoke-tester | #3: Audit Results | Runtime verification, smoke pass/fail |
 | 0–3 | frontend-designer | All gates | Design Questions Bundle, Design Impact Report, Design Audit Report (conditional, UI projects) |
@@ -581,6 +611,10 @@ These flags override corresponding config defaults in `knowzcode/knowzcode_orche
 | `--subagent` | Force Subagent Delegation (incompatible with `--profile advisor`) |
 | `--profile={advisor\|teams\|classic\|frontier}` | Select execution profile — see `references/profile-models.md` |
 | `--fable-execution` | (frontier only) Also route execution agents to Fable for high-value jobs |
+| `--relay=codex` | Claude↔Codex relay: Codex CLI runs the implementation leg — see `references/relay-execution.md` (incompatible with `--profile advisor`; Tier 3 only) |
+| `--relay-model=` | Codex model for the relay leg (default `gpt-5.6-sol`) |
+| `--relay-effort=` | Codex reasoning effort (default `xhigh`) |
+| `--relay-max-fix-rounds=N` | Codex fix rounds before Claude takes over (default 2, range 1-3) |
 | `--autonomous` / `--auto` | Autonomous mode — gates auto-approved |
 | `--tier {light\|full}` | Override complexity tier |
 | `--smoke-test` | Request smoke testing in Tier 2 |

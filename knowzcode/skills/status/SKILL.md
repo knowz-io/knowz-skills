@@ -95,7 +95,22 @@ Check KnowzCode project status and report findings to the user.
 
    If pending captures exist: suggest `/knowz flush` to write them to vaults.
 
-5. **Brief MCP/Vault Summary**
+5. **Check Codex Relay Availability**
+
+   Run `RELAY_DETECT` from `knowzcode/skills/work/references/relay-execution.md` (`command -v codex` → `codex --version` → `codex login status`) and read the `relay*` keys from `knowzcode/knowzcode_orchestration.md` if present.
+
+   Report:
+   ```
+   ## Codex Relay
+
+   Detection: {ready (vX.Y.Z, authed) | installed-unauthed — run: codex login | not-installed | broken-install — reinstall @openai/codex}
+   Configured: relay: {none | codex} ({relay_model}, {relay_effort}, {relay_max_fix_rounds} fix rounds)
+   ```
+
+   If detection is `ready` but `relay: none`: add `Enable with /knowzcode:relay or set relay: codex in knowzcode_orchestration.md.`
+   If `relay: codex` but detection is not `ready`: flag it as a Warning with the remediation line.
+
+6. **Brief MCP/Vault Summary**
 
    Check if `mcp__knowz__list_vaults` is available:
    - If available: call `list_vaults(includeStats=true)` and report vault count + names
@@ -117,7 +132,7 @@ Check KnowzCode project status and report findings to the user.
    Knowz MCP not connected. Run `/knowz setup` or configure manually.
    ```
 
-6. **Report Overall Status**
+7. **Report Overall Status**
 
    Combine all sections into a single status report.
 
