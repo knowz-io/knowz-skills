@@ -79,6 +79,14 @@ If a handoff was selected in Step 0, also parse:
 
 Use the handoff as the freshest local state. Do not run `cmd:` references automatically; treat them as suggested commands only.
 
+### Step 2.5: Relay Detection
+
+If the WorkGroup file contains a `## Relay` section, this WorkGroup uses the Claude↔Codex relay — read `knowzcode/workgroups/{wgid}-relay/state.md` (the authoritative relay state) and `knowzcode/skills/work/references/relay-execution.md`, then resume per the relay state machine instead of the standard Phase 2A path (Phases 1A/1B/2B/3 resume normally).
+
+Dead-process reconciliation: after a context clear a `CODEX_IMPLEMENTING` process is necessarily gone. Reconcile from evidence — if the round's `codex-log-r{N}.jsonl` ends with a completed turn AND `codex-last-r{N}.md` exists, treat the state as `CODEX_DONE` (commit the checkpoint if not yet committed); otherwise treat it as `CODEX_FAILED` and follow its protocol (one resume via the persisted Thread ID, then Claude takeover). All other states resume exactly where `state.md` says.
+
+Include a relay line in the Step 4 status block: `**Relay**: codex — {state}, round {n}, thread {thread_id|pending}`.
+
 ### Step 3: Resume at Current Phase
 
 Read `knowzcode/knowzcode_loop.md` and resume the workflow at the detected phase.

@@ -126,6 +126,11 @@ If the user declines Gate C entirely, leave the file on disk but replace each `[
 
 Write the answer as the `profile:` value in the generated `knowzcode_orchestration.md` (Step 6c). (On non-Claude-Code platforms the setting is informational-only — see the Codex note in the template — but persist it anyway for cross-platform parity.)
 
+**6a2. Codex relay detection (automatic, read-only — never blocks init).** Run `RELAY_DETECT` from `knowzcode/skills/work/references/relay-execution.md` (`command -v codex` → `codex --version` → `codex login status`) and report the one-line `[RELAY-DETECT] ...` result in the init summary.
+
+- Result `ready` AND this is an interactive init: ask one optional question — "Codex CLI detected ({version}, authenticated). Enable the Claude↔Codex relay so Codex implements while Claude plans and reviews? (default: No)" — on Yes, set `relay: codex` in the generated `knowzcode_orchestration.md` (Step 6c); on No, leave `relay: none`.
+- Result `installed-unauthed`, `not-installed`, or `broken-install` (or autonomous init): don't ask; leave `relay: none` (the template's comment already points to `/knowzcode:relay` for enabling later).
+
 **6b. Other orchestration defaults (optional).** Ask: "Would you like to configure agent orchestration defaults? (optional — can be changed later in knowzcode/knowzcode_orchestration.md)"
 
 If yes: prompt for:
@@ -137,7 +142,7 @@ If yes: prompt for:
 
 If no: generate with all defaults.
 
-**6c.** Generate `knowzcode/knowzcode_orchestration.md` from the template (always — it's part of the standard file set), with `profile:` set to the Step 6a answer.
+**6c.** Generate `knowzcode/knowzcode_orchestration.md` from the template (always — it's part of the standard file set), with `profile:` set to the Step 6a answer and `relay:` set per Step 6a2.
 
 ### 7. Create .gitignore
 

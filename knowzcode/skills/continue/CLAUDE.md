@@ -11,8 +11,9 @@ Agents are invoked as `general-purpose` subagents that read their agent `.md` fi
 1. **Check local handoffs** — scan `knowzcode/handoffs/*.md`; use newest or user-specified handoff
 2. **Find active WorkGroup** — search `knowzcode_tracker.md` for `[WIP]` entries
 3. **Load WorkGroup context** — read the WorkGroup file, restore Autonomous Mode and orchestration config
-4. **Resume at current phase** — detect parallel-mode (Stage-based) vs sequential-mode (Phase-based) WorkGroup; spawn agents for remaining work
-5. **Present status** — announce goal, phase, NodeIDs, and outstanding todos before proceeding
+4. **Relay detection** — WorkGroup has a `## Relay` section → read `{wgid}-relay/state.md`, reconcile the dead Codex process from JSONL evidence, resume per the relay state machine (`skills/work/references/relay-execution.md`)
+5. **Resume at current phase** — detect parallel-mode (Stage-based) vs sequential-mode (Phase-based) WorkGroup; spawn agents for remaining work
+6. **Present status** — announce goal, phase, NodeIDs, outstanding todos (and relay state when active) before proceeding
 
 ## Execution Mode Detection
 
