@@ -69,7 +69,7 @@ KnowzCode automatically classifies tasks by complexity:
 
 ## Execution Profiles (advisor / teams / classic / frontier)
 
-KnowzCode on Claude Code supports four execution profiles that trade cost, quality, and parallelism. **`frontier` is the default** (Fable plans/specs/reviews, Opus builds). The choice is yours and asked exactly once: `/knowzcode:init` asks during setup, and if no `profile:` is configured, the first `/knowzcode:work` asks and saves your answer to `knowzcode/knowzcode_orchestration.md` — no run ever re-asks. Set `profile: teams` (or `--profile=teams`) any time to opt out of frontier's Fable cost.
+KnowzCode on Claude Code supports four execution profiles that trade cost, quality, and parallelism. **`frontier` is the default** (Fable plans/specs/reviews, Opus builds). The choice is yours and asked exactly once: `/knowzcode:setup` asks during setup, and if no `profile:` is configured, the first `/knowzcode:work` asks and saves your answer to `knowzcode/knowzcode_orchestration.md` — no run ever re-asks. Set `profile: teams` (or `--profile=teams`) any time to opt out of frontier's Fable cost.
 
 | Profile | When to Use | Mode | Requires |
 |---------|-------------|------|----------|

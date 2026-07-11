@@ -38,7 +38,7 @@ Net effect on tokens: **20-40% savings on Stage 0 discovery for repos >200 files
 | `CodeGraphService` | tree-sitter WASM parser + graph store (incremental, content-hashed) | NEW sidecar |
 | `CodeGraphMcpServer` | MCP server exposing `find_symbol`, `find_callers`, etc. | NEW |
 | `KnowzcodeCodeGraphAdapter` | Agents prefer graph MCP before Grep/Read | MODIFY ~10 agent files |
-| `CodeGraphInitBootstrap` | `/knowzcode:init` optional indexing step | MODIFY |
+| `CodeGraphInitBootstrap` | `/knowzcode:setup` optional indexing step | MODIFY |
 | `CodeGraphStatusDiagnostics` | `/knowzcode:status` reports index health | MODIFY |
 | `PlatformAdapterCodeGraphSection` | Per-platform setup notes | MODIFY |
 | `ExploreSkillCodeGraphIntegration` | `/knowzcode:explore`/`audit` query graph | MODIFY |

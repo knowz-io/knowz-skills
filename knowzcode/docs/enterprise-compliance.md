@@ -21,7 +21,7 @@ you mark *blocking*.
 
 ## Quick start (3 steps)
 
-1. **Create the folder** (if it isn't there yet). Run `/knowzcode:init` and answer *yes* to
+1. **Create the folder** (if it isn't there yet). Run `/knowzcode:setup` and answer *yes* to
    "set up enterprise compliance", or copy the skeleton from
    `knowzcode/knowzcode/enterprise/` into your project's `knowzcode/enterprise/`.
 

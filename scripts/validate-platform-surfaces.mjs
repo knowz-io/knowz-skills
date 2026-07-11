@@ -211,6 +211,28 @@ expect(
 validateSkillDirectory('plugins', 'knowz', 'skills');
 validateSkillDirectory('plugins', 'knowzcode', 'skills');
 
+// A skill's slash-command id comes from its DIRECTORY name; the frontmatter `name:` is only the
+// picker label. A mismatch splits the two (autocomplete shows one command, Enter runs another) —
+// this happened when skills/setup/ was half-renamed to init/ while frontmatter kept `name: setup`.
+for (const skillsRoot of [
+  join(ROOT, 'knowzcode', 'skills'),
+  join(ROOT, 'plugins', 'knowzcode', 'skills'),
+]) {
+  if (!existsSync(skillsRoot)) continue;
+  for (const entry of readdirSync(skillsRoot, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    const skillPath = join(skillsRoot, entry.name, 'SKILL.md');
+    if (!existsSync(skillPath)) continue;
+    // Source-tree frontmatter may contain comment lines parseFrontmatter rejects — read name: directly.
+    const nameMatch = readFileSync(skillPath, 'utf8').match(/^---\r?\n[\s\S]*?^name:\s*(\S+)\s*$/m);
+    if (!nameMatch) continue;
+    expect(
+      nameMatch[1] === entry.name,
+      `Skill frontmatter name "${nameMatch[1]}" must equal its directory name "${entry.name}" (directory = command id, frontmatter = picker label): ${skillPath}`
+    );
+  }
+}
+
 const retiredKnowzSkillDirs = [
   join(ROOT, 'plugins', 'knowz', 'skills', 'knowz-regroup'),
   join(ROOT, 'plugins', 'knowz', 'skills', 'knowz-resume'),
@@ -357,7 +379,7 @@ expectFileContainsAll(
 );
 for (const file of [
   join(ROOT, 'plugins', 'knowzcode', 'skills', 'continue', 'SKILL.md'),
-  join(ROOT, 'plugins', 'knowzcode', 'skills', 'init', 'SKILL.md'),
+  join(ROOT, 'plugins', 'knowzcode', 'skills', 'setup', 'SKILL.md'),
   join(ROOT, 'plugins', 'knowzcode', 'skills', 'start-work', 'SKILL.md'),
   join(ROOT, 'plugins', 'knowzcode', 'skills', 'status', 'SKILL.md'),
 ]) {
