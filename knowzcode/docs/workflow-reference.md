@@ -356,7 +356,7 @@ The KnowzCode workflow is orchestrated by **commands** (not a spawnable agent) t
 | `test-advisor` | 1–3 (opt-in) | TDD enforcement, test quality, ARC coverage (persists through Gate #3) |
 | `project-advisor` | 1 (opt-in) | Backlog curation, idea capture |
 | `smoke-tester` | 2B (opt-in) | Runtime smoke testing |
-| `relay-runner` | 2A (only under `--relay=codex`) | Launches/monitors the headless Codex CLI implementation leg |
+| `relay-runner` | 2A (Claude-host relay) | Launches/monitors the resolved headless target leg; Codex-hosted Claude legs use the Codex coordinator's in-turn exec session |
 | `microfix-specialist` | utility | Quick targeted fixes |
 | `knowledge-migrator` | utility | Knowledge import/migration |
 | `update-coordinator` | utility | Coordinated updates |

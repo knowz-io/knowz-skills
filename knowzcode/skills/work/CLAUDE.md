@@ -22,11 +22,11 @@ Agents are invoked as `general-purpose` subagents that read their agent `.md` fi
 | `project-advisor` | Phase 1 (opt-in) | Backlog curation |
 | `frontend-designer` | Persistent 0–3 (conditional, auto on UI surface) | Design questioning, ASCII mockups, design VERIFY criteria, E2E UI audit |
 | `enterprise-enforcer` | Persistent 0–3 (auto when compliance_enabled) | Compliance posture, guideline-to-ARC mapping, gate-blocking on blocking-tier violations |
-| `relay-runner` | Phase 2A (only when `RELAY_ACTIVE`) | Runs the headless Codex leg (synchronous MCP call, or exec with in-turn polling — never ends its turn to await a background wake-up), captures thread_id, enforces timeouts |
+| `relay-runner` | Phase 2A (only when `RELAY_ACTIVE`) | Runs one headless external-target leg (Codex MCP/exec or Claude exec/stream-json) with in-turn polling, captures the provider session ID, enforces target-specific timeouts |
 
 ## Workflow Phases (Tier 3)
 
-1. **Pre-flight** — prerequisite check, WorkGroup ID generation, profile parse (Step 0–1.5)
+1. **Pre-flight** — prerequisite check, WorkGroup ID generation, profile + cross-agent relay parse (Step 0–1.6)
 2. **Execution mode selection** — `TeamCreate` → Parallel/Sequential/Lightweight Teams; fallback → Subagent Delegation (Step 2)
 3. **Profile resolution** — advisor env detection, `MODEL_FOR()` per agent, Advisor Guidance block injection (Step 2.3)
 4. **Orchestration config** — parse `knowzcode_orchestration.md` for `max_builders`, `default_specialists`, `mcp_agents_enabled`, etc. (Step 2.4)
@@ -57,7 +57,10 @@ Agents are invoked as `general-purpose` subagents that read their agent `.md` fi
 - Gap loop cap: >3 failures on the same phase → pause and ask user (safety exception, applies even in Autonomous Mode)
 - Announce execution mode, profile, autonomous mode, and active specialists before any phase work begins
 - Tier 1 (micro, <50 LOC) → redirect immediately to `/knowzcode:fix`; do not proceed
-- `--relay=codex` (or `relay: codex` config) replaces Phase 2A + builder gap loop with a headless Codex CLI leg: Tier 3 only, incompatible with `--profile advisor`, never runs on the default branch (uses `kc-relay/{wgid}`), the lead commits every checkpoint (Codex never commits), fix rounds capped by `relay_max_fix_rounds` (default 2) then Claude takes over remaining fixes; falls back to standard Phase 2A when the Codex CLI is missing, pauses (even autonomous) on auth failure
+- Cross-agent relay supports selectors `none|auto|other|claude|codex`. Resolution precedence is explicit flag > unambiguous natural-language implementation delegation > project config; `/relay` supplies default `other`, while plain `/work` otherwise remains native. `RELAY_HOST` is fixed by the platform and `auto|other` select the opposite provider. An explicit same-host target is an error and is never reversed; stale same-host config warns and falls back to native Phase 2A.
+- Relay replaces Phase 2A + the builder gap loop only: Tier 3, incompatible with `advisor`, never on the default branch (`kc-relay/{wgid}`), target never commits, host commits checkpoints/reviews/finalizes, bounded target fix rounds then `HOST_TAKEOVER`. Missing/broken automatic or configured targets may visibly fall back; named unavailable targets stop; every authentication failure pauses even autonomous mode.
+- New relay state is schema 2 with `Host`, `Target`, role-based states (`TARGET_IMPLEMENTING` through `HOST_TAKEOVER`), `Session ID`, and target-qualified artifacts. Legacy `Mode: codex` / `CODEX_*` / `CLAUDE_TAKEOVER` remains resumable as Claude-host/Codex-target schema 1.
+- Claude targets are exec-only: authenticated `claude -p --verbose --output-format stream-json`, same-cwd `--resume`, `dontAsk`, bounded implementation tools, strict Bash sandbox (`failIfUnavailable: true`, `allowUnsandboxedCommands: false`), strict empty MCP config, and no Chrome. Claude MCP is not an agent relay. Codex retains MCP/exec behavior.
 
 ## Output Paths
 
@@ -75,5 +78,5 @@ Agents are invoked as `general-purpose` subagents that read their agent `.md` fi
 - `knowzcode/skills/work/references/quality-gates.md` — gate templates, gap loop mechanics
 - `knowzcode/skills/work/references/profile-models.md` — profile → agent-model mappings, `MODEL_FOR()` rules
 - `knowzcode/skills/work/references/light-workflow.md` — Tier 2 Light phase details
-- `knowzcode/skills/work/references/relay-execution.md` — Claude↔Codex relay: RELAY_DETECT, state machine, codex exec templates, failure matrix
+- `knowzcode/skills/work/references/relay-execution.md` — provider-neutral host/target resolution, target adapters, schema-2 state/legacy mapping, command templates, and failure matrix
 - `knowzcode/claude_code_execution.md` — Agent Teams conventions (read by all teammates on spawn)
