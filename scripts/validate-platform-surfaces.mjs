@@ -293,6 +293,35 @@ const codexSupportDir = join(ROOT, 'plugins', 'knowzcode', 'knowzcode');
 expect(existsSync(codexSupportDir) && statSync(codexSupportDir).isDirectory(), `Missing KnowzCode support directory: ${codexSupportDir}`);
 expect(!existsSync(join(ROOT, 'plugins', 'knowzcode', 'agents')), 'Codex package should not ship Claude-only agents/ as active support content');
 
+// Claude↔Codex relay is a Claude Code-only capability (Claude drives the Codex CLI as a
+// subprocess); it must not ship as a Codex or Gemini skill.
+const relayExecutionRef = join(ROOT, 'knowzcode', 'skills', 'work', 'references', 'relay-execution.md');
+expectFileContainsAll(
+  relayExecutionRef,
+  [
+    ['session resume', /codex exec resume/],
+    ['thread_id capture', /thread\.started/],
+    ['the sandbox default', /workspace-write/],
+    ['the standard-2A fallback', /\[RELAY-FALLBACK\]/],
+    ['the shared detection procedure', /RELAY_DETECT/],
+  ],
+  'Relay execution reference'
+);
+expect(existsSync(join(ROOT, 'knowzcode', 'skills', 'relay', 'SKILL.md')), 'Missing Claude relay entry skill: knowzcode/skills/relay/SKILL.md');
+expect(existsSync(join(ROOT, 'knowzcode', 'agents', 'relay-runner.md')), 'Missing relay-runner agent: knowzcode/agents/relay-runner.md');
+expectFileContains(
+  join(ROOT, 'knowzcode', 'skills', 'work', 'SKILL.md'),
+  /--relay=codex/,
+  'Work skill must expose the --relay=codex flag'
+);
+expect(!existsSync(join(ROOT, 'plugins', 'knowzcode', 'skills', 'relay')), 'Relay skill is Claude Code-only; must not ship in the Codex plugin');
+expect(!existsSync(join(ROOT, 'knowzcode', '.gemini', 'skills', 'knowzcode-relay')), 'Relay skill is Claude Code-only; must not ship a Gemini mirror');
+expectFileContains(
+  join(ROOT, 'knowzcode', 'knowzcode', 'knowzcode_orchestration.md'),
+  /^relay:\s*none/m,
+  'Orchestration template must ship the relay opt-in key defaulted off'
+);
+
 for (const rel of [
   'knowzcode_loop.md',
   'knowzcode_orchestration.md',

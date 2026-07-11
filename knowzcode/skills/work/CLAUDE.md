@@ -22,6 +22,7 @@ Agents are invoked as `general-purpose` subagents that read their agent `.md` fi
 | `project-advisor` | Phase 1 (opt-in) | Backlog curation |
 | `frontend-designer` | Persistent 0–3 (conditional, auto on UI surface) | Design questioning, ASCII mockups, design VERIFY criteria, E2E UI audit |
 | `enterprise-enforcer` | Persistent 0–3 (auto when compliance_enabled) | Compliance posture, guideline-to-ARC mapping, gate-blocking on blocking-tier violations |
+| `relay-runner` | Phase 2A (only when `RELAY_ACTIVE`) | Runs the headless Codex leg (synchronous MCP call, or exec with in-turn polling — never ends its turn to await a background wake-up), captures thread_id, enforces timeouts |
 
 ## Workflow Phases (Tier 3)
 
@@ -56,6 +57,7 @@ Agents are invoked as `general-purpose` subagents that read their agent `.md` fi
 - Gap loop cap: >3 failures on the same phase → pause and ask user (safety exception, applies even in Autonomous Mode)
 - Announce execution mode, profile, autonomous mode, and active specialists before any phase work begins
 - Tier 1 (micro, <50 LOC) → redirect immediately to `/knowzcode:fix`; do not proceed
+- `--relay=codex` (or `relay: codex` config) replaces Phase 2A + builder gap loop with a headless Codex CLI leg: Tier 3 only, incompatible with `--profile advisor`, never runs on the default branch (uses `kc-relay/{wgid}`), the lead commits every checkpoint (Codex never commits), fix rounds capped by `relay_max_fix_rounds` (default 2) then Claude takes over remaining fixes; falls back to standard Phase 2A when the Codex CLI is missing, pauses (even autonomous) on auth failure
 
 ## Output Paths
 
@@ -73,4 +75,5 @@ Agents are invoked as `general-purpose` subagents that read their agent `.md` fi
 - `knowzcode/skills/work/references/quality-gates.md` — gate templates, gap loop mechanics
 - `knowzcode/skills/work/references/profile-models.md` — profile → agent-model mappings, `MODEL_FOR()` rules
 - `knowzcode/skills/work/references/light-workflow.md` — Tier 2 Light phase details
+- `knowzcode/skills/work/references/relay-execution.md` — Claude↔Codex relay: RELAY_DETECT, state machine, codex exec templates, failure matrix
 - `knowzcode/claude_code_execution.md` — Agent Teams conventions (read by all teammates on spawn)

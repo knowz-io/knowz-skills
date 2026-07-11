@@ -135,6 +135,28 @@ Similarly, `profile: frontier` requires Fable, which runs on the direct Anthropi
 
 Delete the `profile:` line from `knowzcode/knowzcode_orchestration.md` (or omit `--profile` on the CLI) to use the default (`frontier`). To restore the pre-0.19 all-Opus behavior, set `profile: teams`. No migration needed.
 
+## Claude↔Codex Relay (experimental)
+
+Let **Claude plan and review while the OpenAI Codex CLI implements**. With `--relay=codex`, `/knowzcode:work` runs a programmatic handoff loop: Claude drafts the Change Set and specs (Fable under `frontier`), Codex — default `gpt-5.6-sol` at `xhigh` ("extra high") reasoning effort — completes the plan and fully implements it headlessly via `codex exec`, Claude code-reviews the diff at Gate #3, Codex fixes the findings in a **resumed session** (`codex exec resume`), and after the fix-round cap (default 2) Claude takes over any remaining fixes and finalizes as usual.
+
+**Requirements**: the [Codex CLI](https://developers.openai.com/codex) installed (`npm i -g @openai/codex` or `brew install codex`) and authenticated (`codex login`). Nothing else — the relay auto-detects the CLI and falls back to the standard builder flow when it's missing.
+
+**Enable it** any of three ways:
+
+```bash
+/knowzcode:relay Add rate limiting to the API      # setup-aware: detects, offers to persist, runs
+/knowzcode:work --relay=codex <goal>               # one invocation only
+# or set `relay: codex` in knowzcode/knowzcode_orchestration.md (asked once at /knowzcode:init when Codex is detected)
+```
+
+Tuning (flags or `knowzcode_orchestration.md` keys): `--relay-model=` (`relay_model:`, default `gpt-5.6-sol`), `--relay-effort=` (`relay_effort:`, default `xhigh`), `--relay-max-fix-rounds=N` (`relay_max_fix_rounds:`, default 2), plus config-only `relay_transport:` (default `auto`), `relay_fix_effort:` (default `high`), `relay_sandbox:` (default `workspace-write`) and `relay_timeout_minutes:`.
+
+**Two execution transports** (auto-selected): a synchronous **Codex MCP server** call (`codex mcp-server` — register once with `claude mcp add --transport stdio --scope user codex -- codex mcp-server`; the most stall-proof option) or a **`codex exec` subprocess** with exit-marker + in-turn polling — the pattern the official OpenAI Claude Code plugin uses. Either way, the orchestrator never idles waiting for a background wake-up (a known source of multi-hour stalls), headless legs run with `--ignore-user-config` and `</dev/null` (avoids stdin hangs, personal-MCP noise, and macOS automation prompts), and stalled legs are SIGINT-killed so `codex exec resume` can pick them back up.
+
+**Safety model**: the Codex leg runs sandboxed (`workspace-write`, approvals disabled) on a dedicated `kc-relay/{wgid}` branch — never the default branch. Codex never commits; the lead commits a checkpoint after every leg, so each round's diff is exactly attributable and each review scope is a checkpoint diff. Session state (including the Codex `thread_id` for resume) persists in `knowzcode/workgroups/{wgid}-relay/state.md`, so `/knowzcode:continue` can resume a relay even after a context clear. `/knowzcode:status` shows live relay availability.
+
+Constraints: Tier 3 workflows only; incompatible with `--profile advisor`; Claude Code-only (Claude drives the Codex CLI — there is no Codex- or Gemini-side relay). Full protocol: `knowzcode/skills/work/references/relay-execution.md`.
+
 ## Enterprise Compliance & Custom Guidelines
 
 **Beta.** Wire your organization's own guidelines — security rules, API conventions, code-quality patterns, accessibility/design standards — into the workflow so they're enforced at the same quality gates you already approve.
@@ -202,6 +224,7 @@ KnowzCode can also offer regroup automatically when you say things like "wrap up
 | `/knowzcode:work <goal>` | Start a feature workflow |
 | `/knowzcode:explore <topic>` | Research before implementing |
 | `/knowzcode:fix <target>` | Quick targeted fix |
+| `/knowzcode:relay <goal>` | Claude↔Codex relay: Claude plans/reviews, the Codex CLI implements |
 | `/knowzcode:regroup [next step]` | Save a local handoff for clearing context |
 | `/knowzcode:regroup-trigger` | (Trigger) Detects pause/wrap-up intent and offers regroup |
 | `/knowzcode:start-work` | (Trigger) Detects "implement the plan" intent and invokes `/knowzcode:work` |
