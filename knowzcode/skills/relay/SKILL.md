@@ -1,79 +1,84 @@
 ---
 name: relay
-description: "Run a Claude-plans / Codex-implements / Claude-reviews relay workflow. Use when the user wants Codex (OpenAI Codex CLI) to execute the implementation while Claude handles planning, code review, and finalization — or wants to set up / enable the Codex relay."
+description: "Delegate implementation to the other supported coding agent while the current host plans, reviews, and finalizes. On Claude Code this resolves to Codex by default; supports explicit Claude/Codex targets, natural-language delegation, setup, and project opt-in."
 user-invocable: true
 allowed-tools: Read, Glob, Grep, Bash, Edit, Write
 ---
 
-# Claude↔Codex Relay
+# Cross-Agent Relay
 
-**Purpose**: Setup-aware entry point for the Claude↔Codex relay. Verifies the Codex CLI is usable, offers to persist the project opt-in, then hands off to `/knowzcode:work --relay=codex`. The full relay protocol lives in `knowzcode/skills/work/references/relay-execution.md` — this skill only handles detection, enablement, and redirect.
+**Purpose:** Setup-aware entry point for the provider-neutral implementation relay. The current host owns planning, specifications, gates, review, checkpoints, and finalization; the resolved external target owns Phase 2A and bounded review-fix rounds. This skill resolves and verifies the target, optionally persists the project choice, then redirects to `/knowzcode:work`. The full protocol lives in `knowzcode/skills/work/references/relay-execution.md`.
 
-**What the relay does**: Claude plans and writes specs (Phase 1A/1B — Fable under the `frontier` profile), the OpenAI Codex CLI (default `gpt-5.6-sol` at `xhigh` reasoning effort) completes the plan and fully implements it headlessly on an isolated `kc-relay/{wgid}` branch, Claude code-reviews the diff (Phase 2B / Gate #3), Codex fixes findings in a resumed session (up to `relay_max_fix_rounds`, default 2), then Claude performs the final review and fixes and finalizes per Phase 3.
+In this Claude Code source skill, set `RELAY_HOST = claude`. Host identity is fixed by the platform package and prompt text can never change it. The Codex package sets `RELAY_HOST = codex` and uses the same resolution contract.
 
-This is a **Claude Code-only** capability — Claude drives the Codex CLI as a headless subprocess.
+## Step 1: Resolve the target
 
-## Step 1: Detect
+Supported selectors are `none|auto|other|claude|codex`. Resolve exactly once using this precedence:
 
-Run `RELAY_DETECT` (see `knowzcode/skills/work/references/relay-execution.md`):
+1. **Explicit flag:** parse `--relay=<value>` from `$ARGUMENTS`. An unsupported or repeated conflicting value is an error.
+2. **Unambiguous natural-language implementation/delegation intent:** only when no flag exists. Examples: “have Claude implement this,” “send the coding to Codex,” “Claude plans and Codex implements,” or “use the other agent for implementation.” A bare provider mention such as “build a Codex integration” is goal text, not relay intent. If both providers are mentioned but the implementer is ambiguous, stop for clarification.
+3. **Project config:** only when neither source above exists, read `relay:` from `knowzcode/knowzcode_orchestration.md`. Use it when it is non-`none`.
+4. **Relay-entry default:** when no earlier source selected a target, use `other`.
+
+Track both `RELAY_SELECTOR` and `RELAY_INTENT_SOURCE` (`flag-named`, `flag-automatic`, `natural-named`, `natural-automatic`, `config`, or `entry-default`). On Claude, `auto` and `other` resolve to `RELAY_TARGET = codex`; literal values retain literal meaning.
+
+`--relay=none` explicitly disables relay. If a goal remains, redirect to ordinary `/knowzcode:work --relay=none ...`; otherwise report that relay is disabled and stop.
+
+### Same-host protection
+
+If `RELAY_TARGET == RELAY_HOST`:
+
+- A named flag or unambiguous named natural-language request is an error: `**Error:** relay target claude equals the current host. Explicit targets are never reversed. Use --relay=other, --relay=codex, or --relay=none.`
+- A stale same-host config is invalid for `/relay`; warn and ask the user to set `relay: other` or invoke an external target. Ordinary `/work` owns the config-to-native fallback behavior.
+
+Never silently reverse a literal provider request.
+
+## Step 2: Detect the resolved target
+
+Run `RELAY_DETECT(RELAY_TARGET)` from the execution reference and announce only the redacted one-line result.
+
+For the Claude-host default target, Codex detection is:
 
 1. `command -v codex` — missing → **not-installed**
-2. `codex --version` — exit 0 → capture version; failure/spawn error → **broken-install** (wrapper present, platform binary missing)
-3. `codex login status` — exit 0 → **ready**; nonzero → **installed-unauthed**
+2. `codex --version` — nonzero/spawn error → **broken-install**
+3. `codex login status` — exit 0 → **ready**; otherwise → **installed-unauthed**
 
-Announce the one-line result: `[RELAY-DETECT] {result}`.
+The Codex-host mirror uses the Claude adapter: `command -v claude`, `claude --version`, then `claude auth status --json`; it parses only `.loggedIn` and never prints the full JSON because it contains personal account fields.
 
-## Step 2: Route by result
+### Route by result
 
-### not-installed
+- **ready:** continue.
+- **installed-unauthed:** always pause, including autonomous mode. Show provider-specific login remediation (`codex login` or `claude auth login`) and stop until authentication is confirmed.
+- **not-installed / broken-install with a named flag or named natural-language target:** stop with provider-specific install/reinstall instructions. An explicitly named unavailable target never silently falls back.
+- **not-installed / broken-install with `auto`, `other`, config, or entry default:** announce `[RELAY-FALLBACK] {target} CLI {not found|broken} — running native Phase 2A`, then redirect the goal to `/knowzcode:work --relay=none`.
 
-```
-The Codex CLI is not installed. Install it, then re-run /knowzcode:relay:
+## Step 3: Optional portable opt-in
 
-  npm i -g @openai/codex     (or: brew install codex)
-  codex login
-```
+When detection is ready, check `knowzcode/knowzcode_orchestration.md`.
 
-STOP.
+- If the effective config already expresses the selected choice, do not ask again.
+- Otherwise ask once whether to persist relay for the project. Persist `relay: other` for `auto`, `other`, or the entry default so the same project remains portable between Claude and Codex hosts. Persist a literal `relay: claude` or `relay: codex` only when the user explicitly named that provider and asks to retain literal-target behavior.
+- If an older config lacks the Cross-Agent Relay block, append it from the orchestration template rather than inventing a partial block.
 
-### broken-install
+Declining persistence still runs relay for this invocation.
 
-```
-The codex command exists but cannot run (missing platform binary). Reinstall, then re-run /knowzcode:relay:
+## Step 4: Redirect
 
-  npm i -g @openai/codex --force     (or: brew reinstall codex)
-```
+Invoke `/knowzcode:work` with the user's goal and other flags untouched. If `$ARGUMENTS` did not already contain a `--relay=` flag, inject exactly one `--relay={RELAY_SELECTOR}` so `/work` receives the resolved intent without depending on a later config read. `/work` owns conflict validation, tier selection, branching, state, and execution.
 
-STOP.
+The setup probe above is not execution authorization. `/work` runs a fresh live authentication probe at the Tier 3 relay preflight immediately before launching the target leg because authentication can expire.
 
-### installed-unauthed
-
-```
-The Codex CLI is installed ({version}) but not authenticated. Run:
-
-  codex login            (ChatGPT sign-in — or set CODEX_API_KEY)
-
-then re-run /knowzcode:relay.
-```
-
-STOP.
-
-### ready
-
-1. Check whether the project has opted in: grep `knowzcode/knowzcode_orchestration.md` for `^relay:\s*codex`.
-2. **Not yet enabled** → ask once: "Persist the Codex relay for this project? (writes `relay: codex` to knowzcode/knowzcode_orchestration.md so plain `/knowzcode:work` uses it too — 'No' still runs the relay for this invocation only via the flag.)" On Yes, update the `relay:` line (the `## Relay Configuration` block exists in the template; append it from the template if an older config file lacks it).
-3. **Redirect**: invoke `/knowzcode:work --relay=codex $ARGUMENTS` — pass the user's goal and any other flags through untouched. `/knowzcode:work` owns conflict validation, branching, and execution; the full detection is NOT re-run at its pre-flight (your result stands) — only once more at relay preflight, immediately before the Codex leg launches.
-
-If there is no goal in `$ARGUMENTS` and no obvious prior context (recent plan, `knowzcode/planning/*.md`, active `[WIP]` WorkGroup), ask: "What should the relay build?"
+If there is no goal in `$ARGUMENTS` and no obvious prior context (recent plan, `knowzcode/planning/*.md`, or active `[WIP]` WorkGroup), ask: “What should the external implementation agent build?”
 
 ## When NOT to Trigger
 
-- KnowzCode is not initialized (`knowzcode/` missing) → suggest `/knowzcode:init` first
-- The user wants a micro-fix (<50 LOC) → `/knowzcode:fix` (relay is Tier 3 only)
-- The user asked about relay *status* only → `/knowzcode:status` covers detection without starting work
+- KnowzCode is not initialized (`knowzcode/` missing) → suggest `/knowzcode:setup` first.
+- The user wants a micro-fix (<50 LOC) → `/knowzcode:fix` (relay is Tier 3 only).
+- The user asks only about relay health/configuration → `/knowzcode:status`.
+- A provider name appears only as the subject of the feature, with no implementation/delegation role.
 
 ## Related Skills
 
-- `/knowzcode:work` — the workflow this redirects to (`--relay=codex`)
-- `/knowzcode:continue` — resumes an in-flight relay after a context clear
-- `/knowzcode:status` — reports relay detection + configuration
+- `/knowzcode:work` — owns the provider-neutral relay workflow.
+- `/knowzcode:continue` — resumes schema-2 and legacy schema-1 relay state.
+- `/knowzcode:status` — reports host, configured selector, resolved target, and target health.

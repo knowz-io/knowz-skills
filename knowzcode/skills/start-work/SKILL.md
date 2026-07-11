@@ -1,6 +1,6 @@
 ---
 name: start-work
-description: "Detect plan implementation intent and redirect to /knowzcode:work with extracted context. Triggers when user expresses intent to implement a plan, findings, or spec"
+description: "Detect plan implementation or cross-agent relay intent and redirect to /knowzcode:work with extracted context, including requests for Claude, Codex, or the other agent to implement."
 user-invocable: false
 allowed-tools: Read, Glob, Grep
 ---
@@ -32,6 +32,9 @@ Activate when user message matches ANY of these patterns:
 - "do it"
 - "proceed"
 - "implement it"
+- "have Claude implement this" / "have Codex implement this"
+- "send the coding to Claude" / "send the coding to Codex"
+- "use the other agent for implementation"
 
 ## Context Requirements
 
@@ -114,6 +117,19 @@ Pass full context to /knowzcode:work and let it extract the goal:
 /knowzcode:work --context "{plan_or_investigation_content}"
 ```
 
+Before handing off, preserve relay intent in the payload's `flags` field:
+
+- Explicit `--relay=none|auto|other|claude|codex` is passed through unchanged.
+- Unambiguous natural language assigning implementation to Claude, Codex, or
+  "the other agent" is normalized to `--relay=claude`, `--relay=codex`, or
+  `--relay=other` respectively.
+- A provider name without an implementation/delegation role is not relay
+  intent. If both providers are mentioned but the implementer is ambiguous,
+  ask which agent should implement instead of guessing.
+
+`/knowzcode:work` remains authoritative for configuration fallback and the
+same-host guard; this router must not reverse an explicit target.
+
 The /knowzcode:work command will:
 - Parse the context to extract the implementation goal
 - Handle "option N" references from investigations
@@ -128,7 +144,7 @@ When delegating to `/knowzcode:work`, structure the handoff so the workflow can 
 | `goal` | string | yes | One-sentence imperative summary of what to build |
 | `source_path` | string | no | Path to the plan or investigation the goal came from (e.g. `~/.claude/plans/foo.md`, `knowzcode/planning/investigation-*.md`) |
 | `tier` | `"micro" \| "light" \| "full"` | no | Pre-classified scope hint; `/knowzcode:work` may override |
-| `flags` | string | no | Pass-through orchestration flags such as `--autonomous`, `--tier full`, `--specialists=security` |
+| `flags` | string | no | Pass-through orchestration flags such as `--autonomous`, `--tier full`, `--specialists=security`, or normalized `--relay=none|auto|other|claude|codex` |
 | `prior_findings_summary` | string | no | 2-3 sentences summarizing key constraints/decisions from the source so Phase 1A can build on them |
 
 Always include `goal`. Include `source_path` whenever a plan/investigation was the trigger so the workflow can re-read the source rather than rely on chat memory.
@@ -235,4 +251,3 @@ Log skill activation in `knowzcode/knowzcode_log.md`:
 **Auto-invoke**: Yes (when pattern matches and context requirements met)
 **Requires confirmation**: No (redirects to command which has its own approval gates)
 **Safe operation**: Yes (just extracts context and invokes structured command)
-
