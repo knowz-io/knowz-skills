@@ -225,7 +225,7 @@ When Codex is selected, generate skill files in addition to `AGENTS.md`:
    - .agents/skills/knowzcode-regroup/SKILL.md
    - .agents/skills/knowzcode-regroup-trigger/SKILL.md
    - .agents/skills/knowzcode-continue/SKILL.md
-   - .agents/skills/knowzcode-init/SKILL.md
+   - .agents/skills/knowzcode-setup/SKILL.md
    - .agents/skills/knowzcode-status/SKILL.md
    - .agents/skills/knowzcode-connect-mcp/SKILL.md
    - .agents/skills/knowzcode-register/SKILL.md
@@ -290,7 +290,7 @@ Gemini remains native-only for relay in this version. Do not generate `knowzcode
    - .gemini/commands/knowzcode/learn.toml
    - .gemini/commands/knowzcode/status.toml
    - .gemini/commands/knowzcode/continue.toml
-   - .gemini/commands/knowzcode/init.toml
+   - .gemini/commands/knowzcode/setup.toml
    - .gemini/commands/knowzcode/connect-mcp.toml
    - .gemini/commands/knowzcode/register.toml
    - .gemini/commands/knowzcode/telemetry.toml
@@ -303,7 +303,7 @@ Gemini remains native-only for relay in this version. Do not generate `knowzcode
    - .gemini/skills/knowzcode-audit/SKILL.md
    - .gemini/skills/knowzcode-learn/SKILL.md
    - .gemini/skills/knowzcode-continue/SKILL.md
-   - .gemini/skills/knowzcode-init/SKILL.md
+   - .gemini/skills/knowzcode-setup/SKILL.md
    - .gemini/skills/knowzcode-status/SKILL.md
    - .gemini/skills/knowzcode-connect-mcp/SKILL.md
    - .gemini/skills/knowzcode-register/SKILL.md

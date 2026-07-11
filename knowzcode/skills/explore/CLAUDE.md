@@ -20,7 +20,7 @@ All four agents run in parallel (Agent Teams or `Task()`).
 ## Workflow Phases
 
 1. **Auto-detect depth** — classify as Exploration Mode (questions, investigation) or Planning Mode (action-oriented, feature design)
-2. **Check initialization** — `knowzcode/` must exist; else suggest `/knowzcode:init`
+2. **Check initialization** — `knowzcode/` must exist; else suggest `/knowzcode:setup`
 3. **Set execution mode** — attempt `TeamCreate("kc-explore-{slug}")`; fall back to `Task()` on failure
 4. **MCP probe + baseline vault query** — lead queries vaults directly before spawning any agents
 5. **Launch parallel investigation** — spawn all four agents with mode-appropriate prompts
