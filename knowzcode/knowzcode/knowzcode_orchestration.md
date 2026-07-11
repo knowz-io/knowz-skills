@@ -99,6 +99,62 @@ See `knowzcode/skills/work/references/profile-models.md` for the full profile �
 
 ---
 
+## Relay Configuration
+
+```yaml
+# Claude↔Codex relay (default: none). When set to `codex`, /knowzcode:work
+# replaces Phase 2A (+ the builder gap loop) with a headless OpenAI Codex CLI
+# implementation leg: Claude plans (Phase 1A/1B), Codex implements, Claude
+# reviews (Phase 2B / Gate #3), Codex fixes in a resumed session, and after
+# the fix-round cap Claude takes over remaining fixes and finalizes (Phase 3).
+# Requires the Codex CLI installed and authenticated (codex login) — the run
+# falls back to the standard Phase 2A when it isn't. Enable via
+# /knowzcode:relay, or set to codex here. Per-invocation flag: --relay=codex.
+relay: none
+
+# How the Codex leg is executed (default: auto).
+# auto: use the codex MCP server (synchronous tool call — most stall-proof)
+#       when one is registered and callable; otherwise fall back to exec.
+# mcp:  force the MCP transport (register first:
+#       claude mcp add --transport stdio --scope user codex -- codex mcp-server).
+# exec: force the codex-exec subprocess transport (in-turn polling).
+relay_transport: auto
+
+# Codex model for the implementation leg (default: gpt-5.6-sol).
+# Per-invocation flag: --relay-model=
+relay_model: gpt-5.6-sol
+
+# Codex reasoning effort for the initial implementation leg (default: xhigh =
+# "extra high"). Values: low, medium, high, xhigh, max (max is bleeding-edge,
+# GPT-5.6-era). Per-invocation flag: --relay-effort=
+relay_effort: xhigh
+
+# Codex reasoning effort for fix rounds (default: high). Fix rounds are small
+# scoped patches — high converges faster; raise to xhigh for stubborn gaps.
+relay_fix_effort: high
+
+# Codex sandbox for the implementation leg (default: workspace-write).
+# workspace-write confines writes to the repository; danger-full-access lifts
+# confinement for test suites that need network/system access — opt in only
+# when required. No flag override (deliberate — config-level decision).
+relay_sandbox: workspace-write
+
+# Codex fix rounds before Claude takes over remaining fixes itself
+# (default: 2, range: 1-3). Per-invocation flag: --relay-max-fix-rounds=N
+relay_max_fix_rounds: 2
+
+# Minutes without new Codex output before a leg is treated as stalled — applies
+# to every leg (default: 45; never below 7 — the Codex CLI has an internal
+# ~300s watchdog that self-recovers shorter gaps). No flag override.
+relay_timeout_minutes: 45
+```
+
+See `knowzcode/skills/work/references/relay-execution.md` for the full relay protocol (detection, state machine, failure fallbacks).
+
+> **Codex note:** the relay is a **Claude Code** capability — Claude Code drives the Codex CLI as a headless subprocess. On Codex and Gemini the `relay*` keys are informational only — kept for cross-platform config parity — and do not change behavior. (Claude Code honors them in full.)
+
+---
+
 ## Frontend Designer Configuration
 
 ```yaml
@@ -153,6 +209,10 @@ The enterprise-enforcer agent (v0.16.0+) auto-activates when `knowzcode/enterpri
 | mcp_agents_enabled | `mcp_agents_enabled:` | `--no-mcp` |
 | profile | `profile:` | `--profile={advisor\|teams\|classic\|frontier}` |
 | execute_on_fable | `execute_on_fable:` | `--fable-execution` |
+| relay | `relay:` | `--relay=codex` |
+| relay_model | `relay_model:` | `--relay-model=` |
+| relay_effort | `relay_effort:` | `--relay-effort=` |
+| relay_max_fix_rounds | `relay_max_fix_rounds:` | `--relay-max-fix-rounds=N` |
 | frontend_designer | `frontend_designer:` | `--frontend-designer`, `--no-frontend-designer` |
 | frontend_designer_blocking | `frontend_designer_blocking:` | `--frontend-designer-blocking` |
 | enterprise-enforcer (auto from manifest) | `compliance_manifest.md` `compliance_enabled:` | `--enterprise-enforcer`, `--no-enterprise-enforcer` |
