@@ -115,7 +115,7 @@ graph TD
 ```
 
 ## knowzcode_orchestration.md
-```markdown
+````markdown
 # KnowzCode Orchestration Configuration
 
 **Purpose:** Project-level defaults for team sizing and agent orchestration. Read by `/knowzcode:work` and `/knowzcode:audit` at startup. Per-invocation flags override these settings.
@@ -147,6 +147,62 @@ mcp_agents_enabled: true
 
 ---
 
+## Cross-Agent Relay Configuration
+
+```yaml
+# The current host plans, reviews, and finalizes; the resolved external target
+# implements and performs bounded fix rounds. Values:
+#   none   — native Phase 2A (default)
+#   other  — portable opt-in: Claude host -> Codex, Codex host -> Claude
+#   auto   — same complement resolution as other on supported hosts
+#   claude — literal Claude CLI target
+#   codex  — literal Codex CLI target (backward compatible with v0.20)
+# Persist `other` when the project should relay from either supported host.
+# Per-invocation: --relay=none|auto|other|claude|codex. An unambiguous natural-
+# language request such as "have Claude implement" overrides this config too.
+relay: none
+
+# Target transport (default: auto).
+# Codex target: auto uses Codex MCP when callable, otherwise exec.
+# Claude target: auto uses exec/stream-json; Claude MCP is not an agent relay.
+# mcp: force Codex MCP (register first:
+#       claude mcp add --transport stdio --scope user codex -- codex mcp-server).
+# exec: force the target CLI subprocess transport with in-turn polling.
+relay_transport: auto
+
+# Codex target settings. Existing v0.20 configs using relay_model,
+# relay_effort, relay_fix_effort, and relay_sandbox remain valid fallback keys.
+# New configurations should write only the provider-qualified keys below.
+relay_codex_model: gpt-5.6-sol
+relay_codex_effort: xhigh
+relay_codex_fix_effort: high
+relay_codex_sandbox: workspace-write
+
+# Claude target settings. `dontAsk` keeps headless runs non-interactive. The
+# adapter must also use a bounded implementation-tool allowlist and strict Bash
+# sandboxing with `failIfUnavailable: true` and
+# `allowUnsandboxedCommands: false`. Never default to bypassPermissions.
+relay_claude_model: opus
+relay_claude_effort: high
+relay_claude_fix_effort: high
+relay_claude_permission_mode: dontAsk
+
+# Target fix rounds before the host takes over remaining fixes (default: 2,
+# range: 1-3). Per-invocation flag: --relay-max-fix-rounds=N.
+relay_max_fix_rounds: 2
+
+# Minutes without target output before a leg is treated as stalled (default:
+# 45). Clamp to at least 7 for Codex and 12 for Claude; Claude API requests may
+# legitimately run for 10 minutes before their own timeout. No flag override.
+relay_timeout_minutes: 45
+```
+
+See `knowzcode/relay_execution.md` for target resolution, detection, state, recovery, and fallback rules.
+
+> **Platform note:** relay is supported when the host is Claude Code or Codex. Gemini keeps these keys only for configuration parity and always runs native Phase 2A.
+
+---
+
 ## Override Precedence
 
 | Setting | Config Default | Flag Override |
@@ -155,6 +211,10 @@ mcp_agents_enabled: true
 | builder_node_limit | `builder_node_limit:` | `--builder-node-limit=N` |
 | default_specialists | `default_specialists:` | `--specialists`, `--no-specialists` |
 | mcp_agents_enabled | `mcp_agents_enabled:` | `--no-mcp` |
+| relay selector | `relay:` | `--relay=none\|auto\|other\|claude\|codex` |
+| relay target model | `relay_codex_model:` / `relay_claude_model:` | `--relay-model=` |
+| relay target effort | `relay_codex_effort:` / `relay_claude_effort:` | `--relay-effort=` |
+| relay_max_fix_rounds | `relay_max_fix_rounds:` | `--relay-max-fix-rounds=N` |
 
 Per-invocation flags always win. `--specialists` adds to defaults; `--no-specialists` clears all.
-```
+````

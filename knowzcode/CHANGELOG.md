@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Bidirectional cross-agent relay.** Claude Code and Codex can now keep orchestration/review ownership while delegating implementation and bounded fix rounds to the other agent. New selectors `--relay=auto|other|claude|codex|none`, natural-language target detection, portable `relay: other` configuration, provider-neutral schema-2 state, and legacy v0.20 relay-state migration make the same project work from either supported host.
+- **Codex-hosted Claude adapter.** The Codex package now ships `/knowzcode:relay` and a Claude CLI exec/JSONL transport with live auth detection, early session capture, explicit same-directory resume, strict non-interactive permissions/Bash sandboxing, target-qualified artifacts, and in-turn process polling. Claude MCP is deliberately not presented as an agent transport.
+
+### Changed
+- Relay precedence is explicit flag → unambiguous natural language → project config → `/relay` default `other`; explicit same-host targets halt rather than being silently reversed. Automatic/configured unavailable targets may fall back visibly to native Phase 2A, while explicit unavailable targets and authentication failures stop with remediation.
+- Codex marketplace skills and generated `npx --platforms codex` skills now include relay entry, work, init, status, continuation, and nested execution-reference support. Gemini remains native-only.
+- Provider-specific orchestration keys separate Claude model/effort/permissions from Codex model/effort/sandbox settings while preserving v0.20 Codex-key fallbacks.
+
+### Safety
+- New Claude relay legs default to `dontAsk`, a bounded built-in tool set, `sandbox.failIfUnavailable: true`, `sandbox.allowUnsandboxedCommands: false`, strict MCP configuration, and no Chrome integration. `bypassPermissions` is never the default.
+
 ## [0.20.0] - 2026-07-11
 
 ### Added

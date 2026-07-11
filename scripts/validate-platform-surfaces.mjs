@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -293,39 +295,98 @@ const codexSupportDir = join(ROOT, 'plugins', 'knowzcode', 'knowzcode');
 expect(existsSync(codexSupportDir) && statSync(codexSupportDir).isDirectory(), `Missing KnowzCode support directory: ${codexSupportDir}`);
 expect(!existsSync(join(ROOT, 'plugins', 'knowzcode', 'agents')), 'Codex package should not ship Claude-only agents/ as active support content');
 
-// Claude↔Codex relay is a Claude Code-only capability (Claude drives the Codex CLI as a
-// subprocess); it must not ship as a Codex or Gemini skill.
+// Cross-agent relay is supported from Claude Code and Codex. The host keeps
+// planning/review/finalization while the resolved external target implements.
+// Gemini remains native-only until it has an unambiguous supported target contract.
 const relayExecutionRef = join(ROOT, 'knowzcode', 'skills', 'work', 'references', 'relay-execution.md');
 expectFileContainsAll(
   relayExecutionRef,
   [
-    ['session resume', /codex exec resume/],
-    ['thread_id capture', /thread\.started/],
-    ['the sandbox default', /workspace-write/],
+    ['host/target resolution', /RELAY_HOST[\s\S]*RELAY_TARGET/],
+    ['portable selectors', /none[|`, ]+auto[|`, ]+other[|`, ]+claude[|`, ]+codex/],
+    ['natural-language precedence', /explicit flag[\s\S]*natural[- ]language[\s\S]*config/i],
+    ['same-host rejection', /target (equals|==) (the )?host|same-host/i],
+    ['schema 2 state', /Schema:\*\* 2|Schema:\s*2/],
+    ['role-based states', /TARGET_IMPLEMENTING[\s\S]*HOST_TAKEOVER/],
+    ['legacy state mapping', /CODEX_IMPLEMENTING[\s\S]*TARGET_IMPLEMENTING/],
+    ['Codex session resume', /codex exec resume/],
+    ['Codex completion selector', /COMPLETION_COMMAND[\s\S]*turn\.completed/],
+    ['Codex result-status selector', /RESULT_SUBTYPE_COMMAND[\s\S]*turn\.failed/],
+    ['Claude session resume', /claude[\s\S]*--resume/],
+    ['Claude authentication probe', /claude auth status --json/],
+    ['Claude streaming output', /--output-format stream-json/],
+    ['Claude resumable success', /session_id[\s\S]{0,160}length > 0/],
+    ['Claude safe permission mode', /--permission-mode dontAsk/],
+    ['strict Claude sandbox', /failIfUnavailable["': ]+true[\s\S]*allowUnsandboxedCommands["': ]+false/],
     ['the standard-2A fallback', /\[RELAY-FALLBACK\]/],
-    ['the shared detection procedure', /RELAY_DETECT/],
   ],
   'Relay execution reference'
 );
 expect(existsSync(join(ROOT, 'knowzcode', 'skills', 'relay', 'SKILL.md')), 'Missing Claude relay entry skill: knowzcode/skills/relay/SKILL.md');
 expect(existsSync(join(ROOT, 'knowzcode', 'agents', 'relay-runner.md')), 'Missing relay-runner agent: knowzcode/agents/relay-runner.md');
-expectFileContains(
+const relayContractSkills = [
+  join(ROOT, 'knowzcode', 'skills', 'relay', 'SKILL.md'),
   join(ROOT, 'knowzcode', 'skills', 'work', 'SKILL.md'),
-  /--relay=codex/,
-  'Work skill must expose the --relay=codex flag'
+  join(ROOT, 'plugins', 'knowzcode', 'skills', 'relay', 'SKILL.md'),
+  join(ROOT, 'plugins', 'knowzcode', 'skills', 'work', 'SKILL.md'),
+];
+for (const file of relayContractSkills) {
+  expectFileContainsAll(
+    file,
+    [
+      ['all relay selectors', /none[|`, ]+auto[|`, ]+other[|`, ]+claude[|`, ]+codex/],
+      ['natural-language relay intent', /natural[- ]language|other agent/i],
+      ['configuration fallback', /config|knowzcode_orchestration/],
+      ['same-host protection', /same-host|target (equals|==) (the )?host/i],
+    ],
+    'Cross-agent relay skill contract'
+  );
+}
+const codexRelaySkill = join(ROOT, 'plugins', 'knowzcode', 'skills', 'relay', 'SKILL.md');
+const codexRelayRef = join(ROOT, 'plugins', 'knowzcode', 'skills', 'work', 'references', 'relay-execution.md');
+expect(existsSync(codexRelaySkill), 'Codex plugin must ship the cross-agent relay entry skill');
+expect(existsSync(codexRelayRef), 'Codex plugin must ship the relay execution reference');
+expectFileContainsAll(
+  codexRelaySkill,
+  [
+    ['Claude target discovery', /Claude/i],
+    ['other-agent discovery', /other agent/i],
+    ['implementation delegation discovery', /delegate implementation|implementation.*delegate/i],
+  ],
+  'Codex relay entry skill'
 );
-expect(!existsSync(join(ROOT, 'plugins', 'knowzcode', 'skills', 'relay')), 'Relay skill is Claude Code-only; must not ship in the Codex plugin');
-expect(!existsSync(join(ROOT, 'knowzcode', '.gemini', 'skills', 'knowzcode-relay')), 'Relay skill is Claude Code-only; must not ship a Gemini mirror');
-expectFileContains(
+for (const file of [
+  join(ROOT, 'plugins', 'knowzcode', 'skills', 'continue', 'SKILL.md'),
+  join(ROOT, 'plugins', 'knowzcode', 'skills', 'init', 'SKILL.md'),
+  join(ROOT, 'plugins', 'knowzcode', 'skills', 'start-work', 'SKILL.md'),
+  join(ROOT, 'plugins', 'knowzcode', 'skills', 'status', 'SKILL.md'),
+]) {
+  expectFileContains(file, /relay/i, `Codex support skill must integrate cross-agent relay: ${file}`);
+}
+expect(!existsSync(join(ROOT, 'knowzcode', '.gemini', 'skills', 'knowzcode-relay')), 'Gemini is native-only and must not ship a relay mirror');
+const relayOrchestrationFiles = [
   join(ROOT, 'knowzcode', 'knowzcode', 'knowzcode_orchestration.md'),
-  /^relay:\s*none/m,
-  'Orchestration template must ship the relay opt-in key defaulted off'
-);
+  join(ROOT, 'plugins', 'knowzcode', 'knowzcode', 'knowzcode_orchestration.md'),
+];
+for (const file of relayOrchestrationFiles) {
+  expectFileContainsAll(
+    file,
+    [
+      ['relay opt-in defaulted off', /^relay:\s*none/m],
+      ['portable other target', /relay:\s*other|none.*auto.*other.*claude.*codex/is],
+      ['Claude model configuration', /relay_claude_model/],
+      ['Claude permission configuration', /relay_claude_permission_mode/],
+      ['Codex model configuration', /relay_codex_model/],
+    ],
+    'Cross-agent orchestration template'
+  );
+}
 
 for (const rel of [
   'knowzcode_loop.md',
   'knowzcode_orchestration.md',
   'platform_adapters.md',
+  'relay_execution.md',
   'claude_code_execution.md',
   'gitignore.template',
 ]) {
@@ -339,6 +400,55 @@ for (const rel of [
       `Codex framework file drifted from source: ${rel}`
     );
   }
+}
+
+// Exercise the actual Codex adapter parser/writer. Static markdown assertions
+// do not catch malformed headings or fences that silently drop generated files.
+const generatedCodexTarget = mkdtempSync(join(tmpdir(), 'knowzcode-codex-relay-'));
+try {
+  execFileSync(
+    process.execPath,
+    [
+      join(ROOT, 'knowzcode', 'bin', 'knowzcode.mjs'),
+      'install',
+      '--target', generatedCodexTarget,
+      '--platforms', 'codex',
+      '--force',
+    ],
+    { cwd: ROOT, encoding: 'utf8', stdio: 'pipe' }
+  );
+
+  const generatedRelaySkill = join(generatedCodexTarget, '.agents', 'skills', 'knowzcode-relay', 'SKILL.md');
+  const generatedRelayRef = join(generatedCodexTarget, '.agents', 'skills', 'knowzcode-work', 'references', 'relay-execution.md');
+  const generatedCoreRef = join(generatedCodexTarget, 'knowzcode', 'relay_execution.md');
+  const generatedAgents = join(generatedCodexTarget, 'AGENTS.md');
+
+  for (const file of [generatedRelaySkill, generatedRelayRef, generatedCoreRef, generatedAgents]) {
+    expect(existsSync(file), `Codex adapter generation dropped relay surface: ${file}`);
+  }
+  expectFileContains(generatedRelaySkill, /Generated by KnowzCode v\d+\.\d+\.\d+/, 'Generated Codex relay skill must inject the package version');
+  expectFileContainsAll(
+    generatedRelaySkill,
+    [
+      ['other-agent routing', /other agent/i],
+      ['Claude target', /Claude/i],
+      ['same-host guard', /same-host|target (equals|==) (the )?host/i],
+    ],
+    'Generated Codex relay skill'
+  );
+  expectFileContainsAll(
+    generatedRelayRef,
+    [
+      ['streaming Claude output', /--output-format stream-json/],
+      ['session resume', /--resume/],
+      ['strict sandbox failure', /failIfUnavailable["': ]+true/],
+    ],
+    'Generated Codex relay reference'
+  );
+} catch (error) {
+  expect(false, `Codex adapter generation smoke test failed: ${error.stderr || error.message}`);
+} finally {
+  rmSync(generatedCodexTarget, { recursive: true, force: true });
 }
 
 const codexExecutionGuide = join(ROOT, 'plugins', 'knowzcode', 'knowzcode', 'codex_execution.md');

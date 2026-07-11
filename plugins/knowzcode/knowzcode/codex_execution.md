@@ -32,6 +32,37 @@ The coordinator should keep the immediate blocking task local. Delegate sidecar 
 
 ---
 
+## Cross-Agent Relay Exception
+
+Native Codex workers remain the default Phase 2A implementation path. When the
+cross-agent relay contract resolves `RELAY_HOST=codex` and
+`RELAY_TARGET=claude`, the Claude CLI is an external implementation transport,
+not a Codex subagent and not a simulation of Claude Agent Teams.
+
+- Read `knowzcode/relay_execution.md` (or the installed work skill's
+  `references/relay-execution.md`) before launching a relay leg.
+- The Codex coordinator retains Change Set/spec ownership, user gates, review,
+  checkpoints, state transitions, and finalization.
+- Launch the provider-built Claude command in the repository/relay worktree and
+  keep its process attached to an in-turn exec session. Poll that session and
+  JSONL liveness until the final result or timeout; never end the turn hoping a
+  background completion notification will wake it.
+- Persist schema-2 state and the Claude `session_id` as soon as the
+  `system/init` event appears. Fix rounds use the same working directory and
+  explicit `--resume <session_id>`.
+- Claude execution uses `--permission-mode dontAsk`, a bounded implementation
+  tool set, strict Bash sandbox settings (`failIfUnavailable: true` and
+  `allowUnsandboxedCommands: false`), strict MCP configuration, and no Chrome
+  integration. It never defaults to bypassing permissions.
+- After the configured fix-round cap or repeated target failure, transition to
+  `HOST_TAKEOVER` and resume the normal Codex implementation/audit loop.
+
+The relay does not change the Codex subagent contracts below. Explorers and
+workers may still support planning or review, but they do not own or babysit
+the external Claude process.
+
+---
+
 ## Parallelism Rules
 
 ### Read-Only Discovery

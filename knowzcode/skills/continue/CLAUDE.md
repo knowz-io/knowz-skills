@@ -11,7 +11,7 @@ Agents are invoked as `general-purpose` subagents that read their agent `.md` fi
 1. **Check local handoffs** — scan `knowzcode/handoffs/*.md`; use newest or user-specified handoff
 2. **Find active WorkGroup** — search `knowzcode_tracker.md` for `[WIP]` entries
 3. **Load WorkGroup context** — read the WorkGroup file, restore Autonomous Mode and orchestration config
-4. **Relay detection** — WorkGroup has a `## Relay` section → read `{wgid}-relay/state.md`, reconcile the dead Codex process from JSONL evidence, resume per the relay state machine (`skills/work/references/relay-execution.md`)
+4. **Relay detection** — WorkGroup has a `## Relay` section → read `{wgid}-relay/state.md`, preserve its recorded host/target, reconcile any dead target process through that provider's adapter, and resume per `skills/work/references/relay-execution.md`
 5. **Resume at current phase** — detect parallel-mode (Stage-based) vs sequential-mode (Phase-based) WorkGroup; spawn agents for remaining work
 6. **Present status** — announce goal, phase, NodeIDs, outstanding todos (and relay state when active) before proceeding
 
@@ -26,6 +26,15 @@ Agents are invoked as `general-purpose` subagents that read their agent `.md` fi
 - **Parallel-mode WorkGroup** (`## Current Stage` section in file): recreate team, spawn agents for the current stage; do not respawn already-completed agents
 - **Sequential-mode WorkGroup** (`Current Phase:` in file): create tasks only for remaining phases; follow the same spawn prompts as `/knowzcode:work`
 
+## Relay Resume Contract
+
+- Schema 2 is authoritative: `Host`, `Target`, role-based `State`, and `Session ID` determine continuation. Never re-resolve target from a new prompt or changed config.
+- A schema-2 same-host pair, host/platform mismatch, or relay on Gemini is invalid and stops for correction.
+- Legacy state with no `Schema` and `Mode: codex` maps to `Host: claude`, `Target: codex`; `CODEX_IMPLEMENTING`, `CODEX_FAILED`, `CODEX_DONE`, and `CLAUDE_TAKEOVER` map to `TARGET_IMPLEMENTING`, `TARGET_FAILED`, `TARGET_DONE`, and `HOST_TAKEOVER`. Other shared state names map unchanged.
+- Read legacy state without rewriting it. Migrate to schema 2 only after a successful transition, preserving checkpoints, round, and session/thread identity.
+- Reconcile `TARGET_IMPLEMENTING` with the recorded target adapter's completion selector and target-qualified artifacts. A Claude target uses stream-JSON `result`; a Codex target uses Codex completion evidence. Never cross-apply provider commands or selectors.
+- Restore target-specific configuration before a resume. One failed provider resume leads to the protocol's host-takeover path; authentication failures always pause, including autonomous mode.
+
 ## Constraints
 
 - Do NOT trigger when user gives new instructions, asks a question, or is already executing a `/knowzcode:*` command
@@ -36,5 +45,5 @@ Agents are invoked as `general-purpose` subagents that read their agent `.md` fi
 
 ## Output Paths
 
-- No new files written — resumes existing WorkGroup file in `knowzcode/workgroups/`
+- No new workflow is created — continuation may update the existing WorkGroup snapshot and `{wgid}-relay/state.md` after successful relay transitions
 - Log entry appended to `knowzcode/knowzcode_log.md` on completion (via delegated closer agent)

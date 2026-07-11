@@ -135,27 +135,32 @@ Similarly, `profile: frontier` requires Fable, which runs on the direct Anthropi
 
 Delete the `profile:` line from `knowzcode/knowzcode_orchestration.md` (or omit `--profile` on the CLI) to use the default (`frontier`). To restore the pre-0.19 all-Opus behavior, set `profile: teams`. No migration needed.
 
-## Claude↔Codex Relay (experimental)
+## Cross-Agent Relay (experimental)
 
-Let **Claude plan and review while the OpenAI Codex CLI implements**. With `--relay=codex`, `/knowzcode:work` runs a programmatic handoff loop: Claude drafts the Change Set and specs (Fable under `frontier`), Codex — default `gpt-5.6-sol` at `xhigh` ("extra high") reasoning effort — completes the plan and fully implements it headlessly via `codex exec`, Claude code-reviews the diff at Gate #3, Codex fixes the findings in a **resumed session** (`codex exec resume`), and after the fix-round cap (default 2) Claude takes over any remaining fixes and finalizes as usual.
+Let the current host plan, specify, review, and finalize while the **other coding agent implements**. From Claude Code the default external target is the OpenAI Codex CLI; from Codex the default external target is the Claude Code CLI. The target completes Phase 2A headlessly, the host reviews the checkpoint diff at Gate #3, the target resumes for bounded fix rounds, and the host takes over any remaining fixes after the configured cap.
 
-**Requirements**: the [Codex CLI](https://developers.openai.com/codex) installed (`npm i -g @openai/codex` or `brew install codex`) and authenticated (`codex login`). Nothing else — the relay auto-detects the CLI and falls back to the standard builder flow when it's missing.
+Target resolution is deterministic: explicit `--relay=` flag → unambiguous natural language → project `relay:` configuration → `/knowzcode:relay` defaults to `other`. Ordinary `/knowzcode:work` remains native when none of those enable relay. `auto` and `other` select the opposite supported host; an explicitly named same-host target is an error and is never silently reversed.
 
-**Enable it** any of three ways:
+**Requirements**: the selected target CLI must be installed and authenticated. For a Codex target, install [Codex](https://developers.openai.com/codex) and run `codex login`. For a Claude target, install [Claude Code](https://code.claude.com/docs/en/setup) and run `claude auth login`. Missing automatic/configured targets visibly fall back to native Phase 2A; explicitly named unavailable targets and authentication failures stop with remediation.
+
+**Enable it** with flags, natural language, or portable project configuration:
 
 ```bash
-/knowzcode:relay Add rate limiting to the API      # setup-aware: detects, offers to persist, runs
-/knowzcode:work --relay=codex <goal>               # one invocation only
-# or set `relay: codex` in knowzcode/knowzcode_orchestration.md (asked once at /knowzcode:init when Codex is detected)
+/knowzcode:relay Add rate limiting to the API      # targets the other agent
+/knowzcode:work --relay=other <goal>               # portable explicit selection
+/knowzcode:work --relay=claude <goal>              # literal Claude target
+/knowzcode:work --relay=codex <goal>               # literal Codex target (v0.20 compatible)
+/knowzcode:work have Claude implement the approved plan
+# or set `relay: other` in knowzcode/knowzcode_orchestration.md
 ```
 
-Tuning (flags or `knowzcode_orchestration.md` keys): `--relay-model=` (`relay_model:`, default `gpt-5.6-sol`), `--relay-effort=` (`relay_effort:`, default `xhigh`), `--relay-max-fix-rounds=N` (`relay_max_fix_rounds:`, default 2), plus config-only `relay_transport:` (default `auto`), `relay_fix_effort:` (default `high`), `relay_sandbox:` (default `workspace-write`) and `relay_timeout_minutes:`.
+Tuning uses generic per-invocation `--relay-model=`, `--relay-effort=`, and `--relay-max-fix-rounds=N` overrides plus provider-specific config (`relay_codex_*`, `relay_claude_*`) and shared `relay_transport`, `relay_max_fix_rounds`, and `relay_timeout_minutes`. Existing v0.20 `relay_model`/`relay_effort`/`relay_fix_effort`/`relay_sandbox` keys remain Codex-target fallbacks.
 
-**Two execution transports** (auto-selected): a synchronous **Codex MCP server** call (`codex mcp-server` — register once with `claude mcp add --transport stdio --scope user codex -- codex mcp-server`; the most stall-proof option) or a **`codex exec` subprocess** with exit-marker + in-turn polling — the pattern the official OpenAI Claude Code plugin uses. Either way, the orchestrator never idles waiting for a background wake-up (a known source of multi-hour stalls), headless legs run with `--ignore-user-config` and `</dev/null` (avoids stdin hangs, personal-MCP noise, and macOS automation prompts), and stalled legs are SIGINT-killed so `codex exec resume` can pick them back up.
+**Transports**: Codex targets use the synchronous `codex mcp-server` transport when registered, otherwise `codex exec`. Claude targets use `claude -p` with streaming JSONL and explicit `--resume`; `claude mcp serve` is not an agent-delegation transport. Both exec adapters poll inside the active orchestrator turn—never a background wake-up—and persist the provider session ID as soon as it appears.
 
-**Safety model**: the Codex leg runs sandboxed (`workspace-write`, approvals disabled) on a dedicated `kc-relay/{wgid}` branch — never the default branch. Codex never commits; the lead commits a checkpoint after every leg, so each round's diff is exactly attributable and each review scope is a checkpoint diff. Session state (including the Codex `thread_id` for resume) persists in `knowzcode/workgroups/{wgid}-relay/state.md`, so `/knowzcode:continue` can resume a relay even after a context clear. `/knowzcode:status` shows live relay availability.
+**Safety model**: relay runs on a dedicated `kc-relay/{wgid}` branch, never the default branch, with a clean C0 baseline. The target never commits; the host checkpoints each completed leg. Codex uses `workspace-write` with approvals disabled. Claude uses `dontAsk`, a bounded implementation tool set, strict Bash sandboxing, strict MCP configuration, and never defaults to bypassing permissions. Schema-2 state records host, target, role state, and session ID in `knowzcode/workgroups/{wgid}-relay/state.md`; `/knowzcode:continue` also reads legacy v0.20 Codex state.
 
-Constraints: Tier 3 workflows only; incompatible with `--profile advisor`; Claude Code-only (Claude drives the Codex CLI — there is no Codex- or Gemini-side relay). Full protocol: `knowzcode/skills/work/references/relay-execution.md`.
+Constraints: Tier 3 workflows only; incompatible with `--profile advisor`; supported hosts are Claude Code and Codex. Gemini remains native-only because “other” is ambiguous there. Full protocol: `knowzcode/skills/work/references/relay-execution.md`.
 
 ## Enterprise Compliance & Custom Guidelines
 
@@ -224,7 +229,7 @@ KnowzCode can also offer regroup automatically when you say things like "wrap up
 | `/knowzcode:work <goal>` | Start a feature workflow |
 | `/knowzcode:explore <topic>` | Research before implementing |
 | `/knowzcode:fix <target>` | Quick targeted fix |
-| `/knowzcode:relay <goal>` | Claude↔Codex relay: Claude plans/reviews, the Codex CLI implements |
+| `/knowzcode:relay <goal>` | Cross-agent relay: the host plans/reviews while the resolved external agent implements |
 | `/knowzcode:regroup [next step]` | Save a local handoff for clearing context |
 | `/knowzcode:regroup-trigger` | (Trigger) Detects pause/wrap-up intent and offers regroup |
 | `/knowzcode:start-work` | (Trigger) Detects "implement the plan" intent and invokes `/knowzcode:work` |

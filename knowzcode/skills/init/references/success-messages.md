@@ -14,14 +14,22 @@ Success messages to display to the user after generating each platform adapter i
 OpenAI Codex adapter generated:
   AGENTS.md                                       (primary instructions)
   .agents/skills/knowzcode-work/SKILL.md                (/knowzcode:work — start workflow)
+  .agents/skills/knowzcode-work/references/relay-execution.md (cross-agent relay protocol)
+  .agents/skills/knowzcode-relay/SKILL.md               (/knowzcode:relay — delegate implementation to the other agent)
   .agents/skills/knowzcode-explore/SKILL.md                (/knowzcode:explore — research)
   .agents/skills/knowzcode-fix/SKILL.md                 (/knowzcode:fix — quick fix)
   .agents/skills/knowzcode-audit/SKILL.md               (/knowzcode:audit — quality audit)
+  .agents/skills/knowzcode-learn/SKILL.md               (/knowz save — capture learning)
+  .agents/skills/knowzcode-regroup/SKILL.md             (/knowzcode:regroup — local handoff)
+  .agents/skills/knowzcode-regroup-trigger/SKILL.md     (pause/handoff intent router)
   .agents/skills/knowzcode-continue/SKILL.md            (/knowzcode:continue — resume workflow)
   .agents/skills/knowzcode-init/SKILL.md                (/knowzcode:setup — initialize project)
   .agents/skills/knowzcode-status/SKILL.md              (/knowzcode:status — check status)
   .agents/skills/knowzcode-telemetry/SKILL.md           (/knowzcode:telemetry — investigate errors)
   .agents/skills/knowzcode-telemetry-setup/SKILL.md     (/knowzcode:telemetry-setup — configure sources)
+  .agents/skills/knowzcode-connect-mcp/SKILL.md         (/knowz setup — configure MCP)
+  .agents/skills/knowzcode-register/SKILL.md            (/knowz register — create account)
+  .agents/skills/knowzcode-start-work/SKILL.md          (implementation/relay intent router)
 
 Tip: Run `npx knowzcode install --platforms codex --global` to install
 skills globally to ~/.agents/skills/ (available in all projects).
