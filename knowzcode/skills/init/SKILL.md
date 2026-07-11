@@ -126,10 +126,23 @@ If the user declines Gate C entirely, leave the file on disk but replace each `[
 
 Write the answer as the `profile:` value in the generated `knowzcode_orchestration.md` (Step 6c). (On non-Claude-Code platforms the setting is informational-only — see the Codex note in the template — but persist it anyway for cross-platform parity.)
 
-**6a2. Codex relay detection (automatic, read-only — never blocks init).** Run `RELAY_DETECT` from `knowzcode/skills/work/references/relay-execution.md` (`command -v codex` → `codex --version` → `codex login status`) and report the one-line `[RELAY-DETECT] ...` result in the init summary.
+**6a2. Cross-agent relay detection (automatic, read-only — never blocks init).** Determine the host from the active platform package/surface, never from which executables happen to be installed:
 
-- Result `ready` AND this is an interactive init: ask one optional question — "Codex CLI detected ({version}, authenticated). Enable the Claude↔Codex relay so Codex implements while Claude plans and reviews? (default: No)" — on Yes, set `relay: codex` in the generated `knowzcode_orchestration.md` (Step 6c); on No, leave `relay: none`.
-- Result `installed-unauthed`, `not-installed`, or `broken-install` (or autonomous init): don't ask; leave `relay: none` (the template's comment already points to `/knowzcode:relay` for enabling later).
+- Claude Code skill → `RELAY_HOST=claude`, candidate target `codex`
+- Codex skill/plugin → `RELAY_HOST=codex`, candidate target `claude`
+- Gemini or any other host → relay unsupported for this version; keep native Phase 2A, set `relay: none`, report `[RELAY-DETECT] host={host} target=none status=native-only`, and skip the rest of this step
+
+For Claude or Codex, run the candidate target's readiness probe from `knowzcode/skills/work/references/relay-execution.md`:
+
+- Codex target: `command -v codex` → `codex --version` → `codex login status`
+- Claude target: `command -v claude` → `claude --version` → `claude auth status --json`; parse the exit code and only `.loggedIn` plus non-identifying method/provider fields. Never print or persist the raw JSON, email, organization ID, or organization name.
+
+Report exactly one summary line: `[RELAY-DETECT] host={claude|codex} target={codex|claude} status={ready|installed-unauthed|not-installed|broken-install} version={version|unknown}`.
+
+- Result `ready` AND this is an interactive init: ask one optional question — "{Target display name} CLI detected ({version}, authenticated). Enable the cross-agent relay so {target} implements while {host} plans and reviews? (default: No)" On Yes, set `relay: other` in the generated `knowzcode_orchestration.md`; on No, leave `relay: none`. `other` is portable when the same project is opened from the opposite supported host.
+- Result `installed-unauthed`, `not-installed`, or `broken-install`: do not ask. Leave `relay: none` and include provider-specific remediation (`codex login` or `claude auth login`, or install/reinstall the named CLI) in the summary.
+- Autonomous init: report detection but do not opt in implicitly; leave `relay: none`.
+- Merge mode: preserve an existing valid `relay: none|auto|other|claude|codex` value unless the user explicitly chooses to change it.
 
 **6b. Other orchestration defaults (optional).** Ask: "Would you like to configure agent orchestration defaults? (optional — can be changed later in knowzcode/knowzcode_orchestration.md)"
 
@@ -142,7 +155,7 @@ If yes: prompt for:
 
 If no: generate with all defaults.
 
-**6c.** Generate `knowzcode/knowzcode_orchestration.md` from the template (always — it's part of the standard file set), with `profile:` set to the Step 6a answer and `relay:` set per Step 6a2.
+**6c.** Generate `knowzcode/knowzcode_orchestration.md` from the template (always — it's part of the standard file set), with `profile:` set to the Step 6a answer and `relay:` set per Step 6a2. Preserve the complete provider-specific relay block: shared transport/round/timeout settings, Codex target settings (including documented v0.20 legacy-key fallback), and Claude target settings with `dontAsk` plus the strict sandbox/allowlist safety invariant. Never substitute Codex model or sandbox defaults into the Claude adapter.
 
 ### 7. Create .gitignore
 
@@ -200,13 +213,17 @@ When Codex is selected, generate skill files in addition to `AGENTS.md`:
 
 ```
 1. Create .agents/skills/ directory
-2. Generate 12 skill files from platform_adapters.md "Codex Skill Files" section.
-   Each generated SKILL.md should include `allowed-tools:` in frontmatter matching the platform's available tools.
+2. Generate 16 skill files plus the nested relay execution reference from platform_adapters.md "Codex Skill Files" section.
+   Each generated SKILL.md uses Codex-compatible `name` and `description` frontmatter.
    - .agents/skills/knowzcode-work/SKILL.md
+   - .agents/skills/knowzcode-work/references/relay-execution.md
+   - .agents/skills/knowzcode-relay/SKILL.md
    - .agents/skills/knowzcode-explore/SKILL.md
    - .agents/skills/knowzcode-fix/SKILL.md
    - .agents/skills/knowzcode-audit/SKILL.md
    - .agents/skills/knowzcode-learn/SKILL.md
+   - .agents/skills/knowzcode-regroup/SKILL.md
+   - .agents/skills/knowzcode-regroup-trigger/SKILL.md
    - .agents/skills/knowzcode-continue/SKILL.md
    - .agents/skills/knowzcode-init/SKILL.md
    - .agents/skills/knowzcode-status/SKILL.md
@@ -214,6 +231,7 @@ When Codex is selected, generate skill files in addition to `AGENTS.md`:
    - .agents/skills/knowzcode-register/SKILL.md
    - .agents/skills/knowzcode-telemetry/SKILL.md
    - .agents/skills/knowzcode-telemetry-setup/SKILL.md
+   - .agents/skills/knowzcode-start-work/SKILL.md
 3. Replace "vX.Y.Z" with current KnowzCode version
 ```
 
@@ -259,6 +277,8 @@ If no existing config found, ask:
 **Step 7c-gemini: Generate Gemini TOML commands, skills, and subagents**
 
 When Gemini is selected, generate TOML command files, skill files, and subagent definitions in addition to `GEMINI.md`:
+
+Gemini remains native-only for relay in this version. Do not generate `knowzcode-relay`, do not add a relay command, and do not interpret relay configuration as active on Gemini.
 
 ```
 1. Create .gemini/commands/knowzcode/ directory
@@ -448,6 +468,8 @@ Created:
 Platform adapters: [list generated adapters or "None (skip)"]
 
 Agent Teams: [Enabled (.claude/settings.local.json) — recommended | Declined (subagent fallback — reduced knowledge capture)]
+
+Cross-agent relay: [Enabled portably (`relay: other`, {host} → {target}) | Target ready but not enabled | Target unavailable — {remediation} | Native-only on this platform]
 
 Next steps:
   1. Review knowzcode/knowzcode_project.md and add project details

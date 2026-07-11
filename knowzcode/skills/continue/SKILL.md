@@ -68,7 +68,7 @@ Read `knowzcode/workgroups/{WorkGroupID}.md` to determine:
 - Change Set
 - Outstanding todos
 - **Autonomous Mode**: If the WorkGroup file contains `**Autonomous Mode**: Active`, restore `AUTONOMOUS_MODE = true` and announce: `> **Autonomous Mode: RESTORED** — continuing with auto-approved gates.`
-- **Orchestration Config**: If `knowzcode/knowzcode_orchestration.md` exists, parse and restore `MAX_BUILDERS`, `BUILDER_NODE_LIMIT`, `MCP_AGENTS_ENABLED`, `DEFAULT_SPECIALISTS` (same logic as work.md Step 2.4). Defaults apply if file is absent.
+- **Orchestration Config**: If `knowzcode/knowzcode_orchestration.md` exists, parse and restore `MAX_BUILDERS`, `BUILDER_NODE_LIMIT`, `MCP_AGENTS_ENABLED`, `DEFAULT_SPECIALISTS`, and all `relay*` values (same logic as work.md configuration parsing). Defaults apply if the file is absent. Relay state records the already-resolved host and target; configuration must not re-resolve or change them during continuation.
 
 If a handoff was selected in Step 0, also parse:
 - `## Goal`
@@ -81,11 +81,62 @@ Use the handoff as the freshest local state. Do not run `cmd:` references automa
 
 ### Step 2.5: Relay Detection
 
-If the WorkGroup file contains a `## Relay` section, this WorkGroup uses the Claude↔Codex relay — read `knowzcode/workgroups/{wgid}-relay/state.md` (the authoritative relay state) and `knowzcode/skills/work/references/relay-execution.md`, then resume per the relay state machine instead of the standard Phase 2A path (Phases 1A/1B/2B/3 resume normally).
+If the WorkGroup file contains a `## Relay` section, read both:
 
-Dead-process reconciliation: after a context clear a `CODEX_IMPLEMENTING` process is necessarily gone. Reconcile from evidence — if the round's `codex-log-r{N}.jsonl` ends with a completed turn AND `codex-last-r{N}.md` exists, treat the state as `CODEX_DONE` (commit the checkpoint if not yet committed); otherwise treat it as `CODEX_FAILED` and follow its protocol (one resume via the persisted Thread ID, then Claude takeover). All other states resume exactly where `state.md` says.
+- `knowzcode/workgroups/{wgid}-relay/state.md` — authoritative state
+- `knowzcode/skills/work/references/relay-execution.md` — provider-neutral state machine and target adapters
 
-Include a relay line in the Step 4 status block: `**Relay**: codex — {state}, round {n}, thread {thread_id|pending}`.
+Resume the recorded relay instead of entering native Phase 2A. Do not infer a new target from the current prompt or current project configuration: the state file's host/target pair is fixed for the WorkGroup.
+
+#### Schema 2
+
+Parse and validate these fields:
+
+```text
+Schema: 2
+Host: claude|codex
+Target: claude|codex
+State: INIT|PLANNED|TARGET_IMPLEMENTING|TARGET_FAILED|TARGET_DONE|
+       REVIEWING|FIX_ROUND|HOST_TAKEOVER|FINALIZING|DONE|ABORTED
+Session ID: provider thread/session identifier
+```
+
+Also restore Round, Max Fix Rounds, target-specific model/effort/permission or sandbox settings, Branch, checkpoints, and artifact paths. Reject malformed schema-2 state, a same-host pair, or a host that does not match the active supported platform; report the mismatch and stop rather than silently reversing it. Gemini is native-only and must not resume a cross-agent relay.
+
+#### Legacy schema-1 compatibility
+
+When `Schema` is absent and `Mode: codex` is present, interpret the state in memory as `Host: claude`, `Target: codex`, map `Thread ID` to `Session ID`, and map states as follows:
+
+| Legacy state | Schema-2 meaning |
+|--------------|------------------|
+| `INIT` | `INIT` |
+| `PLANNED` | `PLANNED` |
+| `CODEX_IMPLEMENTING` | `TARGET_IMPLEMENTING` |
+| `CODEX_FAILED` | `TARGET_FAILED` |
+| `CODEX_DONE` | `TARGET_DONE` |
+| `REVIEWING` | `REVIEWING` |
+| `FIX_ROUND` | `FIX_ROUND` |
+| `CLAUDE_TAKEOVER` | `HOST_TAKEOVER` |
+| `FINALIZING` | `FINALIZING` |
+| `DONE` | `DONE` |
+| `ABORTED` | `ABORTED` |
+
+Continue recognizing legacy `codex-log-r{N}.jsonl`, `codex-last-r{N}.md`, and `codex-err-r{N}.log` artifacts. Do not rewrite a legacy state file merely because it was read. After the next successful state transition, persist it as schema 2 with `Host: claude`, `Target: codex`, role-based state, `Session ID`, and target-qualified artifact names; update the WorkGroup snapshot at the same time.
+
+#### Dead-process reconciliation
+
+After a context clear, a recorded `TARGET_IMPLEMENTING` subprocess is no longer assumed live. Dispatch evidence checks through the recorded target adapter:
+
+- Codex target: require the round JSONL completion event and target final-message artifact described by the Codex adapter.
+- Claude target: require a final stream-JSON `result` with `subtype: success` and the target final-message artifact described by the Claude adapter.
+
+Complete evidence maps to `TARGET_DONE` and the host commits the missing checkpoint if necessary. Incomplete or unsuccessful evidence maps to `TARGET_FAILED`: attempt the one provider-specific resume allowed by the relay protocol using the persisted Session ID, then enter `HOST_TAKEOVER` if resume fails or the retry is exhausted. Never apply Codex JSONL selectors, `$CODEX_HOME` recovery, or `codex exec resume` to a Claude target. All non-running states resume exactly where schema 2 says.
+
+Include a relay line in the Step 4 status block:
+
+`**Relay**: {host} → {target} — {state}, round {n}, session {session_id|pending}{legacy marker}`
+
+Use ` (legacy schema 1)` as the marker when the compatibility mapping is active.
 
 ### Step 3: Resume at Current Phase
 
