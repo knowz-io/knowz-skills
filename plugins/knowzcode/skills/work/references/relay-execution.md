@@ -66,6 +66,7 @@ Target: claude
 State: INIT|PLANNED|TARGET_IMPLEMENTING|TARGET_FAILED|TARGET_DONE|REVIEWING|FIX_ROUND|HOST_TAKEOVER|FINALIZING|DONE|ABORTED
 Round: {0..N}
 Session ID: {claude session_id or pending}
+Manual Attach: {claude --resume command or pending}
 Target Version: {version or unknown}
 Working Directory: {absolute relay worktree path}
 PID: {pid or none}
@@ -80,6 +81,15 @@ Checkpoint: {commit or none}
 Write the next state before triggering its action. Artifacts are target
 qualified: `{target}-log-rN.jsonl`, `{target}-last-rN.md`,
 `{target}-err-rN.log`, plus `exit-rN`.
+
+`Manual Attach` is human convenience only — never a monitoring, liveness, or
+programmatic-resume channel. Once the session ID is captured, record
+`claude --resume {SESSION_ID}` (run from the recorded working directory) so a
+human can take over interactively, and echo it once in status output. Claude
+deeplinks (`claude-cli://open`) only create new sessions; never present one as
+attach or resume. Present the attach command as a post-leg affordance
+(`TARGET_DONE`, `TARGET_FAILED`, `HOST_TAKEOVER`) so an interactive client
+does not contend with the live headless process.
 
 ### Legacy Schema-1 Mapping
 
