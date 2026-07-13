@@ -1,6 +1,15 @@
+<div align="center">
+
 # Knowz
 
 **Your knowledge base, inside your AI assistant.**
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+[![knowz-mcp on npm](https://img.shields.io/npm/v/knowz-mcp?label=knowz-mcp)](https://www.npmjs.com/package/knowz-mcp)
+
+[Quick Start](#quick-start) · [Commands](#commands) · [Auto-Detection](#auto-detection) · [Works With KnowzCode](#works-with-knowzcode)
+
+</div>
 
 Knowz gives your AI a persistent memory. Every decision your team makes, every convention you establish, every hard-won lesson — captured once, available forever, woven into every conversation automatically.
 
@@ -46,8 +55,8 @@ The Knowz MCP server works with any AI model and any MCP-compatible agent. This 
 /knowz status              # verify connection
 
 # Existing users
-/knowz setup <api-key>     # configure with API key
-/knowz setup --oauth       # or configure with OAuth
+/knowz setup --oauth       # configure with OAuth (recommended)
+/knowz setup <api-key>     # or configure with an API key
 
 # Daily usage
 /knowz ask "What's our convention for error handling?"

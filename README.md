@@ -2,23 +2,53 @@
 
 # Knowz Skills
 
-**AI-Powered Knowledge & Development Tools**
+**Your knowledge base in every AI tool you use. Structured development that actually ships quality code.**
 
-Your knowledge base, accessible to every AI tool you use. Structured development that actually ships quality code.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+[![knowzcode on npm](https://img.shields.io/npm/v/knowzcode?label=knowzcode)](https://www.npmjs.com/package/knowzcode)
+[![knowz-mcp on npm](https://img.shields.io/npm/v/knowz-mcp?label=knowz-mcp)](https://www.npmjs.com/package/knowz-mcp)
 
-[MCP Server](#mcp-server) · [Knowz Plugin](#knowz--knowledge-management) · [KnowzCode Plugin](#knowzcode--structured-development) · [Install](#install) · [Privacy](#privacy--support) · [Full Features](https://github.com/knowz-io/knowz-platform/blob/develop/FEATURES.md)
+[Quick Start](#quick-start) · [Knowz](#knowz--knowledge-management) · [KnowzCode](#knowzcode--structured-development) · [Which One?](#which-one-do-i-need) · [Support](#privacy--support)
 
 </div>
 
 ---
 
-## MCP Server
+This repository is the public source for two plugins and the marketplace that serves them:
 
-The Knowz MCP server is a universal connector between your knowledge base and the AI tools you already use. Built on the open [Model Context Protocol](https://modelcontextprotocol.io/) standard, it works with any compatible AI — Claude, ChatGPT, Gemini, Copilot, Cursor, Windsurf, custom agents, or your own integrations.
+- **[Knowz](./knowz/)** — give your AI a persistent, team-wide memory
+- **[KnowzCode](./knowzcode/)** — a disciplined development workflow with quality gates and TDD
+
+Both are built on the open [Model Context Protocol](https://modelcontextprotocol.io/), so your knowledge base works with any compatible AI — Claude, ChatGPT, Gemini, Copilot, Cursor, Windsurf, or your own agents:
+
+```mermaid
+flowchart LR
+    subgraph tools["Your AI tools"]
+        direction TB
+        CC["Claude Code"]
+        CX["Codex · Gemini"]
+        OT["Cursor · Copilot · ..."]
+    end
+    tools <--> MCP["Knowz MCP Server"]
+    MCP <--> KB[("Your team's<br/>knowledge base")]
+```
 
 One knowledge base. Every AI tool in your workflow.
 
----
+## Quick Start
+
+```bash
+# 1. Add the marketplace (in Claude Code)
+/plugin marketplace add knowz-io/knowz-skills
+
+# 2. Install what you need
+/plugin install knowz@knowz-skills       # knowledge management
+/plugin install knowzcode@knowz-skills   # structured development
+
+# 3. Get going
+/knowz register                          # create account + configure MCP
+/knowzcode:setup                         # initialize in your project
+```
 
 ## Knowz — Knowledge Management
 
@@ -30,60 +60,41 @@ Search, save, and query your knowledge base without leaving your editor. Knowz a
 /knowz search "authentication patterns"
 ```
 
-[Learn more ->](./knowz/)
+**[Knowz documentation →](./knowz/)**
 
 ## KnowzCode — Structured Development
 
-Turns chaotic AI coding into a disciplined loop: analyze impact, design specs, build with tests, audit quality, and ship. Approval gates at every step. Scales from quick fixes to complex multi-file features.
-
-Works across 6 AI platforms — Claude Code, OpenAI Codex, Gemini CLI, GitHub Copilot, Cursor, and Windsurf.
+Turns chaotic AI coding into a disciplined loop — analyze impact, design specs, build with tests, audit quality, ship — with an approval gate at every step. Scales from quick fixes to complex multi-file features, and works across 6 AI platforms.
 
 ```bash
 /knowzcode:work "Build user authentication with email and password"
 /knowzcode:explore "how is auth currently implemented?"
 /knowzcode:relay "Build the approved plan with the other coding agent"
-/knowzcode:regroup "Continue from the active WorkGroup after context clear"
 /knowzcode:fix "Fix typo in login button text"
 ```
 
-[Learn more ->](./knowzcode/)
+**[KnowzCode documentation →](./knowzcode/)**
 
----
+## Which One Do I Need?
 
-## Install
-
-```bash
-# Add the marketplace
-/plugin marketplace add knowz-io/knowz-skills
-
-# Install plugins
-/plugin install knowz@knowz-skills       # Knowledge management
-/plugin install knowzcode@knowz-skills   # Structured development
-
-# Get started
-/knowz register                               # Create account + configure MCP
-/knowzcode:setup                               # Initialize in your project
-/knowzcode:work "Build user authentication"   # Start building
-```
-
----
+| You want... | Install |
+|-------------|---------|
+| Your AI to remember team decisions, conventions, and lessons | **Knowz** |
+| Disciplined feature development — gates, TDD, session continuity | **KnowzCode** |
+| Knowledge-informed development: past decisions guide new work | **Both** — they integrate, but each works standalone |
 
 ## Learn More
 
 - [Full feature overview](https://github.com/knowz-io/knowz-platform/blob/develop/FEATURES.md)
-- [Knowz plugin](./knowz/)
-- [KnowzCode plugin](./knowzcode/)
+- [Knowz plugin](./knowz/) · [KnowzCode plugin](./knowzcode/) · [KnowzCode guides](./knowzcode/docs/)
 - [knowz.io](https://knowz.io)
-
----
 
 ## Privacy & Support
 
 - Privacy policy: [PRIVACY.md](./PRIVACY.md) and https://knowz.io/privacy
 - Security reports: [SECURITY.md](./SECURITY.md)
-- Support contact: support@knowz.io
-- Status: https://status.knowz.io
+- Support: support@knowz.io · Status: https://status.knowz.io
 
----
+## License
 
-This is a public source repository. `knowz/` and `knowzcode/` are MIT licensed. See [LICENSE](./LICENSE) and the package directories for details.
+`knowz/` and `knowzcode/` are MIT licensed — see [LICENSE](./LICENSE) and the package directories for details.
