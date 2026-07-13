@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Relay `Manual Attach` convenience line.** Schema-2 relay state and status output now surface human takeover commands once the target session ID is captured: `codex resume {SESSION_ID}` plus the optional `codex://threads/{SESSION_ID}` Codex Desktop deeplink for Codex targets, and `claude --resume {SESSION_ID}` from the recorded working directory for Claude targets (Claude deeplinks only create new sessions, so none is offered). Convenience only — monitoring and programmatic resume remain on the JSONL/exit-marker and CLI-resume contract, and attach is presented as a post-leg affordance.
+
+### Changed
+- **README overhaul.** The repo, Knowz, and KnowzCode READMEs are restructured around quick start and a mermaid workflow diagram; the deep execution-profiles and cross-agent-relay reference material moved to `docs/execution-profiles.md` and `docs/cross-agent-relay.md`, and all `docs/` guides are now linked from a Documentation index in the README.
+
+### Fixed
+- `scripts/sync-codex-relay-surfaces.mjs` still referenced the removed `plugins/knowzcode/skills/init/SKILL.md` path after the setup rename, so the sync script crashed with ENOENT. It now maps the `knowzcode-setup` surface from `plugins/knowzcode/skills/setup/SKILL.md`.
+
 ## [0.20.1] - 2026-07-11
 
 ### Added

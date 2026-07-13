@@ -13,7 +13,7 @@ const surfaces = [
   ['.agents/skills/knowzcode-relay/SKILL.md', 'plugins/knowzcode/skills/relay/SKILL.md', 'knowzcode-relay'],
   ['.agents/skills/knowzcode-work/references/relay-execution.md', 'plugins/knowzcode/skills/work/references/relay-execution.md', null],
   ['.agents/skills/knowzcode-continue/SKILL.md', 'plugins/knowzcode/skills/continue/SKILL.md', 'knowzcode-continue'],
-  ['.agents/skills/knowzcode-init/SKILL.md', 'plugins/knowzcode/skills/init/SKILL.md', 'knowzcode-init'],
+  ['.agents/skills/knowzcode-setup/SKILL.md', 'plugins/knowzcode/skills/setup/SKILL.md', 'knowzcode-setup'],
   ['.agents/skills/knowzcode-status/SKILL.md', 'plugins/knowzcode/skills/status/SKILL.md', 'knowzcode-status'],
   ['.agents/skills/knowzcode-start-work/SKILL.md', 'plugins/knowzcode/skills/start-work/SKILL.md', 'knowzcode-start-work'],
 ];
