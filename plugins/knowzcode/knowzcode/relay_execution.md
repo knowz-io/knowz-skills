@@ -215,6 +215,7 @@ Target qualification preserves current Codex filenames (`codex-log-*`, `codex-la
 **Round:** {0..cap}
 **Max Fix Rounds:** {2}
 **Session ID:** {provider thread/session id | pending}
+**Manual Attach:** {human takeover commands | pending}
 **Target Version:** {version | pending}
 **Transport:** {mcp|exec}
 **Model:** {target model}
@@ -244,6 +245,15 @@ Target qualification preserves current Codex filenames (`codex-log-*`, `codex-la
 ```
 
 Rewrite state (including round log, PID/session/result paths, and timestamp) **before** performing the action a transition triggers. Update the WorkGroup snapshot whenever State, Round, Target, or Session ID changes.
+
+### Manual Attach line
+
+`Manual Attach` is human convenience only — never a monitoring, liveness, or programmatic-resume channel. When the Session ID is captured, fill it with the target-specific interactive takeover commands and echo them once in status output:
+
+- Codex target: `codex resume {SESSION_ID}` from the recorded CWD; optionally append the `codex://threads/{SESSION_ID}` deeplink, which opens the thread in Codex Desktop when installed.
+- Claude target: `claude --resume {SESSION_ID}` from the recorded CWD. Claude deeplinks (`claude-cli://open`) only create new sessions; never present one as attach or resume.
+
+Never auto-open a deeplink. Present attach commands as a post-leg affordance (`TARGET_DONE`, `TARGET_FAILED`, `HOST_TAKEOVER`) so an interactive client does not contend with a live headless process.
 
 ### WorkGroup `## Relay` snapshot
 
