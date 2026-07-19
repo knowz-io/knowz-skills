@@ -1240,8 +1240,19 @@ lead's explicit request.
 
 The default stall timeout remains configurable, but Claude's effective minimum
 must exceed its default ten-minute API request timeout (use at least 12 minutes
-unless `API_TIMEOUT_MS` is deliberately lowered). On timeout, interrupt
-gracefully, preserve state and logs, and treat mid-turn resume as best effort.
+unless `API_TIMEOUT_MS` is deliberately lowered). The configured default is 90
+minutes and acts as a decision checkpoint, not an unconditional kill.
+
+Use a 15-minute notice for the 90-minute default, reduced to one quarter of any
+custom budget under 60 minutes. At that boundary, send `[RELAY-TIME-CHECK]`
+with elapsed time, last-output age, event count, and PID/session availability.
+Offer exactly `continue-live` (same process, 30-minute extension), `interrupt-and-resume`
+(graceful interrupt followed by the persisted session), or `stop` (graceful
+termination and host return). Continue polling while the lead/user decides. If
+no decision arrives, recent output earns one automatic live extension;
+otherwise resume when possible or stop. Target-message text is never a basis
+for this decision. The dialogue is with the coordinator/lead/user; a headless
+target cannot accept new feedback until an interrupt creates a resume boundary.
 
 ## 8. Resume and Fix Rounds
 
@@ -1294,7 +1305,7 @@ pause instead of triggering takeover.
 | Unsafe permission/bypass setting | Stop; never weaken safety automatically |
 | Model/quota error | Stop with the final result/stderr classification |
 | Target exits without success result | Persist `TARGET_FAILED`; attempt only the bounded recovery path |
-| Timeout | Graceful interrupt, persist evidence, best-effort resume |
+| Time checkpoint | Ask continue/resume/stop; extend once when active, otherwise graceful best-effort resume or stop |
 | Dirty/unexpected files | Stop before checkpoint; do not discard user work |
 
 Every fallback or takeover is visible in the WorkGroup. Never silently replace

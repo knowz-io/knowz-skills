@@ -353,6 +353,10 @@ expectFileContainsAll(
     ['bounded progress cadence', /PROGRESS_INTERVAL_SECONDS/],
     ['progress envelope', /\[RELAY-PROGRESS\]/],
     ['untrusted telemetry handling', /untrusted target telemetry/i],
+    ['90 minute time checkpoint', /TIMEOUT_MINUTES[\s\S]*default `90`/],
+    ['time decision envelope', /\[RELAY-TIME-CHECK\]/],
+    ['continue and resume distinction', /continue-live[\s\S]*interrupt-and-resume/],
+    ['runner turn budget', /maxTurns:\s*300/],
   ],
   'Relay runner progress bridge'
 );
@@ -362,6 +366,8 @@ expectFileContainsAll(
     ['relay progress bridge', /Relay progress bridge/],
     ['Codex progress selector', /Codex exec leg[\s\S]*PROGRESS_COMMAND/],
     ['bounded target message', /320 characters/],
+    ['time-budget dialogue', /Time-budget checkpoint and dialogue/],
+    ['90 minute default', /defaults to 90/],
   ],
   'Relay progress bridge reference'
 );
@@ -393,6 +399,8 @@ expectFileContainsAll(
     ['filtered relay progress', /Filtered progress bridge/],
     ['progress envelope', /\[RELAY-PROGRESS\]/],
     ['untrusted telemetry handling', /untrusted telemetry/i],
+    ['time decision envelope', /\[RELAY-TIME-CHECK\]/],
+    ['continue and resume options', /continue-live[\s\S]*interrupt-and-resume/],
   ],
   'Codex relay progress bridge'
 );
@@ -427,6 +435,7 @@ for (const file of relayOrchestrationFiles) {
       ['Claude model configuration', /relay_claude_model/],
       ['Claude permission configuration', /relay_claude_permission_mode/],
       ['Codex model configuration', /relay_codex_model/],
+      ['90 minute relay checkpoint', /relay_timeout_minutes:\s*90/],
     ],
     'Cross-agent orchestration template'
   );
