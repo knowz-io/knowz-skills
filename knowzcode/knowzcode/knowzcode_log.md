@@ -9,6 +9,15 @@
 ---
 **[NEWEST ENTRIES APPEAR HERE - DO NOT REMOVE THIS MARKER]**
 ---
+**Type:** MicroFix
+**Timestamp:** 2026-07-19 15:59:35 EDT
+**NodeID(s)/File:** CrossAgentRelay / relay-runner and relay execution guidance
+**Logged By:** AI-Agent
+**Details:**
+- **User Request:** Give relay subagents filtered live Codex output or periodic progress updates.
+- **Action Taken:** Added a one-minute, bounded `PROGRESS_COMMAND` bridge, a Codex JSONL summary selector, lead-only progress delivery, and untrusted-telemetry safeguards.
+- **Verification:** Relay mirror synchronization and platform-surface validation run after the update.
+---
 **Type:** Exploration-Deferred
 **Timestamp:** 2026-04-19 12:35:00
 **Topic:** Tree-sitter / code-graph fit for knowz vs knowzcode

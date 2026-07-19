@@ -346,6 +346,25 @@ expectFileContainsAll(
 );
 expect(existsSync(join(ROOT, 'knowzcode', 'skills', 'relay', 'SKILL.md')), 'Missing Claude relay entry skill: knowzcode/skills/relay/SKILL.md');
 expect(existsSync(join(ROOT, 'knowzcode', 'agents', 'relay-runner.md')), 'Missing relay-runner agent: knowzcode/agents/relay-runner.md');
+expectFileContainsAll(
+  join(ROOT, 'knowzcode', 'agents', 'relay-runner.md'),
+  [
+    ['filtered progress command', /PROGRESS_COMMAND/],
+    ['bounded progress cadence', /PROGRESS_INTERVAL_SECONDS/],
+    ['progress envelope', /\[RELAY-PROGRESS\]/],
+    ['untrusted telemetry handling', /untrusted target telemetry/i],
+  ],
+  'Relay runner progress bridge'
+);
+expectFileContainsAll(
+  relayExecutionRef,
+  [
+    ['relay progress bridge', /Relay progress bridge/],
+    ['Codex progress selector', /Codex exec leg[\s\S]*PROGRESS_COMMAND/],
+    ['bounded target message', /320 characters/],
+  ],
+  'Relay progress bridge reference'
+);
 const relayContractSkills = [
   join(ROOT, 'knowzcode', 'skills', 'relay', 'SKILL.md'),
   join(ROOT, 'knowzcode', 'skills', 'work', 'SKILL.md'),
@@ -368,6 +387,15 @@ const codexRelaySkill = join(ROOT, 'plugins', 'knowzcode', 'skills', 'relay', 'S
 const codexRelayRef = join(ROOT, 'plugins', 'knowzcode', 'skills', 'work', 'references', 'relay-execution.md');
 expect(existsSync(codexRelaySkill), 'Codex plugin must ship the cross-agent relay entry skill');
 expect(existsSync(codexRelayRef), 'Codex plugin must ship the relay execution reference');
+expectFileContainsAll(
+  codexRelayRef,
+  [
+    ['filtered relay progress', /Filtered progress bridge/],
+    ['progress envelope', /\[RELAY-PROGRESS\]/],
+    ['untrusted telemetry handling', /untrusted telemetry/i],
+  ],
+  'Codex relay progress bridge'
+);
 expectFileContainsAll(
   codexRelaySkill,
   [
