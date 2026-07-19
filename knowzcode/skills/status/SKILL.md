@@ -124,7 +124,7 @@ Check KnowzCode project status and report findings to the user.
 
    **Resolve target configuration:**
 
-   - Shared: `relay_transport` (default `auto`), `relay_max_fix_rounds` (default `2`), `relay_timeout_minutes` (default `45`)
+   - Shared: `relay_transport` (default `auto`), `relay_max_fix_rounds` (default `2`), `relay_timeout_minutes` (default `90`; interactive time-budget checkpoint, not an unconditional kill)
    - Codex target: `relay_codex_model`, `relay_codex_effort`, `relay_codex_fix_effort`, `relay_codex_sandbox`. For v0.20 compatibility only, fall back respectively to `relay_model`, `relay_effort`, `relay_fix_effort`, and `relay_sandbox` when a provider-qualified key is absent.
    - Claude target: `relay_claude_model`, `relay_claude_effort`, `relay_claude_fix_effort`, `relay_claude_permission_mode`. Never use Codex legacy values as Claude defaults. Flag `bypassPermissions` as unsafe configuration and report that `dontAsk` is the safe default with the protocol's bounded tool allowlist and strict Bash sandbox.
    - If target is Claude and transport is `mcp`, warn that Claude MCP is not an agent relay and `auto` or `exec` is required.

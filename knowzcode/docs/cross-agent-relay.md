@@ -32,7 +32,7 @@ Missing automatic/configured targets visibly fall back to native Phase 2A; expli
 
 ## Tuning
 
-Per-invocation `--relay-model=`, `--relay-effort=`, and `--relay-max-fix-rounds=N` overrides, plus provider-specific config (`relay_codex_*`, `relay_claude_*`) and shared `relay_transport`, `relay_max_fix_rounds`, and `relay_timeout_minutes` in `knowzcode/knowzcode_orchestration.md`.
+Per-invocation `--relay-model=`, `--relay-effort=`, and `--relay-max-fix-rounds=N` overrides, plus provider-specific config (`relay_codex_*`, `relay_claude_*`) and shared `relay_transport`, `relay_max_fix_rounds`, and `relay_timeout_minutes` in `knowzcode/knowzcode_orchestration.md`. Relay legs default to a 90-minute decision horizon: the runner checks in before it and offers `continue-live`, `interrupt-and-resume`, or `stop` instead of killing a healthy frontier-model leg on the clock.
 
 ## Transports
 

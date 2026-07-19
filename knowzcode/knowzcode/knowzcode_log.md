@@ -10,6 +10,15 @@
 **[NEWEST ENTRIES APPEAR HERE - DO NOT REMOVE THIS MARKER]**
 ---
 **Type:** MicroFix
+**Timestamp:** 2026-07-19 16:05:32 EDT
+**NodeID(s)/File:** CrossAgentRelay / timeout and continuation protocol
+**Logged By:** AI-Agent
+**Details:**
+- **User Request:** Raise the relay-agent default from 45 to 90 minutes and allow a useful continue-versus-resume conversation at the time boundary.
+- **Action Taken:** Made 90 minutes the default decision horizon, expanded the Sonnet runner turn budget, and added a pre-deadline `continue-live` / `interrupt-and-resume` / `stop` dialogue with one evidence-based automatic extension.
+- **Verification:** Default/mirror assertions, generated adapter synchronization, package dry-run, and platform-surface validation run after the update.
+---
+**Type:** MicroFix
 **Timestamp:** 2026-07-19 15:59:35 EDT
 **NodeID(s)/File:** CrossAgentRelay / relay-runner and relay execution guidance
 **Logged By:** AI-Agent

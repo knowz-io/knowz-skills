@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Relay `Manual Attach` convenience line.** Schema-2 relay state and status output now surface human takeover commands once the target session ID is captured: `codex resume {SESSION_ID}` plus the optional `codex://threads/{SESSION_ID}` Codex Desktop deeplink for Codex targets, and `claude --resume {SESSION_ID}` from the recorded working directory for Claude targets (Claude deeplinks only create new sessions, so none is offered). Convenience only — monitoring and programmatic resume remain on the JSONL/exit-marker and CLI-resume contract, and attach is presented as a post-leg affordance.
 
 ### Changed
+- **Relay time budget raised to 90 minutes with an explicit decision checkpoint.** The Sonnet relay runner now warns 15 minutes before the default horizon and asks the lead/user to choose `continue-live`, `interrupt-and-resume`, or `stop`; recent live output earns one automatic 30-minute extension when nobody responds. Reaching the clock is no longer an unconditional kill, and the runner turn budget is expanded to cover frontier-model legs plus the decision grace.
 - **README overhaul.** The repo, Knowz, and KnowzCode READMEs are restructured around quick start and a mermaid workflow diagram; the deep execution-profiles and cross-agent-relay reference material moved to `docs/execution-profiles.md` and `docs/cross-agent-relay.md`, and all `docs/` guides are now linked from a Documentation index in the README.
 
 ### Fixed
