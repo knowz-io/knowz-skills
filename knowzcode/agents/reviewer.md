@@ -3,7 +3,6 @@ name: reviewer
 description: "KnowzCode: Quality audit, security review, and compliance verification"
 tools: Read, Glob, Grep, Bash
 model: opus
-permissionMode: default
 maxTurns: 30
 ---
 

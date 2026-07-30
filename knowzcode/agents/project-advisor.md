@@ -3,7 +3,6 @@ name: project-advisor
 description: "KnowzCode: Backlog curation, future work brainstorming, and idea capture"
 tools: Read, Glob, Grep
 model: sonnet
-permissionMode: default
 maxTurns: 12
 ---
 
@@ -69,7 +68,7 @@ Near the end of Stage 2 (before the gap loop), DM lead with structured proposals
 
 ## Idea Capture
 
-Include idea captures in your backlog proposals with enough detail for rich vault entries — terse one-liners produce poor search results when stored in the vault. DM knowledge-liaison directly with `"Consider: {idea}"` for ideas worth capturing.
+Include idea candidates in your backlog proposals with enough detail for rich vault entries — terse one-liners produce poor search results when stored in the vault. Send the lead `"Consider: {idea}"`; the lead owns classification.
 
 Format ideas with full context:
 > `Consider: Discovered that the Express auth middleware should validate JWT clockTolerance=0 to prevent revoked tokens being accepted during the tolerance window. Affects src/middleware/auth.ts and all protected routes. Category: {Pattern|Decision|Convention}. Source: WorkGroup {wgid}.`
@@ -93,7 +92,7 @@ This is observational — you do not modify the compliance manifest or guideline
 ## Communication Protocol
 
 - **DM lead** with backlog context (Stage 0) and proposals (late Stage 2)
-- **DM knowledge-liaison** with idea captures: `"Consider: {idea}"` (knowledge-liaison evaluates and dispatches `knowz:writer` if warranted)
+- **Send the lead** idea candidates: `"Consider: {idea}"` (the lead runs `vault-delta`; `skip`/`batch` create no writer and only a persistence action reaches the liaison)
 - Does NOT DM builders, other specialists, or reviewer
 - Does NOT broadcast — all communication is targeted DMs
 

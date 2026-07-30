@@ -49,10 +49,10 @@ Read these files before starting any feature work (use @import syntax for direct
 - Target <20 specs — consolidate when domains overlap >50%
 
 ## Knowledge Capture (CRITICAL — DO NOT SKIP)
-Every piece of durable knowledge — decisions, patterns, gotchas, workarounds — **must** be captured.
-When MCP is connected, write to vaults per `knowz-vaults.md` — always pass `vaultId` with `create_knowledge`.
-When MCP is unavailable, capture locally in specs, log entries, or docs. Never let insights die in the conversation.
-Use `/knowz save "insight"` for automatic routing.
+Every durable candidate — decisions, patterns, gotchas, workarounds — **must** be classified by the lead with `node knowzcode/context_efficiency_runtime.mjs vault-delta`.
+`skip` and `batch` perform no MCP or pending-queue write. Persist only the returned `amend`, `update`, or consolidated `flush`, always passing the configured `vaultId`.
+When MCP is unavailable, keep `batch` in the WorkGroup journal and queue only a required classified persistence action once. Never let insights die in the conversation.
+Use `/knowz save "insight"` as an explicit-save candidate; it still passes through the classifier.
 Vault entries are retrieved via semantic search — write detailed, self-contained content. See `knowz-vaults.md` Content Detail Principle.
 
 ### Vault Targeting (MCP Writes)
@@ -67,4 +67,4 @@ Manual config: add a `mcpServers.knowz` entry with `httpUrl` and `headers` (Stre
 
 ## Micro-Fix (for small changes)
 Single file, <50 lines, no ripple effects:
-1. Implement fix → 2. Run tests → 3. Log MicroFix → 4. Commit with `fix:`
+1. Implement fix → 2. Run tests → 3. Log MicroFix → 4. Commit with `fix:`

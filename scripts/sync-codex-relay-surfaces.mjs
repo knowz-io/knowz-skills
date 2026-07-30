@@ -1,22 +1,58 @@
 #!/usr/bin/env node
 
-import { readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const sourceAdapter = join(ROOT, 'knowzcode', 'knowzcode', 'platform_adapters.md');
 const pluginAdapter = join(ROOT, 'plugins', 'knowzcode', 'knowzcode', 'platform_adapters.md');
+const checkOnly = process.argv.includes('--check');
 
 const surfaces = [
   ['.agents/skills/knowzcode-work/SKILL.md', 'plugins/knowzcode/skills/work/SKILL.md', 'knowzcode-work'],
+  ['.agents/skills/knowzcode-explore/SKILL.md', 'plugins/knowzcode/skills/explore/SKILL.md', 'knowzcode-explore'],
+  ['.agents/skills/knowzcode-fix/SKILL.md', 'plugins/knowzcode/skills/fix/SKILL.md', 'knowzcode-fix'],
+  ['.agents/skills/knowzcode-audit/SKILL.md', 'plugins/knowzcode/skills/audit/SKILL.md', 'knowzcode-audit'],
+  ['.agents/skills/knowzcode-regroup/SKILL.md', 'plugins/knowzcode/skills/regroup/SKILL.md', 'knowzcode-regroup'],
+  ['.agents/skills/knowzcode-regroup-trigger/SKILL.md', 'plugins/knowzcode/skills/regroup-trigger/SKILL.md', 'knowzcode-regroup-trigger'],
   ['.agents/skills/knowzcode-relay/SKILL.md', 'plugins/knowzcode/skills/relay/SKILL.md', 'knowzcode-relay'],
   ['.agents/skills/knowzcode-work/references/relay-execution.md', 'plugins/knowzcode/skills/work/references/relay-execution.md', null],
   ['.agents/skills/knowzcode-continue/SKILL.md', 'plugins/knowzcode/skills/continue/SKILL.md', 'knowzcode-continue'],
   ['.agents/skills/knowzcode-setup/SKILL.md', 'plugins/knowzcode/skills/setup/SKILL.md', 'knowzcode-setup'],
   ['.agents/skills/knowzcode-status/SKILL.md', 'plugins/knowzcode/skills/status/SKILL.md', 'knowzcode-status'],
+  ['.agents/skills/knowzcode-telemetry/SKILL.md', 'plugins/knowzcode/skills/telemetry/SKILL.md', 'knowzcode-telemetry'],
+  ['.agents/skills/knowzcode-telemetry-setup/SKILL.md', 'plugins/knowzcode/skills/telemetry-setup/SKILL.md', 'knowzcode-telemetry-setup'],
   ['.agents/skills/knowzcode-start-work/SKILL.md', 'plugins/knowzcode/skills/start-work/SKILL.md', 'knowzcode-start-work'],
 ];
+
+const frameworkMirrors = [
+  'knowzcode_loop.md',
+  'knowzcode_orchestration.md',
+  'context_efficiency.md',
+  'context_efficiency_runtime.mjs',
+  'relay_execution.md',
+  'claude_code_execution.md',
+  'codex_execution.md',
+];
+
+const contractMirrors = [
+  'context-capsule.schema.json',
+  'agent-lineage.schema.json',
+  'efficiency-event.schema.json',
+];
+
+const packagedSkillSources = new Set(
+  surfaces.filter(([, sourcePath]) => sourcePath.endsWith('/SKILL.md')).map(([, sourcePath]) => sourcePath)
+);
+const packagedReferenceCount = surfaces.length - packagedSkillSources.size;
+const missingGeneratedSkills = readdirSync(join(ROOT, 'plugins', 'knowzcode', 'skills'), { withFileTypes: true })
+  .filter((entry) => entry.isDirectory())
+  .map((entry) => `plugins/knowzcode/skills/${entry.name}/SKILL.md`)
+  .filter((sourcePath) => existsSync(join(ROOT, sourcePath)) && !packagedSkillSources.has(sourcePath));
+if (missingGeneratedSkills.length) {
+  throw new Error(`Codex plugin skills are missing generated adapter surfaces: ${missingGeneratedSkills.join(', ')}`);
+}
 
 function renderSurface(relativePath, sourcePath, generatedName) {
   let content = readFileSync(join(ROOT, sourcePath), 'utf8').trimEnd();
@@ -56,6 +92,46 @@ if (missing.length) {
   adapter = adapter.slice(0, insertAt) + missing.join('\n') + '\n' + adapter.slice(insertAt);
 }
 
-writeFileSync(sourceAdapter, adapter);
-writeFileSync(pluginAdapter, adapter);
-console.log(`Synchronized ${surfaces.length} Codex relay surfaces into both platform adapters.`);
+if (checkOnly) {
+  const sourceCurrent = readFileSync(sourceAdapter, 'utf8');
+  const pluginCurrent = readFileSync(pluginAdapter, 'utf8');
+  const stale = sourceCurrent !== adapter || pluginCurrent !== adapter;
+  const frameworkDrift = frameworkMirrors.filter((relativePath) =>
+    readFileSync(join(ROOT, 'knowzcode', 'knowzcode', relativePath), 'utf8') !==
+      readFileSync(join(ROOT, 'plugins', 'knowzcode', 'knowzcode', relativePath), 'utf8')
+  );
+  const contractDrift = contractMirrors.filter((relativePath) =>
+    readFileSync(join(ROOT, 'knowzcode', 'knowzcode', 'contracts', relativePath), 'utf8') !==
+      readFileSync(join(ROOT, 'plugins', 'knowzcode', 'knowzcode', 'contracts', relativePath), 'utf8')
+  );
+  if (stale || frameworkDrift.length || contractDrift.length) {
+    throw new Error(
+      `Generated surfaces are stale; run scripts/sync-codex-relay-surfaces.mjs` +
+      `${frameworkDrift.length ? `\nFramework drift: ${frameworkDrift.join(', ')}` : ''}` +
+      `${contractDrift.length ? `\nContract drift: ${contractDrift.join(', ')}` : ''}`
+    );
+  }
+  console.log(
+    `Verified ${packagedSkillSources.size} packaged Codex plugin skills plus ${packagedReferenceCount} generated reference, `
+    + `${frameworkMirrors.length} framework mirrors, ${contractMirrors.length} contracts, and adapter parity.`
+  );
+} else {
+  writeFileSync(sourceAdapter, adapter);
+  writeFileSync(pluginAdapter, adapter);
+  for (const relativePath of frameworkMirrors) {
+    writeFileSync(
+      join(ROOT, 'plugins', 'knowzcode', 'knowzcode', relativePath),
+      readFileSync(join(ROOT, 'knowzcode', 'knowzcode', relativePath), 'utf8')
+    );
+  }
+  for (const relativePath of contractMirrors) {
+    writeFileSync(
+      join(ROOT, 'plugins', 'knowzcode', 'knowzcode', 'contracts', relativePath),
+      readFileSync(join(ROOT, 'knowzcode', 'knowzcode', 'contracts', relativePath), 'utf8')
+    );
+  }
+  console.log(
+    `Synchronized ${packagedSkillSources.size} packaged Codex plugin skills plus ${packagedReferenceCount} generated reference, `
+    + `${frameworkMirrors.length} framework mirrors, ${contractMirrors.length} contracts, and adapter parity.`
+  );
+}

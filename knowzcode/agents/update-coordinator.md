@@ -3,7 +3,6 @@ name: update-coordinator
 description: "KnowzCode: Coordinates intelligent merging of KnowzCode framework updates into the active project"
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: opus
-permissionMode: acceptEdits
 maxTurns: 25
 ---
 

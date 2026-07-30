@@ -373,39 +373,15 @@ When Copilot is selected, generate the full prompt file suite in addition to the
 
 **Copilot success message:** See [references/success-messages.md](references/success-messages.md#copilot-success-message).
 
-### 9. Enable Agent Teams (Claude Code only)
+### 9. Optional Agent Teams Opt-In (Claude Code only)
 
-If the user is on Claude Code, **auto-enable Agent Teams with opt-out confirmation**.
+Agent Teams is experimental, costs a separate model context per teammate, and is never required for parallel work, knowledge capture, or quality gates. Ordinary setup MUST leave Claude settings unchanged.
 
-**If NOT on Claude Code** (detected in Step 8 platform detection — Codex, Gemini, Cursor, Copilot, Windsurf): skip this entire step. Agent Teams is a Claude Code feature. Announce:
-> Agent Teams: Not applicable (Claude Code feature). Your platform uses subagent delegation for multi-agent workflows.
+Enable it only when the user explicitly requested Agent Teams in the setup request or supplied `--agent-teams`. A general confirmation, pressing Enter, selecting a model profile, or using Tier 2/3 is not opt-in. Even when configured, workflows form a team only when at least two active peers require shared tasks or direct messaging; independent parallel work uses named agents.
 
-**Step 9a: Announce and confirm**
+If the active platform is not Claude Code, ignore `--agent-teams` with a clear not-applicable message and do not write settings.
 
-Present to the user:
-```
-Agent Teams will be enabled for this project (recommended).
-
-Agent Teams provides persistent knowledge-liaison coverage, parallel orchestration,
-and consistent vault capture across all workflow phases. Without it, knowledge
-operations are one-shot and orchestration is single-threaded.
-
-Press enter to confirm, or type 'no' to use single-agent fallback.
-```
-
-**Step 9b: Handle response**
-
-- **If confirmed** (enter, "yes", "y", or any affirmative):
-  1. Write `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` to `.claude/settings.local.json` (project-level, gitignored)
-  2. Follow-up prompt: `"Enable globally for all projects too? (y/n)"`
-     - If yes: also write to `~/.claude/settings.json` (home-level global config)
-     - If no: project-only (done)
-
-- **If declined** ("no", "n"):
-  1. Skip env var write
-  2. Announce: `"Agent Teams not enabled. Knowledge capture will be reduced — vault operations will be one-shot instead of persistent. You can enable later by adding CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 to .claude/settings.local.json"`
-
-Read the target settings file(s) if they exist. Merge the Agent Teams env var into existing content:
+For an explicit project opt-in, read `.claude/settings.local.json`, require valid JSON, preserve every existing key, and merge:
 
 ```json
 {
@@ -415,7 +391,7 @@ Read the target settings file(s) if they exist. Merge the Agent Teams env var in
 }
 ```
 
-If the file already has other keys, preserve them and merge. If it doesn't exist, create it with the content above.
+If the file is missing, create it. If it is malformed or unreadable, fail closed: report the path and parse error, preserve the file byte-for-byte, and do not enable Agent Teams. Never replace an unreadable settings file with `{}`. A global `~/.claude/settings.json` write requires a separate explicit request for global enablement; do not prompt for or infer it.
 
 **Step 9c: Windows note**
 
@@ -467,7 +443,7 @@ Created:
 
 Platform adapters: [list generated adapters or "None (skip)"]
 
-Agent Teams: [Enabled (.claude/settings.local.json) — recommended | Declined (subagent fallback — reduced knowledge capture)]
+Agent Teams: [Enabled by explicit request (.claude/settings.local.json) | Unchanged (default; adaptive named-agent routing)]
 
 Cross-agent relay: [Enabled portably (`relay: other`, {host} → {target}) | Target ready but not enabled | Target unavailable — {remediation} | Native-only on this platform]
 

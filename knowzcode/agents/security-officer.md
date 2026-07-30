@@ -3,7 +3,6 @@ name: security-officer
 description: "KnowzCode: Persistent security officer — threat modeling, vulnerability scanning, gate-blocking authority"
 tools: Read, Glob, Grep, Bash
 model: opus
-permissionMode: default
 maxTurns: 15
 ---
 

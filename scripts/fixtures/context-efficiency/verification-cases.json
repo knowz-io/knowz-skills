@@ -1,0 +1,81 @@
+{
+  "schema": "knowzcode.verification-cases/v1",
+  "cases": [
+    {
+      "id": "tdd",
+      "input": {
+        "tier": "tdd"
+      },
+      "expected": {
+        "checks": [
+          "targeted"
+        ],
+        "consolidated_required": false,
+        "artifact_logs": true
+      }
+    },
+    {
+      "id": "microtask",
+      "input": {
+        "tier": "microtask"
+      },
+      "expected": {
+        "checks": [
+          "affected-surface"
+        ],
+        "consolidated_required": false,
+        "artifact_logs": true
+      }
+    },
+    {
+      "id": "gate3",
+      "input": {
+        "tier": "gate3"
+      },
+      "expected": {
+        "checks": [
+          "full-tests",
+          "static-analysis",
+          "build",
+          "package",
+          "install-smoke"
+        ],
+        "consolidated_required": true,
+        "artifact_logs": true
+      }
+    },
+    {
+      "id": "audit-fix-production",
+      "input": {
+        "tier": "audit-fix",
+        "production_changed_after_full_green": true
+      },
+      "expected": {
+        "checks": [
+          "targeted",
+          "full-tests",
+          "static-analysis",
+          "build",
+          "package",
+          "install-smoke"
+        ],
+        "consolidated_required": true,
+        "artifact_logs": true
+      }
+    },
+    {
+      "id": "audit-fix-doc-only",
+      "input": {
+        "tier": "audit-fix",
+        "production_changed_after_full_green": false
+      },
+      "expected": {
+        "checks": [
+          "targeted"
+        ],
+        "consolidated_required": false,
+        "artifact_logs": true
+      }
+    }
+  ]
+}

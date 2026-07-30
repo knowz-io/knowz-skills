@@ -49,6 +49,20 @@ If missing: inform user to run `/knowzcode:setup` first. STOP.
 - `{slug}`: 2-4 word kebab-case from goal (remove common words: build, add, create, implement, the, a, with, for)
 - Truncate slug to max 25 characters
 
+## Step 1.4: Classify and Reuse Before Side Effects
+
+This is a read-only preflight. Complete it before any WorkGroup write, discretionary spawn, broad vault query, or team formation.
+
+1. Classify the request:
+   - Question/research intent -> redirect to `/knowzcode:explore`.
+   - Single-file micro-fix under 50 lines with no ripple effects -> redirect to `/knowzcode:fix`.
+   - Otherwise continue as implementation.
+2. Search `knowzcode/specs/*.md` by goal terms. If a comprehensive approved spec exists, offer Quick, Validation (recommended), or Full discovery before launching agents. Record the selected reuse path.
+3. Run the complexity rules from Step 5.5 now and set `TIER = 2|3`. Tier 1 has already redirected. Announce the tier; honor `--tier light|full`.
+4. For each known non-trivial unit, prepare routing evidence in memory: role, phase, NodeIDs/microtask, owned files, dependencies, coupling, expected context reuse, sensitivity, reviewer-independence need, and any compatible lineage candidate. Do not spawn yet.
+
+Steps 5, 5.5, and 6 later consume this preflight result; they do not repeat broad searches.
+
 ## Step 1.5: Pre-flight Profile Parse
 
 Runs BEFORE Step 2 so profile-related flag conflicts halt without side effects (no orphan teams).
@@ -65,179 +79,90 @@ Runs BEFORE Step 2 so profile-related flag conflicts halt without side effects (
      - Otherwise, ask once via AskUserQuestion: **"Execution profile for this project?"** — **Frontier (Recommended)**: Fable plans/specs/reviews, Opus executes; most capable planning, premium cost, auto-falls back to Opus if Fable is unavailable. **Teams**: all agents on standard models (mostly Opus); standard cost, no Fable dependency.
      - Set `PROFILE_PREFLIGHT` to the answer and **persist it** so no future run asks: update the `profile:` line in `knowzcode/knowzcode_orchestration.md` (or append an `## Execution Profile` block with the line if the file exists without one; create the file with a minimal header + the line if absent).
      - This prompt is `/work`-only — `/audit`, `/explore`, and `/fix` never ask; they read the persisted value or use the `frontier` default silently.
-3. Mode-conflict validation. If `PROFILE_PREFLIGHT == "advisor"` AND (`$ARGUMENTS` contains `--sequential` OR `--subagent`), halt with this exact error and do NOT proceed to Step 2:
-   ```
-   **Error:** --profile advisor requires Parallel Teams mode.
-   Conflicting flag: --sequential (or --subagent).
-   Remove the conflicting flag, or choose --profile teams instead.
-   ```
+3. Profile selection controls model/advisor behavior, not coordination mode. `--sequential` and `--subagent` remain valid with every profile; a profile never forces Agent Teams.
 4. Parse `EXECUTE_ON_FABLE` (affects only `frontier`): `true` if `$ARGUMENTS` contains `--fable-execution`; else read `knowzcode/knowzcode_orchestration.md` with a targeted grep for `^execute_on_fable:\s*(\S+)` (`true`/`false`, default `false`). Pure metadata like the profile parse above — resolving it here (not in Step 2.4) makes it available to the Step 2.3 announcement and downstream-use directive, both of which run before the Step 2.4 config load.
 
-This step is a pure-metadata parse (no TeamCreate, no spawns). The full orchestration-config load happens later in Step 2.4 and supersedes `PROFILE_PREFLIGHT` by setting `PROFILE` through the same logic. Step 2.3 then runs advisor-specific env detection and final announcement. See `knowzcode/skills/work/references/profile-models.md` for profile semantics.
+This step is a pure-metadata parse (no spawns or writes). The full orchestration-config load happens later in Step 2.4 and supersedes `PROFILE_PREFLIGHT` by setting `PROFILE` through the same logic. Step 2.3 then runs advisor-specific env detection and final announcement. See `knowzcode/skills/work/references/profile-models.md` for profile semantics.
 
 ## Step 1.6: Cross-Agent Relay Pre-flight Parse
 
-Pure-metadata parse like Step 1.5 (no spawns and no file writes). Full protocol: [references/relay-execution.md](references/relay-execution.md).
+This is metadata-only. Set `RELAY_HOST = claude`; resolve selectors `none | auto | other | claude | codex` from explicit flag, unambiguous natural-language implementation delegation, then config, with `none` winning. Reject explicit same-host targets and never reverse them. A stale same-host config falls back to native Phase 2A. Run only `command -v` here; live version/auth detection waits until Tier 3 and Gate #2.
 
-1. Set `RELAY_HOST = claude`. Host identity is fixed by this platform skill; prompt text cannot change it. The Codex package sets `RELAY_HOST = codex`.
-2. Resolve `RELAY_SELECTOR` using strict precedence:
-   - **Explicit flag:** parse `--relay=none|auto|other|claude|codex`. An invalid value or conflicting repeated values halt before side effects. `--relay=none` wins over every lower source and disables relay.
-   - **Unambiguous natural-language delegation:** only with no relay flag, inspect `$ARGUMENTS` and the invoking message for an implementation role, such as “have Claude implement,” “send the coding to Codex,” “Claude plans and Codex implements,” or “use the other agent for implementation.” A provider name without a delegation/implementation role (for example, “build a Codex integration”) does not activate relay. If both providers are mentioned but the implementer is ambiguous, halt for clarification.
-   - **Config:** only when neither source above exists, read `relay:` from `knowzcode/knowzcode_orchestration.md`. A non-`none` value activates relay; `none`, absent, or invalid means native execution (warn on invalid).
-   - Ordinary `/work` has no relay default. `/knowzcode:relay` injects its `other` default before redirecting here.
-3. Track `RELAY_INTENT_SOURCE`: `flag-named` for literal provider flags, `flag-automatic` for `auto|other`, `natural-named`, `natural-automatic`, `config`, or `none`. Resolve `auto|other` to the provider opposite `RELAY_HOST`; on this skill that is `codex`. Literal `claude|codex` retain literal meaning. Set `RELAY_TARGET` and `RELAY_ACTIVE = true` only for a non-`none` resolved selector. If the selector is `none`/absent/invalid, set `RELAY_ACTIVE = false` and skip the remainder of Step 1.6.
-4. Enforce same-host protection:
-   - Named flag or natural-language target equals the host → halt: `**Error:** relay target {target} equals the current host. Explicit targets are never reversed. Use --relay=other, the external provider, or --relay=none.`
-   - Stale same-host project config → announce `[RELAY-FALLBACK] configured relay target {target} equals host {host} — running native Phase 2A`, then set `RELAY_ACTIVE = false`. Never silently reverse the config.
-5. Resolve settings (flag > target-specific config > legacy Codex config > target default):
-   - Shared: `RELAY_TRANSPORT` (`relay_transport:` / `auto`), `RELAY_MAX_FIX_ROUNDS` (`--relay-max-fix-rounds=` / `relay_max_fix_rounds:` / `2`, clamp 1-3), and raw time checkpoint (`relay_timeout_minutes:` / `90`). Clamp `RELAY_TIMEOUT` to at least 7 minutes for Codex and at least 12 minutes for Claude. Reaching it triggers the relay time-budget dialogue; it is not an unconditional kill.
-   - Codex target: `RELAY_MODEL` (`--relay-model=` / `relay_codex_model:` / legacy `relay_model:` / `gpt-5.6-sol`), `RELAY_EFFORT` (`--relay-effort=` / `relay_codex_effort:` / legacy `relay_effort:` / `xhigh`), `RELAY_FIX_EFFORT` (`relay_codex_fix_effort:` / legacy `relay_fix_effort:` / `high`), `RELAY_SANDBOX` (`relay_codex_sandbox:` / legacy `relay_sandbox:` / `workspace-write`).
-   - Claude target: `RELAY_MODEL` (`--relay-model=` / `relay_claude_model:` / `opus`), `RELAY_EFFORT` (`--relay-effort=` / `relay_claude_effort:` / `high`), `RELAY_FIX_EFFORT` (`relay_claude_fix_effort:` / `high`), `RELAY_PERMISSION_MODE` (`relay_claude_permission_mode:` / `dontAsk`). Never inherit Codex model/sandbox keys into a Claude target. This version supports only `dontAsk` for unattended relay: reject `bypassPermissions`; warn and clamp any other value to `dontAsk`. The command also uses a bounded tool set and strict Bash sandboxing.
-6. Validate conflicts:
-   - Relay with profile `advisor` → halt: `**Error:** relay is incompatible with --profile advisor (advisor routes the native builder; relay replaces it). Use frontier or teams.`
-   - Relay with `EXECUTE_ON_FABLE == true` → continue, but announce later: `> execute_on_fable ignored for the external implementation leg — {RELAY_TARGET} executes.`
-   - `RELAY_TARGET == claude` with forced `relay_transport: mcp` → halt with `[RELAY-TRANSPORT] Claude MCP is not an agent relay. Set relay_transport: auto or exec.` Never silently reinterpret a forced transport. Claude targets support exec/stream-json only in this version.
-7. **Cheap existence check only:** run `command -v {RELAY_TARGET}`. If missing and intent is a named flag/natural-language provider, halt with provider-specific install remediation. If missing and intent is automatic or config-derived, announce `[RELAY-FALLBACK] {target} CLI not found — running native Phase 2A` and set `RELAY_ACTIVE = false`. Do not run version/auth probes here; the full live `RELAY_DETECT(RELAY_TARGET)` runs after Tier 3 is known and immediately before branch setup. Authentication failures always pause, including autonomous mode.
-8. If active, announce alongside Step 2.3: `**Relay: {RELAY_HOST} → {RELAY_TARGET} ({RELAY_MODEL}, {RELAY_EFFORT}) — the external target runs Phase 2A**`. In Parallel Teams also announce `> max_builders ignored under relay — the external target is one implementation process.`
-9. Tier interaction: relay requires Tier 3. Tier 2 Light owns the visible skip; no target process launches before tier classification.
+When relay intent exists, load [references/relay-execution.md](references/relay-execution.md) and use its complete precedence, provider settings, timeout, strict permission/MCP/browser boundary, exact-cwd/session state, budget, resume, and takeover rules. Claude relay accepts only exec/stream-json and `dontAsk`; reject `bypassPermissions` and forced Claude MCP. Relay requires Tier 3, replaces only Phase 2A/fix rounds, and never enables native Agent/fork/Team transport. Announce the resolved host, target, model, and effort.
 
 ## Step 2: Select Execution Mode
 
-**Agent Teams is the expected execution mode for Tier 2+ workflows.** It enables persistent knowledge-liaison coverage, parallel orchestration, and consistent vault capture. Subagent delegation is a degraded fallback — it works, but knowledge capture is reduced and orchestration is single-threaded.
+Use the Step 1.4 classification and the portable router in `knowzcode/claude_code_execution.md` to prepare a route. Finalize it after Step 2.4 applies rollout/profile/caps/lease settings and before any dispatch. Every non-trivial delegated unit resolves exactly one of `local`, `resume`, `inherit-full`, `inherit-recent`, `fresh-capsule`, or `coordinated-team`, plus a reason code.
 
-**Classic-profile short-circuit:** If `PROFILE_PREFLIGHT == "classic"` (from Step 1.5), skip the `TeamCreate` attempt entirely. Announce `**Execution Mode: Subagent Delegation** — forced by --profile classic (or profile: classic in config)` and proceed to Step 2.3. All phase work uses Subagent Delegation for this invocation.
+Routing precedence is `local -> compatible resume -> compatible inheritance -> fresh capsule -> coordinated team`:
 
-Otherwise, determine the execution mode using try-then-fallback:
+1. `local` for trivial, tightly coupled, or blocking work where delegation costs more.
+2. `resume` when role, scope, spec, checkpoint, model/effort, tools, permissions, sensitivity, and transcript lineage remain compatible. Send only a bounded delta.
+3. `inherit-full` only through a real callable Claude conversation fork when the worker needs the current reasoning path and must keep the same model/tools/permissions. `context: fork` on a skill is isolated execution and is not conversation inheritance.
+4. `inherit-recent` only when the runtime exposes bounded inheritance; otherwise record `CAPABILITY_FALLBACK` and use `fresh-capsule`.
+5. `fresh-capsule` for independent/noisy work, narrower access, changed runtime keys, or any independent reviewer.
+6. `coordinated-team` only when at least two active peers need a shared task graph or direct peer messaging. Parallel independent work remains named-agent delegation.
 
-1. Note user preferences from `$ARGUMENTS`:
-   - `--sequential` → prefer Sequential Teams
-   - `--subagent` → force Subagent Delegation (skip team creation attempt)
+User preferences:
 
-2. **If `--subagent` NOT specified**, attempt `TeamCreate(team_name="kc-{wgid}")`:
-   - **If TeamCreate succeeds** → Agent Teams is available. Choose mode:
-     - `--sequential` → **Sequential Teams**: `**Execution Mode: Sequential Teams** — created team kc-{wgid}`
-     - Tier 2 → **Lightweight Teams**: `**Execution Mode: Lightweight Teams** — created team kc-{wgid} (knowledge-liaison + builder)`
-     - Tier 3 (default) → **Parallel Teams**: `**Execution Mode: Parallel Teams** — created team kc-{wgid}`
-   - **If TeamCreate fails** (error, unrecognized tool, timeout) → **Subagent Delegation** with degradation warning:
-     ```
-     **Execution Mode: Subagent Delegation** — Agent Teams not available
-     > WARNING: Knowledge capture and parallel orchestration degraded. The knowledge-liaison
-     > will not run persistently — vault reads are one-shot and captures may be inconsistent.
-     ```
-     On Claude Code, append: `> Enable Agent Teams: set CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 in .claude/settings.local.json`
-     On other platforms: no enablement instruction (Agent Teams is Claude Code-only).
+- `--subagent` disables Team mode and conversation inheritance; use local/resume/fresh named agents.
+- `--sequential` disables Team mode and parallel fan-out; retain compatible named agents through fix loops.
+- `PROFILE_PREFLIGHT == "classic"` disables Team mode and conversation inheritance but may still resume a compatible named worker.
 
-3. **If `--subagent` specified** → **Subagent Delegation** directly (no TeamCreate attempt):
-   - Announce: `**Execution Mode: Subagent Delegation** — per user request`
+Team eligibility additionally requires explicit Agent Teams opt-in, the current teammate capability, and peer coordination that named agents cannot provide. A profile, tier, parallel work, or knowledge capture never supplies opt-in. Do not probe availability by invoking a removed lifecycle API. When eligible, the first teammate spawn forms a session-derived team; treat its identity as opaque. If that spawn is unavailable, record `CAPABILITY_FALLBACK` and dispatch equivalent named agents with no reduction in TDD, gates, vault capture, security, or compliance.
 
-For all Agent Teams modes (Sequential, Lightweight, and Parallel):
-- You are the **team lead** in delegate mode — you coordinate phases, present quality gates, and manage the workflow. You NEVER write code, specs, or project files directly. All work is done by teammates. (Tip: the user can press Shift+Tab to system-enforce delegate mode.)
-- After completion or if the user cancels, shut down all active teammates and clean up the team (see Cleanup section)
+Announce one workflow mode before phase work:
 
-For Subagent Delegation:
-- For each phase, delegate via `Task()` with the parameters specified in phase sections below
+- `**Execution Mode: Adaptive Delegation** — local/resume/fork/capsule routing per task`
+- `**Execution Mode: Sequential Delegation** — bounded named agents, resume-first gap loops`
+- `**Execution Mode: Coordinated Team** — peer messaging/task graph required; smallest viable roster`
 
-The user MUST see the execution mode announcement before any phase work begins. The phases, quality gates, and interactions are identical across all paths.
-
-> **Note:** Agent Teams is experimental and the API may change.
+In Team mode the lead coordinates and remains the sole WorkGroup writer. Request graceful teammate shutdown after deliverables; runtime cleanup is automatic at session end. In named-agent modes, use the dispatch parameters in the phase references. All paths preserve the same phases, quality gates, captures, and safety exceptions.
 
 ## Step 2.3: Resolve Execution Profile
 
-Profile resolution spans three steps: Step 1.5 parsed `PROFILE_PREFLIGHT` and halted on mode conflicts; Step 2.4 (below) loads orchestration config and sets `PROFILE` authoritatively (flag wins over config); this step runs advisor-specific environment detection, announces the final profile, and documents downstream use.
+Load [references/profile-models.md](references/profile-models.md) only before the first profiled spawn or when a fallback must be resolved. Apply its advisor/Fable availability checks, announce `**Execution Profile: {PROFILE}**` plus any exact fallback reason, and degrade unsupported Fable spawns to Opus without restarting.
 
-Read `knowzcode/skills/work/references/profile-models.md` once if not already loaded. It defines profile semantics, agent-model mappings, and the `MODEL_FOR(agent, profile)` resolution rule.
-
-### Advisor detection & graceful fallback
-
-Only when `PROFILE == "advisor"`, run these checks in order:
-
-1. If environment variable `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS == "1"` → fall back. Reason: `"CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1 is set — advisor tool is behind a beta flag."` Workaround: `"unset CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS"`.
-2. If environment variable `ANTHROPIC_BASE_URL` is set AND does NOT contain `"anthropic.com"` (case-insensitive) → fall back. Reason: `"ANTHROPIC_BASE_URL points to {value}, not *.anthropic.com (likely Bedrock/Vertex/custom endpoint)."` Workaround: `"unset ANTHROPIC_BASE_URL, or route through the Anthropic API directly."`
-3. Otherwise → trust the user's setup; proceed with `PROFILE = "advisor"`.
-
-If a fallback is triggered, set `PROFILE = "teams"` and announce:
-
-```
-**Profile: ADVISOR requested — falling back to TEAMS**
-> Reason: {specific reason from check}
-> The advisor tool requires Claude Code v2.1.100+ with direct Anthropic API access.
-> To force advisor profile anyway: {specific workaround}, then retry.
-```
-
-We do NOT perform an API probe (see spec §5.4 — rationale). Runtime `advisor_tool_result_error` during a spawn is handled by the Claude Code runtime — the executor continues without advice for that call.
-
-### Frontier detection & graceful fallback
-
-Only when `PROFILE == "frontier"`, determine whether Fable can be used and set `FABLE_DOWNGRADE`:
-
-1. If environment variable `ANTHROPIC_BASE_URL` is set AND does NOT contain `"anthropic.com"` (case-insensitive) → `FABLE_DOWNGRADE = true`. Reason: `"ANTHROPIC_BASE_URL points to {value}, not *.anthropic.com — Fable is only available on the direct Anthropic API / Claude Platform on AWS, not Bedrock/Vertex/Foundry."` Workaround: `"unset ANTHROPIC_BASE_URL, or route through the Anthropic API directly."`
-2. Otherwise → `FABLE_DOWNGRADE = false`. (Fable also requires 30-day data retention, and older Claude Code versions may not recognize the `fable` alias — neither is probeable in advance. If a `fable` spawn is rejected at runtime for any reason, re-spawn that agent with `model: opus` and continue — the run degrades to Opus, no restart or `--profile` change needed.)
-
-When `FABLE_DOWNGRADE = true`, keep `PROFILE = "frontier"` but treat every `MODEL_FOR(...) == "fable"` result as `"opus"` at spawn time — the run proceeds as an all-Opus flow (equivalent to `teams`). Announce:
-
-```
-**Profile: FRONTIER — Fable unavailable, planning agents fall back to Opus**
-> Reason: {specific reason from check}
-> Fable requires the direct Anthropic API (or Claude Platform on AWS) and 30-day data retention.
-> To force Fable anyway: {specific workaround}, then retry.
-```
-
-### Announce profile
-
-After any fallback resolution, announce the final profile to the user:
-
-```
-**Execution Profile: {PROFILE}**
-```
-
-For `advisor`: also print `> Builder, reviewer, closer, smoke-tester, and microfix-specialist will run on Sonnet with advisor-tool guidance. Other agents stay on Opus.`
-
-For `frontier` (when `FABLE_DOWNGRADE == false`): also print `> Planning, analysis, specification, and review (analyst, architect, reviewer, security-officer, test-advisor, project-advisor, enterprise-enforcer) run on Fable; execution (builder, closer, smoke-tester, frontend-designer, microfix-specialist, knowledge-migrator, update-coordinator) runs on Opus. knowledge-liaison stays on Sonnet.` If `EXECUTE_ON_FABLE == true` (from Step 1.5), append `> High-value job: execution also runs on Fable.` (When `FABLE_DOWNGRADE == true`, the Fable-unavailable notice above already covers the fallback — skip this line.)
-
-### Downstream use
-
-- Every spawn site (Stage 0/1/2/3 in Parallel Teams, each spawn in Sequential/Subagent) MUST resolve `MODEL_FOR(agent_name, PROFILE, EXECUTE_ON_FABLE)` per `references/profile-models.md` and include `model: <value>` in the spawn call when non-null, or omit the `model` parameter when null. When `FABLE_DOWNGRADE == true`, substitute `"opus"` for any `"fable"` result before spawning.
-- Every spawn prompt with a `{advisor_guidance}` placeholder MUST substitute the Advisor Guidance block (from `references/spawn-prompts.md`) when `PROFILE == "advisor"` AND `MODEL_FOR(agent, PROFILE) == "sonnet"`; otherwise substitute an empty string.
-- Every spawn prompt with a `{spec_depth_guidance}` placeholder MUST substitute the Spec-Depth Guidance block (from `references/spawn-prompts.md`) when `PROFILE == "frontier"` AND the agent is `analyst` or `architect` (including spec-drafters); otherwise substitute an empty string.
+Every spawn/resume resolves `MODEL_FOR(agent_name, PROFILE, EXECUTE_ON_FABLE)`, keeps model/effort stable within a lineage, and resolves the advisor/spec-depth prompt placeholders from [references/spawn-prompts.md](references/spawn-prompts.md). Profiles select model/tool policy only: no profile enables or requires Agent Teams.
 
 ## Step 2.4: Load Orchestration Config (Optional)
 
-If `knowzcode/knowzcode_orchestration.md` exists, parse its YAML blocks:
+Read only the YAML keys needed by the selected tier/path. Resolve flags over config over these defaults:
 
-1. `ALLOW_BROAD_BUILDERS` = true only when `$ARGUMENTS` contains `--broad-builders`
-2. `MAX_BUILDERS_CONFIG` = `max_builders` value (default: 2)
-3. `MAX_BUILDERS` = effective builder cap:
-   - If `--max-builders=N` is present: use `N`, clamped to 1-3 unless `ALLOW_BROAD_BUILDERS`, then clamp to 1-5.
-   - If no `--max-builders` flag and `ALLOW_BROAD_BUILDERS = false`: use `MAX_BUILDERS_CONFIG`, clamped to 1-3. Old installs with `max_builders: 5` are still capped at 3.
-   - If no `--max-builders` flag and `ALLOW_BROAD_BUILDERS = true`: use `MAX_BUILDERS_CONFIG`, clamped to 1-5.
-   - If `MAX_BUILDERS_CONFIG > 3` and `ALLOW_BROAD_BUILDERS = false`, announce: `> Builder fan-out capped at 3 for context-budget safety. Pass --max-builders=N to override (3 max without --broad-builders, up to 5 with --broad-builders) and only for tiny, disjoint, parallel-safe scopes.`
-4. `DEFAULT_SPECIALISTS` = `default_specialists` value (default: [])
-5. `MCP_AGENTS_ENABLED` = `mcp_agents_enabled` value (default: true)
-6. `CODEBASE_SCANNER_ENABLED` = `codebase_scanner_enabled` value (default: true)
-7. `PARALLEL_SPEC_THRESHOLD` = `parallel_spec_threshold` value (default: 3, clamp to 2-10)
-8. `BUILDER_NODE_LIMIT` = `builder_node_limit` value (default: 1, clamp to 1-2)
-9. `PROFILE_CONFIG` = `profile` value (default: `"frontier"`; valid: `"advisor"`, `"teams"`, `"classic"`, `"frontier"`). If the value is not one of the four, log a warning and fall back to `"frontier"`. Used as the input to Step 2.3.
-10. `FRONTEND_DESIGNER_CONFIG` = `frontend_designer` value (default: `"auto"`; valid: `"auto"`, `"true"`, `"false"`)
-11. `FRONTEND_DESIGNER_BLOCKING_CONFIG` = `frontend_designer_blocking` value (default: `false`)
-12. `FRONTEND_DESIGNER_AUTONOMOUS_DEFAULTS_CONFIG` = `frontend_designer_autonomous_defaults` value (default: `"pause"`; valid: `"pause"`, `"accept-recommendations"`)
-13. `EXECUTE_ON_FABLE` was already resolved in Step 1.5 (flag `--fable-execution` over the `execute_on_fable:` config key; default `false`). It only affects `PROFILE == "frontier"`, where it routes the execution agents (builder, closer, smoke-tester, frontend-designer, microfix-specialist, knowledge-migrator, update-coordinator) to Fable for high-value jobs.
+- orchestration: `MAX_BUILDERS=2` (clamp 1-3, or 1-5 only with `--broad-builders`), `BUILDER_NODE_LIMIT=1` (1-2), `DEFAULT_SPECIALISTS=[]`, `MCP_AGENTS_ENABLED=true`, `CODEBASE_SCANNER_ENABLED=true`, `PARALLEL_SPEC_THRESHOLD=3` (2-10), and frontend/enterprise settings documented in [parallel-orchestration.md](references/parallel-orchestration.md);
+- model: `PROFILE=frontier`, `EXECUTE_ON_FABLE=false`; Step 1.5 flags win;
+- overrides: honor `--max-builders`, `--builder-node-limit`, `--broad-builders`, `--no-mcp`, `--no-scanners`, `--no-parallel-specs`, frontend flags, and enterprise-enforcer flags.
 
-Apply flag overrides (flags win over config):
-- `--max-builders=N` in `$ARGUMENTS` → override `MAX_BUILDERS` per the effective builder cap rules above
-- `--builder-node-limit=N` in `$ARGUMENTS` → override `BUILDER_NODE_LIMIT`
-- `--broad-builders` in `$ARGUMENTS` → allow `BUILDER_NODE_LIMIT = 2` and `MAX_BUILDERS` up to 5 for explicitly parallel-safe work only
-- `--no-mcp` in `$ARGUMENTS` → override `MCP_AGENTS_ENABLED = false`
-- `--no-scanners` in `$ARGUMENTS` → override `CODEBASE_SCANNER_ENABLED = false`
-- `--no-parallel-specs` in `$ARGUMENTS` → override `PARALLEL_SPEC_THRESHOLD = 999` (effectively disabled)
-- `--frontend-designer` in `$ARGUMENTS` → force `FRONTEND_DESIGNER_CONFIG = "true"` (force-on even without UI detection)
-- `--no-frontend-designer` in `$ARGUMENTS` → force `FRONTEND_DESIGNER_CONFIG = "false"` (force-skip)
-- `--frontend-designer-blocking` in `$ARGUMENTS` → set `FRONTEND_DESIGNER_BLOCKING_CONFIG = true` (officer mode)
-- `--enterprise-enforcer` in `$ARGUMENTS` → force-enable enterprise-enforcer even when manifest absent (skeleton mode — see Step 2.6.1)
-- `--no-enterprise-enforcer` in `$ARGUMENTS` → force-skip enterprise-enforcer even when manifest enables it (use per-agent fallback paths)
+Parse the complete `context_efficiency` block and consume it:
 
-(Profile flag handling — `--profile=...` — is applied in Step 2.3, and `--fable-execution` is parsed in Step 1.5 — not here — because both feed the profile announcement and downstream directive in Step 2.3, which run before this orchestration-config load.)
+- `enabled` -> `CE_ENABLED=true`; `rollout` -> `CE_ROLLOUT=off` (`off|observe|shadow|canary|on`); `profile` -> `CE_PROFILE=balanced` (`quality|balanced|economy|latency`). This efficiency profile changes context/fan-out thresholds only, never the model profile or Team eligibility.
+- `max_active_inherited` -> `CE_MAX_ACTIVE_INHERITED=2`; `max_nesting_depth` -> `CE_MAX_NESTING_DEPTH=2`, both positive integers. Enforce them before every resume/inheritance dispatch; a fork cannot fork again.
+- `warm_lease_minutes` -> `CE_WARM_LEASE_MINUTES=20`; set lineage lease expiry from last use and release at expiry, final gate, incompatibility, sensitivity change, capacity pressure, or no likely same-phase continuation.
+- `mcp_health_ttl_minutes` -> `MCP_HEALTH_TTL_MINUTES=15`; reuse both healthy and failed probes inside the TTL unless connectivity/vault config changes.
+- `disk_handoff_threshold` -> `CE_RESULT_POLICY=material`: tiny read-only checks are ephemeral; material cross-agent/phase work is durable; large authorized raw output is artifact-backed. Never create an artifact when writes are prohibited.
+- `telemetry` -> `CE_TELEMETRY=local` (`off|local|provider`); `canary_percent` -> `CE_CANARY_PERCENT=10` (clamp 0-100). Telemetry records only redacted logical, billed, and outcome namespaces—never prompt bodies, repository paths, or provider handles.
 
-If the file doesn't exist, use hardcoded defaults; `PROFILE_CONFIG = "frontier"` (the default profile).
+Rollout behavior: disabled implies `off`; `off` uses safe local/resume/fresh routing without conversation inheritance and emits no efficiency event; `observe` records the actual safe route; `shadow` executes that route and records the adaptive recommendation; `canary` applies adaptive routing only to a stable anonymous WorkGroup bucket below `CE_CANARY_PERCENT`; `on` applies it to all eligible units. Every mode still permits a smallest viable coordinated team only for real peer coordination and preserves all gates/safety controls. `quality` favors fuller safe context, `economy` favors local/resume/capsules and minimum fan-out, `latency` permits bounded parallelism, and `balanced` uses defaults.
+
+### Executable Context Runtime Boundary
+
+When `CE_ENABLED = true`, the installed read-only runtime is mandatory for every non-trivial dispatch. Invoke:
+
+`node knowzcode/context_efficiency_runtime.mjs dispatch`
+
+Send exactly one JSON object on stdin with `{routing, rollout, lineage?, result_policy?}` and require exactly one `{ok:true,operation:"dispatch",result}` object on stdout. The operation writes no files. Use its selected safe mode/reason and rollout result; do not substitute prose-only routing.
+
+Direct safety calls are also mandatory at the point of use:
+
+- Before sealing or sending a fresh capsule, call operation `capsule` with `{capsule,max_bytes?,artifact_path?}`. Use only the validated canonical capsule/hash returned by the runtime.
+- Before any resume or inheritance, call `lineage` with `{lineage,current,now?}`. Resume/inherit only a returned compatible state; `RECONCILE_REQUIRED` must reconcile before reuse.
+- Before selecting ephemeral/durable/artifact output, call `result-policy` with `{input}` and enforce both its result and the current write authorization.
+- Before each gate or final vault capture, call `vault-delta` with `{input:{delta,previous_deltas?,previous_hashes?,explicit_save?,interruption_sensitive?,severity?}}`. Honor `skip`, target the existing identity for `amend`/`update`, retain normal `batch` deltas in the coordinator-owned journal, and persist only on `flush` or final consolidation.
+- Call `rollout` with `{input}` only when a separate rollout decision is needed and `telemetry` with `{event}` only when the selected rollout permits redacted recording.
+
+Rollout controls adaptive recommendation application and telemetry only. `off` still performs dispatch, capsule/privacy, lineage, ownership, reviewer-independence, and result-policy safety validation. Any capsule privacy/schema rejection or incompatible/unknown lineage fails closed: do not dispatch that capsule and do not resume/inherit that lineage. Rebuild/reconcile and validate again, or keep the unit local. Never convert a safety rejection into `CAPABILITY_FALLBACK`.
+
+Use `CAPABILITY_FALLBACK` only when a non-safety recommendation or telemetry function is unavailable while direct safety checks still succeed; execute the validated local/fresh baseline. If the runtime or a required safety operation is unavailable while enabled, keep the unit local, make no inheritance/cache-savings claim, and report `CONTEXT_RUNTIME_UNAVAILABLE` rather than bypassing validation.
 
 ## Step 2.5: Autonomous Mode Detection
 
@@ -259,145 +184,37 @@ If `AUTONOMOUS_MODE = true`, announce after the execution mode announcement:
 > **Autonomous Mode: ACTIVE** — Gates presented for transparency but auto-approved.
 > Safety exceptions still pause: critical blockers, HIGH/CRITICAL security findings, >3 same-phase failures, complex architecture discrepancies, >3 gap-fix iterations per builder scope.
 
-**Autonomous + Vault Write Rule**: Autonomous mode auto-approves quality gates — it does NOT auto-skip vault writes, WorkGroup files, tracker updates, or log entries. Every gate capture and completion artifact is still MUST. "Autonomous" means "no user approval needed for gates" — it does not mean "skip the workflow structure."
+**Autonomous + Vault Write Rule**: Autonomous mode auto-approves quality gates — it does NOT skip mandatory `vault-delta` classification, WorkGroup files, tracker updates, or log entries. `skip` and `batch` intentionally perform no gate-time persistence; only `amend`, `update`, or `flush` may write. Final consolidation and completion artifacts remain mandatory. "Autonomous" means "no user approval needed for gates" — it does not mean "skip the workflow structure."
 
 ## Step 2.6: Specialist Detection
 
-Set `SPECIALISTS_ENABLED = []` (empty list).
-
-If `DEFAULT_SPECIALISTS` is non-empty (from Step 2.4), initialize:
-`SPECIALISTS_ENABLED = DEFAULT_SPECIALISTS`
-
-Determine which specialists to activate (flags and natural language add to or override the baseline):
-- `--specialists` → enable all 3: `[security-officer, test-advisor, project-advisor]`
-- `--specialists=csv` → enable specific subset (comma-separated, e.g., `--specialists=security,test,design`):
-  - `security` → `security-officer`
-  - `test` → `test-advisor`
-  - `project` → `project-advisor`
-  - `design` → `frontend-designer` (also adds to `SPECIALISTS_ENABLED` for announcement consistency; full activation logic for frontend-designer is below)
-- `--no-specialists` → explicit opt-out, `SPECIALISTS_ENABLED = []` (does NOT affect frontend-designer or enterprise-enforcer — those have their own opt-outs)
-
-**Natural language detection** (case-insensitive match in `$ARGUMENTS` OR the user's preceding conversation message):
-- All specialists: "with specialists", "with officers", "full specialist panel"
-- security-officer: "security review", "threat model", "vulnerability scan", "pentest"
-- test-advisor: "test quality", "TDD enforcement", "test coverage", "test rigor"
-- project-advisor: "backlog", "future work", "brainstorm", "ideas"
-- frontend-designer: "design review", "UX review", "frontend design", "wireframe", "mockup", "ui/ux", "accessibility review", "a11y", "responsive review"
-
-**Mode constraints:**
-- Tier 3 Parallel Teams: Full support (Group C)
-- Tier 3 Subagent Delegation: Supported via parallel `Task()` calls
-- Sequential Teams / Lightweight Teams (Tier 2): Not supported — if specialists were detected, announce: `> **Specialists: SKIPPED** — not supported in {Sequential Teams / Lightweight Teams} mode.`
-
-Default: `SPECIALISTS_ENABLED = []` (specialists are opt-in).
-
-If `SPECIALISTS_ENABLED` is non-empty, announce after the autonomous mode announcement (or after the execution mode announcement if autonomous is not active):
-> **Specialists: ACTIVE** — {comma-separated list of enabled specialists}
+Load the “Conditional Roles and Standards” section of [references/parallel-orchestration.md](references/parallel-orchestration.md) only if specialist, UI, or compliance evidence may be relevant. Resolve the minimum evidence roles after tier classification; Tier 2 never launches a default panel. Named agents are the default and Team mode remains independently coordination-gated.
 
 ## Step 2.6.1: Frontend Designer Auto-Detection
 
-Set `FRONTEND_DESIGNER_ENABLED = false`.
-
-**Mode constraint (checked first)**: Group D officers require Parallel Teams. If execution mode (set in Step 2) is Sequential Teams, Lightweight Teams, or Subagent Delegation: skip detection entirely. If user explicitly passed `--frontend-designer` flag in an unsupported mode, announce `> **Frontend Designer: SKIPPED** — Group D officers require Parallel Teams. Drop the flag or use Parallel Teams.`. Tier 2 Light forces Lightweight Teams downstream, so Tier 2 inherits this skip.
-
-**Resolution order** (first match wins; only runs if mode constraint passes):
-1. If `--no-frontend-designer` flag OR `FRONTEND_DESIGNER_CONFIG == "false"` → SKIP. Announce: `> **Frontend Designer: SKIPPED** — disabled via flag/config.`
-2. If `--frontend-designer` flag OR `FRONTEND_DESIGNER_CONFIG == "true"` → `FRONTEND_DESIGNER_ENABLED = true`. Reason: forced via flag/config.
-3. If `--specialists=design` shorthand OR NL trigger (`"design review"`, `"ui/ux"`, `"mockup"`, `"a11y"`, etc.) detected → `FRONTEND_DESIGNER_ENABLED = true`. Reason: requested via specialist alias or NL.
-4. If `FRONTEND_DESIGNER_CONFIG == "auto"` (default) — probe for UI surface:
-   - `Glob: "**/index.html"`, `"**/*.razor"`, `"**/_Host.cshtml"`, `"**/*.vue"`, `"**/*.svelte"`, `"**/*.tsx"`, `"**/*.jsx"`, `"**/main.dart"`, `"**/manifest.json"`, `"**/*.xaml"`
-   - If ANY match → `FRONTEND_DESIGNER_ENABLED = true`. Reason: UI surface detected.
-   - Else → SKIP. Announce: `> **Frontend Designer: SKIPPED** — no UI surface detected.`
-
-Note: `--no-specialists` does NOT affect this step. Frontend-designer activation is independent of `SPECIALISTS_ENABLED` — adding `design` to `--specialists=csv` is a convenience alias only. To opt out of frontend-designer, use `--no-frontend-designer`.
-
-If `FRONTEND_DESIGNER_ENABLED = true`, announce:
-> **Frontend Designer: ACTIVE** — {reason}{; officer-mode (HIGH = [DESIGN-CONCERN-BLOCK]) if FRONTEND_DESIGNER_BLOCKING_CONFIG is true}
+Apply the referenced first-match flag/config/request/UI-surface rule. Keep `FRONTEND_DESIGNER_ENABLED=false` unless it resolves true, and announce the reason only when active or explicitly disabled.
 
 ## Step 2.6.2: Enterprise Enforcer Auto-Detection
 
-Set `ENTERPRISE_ENFORCER_ENABLED = false`.
+Apply the referenced explicit opt-out/opt-in/active-source rule. Load the manifest/config only when present or explicitly requested, carry its load-bearing keys, and default to per-agent compliance checks. Team mode is not required.
 
-**Mode constraint (checked first)**: Group D officers require Parallel Teams. If execution mode is Sequential Teams, Lightweight Teams, or Subagent Delegation: skip detection entirely. If user explicitly passed `--enterprise-enforcer` flag in an unsupported mode, announce `> **Enterprise Enforcer: SKIPPED** — Group D officers require Parallel Teams; per-agent compliance fallback paths in reviewer/architect/test-advisor/security-officer will handle compliance instead.`. Tier 2 Light forces Lightweight Teams downstream, so Tier 2 inherits this skip.
+The conditional enterprise contract covers local `enterprise.md`, `guideline_knowledge_ids`, `guideline_vault_sources`, and `compliance_vault_id`; preserve source/KnowledgeId provenance with created/updated metadata. Carry and enforce `include_in_audit`, `require_signoff_for_finalization`, `show_advisory_issues`, `pull_standards_at_start`, `push_audit_results`, `push_completion_records`, and `preserve_guideline_provenance` as detailed in the reference.
 
-**Resolution order** (first match wins; only runs if mode constraint passes):
-1. If `--no-enterprise-enforcer` flag → SKIP. Announce: `> **Enterprise Enforcer: SKIPPED** — disabled via flag (per-agent fallback paths active).`
-2. If `--enterprise-enforcer` flag → `ENTERPRISE_ENFORCER_ENABLED = true`. If manifest is absent, enforcer runs in skeleton mode (reports `[COMPLIANCE-CONFIG-GAP]` to lead and shuts down). Reason: forced via flag.
-3. Auto-detect: if `knowzcode/enterprise/compliance_manifest.md` exists:
-   - Parse the YAML configuration block — read `compliance_enabled`
-   - If `compliance_enabled == true`:
-     - Parse Active Guidelines table
-     - For each row with `Active: true`, check the referenced file exists and is non-empty (per `skip_empty_guidelines`). "Empty" includes a file with only commented-out template sections (default state of `design.md` and `code-quality.md` until populated).
-     - Also check for `knowzcode/enterprise.md`, configured `guideline_knowledge_ids`, configured `guideline_vault_sources`, or `mcp_compliance_enabled: true` with `compliance_vault_id`.
-     - If ≥1 active non-empty guideline OR enterprise.md OR vault/KnowledgeId guideline source exists → `ENTERPRISE_ENFORCER_ENABLED = true`. Reason: compliance enabled with N local guidelines and/or vault/KnowledgeId sources.
-     - Else → SKIP. Announce: `> **Enterprise Enforcer: SKIPPED** — compliance enabled but no active non-empty guidelines.`
-   - **Parse the full compliance config block** (the `## Configuration` and `## MCP-Based Compliance` YAML in `compliance_manifest.md`) into `COMPLIANCE_CONFIG` and carry it in WorkGroup context. Honor the documented defaults. These keys are load-bearing — downstream consumers MUST respect them:
-     - `pull_standards_at_start` (default true) → gates the Step 3.5 enterprise-vault standards pull.
-     - `preserve_guideline_provenance` (default true) → when false, skip provenance capture for vault/KnowledgeId-sourced guidelines.
-     - `show_advisory_issues` (default true) → when false, the enforcer and gate reports omit advisory-tier rows/counts (blocking-tier only).
-     - `require_signoff_for_finalization` (default false) → when true, Phase 3 finalization is blocked until blocking-tier compliance is resolved (see `references/quality-gates.md` "Compliance Sign-Off").
-     - `push_audit_results` / `push_completion_records` (default true) → gate the closer's enterprise-vault audit/completion pushes.
-     - `include_in_audit` (default true) → honored by `/knowzcode:audit` (gates the auto-compliance reviewer in a general audit).
+## Step 3: Load Current-Phase Context
 
-If `ENTERPRISE_ENFORCER_ENABLED = true`, announce:
-> **Enterprise Enforcer: ACTIVE** — {reason}
-
-## Step 3: Load Context Files (ONCE)
-
-Read these files ONCE (do NOT re-read between phases):
-- `knowzcode/knowzcode_loop.md`
-- `knowzcode/knowzcode_tracker.md`
-- `knowzcode/knowzcode_project.md`
-- `knowzcode/knowzcode_architecture.md`
+Load only the current phase contract, selected approved spec/VERIFY criteria, relevant tracker rows, and directly implicated project/architecture sections. Do not preload the full loop, completed phase history, or unrelated project/architecture material. Load spawn, gate, relay, and role references immediately before the chosen path needs them; a named agent automatically receives its definition.
 
 ## Step 3.5: Pull Team Standards (MCP — Optional)
 
-If MCP is configured and enterprise compliance is enabled AND `COMPLIANCE_CONFIG.pull_standards_at_start != false` (default true):
-1. Check `knowzcode/enterprise/compliance_manifest.md` for `mcp_compliance_enabled: true`
-2. If enabled: Read `knowz-vaults.md` from project root, find vault with enterprise/compliance/policy/guidelines description, then `ask_question({resolved_enterprise_vault_id}, "team standards, enterprise guidelines, policies, and compliance requirements for {project_type} and {goal}")`
-3. If `guideline_knowledge_ids` are configured or provided in `$ARGUMENTS`, call `get_knowledge_item(id)` for each and treat the returned item as an active enterprise guideline source.
-4. If `guideline_vault_sources` are configured or a user-provided vault ID/name is present, search those vaults for goal-relevant policies, standards, and active requirements.
-5. Preserve provenance for every vault-sourced guideline in WorkGroup context: vault name/ID, KnowledgeId, title, created/updated date when available, retrieval date, and enforcement level. (Skip this provenance capture only when `COMPLIANCE_CONFIG.preserve_guideline_provenance: false` — default is true.)
-6. Merge returned standards into WorkGroup context for quality gate criteria. Treat retrieved enterprise standards as enforcement inputs when the user, manifest, or workflow marks them active; otherwise treat them as advisory context.
-7. If vault-sourced guidance conflicts with local enterprise files, current code, tests, or official docs, surface the conflict at the next gate. Blocking-tier conflicts pause autonomous mode.
+Run only when compliance is active, `pull_standards_at_start` permits it, MCP compliance is enabled, and a concrete vault/KnowledgeId source is configured. Follow the standards/provenance/conflict rules in [references/parallel-orchestration.md](references/parallel-orchestration.md). Otherwise skip without probing MCP.
 
-If MCP is not configured or enterprise is not enabled, skip this step.
-
-## Step 3.6: MCP Probe + Baseline Vault Query (Non-Skippable)
+## Step 3.6: MCP Health + Baseline Vault Reuse
 
 If `MCP_AGENTS_ENABLED = false` (from Step 2.4, e.g. `--no-mcp`), skip this entire step. Set `MCP_ACTIVE = false`, `VAULTS_CONFIGURED = false`, `VAULT_BASELINE = null`.
 
-Otherwise:
+Otherwise reuse a timestamped probe/baseline younger than `MCP_HEALTH_TTL_MINUTES`; provider reconnect, changed vault config, or expiry invalidates it. Probe only when the workflow has a named prior-decision/policy question or a required capture path. Parse `knowz-vaults.md` first and call `list_vaults` only if discovery is needed. Preserve configured vault IDs when a probe fails so captures can queue, and share the result with children inside the TTL.
 
-### MCP Probe
-
-1. Read `knowz-vaults.md` from project root — parse vault IDs. If file not found, call `list_vaults(includeStats=true)` to discover vaults.
-2. If `list_vaults()` fails AND no `knowz-vaults.md` exists → `MCP_ACTIVE = false`, `VAULTS_CONFIGURED = false`. Announce: `**MCP Status: Not connected**`
-3. If `list_vaults()` fails BUT `knowz-vaults.md` has vault IDs → `MCP_ACTIVE = true`, `VAULTS_CONFIGURED = true`. Announce: `**MCP Status: Lead probe failed — vault agents will verify independently**`
-4. If vaults discovered but no `knowz-vaults.md` exists → suggest `"Run /knowz setup to configure vault routing."` Set `VAULTS_CONFIGURED = true` (use discovered IDs for baseline).
-5. Set `MCP_ACTIVE` and `VAULTS_CONFIGURED` based on results. Announce: `**MCP Status: Connected — N vault(s) available**` or `**MCP Status: Connected — no vaults configured (knowledge capture disabled)**`
-
-If no vaults are configured, suggest `/knowz setup`.
-
-### Baseline Vault Query
-
-If `VAULTS_CONFIGURED = true` AND `MCP_ACTIVE = true`:
-
-1. For each configured vault, call `search_knowledge({vault_id}, "past decisions, patterns, conventions related to {goal}")`.
-   - For `finalizations`-type vaults: `search_knowledge({vault_id}, "past work related to {goal}")`.
-   - One broad query per vault — the goal is baseline coverage, not exhaustive research.
-2. Store all results as `VAULT_BASELINE`:
-   ```
-	   VAULT_BASELINE:
-	   - {vault_name} ({vault_type}): {summary of results, item refs/KnowledgeIds, created/updated/source metadata when available, or "No relevant results found"}
-	   ```
-	3. **Failure handling**: If `search_knowledge` fails for a vault, log failure and continue with remaining vaults. If ALL queries fail, set `VAULT_BASELINE = "Vault queries failed — MCP may be degraded"` and continue.
-	4. Announce: `**Vault Baseline: {N} vault(s) queried — {M} results found**`
-	5. Treat baseline vault results as historical context. Verify retrieved guidance against live code, tests, project files, current docs, and user instructions before relying on it. If baseline items conflict, preserve the conflict in WorkGroup context for the gate discussion.
-
-If `VAULTS_CONFIGURED = false` OR `MCP_ACTIVE = false`, set `VAULT_BASELINE = null` and skip the baseline query.
-
-> **This step runs for ALL tiers (2 and 3) when MCP is available.** It does not depend on agent availability. The baseline provides guaranteed vault context before any phase work begins.
+Query only vaults relevant by routing description to the named question—never every vault for generic coverage. Store a bounded `VAULT_BASELINE` with item refs/dates/conflicts, treat it as historical context, and verify it against live code/tests/docs. Children reuse it and make only documented targeted follow-ups. If no question/capture currently needs MCP, leave the baseline null and defer the probe.
 
 ## Step 4: Create WorkGroup File
 
@@ -427,24 +244,24 @@ Create `knowzcode/workgroups/{WorkGroupID}.md`:
 
 Use task lists to plan and track work throughout. Add new tasks as discoveries or needs emerge during each phase.
 
-## Step 5: Input Classification
+## Step 5: Confirm Input Classification
 
 **Question indicators** (suggest `/knowzcode:explore` instead): starts with is/does/how/why/what/should, contains `?`, phrased as inquiry.
 
 **Implementation indicators** (proceed): starts with build/add/create/implement/fix/refactor, action-oriented verbs.
 
-If ambiguous, proceed with implementation.
+Use the result from Step 1.4. If later evidence changes the classification, stop before spawning and re-route explicitly.
 
-## Step 5.5: Complexity Classification
+## Step 5.5: Confirm Complexity Classification
 
-Assess the goal against the codebase to determine the appropriate workflow tier.
+Confirm the `TIER` selected during the read-only Step 1.4 preflight. Do not repeat broad repository or vault discovery here.
 
 ### Tier 1: Micro → redirect to `/knowzcode:fix`
 - Single file, <50 lines, no ripple effects
 
 ### Tier 2: Light (2-phase workflow)
 
-> **Note:** Light mode does not use orchestration config — single builder, no scouts, no specialists.
+> **Note:** Light mode ignores parallel fan-out/specialist settings, but still consumes context-efficiency rollout, lease, TTL, result, telemetry, and safety settings. It remains one builder with no default scouts or specialists.
 
 ALL must be true:
 - ≤3 files touched
@@ -478,16 +295,16 @@ When Tier 2 is selected, execute this streamlined workflow instead of the 5-phas
 
 > **Relay**: not supported in Tier 2. If `RELAY_ACTIVE`, announce `> **Relay: SKIPPED** — Tier 2 Light uses the native builder flow.` and proceed normally.
 
-Read [references/light-workflow.md](references/light-workflow.md) for complete phase details (team setup, Light Phase 1 through Light Phase 3, vault write checklist).
+Read [references/light-workflow.md](references/light-workflow.md) for complete phase details (dispatch, Light Phase 1 through Light Phase 3, vault write checklist).
 
 **Phase summary**:
-- **Team Setup**: Spawn knowledge-liaison (Agent Teams) or dispatch as one-shot Task (subagent fallback).
+- **Dispatch**: Resume a compatible knowledge-liaison or dispatch one bounded named agent only when the baseline needs deeper research. Team mode is not required.
 - **Light Phase 1** (inline): Impact scan → draft lightweight spec → present combined Change Set + Spec gate → on approval, update tracker and pre-implementation commit.
-- **Light Phase 2A**: Spawn builder teammate (Agent Teams) or `Task(subagent_type="knowzcode:builder")`. Builder self-verifies against VERIFY criteria — no separate audit.
+- **Light Phase 2A**: Resume a compatible builder or dispatch `Task(subagent_type="builder")` with a compact capsule. Builder self-verifies against VERIFY criteria — no separate audit.
 - **Light Phase 2B** (opt-in): Spawn smoke-tester if user requested `--smoke-test`. 3-iteration cap. Skip if not requested.
 - **Light Phase 3** (inline): Update spec to As-Built, update tracker `[WIP]` → `[VERIFIED]`, write log entry, final commit, knowledge-liaison capture, vault write checklist (MUST).
 
-**DONE** — Lightweight team: knowledge-liaison (persistent) + builder. Skipped: analyst, architect, reviewer, closer.
+**DONE** — Lightweight workflow: bounded knowledge context + one builder lineage. Skipped: analyst, architect, reviewer, closer.
 
 ---
 
@@ -495,24 +312,21 @@ Read [references/light-workflow.md](references/light-workflow.md) for complete p
 
 The standard 5-phase workflow. Used when complexity warrants full analysis, specification, audit, and finalization.
 
-Tier 3 supports three execution modes (determined in Step 2):
-- **Parallel Teams** (default) — Stage 0-3 orchestration with concurrent agents
-- **Sequential Teams** (`--sequential`) — one agent per phase, spawned and shut down sequentially
-- **Subagent Delegation** — Task() calls, no persistent agents
+Tier 3 uses the per-task routing selected in Step 2:
+- **Adaptive Delegation** (default) — local/resume/inheritance/fresh named-agent routing with bounded parallelism
+- **Sequential Delegation** (`--sequential`) — one ready scope at a time, with resume-first phase and gap loops
+- **Coordinated Team** — optional only when active peers need mailbox/task-list coordination
 
 **Smoke testing**: Tier 3 recommends smoke testing at Phase 2B. At Gate #2, note to the user that smoke testing will run alongside the reviewer. The user can decline. If not declined, the smoke-tester is spawned at Stage 2 alongside reviewers (see [parallel-orchestration.md](references/parallel-orchestration.md)).
 
-## Step 6: Spec Detection (Optional Optimization)
+## Step 6: Apply Spec-Reuse Decision
 
-Check for existing specs covering this work:
-1. Extract key terms from goal
-2. Search `knowzcode/specs/*.md` for matching specs
-3. If comprehensive matching specs found, offer:
+Use the targeted spec search completed in Step 1.4. If comprehensive matching specs were found, apply the selected path:
    - **A) Quick Path** — skip discovery, use existing specs
    - **B) Validation Path** (recommended) — quick check specs match codebase
    - **C) Full Workflow** — complete Phase 1A discovery
 
-If no matches found, proceed to Phase 1A.
+If no match was found, proceed to Phase 1A. Do not repeat the same broad spec search in each child.
 
 ### Refactor Task Check
 
@@ -520,13 +334,13 @@ Scan `knowzcode/knowzcode_tracker.md` for outstanding `REFACTOR_` tasks that ove
 
 ---
 
-## Parallel Teams Orchestration (Tier 3 Default)
+## Parallel Orchestration (Tier 3 Default)
 
 **Parallel Orchestration**: Read [references/parallel-orchestration.md](references/parallel-orchestration.md) for Stages 0-3 orchestration details, WorkGroup file format, and task dependency graph.
 
-> **MCP Probe Design Note:** Multiple agents perform independent MCP verification (`list_vaults()`) at different points in the workflow. This redundancy is intentional — agents spawn at different times and MCP connectivity can change between spawns. Each agent's probe is authoritative for its own MCP state. Vault configuration is read from `knowz-vaults.md` at the project root.
+> **MCP Health Note:** Reuse the lead's timestamped health/baseline inside the configured TTL. Child agents do not repeat the probe; retry only after expiry or a material connectivity/configuration change.
 
-- **Stage 0**: Create team, use MCP/vault baseline from Step 3.6, spawn knowledge-liaison/analyst/architect/scanner/specialist agents in parallel
+- **Stage 0**: Use deterministic local indexing and the MCP/vault baseline, start one analyst, then add architect/scanner/specialist agents only for independently useful scopes
 - **Stage 1**: Analyst completes Change Set → Gate #1 → Architect drafts specs → Gate #2
 - **Stage 2**: Dependency-wave builders (default 1 NodeID/microtask per builder) + paired reviewers + gap loop
 - **Stage 3**: Closer finalizes, dispatches writer for captures, shutdown
@@ -540,9 +354,9 @@ When `RELAY_ACTIVE = true` (Step 1.6), Phase 2A and the builder gap loop are rep
 Summary (authoritative detail lives in the reference):
 1. **Live preflight + branch**: run the full target-specific `RELAY_DETECT` now (Step 1.6 only checked executable existence). Refuse the default branch — create/reuse `kc-relay/{wgid}`; require a clean tree; record checkpoint C0. Create `knowzcode/workgroups/{wgid}-relay/` with schema-2 `state.md` (`Host`, `Target`, role-based state, `Session ID`) and add the `## Relay` snapshot to the WorkGroup file.
 2. **Brief**: after Gate #2 approval, write `brief-r0.md` from the Change Set + spec *path* references — the target reads every spec in-repo; do not inline spec bodies unless a spec file is missing.
-3. **Target leg**: delegate to **relay-runner** (teammate in Teams modes; `Task()` in Subagent Delegation; lead runs the same protocol only as degraded fallback). Codex supports synchronous MCP or `codex exec`; Claude supports exec/stream-json only. Every exec path uses an exit marker and **in-turn polling — never end a turn to await a background notification**. Persist the target session ID immediately (`thread.started.thread_id`, MCP `structuredContent.threadId`, or Claude `system/init.session_id`). Artifacts are target-qualified (`{target}-log-rN.jsonl`, `{target}-last-rN.md`, `{target}-err-rN.log`). No builders spawn; `max_builders` does not apply.
+3. **Target leg**: delegate to **relay-runner** (teammate only when coordinated Team mode is already justified; otherwise a named `Task()` agent; the lead runs the identical protocol only if agent dispatch is unavailable). Codex supports synchronous MCP or `codex exec`; Claude supports exec/stream-json only. Every exec path uses an exit marker and **in-turn polling — never end a turn to await a background notification**. Persist the target session ID immediately (`thread.started.thread_id`, MCP `structuredContent.threadId`, or Claude `system/init.session_id`). Artifacts are target-qualified (`{target}-log-rN.jsonl`, `{target}-last-rN.md`, `{target}-err-rN.log`). No builders spawn; `max_builders` does not apply.
 4. **Checkpoint + review**: on a successful target result, the lead commits `KnowzCode relay: {Target} round {N} for {wgid}`; Phase 2B reviews exactly that checkpoint diff; Gate #3 runs normally.
-5. **Fix rounds**: gaps → `feedback-r{N}.md` + self-contained `fix-prompt-r{N}.md` → provider resume on the persisted Session ID, at `RELAY_FIX_EFFORT`, up to `RELAY_MAX_FIX_ROUNDS`. Codex uses `codex-reply`/`codex exec resume`; Claude starts from the same cwd with `claude -p --resume {session_id}` and stream JSON.
+5. **Fix rounds**: gaps → `feedback-r{N}.md` plus a bounded `delta-prompt-r{N}.md` for a valid warm resume and a self-contained `fix-prompt-r{N}.md` cold-recovery brief. Resume the persisted Session ID at `RELAY_FIX_EFFORT`, up to `RELAY_MAX_FIX_ROUNDS`. Codex uses `codex-reply`/`codex exec resume`; Claude starts from the same cwd with `claude -p --resume {session_id}`, stream JSON, and the configured per-leg budget. Use the cold brief only when resume is invalid/unavailable.
 6. **Host takeover**: cap reached, a gap repeats two rounds, or the target fails twice → `HOST_TAKEOVER`; remaining gaps enter the native builder gap loop (existing 3-iteration cap and pauses apply). This is the designed final leg, not an error.
 7. **Finalize**: Phase 3 closer unchanged. Failures and fallbacks follow the reference's matrix; autonomous mode auto-proceeds rounds but keeps all Gate #3 safety exceptions and pauses on auth failures.
 
@@ -550,9 +364,9 @@ Summary (authoritative detail lives in the reference):
 
 ## Phase Prompt Reference
 
-**Spawn Prompts**: Read [references/spawn-prompts.md](references/spawn-prompts.md) before spawning any agent. Contains spawn/dispatch prompts for all phases: knowledge-liaison, codebase scanners, knowz:reader, knowz:writer dispatches, specialists (security-officer, test-advisor, project-advisor), analyst (Phase 1A), architect (Phase 1B), builder (Phase 2A), reviewer (Phase 2B), and closer (Phase 3).
+**Spawn Prompts**: Immediately before a selected dispatch, read only that role/phase section of [references/spawn-prompts.md](references/spawn-prompts.md). Do not load unrelated role prompts or ask a named agent to reread its definition.
 
-**Quality Gates**: Read [references/quality-gates.md](references/quality-gates.md) at quality gate checkpoints. Contains gate templates (#1 Change Set, #2 Specifications, #3 Audit Results), autonomous mode handling, specialist report sections, gap loop mechanics, and progress capture instructions.
+**Quality Gates**: At a checkpoint, read only the current gate or gap-loop section of [references/quality-gates.md](references/quality-gates.md). Gate #1, #2, #3, blockers, captures, and consolidated verification remain mandatory on their applicable paths.
 
 ### Phase Summary
 
@@ -575,12 +389,9 @@ When `frontend-designer` is active alongside `smoke-tester`: smoke-tester owns a
 
 ### After Phase 3 Completes
 
-**Agent Teams Mode** (Parallel or Sequential):
-1. Shut down all active teammates. Wait for each to confirm shutdown.
-2. Once all teammates have shut down, clean up the team (delete the `kc-{wgid}` team).
-   No teammates or team resources should remain after the workflow ends.
+**Coordinated Team Mode**: Request graceful shutdown from active teammates and wait for deliverable/checkpoint confirmation. Team cleanup is runtime-managed at session end; do not invoke a separate delete operation.
 
-**Subagent Mode**: No cleanup needed — `Task()` calls are self-contained.
+**Named-agent modes**: Release completed lineages. Retain a handle only for a compatible bounded phase/fix-loop lease; durable capsules remain the recovery path.
 
 ### If User Cancels Mid-Workflow
 
@@ -591,7 +402,7 @@ Follow the abandonment protocol from `knowzcode_loop.md` Section 12:
 3. **Log abandonment** — create a log entry with type `WorkGroup-Abandoned` including the reason and phase at abandonment
 4. **Close WorkGroup file** — mark the WorkGroup as `Abandoned` with timestamp and reason
 5. **Preserve learnings** — if any useful patterns were discovered, capture them before closing
-6. **Team teardown** — (Agent Teams only) shut down all active teammates and delete the team
+6. **Worker teardown** — gracefully release active teammates or named workers after checkpoint/capture; runtime-managed team cleanup requires no delete step
 7. **Parallel mode**: If cancelled mid-Stage-2, revert uncommitted code changes and mark WorkGroup abandoned
 
 The WorkGroup file remains in `knowzcode/workgroups/` for reference. It can be resumed later with `/knowzcode:work` referencing the same goal.
@@ -601,7 +412,7 @@ The WorkGroup file remains in `knowzcode/workgroups/` for reference. It can be r
 ## Handling Failures
 
 - Phase 1A rejected: re-run analyst with feedback
-- Phase 1B rejected: re-run architect with specific issues (Parallel Teams: architect is already warm)
+- Phase 1B rejected: resume the architect with a bounded delta when lineage remains compatible; otherwise start fresh and record the invalidation
 - Phase 2A blocker encountered: present Blocker Report (per loop.md Section 11) to user with 5 recovery options: (1) modify spec, (2) change approach, (3) split WorkGroup, (4) accept partial with documented gap, (5) cancel WorkGroup
 - Phase 2B audit shows gaps: return to 2A with gap list (see Gap Loop in [references/quality-gates.md](references/quality-gates.md))
 - If >3 failures on same phase: PAUSE and ask user for direction (applies even when `AUTONOMOUS_MODE = true` — this is a safety exception)
@@ -612,7 +423,7 @@ These flags override corresponding config defaults in `knowzcode/knowzcode_orche
 
 | Flag | Effect |
 |------|--------|
-| `--max-builders=N` | Cap concurrent builders in Parallel Teams (1-3 by default; up to 5 only with `--broad-builders`) |
+| `--max-builders=N` | Cap concurrent independent builders (1-3 by default; up to 5 only with `--broad-builders`) |
 | `--builder-node-limit=N` | Cap NodeIDs per builder dispatch (default 1, max 2) |
 | `--broad-builders` | Explicitly allow wider builder fan-out for tiny, independent NodeIDs |
 | `--specialists[=csv]` | Enable specialist agents (security, test, project) |
@@ -620,8 +431,8 @@ These flags override corresponding config defaults in `knowzcode/knowzcode_orche
 | `--no-mcp` | Skip MCP vault agents |
 | `--no-scanners` | Skip codebase scanners at Stage 0 |
 | `--no-parallel-specs` | Force Path A spec drafting regardless of NodeID count |
-| `--sequential` | Prefer Sequential Teams (incompatible with `--profile advisor`) |
-| `--subagent` | Force Subagent Delegation (incompatible with `--profile advisor`) |
+| `--sequential` | Force one ready scope at a time; preserve compatible named-agent lineage |
+| `--subagent` | Disable Team mode and conversation inheritance; use local/resume/fresh named agents |
 | `--profile={advisor\|teams\|classic\|frontier}` | Select execution profile — see `references/profile-models.md` |
 | `--fable-execution` | (frontier only) Also route execution agents to Fable for high-value jobs |
 | `--relay=none\|auto\|other\|claude\|codex` | Disable relay, select the opposite provider, or name the implementation target explicitly. Flag > unambiguous natural language > config; Tier 3 only; incompatible with `advisor` |
@@ -637,7 +448,7 @@ These flags override corresponding config defaults in `knowzcode/knowzcode_orche
 | `--enterprise-enforcer` | Force-enable enterprise-enforcer (skeleton mode if no manifest) |
 | `--no-enterprise-enforcer` | Force-skip enterprise-enforcer (use per-agent compliance fallback) |
 
-The `advisor` profile forces Parallel Teams and requires Claude Code v2.1.100+ with direct Anthropic API access. The `frontier` profile routes planning/analysis/spec/review to Fable and execution to Opus (add `--fable-execution` to also execute on Fable for high-value jobs); it needs the direct Anthropic API (or Claude Platform on AWS) and gracefully falls back to Opus if Fable is unavailable. See `references/profile-models.md` for the full profile → agent-model mapping.
+The `advisor` profile controls model/advisor behavior and requires Claude Code v2.1.100+ with direct Anthropic API access; it does not force Team mode. The `frontier` profile routes planning/analysis/spec/review to Fable and execution to Opus (add `--fable-execution` to also execute on Fable for high-value jobs); it needs the direct Anthropic API (or Claude Platform on AWS) and gracefully falls back to Opus if Fable is unavailable. See `references/profile-models.md` for the full profile -> agent-model mapping.
 
 ## Related Skills
 

@@ -3,7 +3,6 @@ name: frontend-designer
 description: "KnowzCode: Persistent frontend/UX designer — design questioning, ASCII mockups, design VERIFY criteria, end-to-end UI verification across all phases"
 tools: Read, Glob, Grep, Bash, Task, mcp__claude-in-chrome__tabs_context_mcp, mcp__claude-in-chrome__tabs_create_mcp, mcp__claude-in-chrome__tabs_close_mcp, mcp__claude-in-chrome__navigate, mcp__claude-in-chrome__read_page, mcp__claude-in-chrome__get_page_text, mcp__claude-in-chrome__find, mcp__claude-in-chrome__javascript_tool, mcp__claude-in-chrome__form_input, mcp__claude-in-chrome__read_console_messages, mcp__claude-in-chrome__read_network_requests, mcp__plugin_playwright_playwright__browser_navigate, mcp__plugin_playwright_playwright__browser_snapshot, mcp__plugin_playwright_playwright__browser_take_screenshot, mcp__plugin_playwright_playwright__browser_click, mcp__plugin_playwright_playwright__browser_type, mcp__plugin_playwright_playwright__browser_fill_form, mcp__plugin_playwright_playwright__browser_evaluate, mcp__plugin_playwright_playwright__browser_console_messages, mcp__plugin_playwright_playwright__browser_network_requests, mcp__plugin_playwright_playwright__browser_wait_for, mcp__plugin_playwright_playwright__browser_close
 model: opus
-permissionMode: default
 maxTurns: 30
 ---
 
@@ -212,7 +211,7 @@ If `knowzcode/enterprise/compliance_manifest.md` exists and `compliance_enabled:
 - **DM architect** during Phase 1A/1B with design VERIFY criteria proposals
 - **DM builders** in UI scopes with design guidance (max 2 unsolicited DMs per builder)
 - **DM smoke-tester** to coordinate app readiness — consume its task summary; do not duplicate boot probing
-- **DM knowledge-liaison** with `"VaultQuery: design conventions for {area}"` and `"Consider: {capture-worthy design pattern}"`
+- **DM knowledge-liaison** only for `"VaultQuery: design conventions for {area}"`; send `"Consider: {capture-worthy design pattern}"` to the lead for classification
 - **DM enterprise-enforcer** (if active) for guideline-ID cross-reference
 
 ## Bash Usage

@@ -3,7 +3,6 @@ name: analyst
 description: "KnowzCode: Impact analysis and Change Set proposals"
 tools: Read, Glob, Grep, Bash
 model: opus
-permissionMode: default
 maxTurns: 25
 ---
 

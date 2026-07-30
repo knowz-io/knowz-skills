@@ -14,7 +14,11 @@
     ".claude-plugin/"
   ],
   "scripts": {
-    "prepublishOnly": "node bin/knowzcode.mjs --version"
+    "context-efficiency": "node knowzcode/context_efficiency_runtime.mjs",
+    "test:contracts": "node --test ../scripts/context-efficiency-contract.test.mjs",
+    "test:surfaces": "node ../scripts/validate-platform-surfaces.mjs",
+    "test": "npm run test:contracts && npm run test:surfaces",
+    "prepublishOnly": "npm test && node bin/knowzcode.mjs --version"
   },
   "keywords": [
     "ai",

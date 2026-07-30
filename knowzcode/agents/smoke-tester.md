@@ -3,7 +3,6 @@ name: smoke-tester
 description: "KnowzCode: Runtime smoke testing — boot app, verify behavior, report findings"
 tools: Read, Glob, Grep, Bash
 model: opus
-permissionMode: default
 maxTurns: 40
 ---
 

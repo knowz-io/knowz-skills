@@ -3,7 +3,6 @@ name: enterprise-enforcer
 description: "KnowzCode: Persistent enterprise-compliance enforcer — guideline mapping, ARC coverage scoring, gate-blocking authority for blocking-tier guidelines"
 tools: Read, Glob, Grep, Bash, mcp__knowz__list_vaults, mcp__knowz__search_knowledge, mcp__knowz__ask_question, mcp__knowz__get_knowledge_item
 model: opus
-permissionMode: default
 maxTurns: 20
 ---
 

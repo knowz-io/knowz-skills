@@ -1,0 +1,99 @@
+{
+  "schema": "knowzcode.context-capsule/v1",
+  "task_id": "task-large-evidence",
+  "workgroup_id": "kc-feat-context-20260730-080000",
+  "phase": "2B",
+  "objective": "Audit the fixed criteria independently.",
+  "node_ids": [
+    "ContextEfficientOrchestration"
+  ],
+  "owned_files": [],
+  "read_files": [
+    "knowzcode/specs/ContextEfficientOrchestration.md"
+  ],
+  "specs": [
+    {
+      "path": "knowzcode/specs/ContextEfficientOrchestration.md",
+      "verify_ids": [
+        "CEO-03",
+        "CEO-05"
+      ]
+    }
+  ],
+  "approved_decisions": [
+    "Review from the approved-spec baseline."
+  ],
+  "checkpoint_sha": "abcdef1234567",
+  "failures": [],
+  "risks": [
+    "Avoid builder reasoning lineage."
+  ],
+  "constraints": [
+    "Read-only independent audit."
+  ],
+  "next_action": "Compare the checkpoint diff with CEO-03 and CEO-05.",
+  "evidence": [
+    {
+      "kind": "log",
+      "summary": "Verbose evidence 0: detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail ",
+      "artifact": "knowzcode/artifacts/evidence-0.log"
+    },
+    {
+      "kind": "log",
+      "summary": "Verbose evidence 1: detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail ",
+      "artifact": "knowzcode/artifacts/evidence-1.log"
+    },
+    {
+      "kind": "log",
+      "summary": "Verbose evidence 2: detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail ",
+      "artifact": "knowzcode/artifacts/evidence-2.log"
+    },
+    {
+      "kind": "log",
+      "summary": "Verbose evidence 3: detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail ",
+      "artifact": "knowzcode/artifacts/evidence-3.log"
+    },
+    {
+      "kind": "log",
+      "summary": "Verbose evidence 4: detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail ",
+      "artifact": "knowzcode/artifacts/evidence-4.log"
+    },
+    {
+      "kind": "log",
+      "summary": "Verbose evidence 5: detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail ",
+      "artifact": "knowzcode/artifacts/evidence-5.log"
+    },
+    {
+      "kind": "log",
+      "summary": "Verbose evidence 6: detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail ",
+      "artifact": "knowzcode/artifacts/evidence-6.log"
+    },
+    {
+      "kind": "log",
+      "summary": "Verbose evidence 7: detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail ",
+      "artifact": "knowzcode/artifacts/evidence-7.log"
+    },
+    {
+      "kind": "log",
+      "summary": "Verbose evidence 8: detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail ",
+      "artifact": "knowzcode/artifacts/evidence-8.log"
+    },
+    {
+      "kind": "log",
+      "summary": "Verbose evidence 9: detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail ",
+      "artifact": "knowzcode/artifacts/evidence-9.log"
+    },
+    {
+      "kind": "log",
+      "summary": "Verbose evidence 10: detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail ",
+      "artifact": "knowzcode/artifacts/evidence-10.log"
+    },
+    {
+      "kind": "log",
+      "summary": "Verbose evidence 11: detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail detail ",
+      "artifact": "knowzcode/artifacts/evidence-11.log"
+    }
+  ],
+  "artifact_refs": [],
+  "capsule_hash": "sha256:4ad7deba38f5434ea3dc0286195c0ccc2cae46863d8647daad916293f48e71bd"
+}

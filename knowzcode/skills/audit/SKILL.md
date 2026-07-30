@@ -2,7 +2,7 @@
 name: audit
 description: "Run read-only quality audits on the existing codebase — spec completeness, architecture health, OWASP security scanning, integration consistency, and enterprise compliance. Use when the user wants to AUDIT or SCAN existing code (including compliance reviews), not build new features."
 user-invocable: true
-allowed-tools: Read, Write, Bash, Glob, Grep, Task
+allowed-tools: Read, Glob, Grep
 # Note: Also uses MCP tools (search_knowledge, ask_question) when MCP is configured
 argument-hint: "[audit_type]"
 ---
@@ -41,19 +41,29 @@ These phrases indicate `/knowzcode:audit` intent:
 | **security** | OWASP vulnerability scanning |
 | **integration** | Cross-component consistency |
 | **compliance** | Enterprise guideline compliance (if configured, experimental) |
-| *(no argument)* | Full parallel audit of all types |
+| *(no argument)* | Full audit of all types (sequential by default) |
 
 ---
 
 ## Step 1: Load Context
 
-Read:
-- `knowzcode/knowzcode_tracker.md`
-- `knowzcode/knowzcode_architecture.md`
-- `knowzcode/knowzcode_project.md`
-- `knowzcode/knowzcode_orchestration.md` (if exists)
-- `knowzcode/enterprise.md` (if exists)
-- `knowzcode/enterprise/compliance_manifest.md` (if exists)
+Default to `RESULT_MODE = ephemeral`, `PERSIST_AUTHORIZED = false`, and `RUNTIME_WRITES_AUTHORIZED = false`. An audit is strictly zero-write unless the user separately authorizes a write class:
+
+- `--persist` or an explicit local-report request authorizes one local report artifact only. Log and vault targets must be named separately.
+- An explicit request to run write-capable tests, launch agents, or use Team/task runtime state sets `RUNTIME_WRITES_AUTHORIZED = true`. This never authorizes a report, artifact, log, WorkGroup/tracker/settings mutation, or vault capture.
+- General audit intent, autonomous mode, an available vault, a prior preference, or persistence authorization does not authorize runtime writes.
+
+In the strict default, use only `Read`, `Glob`, and `Grep`. Do not invoke Bash, tests/builds/formatters, Task/Agent, Agent Teams, task-list operations, hooks that persist output, or scripts that may write caches or generated files. Return one bounded chat report. When runtime writes are explicitly authorized, Bash and agent tools remain normally permission-gated rather than pre-approved; state the exact command/runtime state before use and keep persistence authorization separate.
+
+Classify the requested audit before loading context, then read the minimum relevant slices:
+
+- `spec`: targeted tracker rows and matching specs; project conventions only if needed to score them.
+- `architecture`: architecture plus the implicated modules; tracker/specs only for claimed boundaries.
+- `security` or `integration`: affected code/config/tests and applicable specs; load architecture only for a concrete data-flow or boundary question.
+- `compliance`: manifest and active non-empty guideline sources; load project/spec/code slices named by those controls.
+- full audit: build a deterministic file inventory first, then load each slice only when it is evaluated.
+
+Read `knowzcode_orchestration.md` with targeted key searches only when profile, specialist, Team eligibility, or MCP TTL affects the selected route. Do not preload every framework document.
 
 ## Step 1.1: Parse Orchestration Config (Optional)
 
@@ -76,32 +86,33 @@ If `PROFILE == "frontier"`, apply the Fable detection from `/knowzcode:work` Ste
 
 See `knowzcode/skills/work/references/profile-models.md` for profile semantics and `MODEL_FOR()` resolution.
 
-At each reviewer/specialist spawn below, resolve `model` via `MODEL_FOR(agent_name, PROFILE)`. Include `model: <value>` when non-null; otherwise omit. Under `PROFILE == "advisor"`, the reviewer runs on Sonnet; append the Advisor Guidance block from `knowzcode/skills/work/references/spawn-prompts.md` to its spawn prompt (resolve the `{advisor_guidance}` placeholder appended to each inline prompt below — substitute the block when `MODEL_FOR` returns `"sonnet"`, else substitute an empty string). Under `PROFILE == "frontier"`, audit is pure review reasoning, so the reviewer, security-officer, and test-advisor run on Fable (or Opus when `FABLE_DOWNGRADE`); the `{advisor_guidance}` placeholder resolves to empty (advisor guidance is advisor-profile only).
+For each reviewer/specialist spawn authorized under Step 2, resolve `model` via `MODEL_FOR(agent_name, PROFILE)`. Include `model: <value>` when non-null; otherwise omit. Under `PROFILE == "advisor"`, the reviewer runs on Sonnet; append the Advisor Guidance block from `knowzcode/skills/work/references/spawn-prompts.md` to the prompt in `references/authorized-execution.md` (resolve `{advisor_guidance}` to that block when `MODEL_FOR` returns `"sonnet"`, otherwise to an empty string). Under `PROFILE == "frontier"`, audit is pure review reasoning, so the reviewer, security-officer, and test-advisor run on Fable (or Opus when `FABLE_DOWNGRADE`); `{advisor_guidance}` remains empty because advisor guidance is advisor-profile only.
 
 ## Step 2: Set Up Execution Mode
 
-**Classic-profile short-circuit:** If `PROFILE == "classic"` (from Step 1.1), skip the `TeamCreate` attempt entirely. Announce `**Execution Mode: Subagent Delegation** — forced by --profile classic (or profile: classic in config)` and proceed to Step 3's Subagent Mode for all reviewer/specialist dispatches.
+Classify audit slices before the MCP probe or any spawn. Record scope, coupling, sensitivity, expected context reuse, independence, and compatible lineage.
 
-Otherwise, attempt `TeamCreate(team_name="kc-audit-{timestamp}")`:
+- With `RUNTIME_WRITES_AUTHORIZED = false`, every audit runs `local` and sequentially. Do not form a team, create task state, spawn/resume an agent, or run a test command.
+- With runtime writes explicitly authorized, a narrow audit may still run `local`; resume only a compatible reviewer for the same audit/fix lineage, and give a new independent audit a fresh reviewer capsule.
+- A full authorized audit may use bounded fresh named reviewers for independently useful slices.
+- Select `coordinated-team` only after runtime-write authorization and only when at least two reviewers/officers must directly challenge or message peers and Agent Teams is explicitly configured/callable. The first teammate spawn forms the runtime-managed team. If unavailable, record `CAPABILITY_FALLBACK` and use named reviewers with identical criteria.
+- `PROFILE == "classic"` disables Team mode and conversation inheritance but does not disable compatible named-agent resume.
 
-- **If TeamCreate succeeds** → Agent Teams mode:
-  1. Announce: `**Execution Mode: Agent Teams** — created team kc-audit-{timestamp}`
-  2. Read `knowzcode/claude_code_execution.md` for team conventions.
-  3. You are the **team lead** — coordinate the audit and present results.
-
-- **If TeamCreate fails** (error, unrecognized tool, timeout) → Subagent Delegation:
-  - Announce: `**Execution Mode: Subagent Delegation** — Agent Teams not available, using Task() fallback`
+Announce `**Execution Mode: Strict Local Audit** — zero-write Read/Glob/Grep only`, `**Execution Mode: Adaptive Audit** — runtime writes explicitly authorized`, or `**Execution Mode: Coordinated Audit Team** — runtime writes authorized and peer coordination required`. Team identity is session-derived and opaque; runtime cleanup is automatic after graceful teammate release.
 
 The user MUST see the execution mode announcement before audit work begins.
 
 ## Step 3: Execute Audit
 
-### MCP Probe
+### MCP Probe (Conditional)
 
-Before spawning agents, determine vault availability:
-1. Read `knowz-vaults.md` from project root — parse vault IDs. If file not found, call `list_vaults(includeStats=true)` to discover vaults.
+Run this probe only when the user explicitly requested vault-backed history/policy evidence, compliance names a vault/KnowledgeId source, or `PERSIST_AUTHORIZED` includes a vault save. Otherwise set `MCP_ACTIVE = false` for this audit and skip all vault calls without warning.
+
+When needed, determine vault availability:
+0. Reuse a timestamped MCP health/baseline result inside `mcp_health_ttl_minutes` (default 15). Probe again only after expiry or material vault/connectivity change.
+1. Otherwise read `knowz-vaults.md` from project root — parse vault IDs. If file not found, call `list_vaults(includeStats=true)` to discover vaults.
 2. If `list_vaults()` fails AND no `knowz-vaults.md` exists → `MCP_ACTIVE = false`, `VAULTS_CONFIGURED = false`. Announce: `**MCP Status: Not connected**`
-3. If `list_vaults()` fails BUT `knowz-vaults.md` has vault IDs → `MCP_ACTIVE = true`, `VAULTS_CONFIGURED = true`. Announce: `**MCP Status: Lead probe failed — vault agents will verify independently**`
+3. If `list_vaults()` fails BUT `knowz-vaults.md` has vault IDs -> `MCP_ACTIVE = false`, `VAULTS_CONFIGURED = true`. Announce: `**MCP Status: Probe failed — configured vaults retained; captures will queue**`. Children reuse this result inside the TTL.
 4. If vaults discovered but no `knowz-vaults.md` exists → suggest `"Run /knowz setup to configure vault routing."` Set `VAULTS_CONFIGURED = true` (use discovered IDs for baseline).
 5. Set `MCP_ACTIVE` and `VAULTS_CONFIGURED` based on results. Announce: `**MCP Status: Connected — N vault(s) available**` or `**MCP Status: Connected — no vaults configured (knowledge capture disabled)**`
 
@@ -109,7 +120,7 @@ If no vaults are configured, suggest `/knowz setup`.
 
 ### Enterprise Guideline Sources
 
-Before spawning reviewers, discover enterprise guideline sources:
+Run this section only for an explicit compliance audit or a full audit whose existing manifest enables audit inclusion. Otherwise do not read enterprise files or query guideline sources. When active:
 
 0. Parse the `compliance_manifest.md` config block into `COMPLIANCE_CONFIG`. Audit-relevant behavior keys:
    - `include_in_audit` (default true) gates the compliance reviewer in a *general* full audit; an explicit `/knowzcode:audit compliance` ignores it and always runs.
@@ -122,187 +133,22 @@ Before spawning reviewers, discover enterprise guideline sources:
 4. Preserve provenance for vault-sourced rules unless `preserve_guideline_provenance: false`: vault ID/name, KnowledgeId, title, created/updated date when available, retrieval date, applies-to scope, and enforcement level.
 5. Treat retrieved vault guidance as historical context. Verify it against live code, tests, local enterprise files, official docs, and current observations. If sources conflict, surface the conflict in the audit report. Blocking-tier conflicts are HIGH severity until resolved.
 
-> **Vault research is mandatory when available.** If `VAULTS_CONFIGURED = true` and `MCP_AGENTS_ENABLED = true`, the `knowz:reader` dispatch MUST execute in both Exploration and Planning modes. The 10-tool-call budget in Exploration Mode is a scope limit, not a reason to skip. Only skip when MCP is genuinely unavailable (`MCP_ACTIVE = false`).
+Vault research is question-gated, never mandatory merely because MCP is connected. State the unresolved audit question, query only the relevant vault/source, and reuse a fresh TTL baseline. Skip broad `knowz:reader` dispatch when local evidence is sufficient.
 
-### Agent Teams Mode
+Every reviewer receives only its audit slice, exact read paths, applicable specs/guideline sources, checkpoint, and evidence budget. Any generic `Context files` list in the authorized execution reference MUST be replaced by the minimum exact paths selected in Step 1; it is not a preload list. Agent definitions load automatically. Require a bounded result: status, scored findings, severity, `file:line`/test evidence, unresolved risks, and remaining work. Keep commands/output bounded in memory by default. Artifact paths are permitted only when `PERSIST_AUTHORIZED` explicitly covers artifacts.
 
-#### Specific Audit Type (argument provided)
+### Execution Details (Load Only When Authorized)
 
-`TaskCreate("Audit: {audit_type}")` → `TaskUpdate(owner: "reviewer")`.
+The strict default performs every selected audit slice locally and sequentially with `Read`, `Glob`, and `Grep`; continue directly to Step 4 without loading another execution reference.
 
-Spawn a single `reviewer` teammate:
-> **Your Task**: #{task-id} — claim immediately (`TaskUpdate(status: "in_progress")`). Mark completed with summary when done.
-> You are the **reviewer** running a {audit_type} audit.
-> Read `agents/reviewer.md` for your role definition.
-> Read `knowzcode/claude_code_execution.md` for team conventions.
->
-> **Audit scope**: {audit_type}
-> **Context files**: knowzcode_tracker.md, knowzcode_architecture.md, knowzcode_project.md
-> **Specs directory**: knowzcode/specs/
->
-> Deliverable: Audit report with health scores, critical issues, recommendations.
-> {advisor_guidance}
+Only when `RUNTIME_WRITES_AUTHORIZED = true`, read [references/authorized-execution.md](references/authorized-execution.md), and load only the section for the chosen named-agent or coordinated-team route. That reference defines scoped reviewer packets, full-audit slice boundaries, conditional liaison/specialist dispatch, Team task state, model/profile substitution, and release behavior. It never grants persistence and cannot override the zero-write or authorization rules above.
 
-Wait for completion. Shut down teammate. Clean up the team.
-
-The reviewer focuses on the requested type with type-specific depth:
-- **spec**: Validates 4-section format, VERIFY statement count, consolidation opportunities
-- **architecture**: Checks layer violations, drift, pattern consistency
-- **security**: OWASP Top 10 scanning with concrete detection patterns
-- **integration**: API contracts, dependency graph, orphaned code, data flow
-- **compliance**: Enterprise guideline enforcement levels
-
-#### Full Audit (no argument — DEFAULT)
-
-Create tasks first, pre-assign, then spawn with task IDs:
-- `TaskCreate("Audit: spec + architecture")` → `TaskUpdate(owner: "reviewer-spec-arch")`
-- `TaskCreate("Audit: security + integration")` → `TaskUpdate(owner: "reviewer-sec-int")`
-- (Optional) `TaskCreate("Audit: compliance")` → `TaskUpdate(owner: "reviewer-compliance")` (if enterprise configured AND `COMPLIANCE_CONFIG.include_in_audit != false`)
-- Dispatch `knowz:reader` for vault standards (if `VAULTS_CONFIGURED = true`)
-
-Spawn reviewers with their task IDs:
-
-1. Spawn `reviewer` teammate (name: `reviewer-spec-arch`):
-   > **Your Task**: #{task-id} — claim immediately (`TaskUpdate(status: "in_progress")`). Mark completed with summary when done.
-   > You are the **reviewer** running a targeted audit.
-   > Read `agents/reviewer.md` for your role definition.
-   > Read `knowzcode/claude_code_execution.md` for team conventions.
-   >
-   > **Audit scope**: Specification quality AND architecture health ONLY.
-   > Do NOT audit security or integration — another reviewer handles those.
-   > **Context files**: knowzcode_tracker.md, knowzcode_architecture.md, knowzcode_project.md
-   > **Specs directory**: knowzcode/specs/
-   >
-   > Deliverable: Audit report with spec quality scores, architecture health, critical issues.
-   > {advisor_guidance}
-
-2. Spawn `reviewer` teammate (name: `reviewer-sec-int`):
-   > **Your Task**: #{task-id} — claim immediately (`TaskUpdate(status: "in_progress")`). Mark completed with summary when done.
-   > You are the **reviewer** running a targeted audit.
-   > Read `agents/reviewer.md` for your role definition.
-   > Read `knowzcode/claude_code_execution.md` for team conventions.
-   >
-   > **Audit scope**: Security vulnerability scan AND integration consistency ONLY.
-   > Do NOT audit specs or architecture — another reviewer handles those.
-   > **Context files**: knowzcode_tracker.md, knowzcode_architecture.md, knowzcode_project.md
-   > **Specs directory**: knowzcode/specs/
-   >
-   > Deliverable: Audit report with security posture, integration health, critical issues.
-   > {advisor_guidance}
-
-3. (Optional) If enterprise compliance configured AND `COMPLIANCE_CONFIG.include_in_audit != false` (default true), spawn `reviewer` (name: `reviewer-compliance`). An explicit `/knowzcode:audit compliance` invocation ignores `include_in_audit` and always runs the compliance reviewer:
-   > **Your Task**: #{task-id} — claim immediately (`TaskUpdate(status: "in_progress")`). Mark completed with summary when done.
-   > **Audit scope**: Enterprise compliance ONLY.
-   > Check against local guidelines in `knowzcode/enterprise.md`, `knowzcode/enterprise/compliance_manifest.md`, `knowzcode/enterprise/guidelines/**/*.md`, and any vault/KnowledgeId guideline sources discovered by the lead. Preserve provenance and cite guideline IDs or KnowledgeIds in findings.
-   > {advisor_guidance}
-
-4. If `VAULTS_CONFIGURED = true` AND `MCP_AGENTS_ENABLED = true`, dispatch `knowz:reader` for standards lookup in parallel with reviewers:
-   > Read `knowz-vaults.md` (project root) to discover configured vaults — their IDs, types, descriptions.
-   > Query for team standards: search ecosystem/enterprise/compliance-type vaults for standards, conventions, active policies, enterprise guidelines, compliance requirements, and past audit decisions.
-   > Return synthesized findings with KnowledgeId/item references, created/updated/source metadata when available, and any stale or contradictory guidance.
-
-Wait for all to complete.
-
-#### Specialist Integration (Optional)
-
-Initialize `AUDIT_SPECIALISTS = DEFAULT_SPECIALISTS` (from orchestration config, default: []).
-
-If `$ARGUMENTS` contains `--specialists` (or `--specialists=security`, `--specialists=test`, `--specialists=security,test`):
-- `--specialists` → enable all applicable: `[security-officer, test-advisor]`
-- `--specialists=csv` → enable specified subset
-- `--no-specialists` → clear to `[]` (overrides config defaults)
-
-If neither `--specialists` nor `--no-specialists` is present, use `DEFAULT_SPECIALISTS` from config.
-
-Parse which specialists to enable. Then spawn alongside reviewers:
-
-1. **security-officer** (if enabled) — spawn alongside `reviewer-sec-int` for deeper security scanning:
-   - `TaskCreate("Security officer: deep security audit")` → `TaskUpdate(owner: "security-officer")`
-   - Spawn `security-officer` teammate:
-     > **Your Task**: #{task-id} — claim immediately (`TaskUpdate(status: "in_progress")`). Mark completed with summary when done.
-     > You are the **security-officer** running a deep security audit.
-     > Read `agents/security-officer.md` for your role definition.
-     > Read `knowzcode/claude_code_execution.md` for team conventions.
-     >
-     > **Audit scope**: Full codebase security scan — vulnerability patterns, hardcoded secrets, injection vectors, auth bypass, SSRF, path traversal.
-     > **Context files**: knowzcode_tracker.md, knowzcode_architecture.md, knowzcode_project.md
-     > **Specs directory**: knowzcode/specs/
-     >
-     > Deliverable: Security finding report with severity ratings. Tag CRITICAL/HIGH findings with `[SECURITY-BLOCK]`.
-     > If `knowzcode/enterprise/compliance_manifest.md` exists and `compliance_enabled: true`, also cross-reference findings with enterprise guideline IDs.
-     > {advisor_guidance}
-
-2. **test-advisor** (if enabled) — spawn alongside reviewers for test quality assessment:
-   - `TaskCreate("Test advisor: test quality audit")` → `TaskUpdate(owner: "test-advisor")`
-   - Spawn `test-advisor` teammate:
-     > **Your Task**: #{task-id} — claim immediately (`TaskUpdate(status: "in_progress")`). Mark completed with summary when done.
-     > You are the **test-advisor** running a test quality audit.
-     > Read `agents/test-advisor.md` for your role definition.
-     > Read `knowzcode/claude_code_execution.md` for team conventions.
-     >
-     > **Audit scope**: Test coverage, TDD compliance, assertion quality, edge case coverage, test isolation.
-     > **Context files**: knowzcode_tracker.md, knowzcode_project.md
-     >
-     > Deliverable: Test quality report with coverage metrics, TDD compliance, and improvement recommendations.
-     > If `knowzcode/enterprise/compliance_manifest.md` exists and `compliance_enabled: true`, also check enterprise ARC criteria for test coverage.
-     > {advisor_guidance}
-
-Wait for all reviewers and specialists to complete. Synthesize results in Step 4.
-
-### Subagent Mode
-
-#### Specific Audit Type
-
-Launch knowledge-liaison + reviewer in parallel via `Task()`:
-
-1. **knowledge-liaison** — Local context + vault knowledge:
-   - `Task(subagent_type="knowzcode:knowledge-liaison", description="Liaison: audit context", prompt="Research audit scope: {audit_type}. Gather local context (specs, workgroups, tracker, log, architecture) and vault knowledge (standards, conventions, enterprise guidelines, active policies, past audit decisions). Preserve KnowledgeId/item references, created/updated/source metadata, and contradictions. Push Context Briefing with findings. Max 15 tool calls. Write findings to a concise summary.")`
-
-2. **reviewer** — The audit itself:
-   - `subagent_type`: `"reviewer"`
-   - `prompt`: Task-specific context only (role definition is auto-loaded from `agents/reviewer.md`):
-     > **Audit scope**: {audit_type}
-     > **Context files**: knowzcode_tracker.md, knowzcode_architecture.md, knowzcode_project.md
-     > **Specs directory**: knowzcode/specs/
-     >
-     > Deliverable: Audit report with health scores, critical issues, recommendations.
-     > {advisor_guidance}
-   - `description`: `"Audit: {audit_type}"`
-
-All launched in parallel. Synthesize knowledge-liaison context alongside reviewer results.
-
-#### Full Audit
-
-Launch knowledge-liaison + parallel reviewers via `Task()`:
-
-1. **knowledge-liaison** — Local context + vault knowledge:
-   - `Task(subagent_type="knowzcode:knowledge-liaison", description="Liaison: audit context", prompt="Research for comprehensive audit. Gather local context (specs, workgroups, tracker, log, architecture) and vault knowledge (standards, conventions, security policies, compliance requirements, enterprise guidelines, active policies). Preserve KnowledgeId/item references, created/updated/source metadata, and contradictions. Push Context Briefing with findings. Max 15 tool calls. Write findings to a concise summary.")`
-
-2. **Parallel reviewers** (append `{advisor_guidance}` resolution to each `prompt` per Step 1.1):
-   - `Task(subagent_type="reviewer", description="Audit: spec + architecture", prompt="Audit scope: Specification quality AND architecture health ONLY. ... {advisor_guidance}")`
-   - `Task(subagent_type="reviewer", description="Audit: security + integration", prompt="Audit scope: Security vulnerability scan AND integration consistency ONLY. ... {advisor_guidance}")`
-   - `Task(subagent_type="reviewer", description="Audit: compliance", prompt="Audit scope: Enterprise compliance ONLY. ... {advisor_guidance}")` (if enterprise configured AND `COMPLIANCE_CONFIG.include_in_audit != false`; an explicit `/knowzcode:audit compliance` ignores this toggle and always runs)
-
-Synthesize knowledge-liaison context alongside reviewer results.
-
-#### Specialist Integration (Subagent Mode — Optional)
-
-Initialize `AUDIT_SPECIALISTS = DEFAULT_SPECIALISTS` (from orchestration config, default: []).
-
-If `$ARGUMENTS` contains `--specialists` (or `--specialists=security`, `--specialists=test`, `--specialists=security,test`):
-- `--specialists` → enable all applicable
-- `--specialists=csv` → enable specified subset
-- `--no-specialists` → clear to `[]`
-
-If `AUDIT_SPECIALISTS` is non-empty, launch specialist `Task()` calls in parallel with reviewers:
-
-1. **security-officer** (if enabled):
-   - `Task(subagent_type="security-officer", description="Security officer: deep security audit", prompt="Audit scope: Full codebase security scan. Context files: knowzcode_tracker.md, knowzcode_architecture.md. Specs: knowzcode/specs/. Deliverable: Security finding report with severity ratings. Tag CRITICAL/HIGH with [SECURITY-BLOCK]. If knowzcode/enterprise/compliance_manifest.md exists and compliance_enabled: true, also cross-reference findings with enterprise guideline IDs. {advisor_guidance}")`
-
-2. **test-advisor** (if enabled):
-   - `Task(subagent_type="test-advisor", description="Test advisor: test quality audit", prompt="Audit scope: Test coverage, TDD compliance, assertion quality, edge cases. Context files: knowzcode_tracker.md. Deliverable: Test quality report with coverage metrics and recommendations. If knowzcode/enterprise/compliance_manifest.md exists and compliance_enabled: true, also check enterprise ARC criteria for test coverage. {advisor_guidance}")`
-
-Synthesize specialist findings alongside reviewer results.
+Type-specific depth remains:
+- **spec**: 4-section format, VERIFY count, and consolidation opportunities.
+- **architecture**: layer violations, drift, and pattern consistency.
+- **security**: OWASP vulnerability patterns and concrete evidence.
+- **integration**: contracts, dependency graph, orphaned code, and data flow.
+- **compliance**: active enterprise guideline enforcement levels and provenance.
 
 ## Step 4: Present Results
 
@@ -336,7 +182,7 @@ Synthesize specialist findings alongside reviewer results.
 
 ## Step 4.5: Vault Capture Prompt
 
-If `VAULTS_CONFIGURED = true` AND `MCP_ACTIVE = true`, present after audit results:
+Skip this step unless the invoking user explicitly authorized vault persistence. Do not treat a connected vault or `--autonomous` as consent. If authorization exists and `VAULTS_CONFIGURED = true` and `MCP_ACTIVE = true`, confirm the authorized scope and present:
 
 ```markdown
 **Save to vault?** These audit findings can be captured to Knowz for future reference.
@@ -346,20 +192,24 @@ If `VAULTS_CONFIGURED = true` AND `MCP_ACTIVE = true`, present after audit resul
 ```
 
 **Handling**:
-- **A**: Dispatch `knowz:writer` with a self-contained prompt summarizing all findings, tagged with the topic. Read `knowz-vaults.md` (project root) to resolve the target vault (use ecosystem-type vault). Check for duplicates via `search_knowledge` before writing.
-- **B**: Ask user which sections to save, then dispatch `knowz:writer` with selected content.
+- **A**: Build one bounded `AuthorizedVaultDelta` summarizing all findings, tagged with the topic and marked `explicit_save: true`.
+- **B**: Ask which sections to save, then build the same packet with only the selected content.
 - **C**: Proceed to Step 5.
+
+Strict audit intentionally has no Bash, Task, or write-capable MCP authority. Return A/B packets to the lead/runtime owner, which MUST invoke `vault-delta`; `skip`/`batch` creates no writer or pending entry, and only classified `amend`, `update`, or `flush` may enter a separately authorized persistence path. If no runtime owner is available, report the save as deferred and offer the bounded packet for a later `/knowz save`; do not bypass classification from audit mode.
 
 If `VAULTS_CONFIGURED = false` or `MCP_ACTIVE = false`, skip this step silently.
 
-## Step 5: Log Audit
+## Step 5: Optional Persistence
 
-Log to `knowzcode/knowzcode_log.md`:
+Default: return the bounded Step 4 report and make zero writes.
+
+Only when `PERSIST_AUTHORIZED = true`, persist exactly the authorized targets. If local log persistence was explicitly requested, request write permission and append to `knowzcode/knowzcode_log.md`:
 ```markdown
 | {timestamp} | AUDIT | {audit_type} | {summary} |
 ```
 
-If `mcp_compliance_enabled: true`, MCP is configured, an enterprise vault exists, and `COMPLIANCE_CONFIG.push_audit_results != false` (default true): push audit results via `create_knowledge` for team audit trail. If `mcp_compliance_enabled: false` or `push_audit_results: false`, record that the enterprise-vault audit push was skipped by manifest config.
+An enterprise-vault push additionally requires explicit vault-save authorization, `mcp_compliance_enabled: true`, a resolved enterprise vault, and `COMPLIANCE_CONFIG.push_audit_results != false`. Configuration can forbid a write but cannot authorize one. Never broaden local-log authorization into vault authorization or vice versa.
 
 ## Related Skills
 

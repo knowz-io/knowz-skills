@@ -1,23 +1,38 @@
-# Parallel Teams Orchestration — Work Skill (Tier 3)
+# Parallel Orchestration — Work Skill (Tier 3)
 
-When Parallel Teams mode is active, follow these 4 stages instead of spawning one agent per phase sequentially. The same phase spawn prompts (defined in [spawn-prompts.md](spawn-prompts.md)) are reused — what changes is WHEN agents are spawned and HOW MANY run concurrently.
+Use these four stages for adaptive parallel delegation and for the optional coordinated-team mode. The same bounded task packets in [spawn-prompts.md](spawn-prompts.md) apply. Classify every unit before dispatch; parallelism alone never justifies Team mode.
 
 ## Contents
 
 - [Model Overrides](#model-overrides-applies-to-every-spawn-below)
-- [Stage 0: Team Creation + Parallel Discovery](#stage-0-team-creation--parallel-discovery)
+- [Conditional Roles and Standards](#conditional-roles-and-standards)
+- [Stage 0: Context-Efficient Discovery](#stage-0-context-efficient-discovery)
 - [Stage 1: Analysis + Specification](#stage-1-analysis--specification)
 - [Stage 2: Parallel Implementation + Incremental Review](#stage-2-parallel-implementation--incremental-review)
 - [Stage 3: Finalization](#stage-3-finalization)
 - [WorkGroup File Format (Parallel Mode)](#workgroup-file-format-parallel-mode)
 - [Task Dependency Graph](#task-dependency-graph)
-- [Sequential Teams / Subagent Flow (Tier 3 Fallback)](#sequential-teams--subagent-flow-tier-3-fallback)
+- [Sequential / Named-Agent Flow](#sequential--named-agent-flow)
+
+---
+
+## Conditional Roles and Standards
+
+Resolve these only after tier and scope classification. They never enable Agent Teams; use named agents unless selected workers genuinely need task/mailbox coordination.
+
+- `SPECIALISTS_ENABLED` defaults to `default_specialists` or empty. `--specialists[=security,test,project,design]` and explicit natural-language requests add the named evidence role; `--no-specialists` clears security/test/project. Tier 2 skips the panel. Tier 3 sequential runs selected roles one at a time. Every role needs a distinct question and bounded deliverable.
+- `FRONTEND_DESIGNER_ENABLED` resolves in order: `--no-frontend-designer`/config false; explicit flag/config true; explicit design/UX/a11y request; otherwise config `auto` performs a targeted UI-surface glob (`*.tsx`, `*.jsx`, `*.vue`, `*.svelte`, `*.razor`, `*.xaml`, `main.dart`, or relevant HTML/manifest). Tier 2 uses one fresh named designer only for explicit runtime/UI verification. `--no-specialists` does not disable this role.
+- `ENTERPRISE_ENFORCER_ENABLED` resolves in order: explicit opt-out; explicit opt-in (skeleton mode allowed); otherwise an existing manifest with `compliance_enabled: true` and at least one active non-empty local or configured vault/KnowledgeId guideline source. Tier 2 normally uses per-agent checks. Tier 3 uses a fresh named read-only enforcer unless peer coordination independently justifies a teammate.
+
+When compliance is active, parse and carry `pull_standards_at_start`, `preserve_guideline_provenance`, `show_advisory_issues`, `require_signoff_for_finalization`, `push_audit_results`, `push_completion_records`, and `include_in_audit` with documented defaults. Pull vault standards only when MCP compliance is enabled and a concrete configured source exists; preserve provenance unless disabled, verify retrieved guidance against live code/docs, and pause on blocking conflicts. Configuration may forbid a write but never supplies user authorization for an otherwise read-only operation.
+
+Announce only enabled roles and their activation reasons. Release conditional workers as soon as their bounded deliverable or handoff completes.
 
 ---
 
 ## Model Overrides (applies to every spawn below)
 
-At every agent spawn call in Stages 0, 1, 2, and 3 (and in the Sequential/Subagent fallback at the bottom of this file), resolve the model via `MODEL_FOR(agent_name, PROFILE, EXECUTE_ON_FABLE)` from [profile-models.md](profile-models.md):
+At every spawn or resume decision in Stages 0-3, resolve the model via `MODEL_FOR(agent_name, PROFILE, EXECUTE_ON_FABLE)` from [profile-models.md](profile-models.md):
 
 - If `MODEL_FOR` returns non-null (e.g. `"sonnet"` under `PROFILE == "advisor"` for builder/reviewer/closer/smoke-tester; `"fable"` for planning/analysis/spec/review agents and `"opus"` for execution agents under `PROFILE == "frontier"`): include `model: <value>` in the spawn call.
 - If `MODEL_FOR` returns null: omit the `model` parameter entirely — the agent's frontmatter default is used.
@@ -27,48 +42,23 @@ At every spawn whose prompt contains the `{advisor_guidance}` token (see [spawn-
 
 At every spawn whose prompt contains the `{spec_depth_guidance}` token (analyst, architect, and spec-drafters — see [spawn-prompts.md](spawn-prompts.md#spec_depth_guidance-placeholder)): substitute the Spec-Depth Guidance block when `PROFILE == "frontier"`; otherwise substitute an empty string.
 
-`PROFILE`, `EXECUTE_ON_FABLE`, and `FABLE_DOWNGRADE` are resolved in `/knowzcode:work` Steps 2.3–2.4. They do not change mid-workflow.
+`PROFILE`, `EXECUTE_ON_FABLE`, and `FABLE_DOWNGRADE` are resolved in `/knowzcode:work` Steps 2.3-2.4. They do not change inside a reusable lineage.
 
 ---
 
-## Stage 0: Team Creation + Parallel Discovery
+## Stage 0: Context-Efficient Discovery
 
-1. Create team `kc-{wgid}`
-2. Read knowzcode context files (lead does initial load for spawn prompts)
-3. **MCP & Vault Baseline** — use `MCP_ACTIVE`, `VAULTS_CONFIGURED`, and `VAULT_BASELINE` from Step 3.6 in `work/SKILL.md`. The lead has already completed the MCP probe, vault creation, and baseline vault queries before reaching Stage 0. Do NOT re-run the MCP probe or baseline queries here.
-4. **Spawn Group A**:
-   Create tasks first, pre-assign, then spawn with task IDs:
-   - Always (knowledge-liaison is unconditional — first agent spawned):
-     - `TaskCreate("Knowledge liaison: context & vault coordination")` → `TaskUpdate(owner: "knowledge-liaison")`
-   - Always:
-     - `TaskCreate("Phase 1A: Impact analysis for {goal}")` → `TaskUpdate(owner: "analyst")`
-     - `TaskCreate("Pre-load architecture context and speculative research")` → `TaskUpdate(owner: "architect")`
-   - If `CODEBASE_SCANNER_ENABLED = true` (default):
-     - Derive two search focuses from the goal:
-       - **Scanner-Direct**: source code search — grep for goal keywords, read affected code paths
-       - **Scanner-Tests**: test discovery — search test directories for tests covering the goal area
-     - `TaskCreate("Scanner: direct codebase scan for {goal}")` → `TaskUpdate(owner: "scanner-direct")`
-     - `TaskCreate("Scanner: test coverage scan for {goal}")` → `TaskUpdate(owner: "scanner-tests")`
-   Spawn all Group A agents with their `{task-id}` in the spawn prompt (use spawn prompts from [spawn-prompts.md](spawn-prompts.md)).
-   The knowledge-liaison reads local context directly and dispatches vault reader subagents for deeper targeted research (building on the lead's `VAULT_BASELINE`) — no separate scout agents needed.
-5. **Vault status note**: The lead has already performed baseline vault queries (`VAULT_BASELINE`). The knowledge-liaison performs deeper targeted research beyond the baseline. If `VAULTS_CONFIGURED = true`, it dispatches `knowz:reader` for deep-dive queries. If `VAULTS_CONFIGURED = false`, it still provides local context (direct reads only). No separate Group B spawn needed.
-6. **Spawn Group C** (specialist agents — same turn as Group A): If `SPECIALISTS_ENABLED` is non-empty:
-   Create tasks first, pre-assign, then spawn with task IDs:
-   - If `security-officer` in list: `TaskCreate("Security officer: initial threat scan")` → `TaskUpdate(owner: "security-officer")`
-   - If `test-advisor` in list: `TaskCreate("Test advisor: coverage baseline")` → `TaskUpdate(owner: "test-advisor")`
-   - If `project-advisor` in list: `TaskCreate("Project advisor: backlog context")` → `TaskUpdate(owner: "project-advisor")`
-   Spawn each enabled specialist with its `{task-id}` in the spawn prompt (use spawn prompts from [spawn-prompts.md](spawn-prompts.md)).
-   If `SPECIALISTS_ENABLED` is empty, skip Group C.
-6b. **Spawn Group D** (conditional officers — same turn as Group A):
-   - If `FRONTEND_DESIGNER_ENABLED` (from Step 2.6.1): `TaskCreate("Frontend designer: design discovery & questioning")` → `TaskUpdate(owner: "frontend-designer")`
-   - If `ENTERPRISE_ENFORCER_ENABLED` (from Step 2.6.2): `TaskCreate("Enterprise enforcer: load compliance posture")` → `TaskUpdate(owner: "enterprise-enforcer")`
-   Spawn each with its `{task-id}` (use spawn prompts from [spawn-prompts.md](spawn-prompts.md)).
-   If neither is enabled, skip Group D.
-7. **Roster confirmation** — lead lists every spawned agent by name to the user. Include scanners, Group C specialists, and Group D officers if active.
-8. All spawned agents work immediately in parallel (knowledge-liaison reads local context directly and dispatches vault readers as subagents; scanners are lightweight general-purpose agents; specialists are Sonnet read-only agents; Group D officers are Opus read-only). Agent count depends on orchestration config: 3-10 agents at Stage 0.
-9. Knowledge-liaison pushes Context Briefings to analyst and architect as results arrive. Specialists work independently on their Stage 0 tasks.
+1. Reuse the deterministic Step 1.4 classification and spec search. Read only the project files required to construct the analyst capsule.
+2. Use `MCP_ACTIVE`, `VAULTS_CONFIGURED`, and `VAULT_BASELINE` from Step 3.6. Do not repeat the MCP probe or baseline queries. Resume a compatible knowledge-liaison only for a material targeted gap; otherwise keep baseline handling local.
+3. Start one analyst with the goal, candidate scope, relevant file list, prior-spec matches, baseline summary, and a bounded result contract.
+4. Add an architect before Gate #1 only when architecture ambiguity blocks a reliable Change Set. Otherwise dispatch or resume the architect after approval, when NodeIDs and spec scope are stable.
+5. Add a direct-code scanner or test scanner only when its slice is independently useful and material uncertainty remains. Prefer the lead's deterministic `Glob`/`Grep` index over duplicative search agents.
+6. Add security, test, project, frontend, or enterprise specialists only when the requested scope or active controls require their evidence. Each receives a distinct scope and bounded output.
+7. Default fan-out is the analyst plus at most two independently useful read-only workers. Record a reason for every additional worker.
 
-**Key**: The analyst does NOT wait for the knowledge-liaison, scanners, or specialists to finish. It starts scanning the codebase immediately. The knowledge-liaison pushes Context Briefings to analyst and architect as local context and vault results arrive. Scanner findings arrive as broadcasts. The analyst streams `[PRELIMINARY]` NodeID findings to the architect as it discovers them (see Preliminary Findings Protocol). Specialist findings are consumed by the lead at gates.
+For adaptive delegation, workers return bounded summaries/artifact paths to the lead. For coordinated-team mode, the first eligible teammate spawn forms the runtime-managed team; create and assign task IDs before subsequent teammate dispatch and use mailbox messages only for decision-relevant peer coordination. If teammate spawning is unavailable, continue with equivalent named agents and record `CAPABILITY_FALLBACK`.
+
+The analyst starts immediately and does not wait for optional workers. It may send at most three high-confidence `[PRELIMINARY]` NodeID findings to an already-active architect; otherwise those findings stay in its final result.
 
 ---
 
@@ -92,8 +82,8 @@ At every spawn whose prompt contains the `{spec_depth_guidance}` token (analyst,
    - Lead creates spec-drafting tasks for architect (1 task per NodeID, `addBlockedBy: [analysis-task-id]`):
      - `TaskCreate("Spec: NodeID-X")` → `TaskUpdate(taskId, owner: "architect")`
      - DM architect with task IDs: `"**New Tasks**: #{id-1} Spec: NodeID-A, #{id-2} Spec: NodeID-B. Approved Change Set: {summary}"`
-   - Architect is already warm (pre-loaded + speculative research during Stage 0) → specs drafted FAST
-   - If Gate #1 rejected: shut down architect, re-run analyst with feedback, re-spawn architect after
+   - Resume a compatible architect only when it was started for a real ambiguity; otherwise dispatch a fresh architect now with the approved Change Set capsule.
+   - If Gate #1 is rejected, resume the analyst with the bounded decision delta when compatible. Invalidate and restart only when scope/spec/checkpoint or runtime policy changed.
 
    **Path B: Parallel Spec Drafting (PARALLEL_SPEC_THRESHOLD or more NodeIDs)**
    - Lead DMs architect the full approved Change Set and asks for a partition plan (see `agents/architect.md` — Parallel Spec Coordination)
@@ -106,7 +96,7 @@ At every spawn whose prompt contains the `{spec_depth_guidance}` token (analyst,
    - Spec-drafters draft specs in parallel
    - After all spec-drafters complete: architect runs consistency review (cross-spec alignment, naming, VERIFY coverage)
    - Shut down spec-drafters after consistency review
-   - If Gate #1 rejected: shut down architect and any spec-drafters, re-run analyst with feedback, re-spawn architect after
+   - If Gate #1 is rejected, release temporary spec-drafters and resume the analyst/architect only when each lineage remains compatible; otherwise record invalidation and use a fresh capsule.
 
 8. Architect completes specs (Path A) or architect completes consistency review (Path B)
 9. **Test-advisor spec review** (if `test-advisor` in `SPECIALISTS_ENABLED`): After specs drafted, create spec testability review task:
@@ -118,8 +108,8 @@ At every spawn whose prompt contains the `{spec_depth_guidance}` token (analyst,
 10. Lead presents **Quality Gate #2** to user (see [quality-gates.md](quality-gates.md))
 11. User approves (or rejects → architect revises)
 12. Pre-implementation commit: `git add knowzcode/ && git commit -m "KnowzCode: Specs approved for {wgid}"`
-13. Keep analyst alive briefly (available for scope questions during early implementation)
-14. Keep architect alive through Stage 2 (consultative role — spec clarifications for builders, no code or spec edits)
+13. Release the analyst after approval unless a concrete early-implementation question is already pending.
+14. Retain the architect through Stage 2 only when active cross-scope clarification is likely; otherwise release it and resume from lineage if a compatible question arises.
 
 ---
 
@@ -170,11 +160,10 @@ At every spawn whose prompt contains the `{spec_depth_guidance}` token (analyst,
    - For microtasks: `"TDD: NodeID-A / microtask-name tests"` → `"implementation"` → `"verify"`
    - Builder works through subtasks, marks each complete with summary
 
-7. Create reviewer tasks and spawn — one per active builder scope:
+7. After each implementation scope completes, dispatch one fresh independent reviewer for that scope:
    - `TaskCreate("Audit N5a: service interface + registration", addBlockedBy: [implement-N5a-task-id])` → `TaskUpdate(owner: "reviewer-1")`
    - `TaskCreate("Audit N7: independent cache invalidation", addBlockedBy: [implement-N7-task-id])` → `TaskUpdate(owner: "reviewer-2")`
    Spawn each reviewer with its `{task-id}` + assigned spec(s), assigned acceptance criteria, and owned file list.
-   Reviewer stays idle until its paired builder marks the NodeID/microtask implementation complete.
    Each reviewer audits incrementally within its assigned microtask or one-NodeID scope.
    For a later dependent wave, create the reviewer task only after creating that wave's implementation task.
 
@@ -244,7 +233,7 @@ At every spawn whose prompt contains the `{spec_depth_guidance}` token (analyst,
    - security-officer → builder-N: Security guidance for sensitive scopes (max 2 DMs per builder)
    - test-advisor → builder-N: Test improvement feedback (max 2 DMs per builder)
    - security-officer ↔ test-advisor: Cross-cutting test gaps in security paths (max 2 inter-specialist DMs)
-   - project-advisor → knowledge-liaison: Idea captures (`"Consider: {idea}"` — knowledge-liaison dispatches `knowz:writer` if warranted)
+   - project-advisor → lead: Idea candidates (`"Consider: {idea}"` — lead classifies with `vault-delta`; `skip`/`batch` do not dispatch)
    - project-advisor → lead: Backlog proposals (before gap loop)
    - frontend-designer → architect: Design VERIFY criteria proposals (Stage 1)
    - frontend-designer → builder-N: Design guidance for UI scopes (max 2 DMs per builder)
@@ -278,8 +267,8 @@ At every spawn whose prompt contains the `{spec_depth_guidance}` token (analyst,
 > 2. Spawn `closer`
 > 3. (If enterprise-enforcer active) Enforcer DMs closer `"ComplianceSummary: {payload}"`; wait for closer's ack DM
 > 4. Shut down `security-officer`, `test-advisor`, `frontend-designer`, `enterprise-enforcer` (any order)
-> 5. Closer completes finalization and DMs knowledge-liaison for Phase 3 capture
-> 6. Shut down `knowledge-liaison` (last — before team cleanup)
+> 5. Closer returns one consolidated `FinalCaptureDelta`; lead classifies it with `vault-delta` using `explicit_save: true` and sends one Phase 3 flush to the knowledge-liaison
+> 6. Release `knowledge-liaison` after capture; runtime-managed Team cleanup occurs at session end
 
 1. (Project-advisor was shut down mid-Stage 2.)
 2. `TaskCreate("Phase 3: Finalize {wgid}", addBlockedBy: [last-audit-task-id])` → `TaskUpdate(owner: "closer")`
@@ -293,20 +282,19 @@ At every spawn whose prompt contains the `{spec_depth_guidance}` token (analyst,
    - Review architecture docs for discrepancies
    - Schedule REFACTOR tasks for tech debt
    - **If enterprise-enforcer was active**: append the compliance audit summary (received via DM at Stage 3 step 1b) to `knowzcode/enterprise/compliance_status.md` review history
-   - DM knowledge-liaison for Phase 3 capture (if vaults configured): `"Capture Phase 3: {wgid}. Your task: #{task-id}"` — knowledge-liaison dispatches writer
-   - Create final atomic commit
+   - Return the consolidated `FinalCaptureDelta` to the lead; the lead invokes `vault-delta` and, if vaults are configured, DMs the knowledge-liaison: `"Capture Delta flush: Phase 3: {wgid}. Your task: #{task-id}"` — knowledge-liaison dispatches one writer
+   - Return the explicit final file list and suggested commit message; the lead creates the atomic commit
 4. Lead presents completion summary
 5. **Wait for writer Phase 3 capture** (if knowledge-liaison dispatched a writer):
    - Check writer task via `TaskGet(task-id)` — wait until status is `completed`
    - **Timeout**: If >2 minutes after closer completes and writer task still not complete → proceed with shutdown and log `WARNING: Writer Phase 3 capture did not complete for {wgid}. Vault writes may be incomplete.`
-6. Shutdown order: closer first, then knowledge-liaison (last agent before team cleanup)
-7. Delete team
+6. Release closer after final evidence, then release the knowledge-liaison after capture. In coordinated mode, request graceful teammate shutdown; no separate Team deletion is performed.
 
 ---
 
 ## WorkGroup File Format (Parallel Mode)
 
-In Parallel Teams mode, the WorkGroup file uses per-NodeID phase tracking instead of a single `Current Phase`:
+In parallel orchestration, the WorkGroup file uses per-NodeID phase tracking instead of a single `Current Phase`:
 
 ```markdown
 ## Change Set
@@ -331,7 +319,7 @@ When creating tasks, model the dependency chain with `addBlockedBy` and pre-assi
 
 | Task | Blocked By | Owner |
 |------|-----------|-------|
-| Knowledge liaison: context & vault coordination | (none — Group A, unconditional) | knowledge-liaison |
+| Knowledge liaison: targeted context/vault gap | (only when baseline is insufficient) | knowledge-liaison |
 | Scanner: direct codebase scan | (none) | scanner-direct |
 | Scanner: test coverage scan | (none) | scanner-tests |
 | Phase 1A analysis | (none — knowledge-liaison pushes context via DM, scanners enrich via broadcast) | analyst |
@@ -363,33 +351,27 @@ When creating tasks, model the dependency chain with `addBlockedBy` and pre-assi
 | Re-smoke: {wgid} round N | Smoke gap fix round N | smoke-tester |
 | Phase 3 finalization | All audits approved | closer |
 | Reader: vault queries | (none — dispatched by knowledge-liaison) | knowz:reader |
-| Writer: Capture Phase 1A | Phase 1A (gate approval — dispatched by knowledge-liaison) | knowz:writer |
-| Writer: Capture Phase 2A | Implement: NodeID-X (dispatched by knowledge-liaison) | knowz:writer |
-| Writer: Capture Phase 2B | All audits approved (dispatched by knowledge-liaison) | knowz:writer |
-| Writer: Capture Phase 3 | Phase 3 finalization (dispatched by knowledge-liaison) | knowz:writer |
+| Writer: Capture Delta amend/update/flush | `vault-delta` returns a persistence action (dispatched by knowledge-liaison) | knowz:writer |
+| Writer: Consolidated Phase 3 flush | Phase 3 `explicit_save` classification (dispatched once by knowledge-liaison) | knowz:writer |
 
 ---
 
-## Sequential Teams / Subagent Flow (Tier 3 Fallback)
+## Sequential / Named-Agent Flow
 
-> **Note:** Sequential Teams does not use orchestration config settings except `MCP_AGENTS_ENABLED`.
+When using `--sequential`, process one ready scope at a time. A profile does not force a team. Keep a compatible named agent only through its bounded phase or gap-loop lease, and resume it before considering a replacement.
 
-When using Sequential Teams (`--sequential`) or Subagent Delegation, follow the traditional one-agent-per-phase flow. For each phase: spawn the agent, create a task, wait for completion, present quality gate, shut down agent, proceed to next phase.
-
-### MCP & Vault Baseline (Sequential/Subagent)
+### MCP & Vault Baseline
 
 Use `MCP_ACTIVE`, `VAULTS_CONFIGURED`, and `VAULT_BASELINE` from Step 3.6 in `work/SKILL.md`. The lead has already completed the MCP probe, vault creation, and baseline vault queries before reaching this point. Do NOT re-run the MCP probe or baseline queries here.
 
-The closer agent independently verifies MCP at Phase 3 regardless of the lead's probe result (see `agents/closer.md` — Startup MCP Verification).
+Pass the lead's timestamped MCP health result to the closer. The closer probes only when that result is absent, expired, or explicitly invalidated (see `agents/closer.md`).
 
-### Pre-Phase: Context & Knowledge Research (Sequential/Subagent)
+### Pre-Phase: Targeted Context and Knowledge
 
-Before spawning the analyst, dispatch the knowledge-liaison for local + vault context:
+Before dispatching the analyst, use `VAULT_BASELINE`. If a material targeted gap remains:
 
-1. Dispatch knowledge-liaison (include `VAULT_BASELINE` in spawn/dispatch prompt):
-   - *Sequential Teams*: Spawn as first teammate. Create task `"Context & knowledge: research for {goal}"`. Wait for completion. Include `VAULT_BASELINE` in the spawn prompt.
-   - *Subagent*: `Task(subagent_type="knowzcode:knowledge-liaison", description="Context & knowledge research", prompt=<liaison spawn prompt from spawn-prompts.md, with VAULT_BASELINE included>)`.
+1. Resume a compatible knowledge-liaison or dispatch `Task(subagent_type="knowledge-liaison", description="Targeted context research", prompt=<bounded question + VAULT_BASELINE>)`.
 2. Collect findings from the knowledge-liaison's task summary.
 3. Inject into the analyst spawn prompt as: `> **Context Briefing**: {liaison findings}`.
 
-This ensures the analyst and architect receive local project context and vault knowledge even without persistent teammate messaging.
+For Gate rejection and Stage 2 gap loops, send only the changed decision, failing VERIFY IDs, checkpoint, and artifact path to the compatible analyst, architect, builder, or reviewer. Start a fresh agent only after a recorded lineage invalidation. Preserve the same TDD, gate, compliance, and capture behavior as parallel execution.

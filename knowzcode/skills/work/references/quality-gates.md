@@ -2,6 +2,21 @@
 
 Gate templates, autonomous mode handling, gap loop mechanics, and progress capture instructions.
 
+## Context-Efficient Progress Capture Policy
+
+Before each gate, phase, or final vault capture, the coordinator MUST invoke the shipped no-write classifier:
+
+`node knowzcode/context_efficiency_runtime.mjs vault-delta`
+
+Send `{input:{delta,previous_deltas?,previous_hashes?,explicit_save?,interruption_sensitive?,severity?}}` on stdin. Apply its result as follows:
+
+- `skip`: do not write or queue the duplicate/empty delta.
+- `amend` or `update`: route one targeted mutation for the existing semantic or supersession identity.
+- `batch`: retain the delta in one coordinator-owned phase journal; do not make an MCP call or append a pending-capture entry yet.
+- `flush`: consolidate the journal and make one writer/direct MCP call. If MCP is unavailable, queue that consolidated batch once in `knowzcode/pending_captures.md` and announce the degradation.
+
+Finalization sets `explicit_save: true` and flushes any remaining batch. HIGH/CRITICAL, correction, deprecation, interruption-sensitive, and explicit-save deltas flush early. This policy replaces unconditional per-gate writes while preserving the durability requirements below.
+
 ## Contents
 
 - [Quality Gate #1: Change Set](#quality-gate-1-change-set)
@@ -24,7 +39,7 @@ Present the Change Set for user approval:
 **Proposed Change Set** ({N} nodes):
 {NodeIDs with descriptions}
 
-**Dependency Map** (Parallel Teams):
+**Dependency Map** (parallel execution; Team mode not required):
 {NodeID parallelism groups}
 
 **Risk Assessment**: {Low/Medium/High}
@@ -46,14 +61,7 @@ If `AUTONOMOUS_MODE = false`: If rejected — re-run analyst with user feedback.
 
 ### Lead Responsibility: Progress Capture (Gate #1) — MUST
 
-After gate approval, the lead MUST trigger progress capture:
-- **If vaults configured + knowledge-liaison active**: DM knowledge-liaison: `"Capture Phase 1A: {wgid}. Your task: #{task-id}"`
-  Include the WorkGroup file's `**KnowledgeId:**` value (if present) so knowledge-liaison can pass it to knowz:writer for update mode.
-  The knowledge-liaison owns extraction, vault routing, and writer dispatch (see `agents/knowledge-liaison.md` — Phase Extraction Guide).
-- **If vaults configured + no knowledge-liaison**: call MCP directly (direct write fallback per `knowzcode_loop.md` Section 7).
-- **If MCP unavailable**: Queue capture to `knowzcode/pending_captures.md` AND announce to user: `**Vault capture skipped — MCP unavailable at Gate #1. Queued to pending_captures.md.**`
-
-Do NOT silently skip this step.
+Classify the Phase 1A delta with the Context-Efficient Progress Capture Policy. Batch normal change-set context; flush only when the classifier requires it. Do not silently discard a required flush.
 
 ---
 
@@ -91,14 +99,7 @@ git commit -m "KnowzCode: Specs approved for {WorkGroupID}"
 
 ### Lead Responsibility: Progress Capture (Gate #2) — MUST
 
-After gate approval, the lead MUST trigger progress capture for spec design decisions:
-- **If vaults configured + knowledge-liaison active**: DM knowledge-liaison: `"Capture Phase 1B: {wgid}. Your task: #{task-id}"`
-  Include the WorkGroup file's `**KnowledgeId:**` value (if present) so knowledge-liaison can pass it to knowz:writer for update mode.
-  The knowledge-liaison MUST capture approved specs, component/system boundaries, integration contracts, diagrams, spec decisions, and applicable enterprise guideline provenance (local file, vault, or KnowledgeId) when present.
-- **If vaults configured + no knowledge-liaison**: call MCP directly (direct write fallback per `knowzcode_loop.md` Section 7).
-- **If MCP unavailable**: Queue capture to `knowzcode/pending_captures.md` AND announce to user: `**Vault capture skipped — MCP unavailable at Gate #2. Queued to pending_captures.md.**`
-
-Do NOT silently skip this step.
+Classify the Phase 1B spec delta with the Context-Efficient Progress Capture Policy. Include approved boundaries, contracts, diagrams, design decisions, and enterprise provenance in the coordinator-owned batch; flush only when required.
 
 ---
 
@@ -108,14 +109,7 @@ When complete, present implementation summary including files changed, tests wri
 
 ### Lead Responsibility: Progress Capture (Phase 2A) — MUST
 
-After Phase 2A completion, the lead MUST trigger progress capture:
-- **If vaults configured + knowledge-liaison active**: DM knowledge-liaison: `"Capture Phase 2A: {wgid}. Your task: #{task-id}"`
-  Include the WorkGroup file's `**KnowledgeId:**` value (if present) so knowledge-liaison can pass it to knowz:writer for update mode.
-  The knowledge-liaison owns extraction, vault routing, and writer dispatch (see `agents/knowledge-liaison.md` — Phase Extraction Guide).
-- **If vaults configured + no knowledge-liaison**: call MCP directly (direct write fallback per `knowzcode_loop.md` Section 7).
-- **If MCP unavailable**: Queue capture to `knowzcode/pending_captures.md` AND announce to user: `**Vault capture skipped — MCP unavailable after Phase 2A. Queued to pending_captures.md.**`
-
-Do NOT silently skip this step.
+Classify the implementation delta with the Context-Efficient Progress Capture Policy. Batch normal file/test/results context and flush risk, corrections, interruptions, or explicit saves.
 
 ---
 
@@ -171,7 +165,7 @@ If `AUTONOMOUS_MODE = false`: User decides — proceed / fix gaps / modify specs
 
 ## Gap Loop
 
-### Parallel Teams mode (per-scope, persistent agents — no respawning):
+### Parallel or Coordinated Mode (per-scope, resume-first):
 
 1. Lead reads each reviewer's structured gap report from task summary
 2. Lead creates fix task and pre-assigns:
@@ -183,7 +177,7 @@ If `AUTONOMOUS_MODE = false`: User decides — proceed / fix gaps / modify specs
    `TaskCreate("Re-audit: NodeID-X", addBlockedBy: [gap-fix-task-id])` → `TaskUpdate(owner: "reviewer-N")`
 6. Lead sends DM to reviewer: `"**New Task**: #{reaudit-task-id} — Re-audit: NodeID-X. {gap list}"`
 7. Each builder-reviewer pair repeats independently until clean — no cross-scope blocking unless dependencies require it
-8. All builders and reviewers stay alive throughout
+8. Keep builder/reviewer handles through the bounded gap-loop lease. Resume with a delta; do not replay full specs or raw logs.
 9. **3-iteration cap per scope**: If a scope exceeds 3 gap-fix iterations without resolution, **PAUSE** autonomous mode for that scope (even if `AUTONOMOUS_MODE = true`). Announce: `> **Autonomous Mode Paused** — Scope {N} failed 3 gap-fix iterations. Manual review required.`
 
 ### Microtask Coverage Rule
@@ -205,24 +199,13 @@ If the smoke-tester reports failures:
 
 Smoke gap loop runs parallel with per-scope reviewer gap loops. Gate #3 waits for both to pass.
 
-### Sequential Teams mode:
+### Sequential or Named-Agent Mode
 
-Spawn a NEW `builder` with the standard Phase 2A prompt plus gap fix context. Then re-run Phase 2B (spawn a new reviewer). Repeat until user approves at Gate #3.
-
-### Subagent mode:
-
-Launch parallel `Task()` calls — one for gap fix (builder), then one for re-audit (reviewer). Repeat as needed.
+Resume the compatible builder with the failing VERIFY IDs, concise evidence, artifact path, checkpoint, and next action. Then resume the same independent reviewer for re-audit of that bounded delta. Start a replacement only when role/scope/spec/checkpoint/model/effort/tools/permissions/sensitivity or transcript availability invalidates lineage; record the reason and use a fresh capsule. Repeat until Gate #3 is clean or the iteration cap pauses the workflow.
 
 ### Lead Responsibility: Progress Capture (Phase 2B) — MUST
 
-After gate approval, the lead MUST trigger progress capture:
-- **If vaults configured + knowledge-liaison active**: DM knowledge-liaison: `"Capture Phase 2B: {wgid}. Your task: #{task-id}"`
-  Include the WorkGroup file's `**KnowledgeId:**` value (if present) so knowledge-liaison can pass it to knowz:writer for update mode.
-  The knowledge-liaison owns extraction, vault routing, and writer dispatch (see `agents/knowledge-liaison.md` — Phase Extraction Guide).
-- **If vaults configured + no knowledge-liaison**: call MCP directly (direct write fallback per `knowzcode_loop.md` Section 7).
-- **If MCP unavailable**: Queue capture to `knowzcode/pending_captures.md` AND announce to user: `**Vault capture skipped — MCP unavailable after Phase 2B. Queued to pending_captures.md.**`
-
-Do NOT silently skip this step.
+Classify the audit/fix delta with the Context-Efficient Progress Capture Policy. Prefer amend/update for a previously recorded finding and batch ordinary clean-review evidence until final consolidation.
 
 ---
 
@@ -243,11 +226,7 @@ This gate is a safety exception: cases 2–3 pause even when `AUTONOMOUS_MODE = 
 
 ### Vault Write — MUST (before reporting completion)
 
-- **If vaults configured + knowledge-liaison active**: The closer DMs knowledge-liaison: `"Capture Phase 3: {wgid}. Your task: #{task-id}"`. Include the WorkGroup and spec files' `**KnowledgeId:**` values if present. The knowledge-liaison dispatches `knowz:writer` for Phase 3 capture. The lead waits for the writer task to complete before shutdown.
-- **If vaults configured + no knowledge-liaison**: The closer calls MCP directly (direct write fallback per `knowzcode_loop.md` Section 7).
-- **If MCP unavailable**: Queue capture to `knowzcode/pending_captures.md` (see `agents/closer.md` MCP Graceful Degradation) AND announce to user: `**Vault capture skipped — MCP unavailable at Phase 3. Queued to pending_captures.md. Run /knowz flush when MCP is available.**`
-
-Do NOT silently skip this step.
+Invoke `vault-delta` with `explicit_save: true`, consolidate all retained deltas, and flush once. With a knowledge liaison, send one Phase 3 capture task containing the consolidated batch and relevant KnowledgeIds; otherwise use one direct MCP call. If MCP is unavailable, queue the consolidated batch once and announce: `**Vault capture skipped — MCP unavailable at Phase 3. Consolidated batch queued to pending_captures.md. Run /knowz flush when MCP is available.**` Do not silently skip a required final flush.
 
 ### Vault Write Checklist (Tier 3)
 

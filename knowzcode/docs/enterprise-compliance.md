@@ -134,7 +134,7 @@ rides through every gate:
 | **Phase 3 (finalize)** | Hands the audit summary to the closer, which appends it to `compliance_status.md`. |
 
 **Fallback path.** When the enforcer is disabled (`--no-enterprise-enforcer`) or unavailable
-(Tier 2 Light, Sequential Teams), per-agent compliance hooks in `reviewer`, `architect`,
+(Tier 2 Light or sequential delegation), per-agent compliance hooks in `reviewer`, `architect`,
 `test-advisor`, and `security-officer` perform the checks inline instead.
 
 ---

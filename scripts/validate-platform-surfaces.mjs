@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 
-import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -11,6 +12,78 @@ const __dirname = dirname(__filename);
 const ROOT = resolve(__dirname, '..');
 
 const errors = [];
+
+function stableJson(value) {
+  if (Array.isArray(value)) return `[${value.map(stableJson).join(',')}]`;
+  if (value && typeof value === 'object') {
+    return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableJson(value[key])}`).join(',')}}`;
+  }
+  return JSON.stringify(value);
+}
+
+function hashValue(value) {
+  return createHash('sha256').update(stableJson(value)).digest('hex');
+}
+
+function stringLeaves(value, output = []) {
+  if (Array.isArray(value)) {
+    for (const child of value) stringLeaves(child, output);
+  } else if (value && typeof value === 'object') {
+    for (const child of Object.values(value)) stringLeaves(child, output);
+  } else if (typeof value === 'string' && value.length >= 8) {
+    output.push(value);
+  }
+  return output;
+}
+
+function matchesSubset(actual, expected) {
+  if (expected && typeof expected === 'object' && !Array.isArray(expected)) {
+    return actual && typeof actual === 'object'
+      && Object.entries(expected).every(([key, value]) => matchesSubset(actual[key], value));
+  }
+  return stableJson(actual) === stableJson(expected);
+}
+
+function snapshotDirectory(root) {
+  const entries = [];
+  const walk = (dir) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true }).sort((left, right) => left.name.localeCompare(right.name))) {
+      const absolute = join(dir, entry.name);
+      const path = relative(root, absolute);
+      if (entry.isDirectory()) {
+        entries.push(`directory:${path}`);
+        walk(absolute);
+      } else {
+        const digest = createHash('sha256').update(readFileSync(absolute)).digest('hex');
+        entries.push(`file:${path}:${digest}`);
+      }
+    }
+  };
+  walk(root);
+  return entries;
+}
+
+function invokeRuntime(runtimePath, operation, input, cwd = ROOT, { wrapInput = true } = {}) {
+  const options = {
+    cwd,
+    encoding: 'utf8',
+    input: JSON.stringify(wrapInput ? { input } : input),
+    stdio: ['pipe', 'pipe', 'pipe'],
+  };
+  try {
+    const response = JSON.parse(execFileSync(process.execPath, [runtimePath, operation], options));
+    Object.defineProperty(response, '__exitCode', { value: 0, enumerable: false });
+    return response;
+  } catch (error) {
+    const stdout = typeof error.stdout === 'string' ? error.stdout : error.stdout?.toString('utf8');
+    if (stdout?.trim()) {
+      const response = JSON.parse(stdout);
+      Object.defineProperty(response, '__exitCode', { value: error.status ?? 1, enumerable: false });
+      return response;
+    }
+    throw error;
+  }
+}
 
 function readJson(...parts) {
   const file = join(ROOT, ...parts);
@@ -102,10 +175,25 @@ function expectFileNotContains(filePath, pattern, message) {
   expect(!pattern.test(raw), message);
 }
 
+function expectFileOrder(filePath, earlierPattern, laterPattern, message) {
+  if (!existsSync(filePath)) {
+    expect(false, `Surface file is missing: ${filePath}`);
+    return;
+  }
+  const raw = readFileSync(filePath, 'utf8');
+  const earlier = raw.search(earlierPattern);
+  const later = raw.search(laterPattern);
+  expect(earlier !== -1 && later !== -1 && earlier < later, message);
+}
+
 const sourcePackages = {
   knowz: readJson('knowz', 'package.json'),
   knowzcode: readJson('knowzcode', 'package.json'),
 };
+expect(
+  sourcePackages.knowzcode?.files?.includes('knowzcode/'),
+  'KnowzCode package manifest must ship the framework directory containing context_efficiency_runtime.mjs'
+);
 
 const claudeMarketplace = readJson('.claude-plugin', 'marketplace.json');
 const codexMarketplace = readJson('.agents', 'plugins', 'marketplace.json');
@@ -444,9 +532,12 @@ for (const file of relayOrchestrationFiles) {
 for (const rel of [
   'knowzcode_loop.md',
   'knowzcode_orchestration.md',
+  'context_efficiency.md',
+  'context_efficiency_runtime.mjs',
   'platform_adapters.md',
   'relay_execution.md',
   'claude_code_execution.md',
+  'codex_execution.md',
   'gitignore.template',
 ]) {
   const sourceFile = join(ROOT, 'knowzcode', 'knowzcode', rel);
@@ -460,6 +551,39 @@ for (const rel of [
     );
   }
 }
+
+for (const rel of [
+  'context-capsule.schema.json',
+  'agent-lineage.schema.json',
+  'efficiency-event.schema.json',
+]) {
+  const sourceFile = join(ROOT, 'knowzcode', 'knowzcode', 'contracts', rel);
+  const pluginFile = join(ROOT, 'plugins', 'knowzcode', 'knowzcode', 'contracts', rel);
+  expect(existsSync(sourceFile), `Missing canonical context-efficiency contract: ${sourceFile}`);
+  expect(existsSync(pluginFile), `Missing plugin context-efficiency contract: ${pluginFile}`);
+  if (existsSync(sourceFile) && existsSync(pluginFile)) {
+    expect(
+      readFileSync(sourceFile, 'utf8') === readFileSync(pluginFile, 'utf8'),
+      `Context-efficiency contract drifted from canonical source: ${rel}`
+    );
+    try {
+      JSON.parse(readFileSync(sourceFile, 'utf8'));
+    } catch (error) {
+      expect(false, `Invalid JSON schema ${sourceFile}: ${error.message}`);
+    }
+  }
+}
+
+const canonicalAdapter = join(ROOT, 'knowzcode', 'knowzcode', 'platform_adapters.md');
+const canonicalAdapterText = readFileSync(canonicalAdapter, 'utf8');
+const adapterCodexSkillNames = [...canonicalAdapterText.matchAll(
+  /^#### \.agents\/skills\/(knowzcode-[^/\r\n]+)\/SKILL\.md\s*$/gm
+)].map((match) => match[1]);
+expect(adapterCodexSkillNames.length > 0, 'Canonical adapter must define at least one generated Codex skill');
+expect(
+  new Set(adapterCodexSkillNames).size === adapterCodexSkillNames.length,
+  'Canonical adapter must not define duplicate generated Codex skill paths'
+);
 
 // Exercise the actual Codex adapter parser/writer. Static markdown assertions
 // do not catch malformed headings or fences that silently drop generated files.
@@ -478,13 +602,36 @@ try {
   );
 
   const generatedRelaySkill = join(generatedCodexTarget, '.agents', 'skills', 'knowzcode-relay', 'SKILL.md');
+  const generatedWorkSkill = join(generatedCodexTarget, '.agents', 'skills', 'knowzcode-work', 'SKILL.md');
+  const generatedExploreSkill = join(generatedCodexTarget, '.agents', 'skills', 'knowzcode-explore', 'SKILL.md');
   const generatedRelayRef = join(generatedCodexTarget, '.agents', 'skills', 'knowzcode-work', 'references', 'relay-execution.md');
   const generatedCoreRef = join(generatedCodexTarget, 'knowzcode', 'relay_execution.md');
+  const generatedCodexGuide = join(generatedCodexTarget, 'knowzcode', 'codex_execution.md');
+  const generatedEfficiencyGuide = join(generatedCodexTarget, 'knowzcode', 'context_efficiency.md');
+  const generatedEfficiencyRuntime = join(generatedCodexTarget, 'knowzcode', 'context_efficiency_runtime.mjs');
+  const generatedContractRoot = join(generatedCodexTarget, 'knowzcode', 'contracts');
   const generatedAgents = join(generatedCodexTarget, 'AGENTS.md');
 
-  for (const file of [generatedRelaySkill, generatedRelayRef, generatedCoreRef, generatedAgents]) {
+  for (const file of [generatedRelaySkill, generatedWorkSkill, generatedExploreSkill, generatedRelayRef, generatedCoreRef, generatedCodexGuide, generatedEfficiencyGuide, generatedEfficiencyRuntime, generatedAgents]) {
     expect(existsSync(file), `Codex adapter generation dropped relay surface: ${file}`);
   }
+  const generatedCodexSkillRoot = join(generatedCodexTarget, '.agents', 'skills');
+  const generatedCodexSkillNames = existsSync(generatedCodexSkillRoot)
+    ? readdirSync(generatedCodexSkillRoot, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory() && entry.name.startsWith('knowzcode-'))
+      .map((entry) => entry.name)
+      .sort()
+    : [];
+  for (const skillName of adapterCodexSkillNames) {
+    expect(
+      existsSync(join(generatedCodexSkillRoot, skillName, 'SKILL.md')),
+      `Codex adapter generation dropped defined skill: ${skillName}`
+    );
+  }
+  expect(
+    stableJson(generatedCodexSkillNames) === stableJson([...adapterCodexSkillNames].sort()),
+    `Generated Codex skill set differs from adapter definitions: expected ${adapterCodexSkillNames.length}, got ${generatedCodexSkillNames.length}`
+  );
   expectFileContains(generatedRelaySkill, /Generated by KnowzCode v\d+\.\d+\.\d+/, 'Generated Codex relay skill must inject the package version');
   expectFileContainsAll(
     generatedRelaySkill,
@@ -504,10 +651,177 @@ try {
     ],
     'Generated Codex relay reference'
   );
+  expectFileContainsAll(
+    generatedCodexGuide,
+    [
+      ['portable context modes', /local[\s\S]*resume[\s\S]*inherit-full[\s\S]*fresh-capsule[\s\S]*coordinated-team/i],
+      ['lineage compatibility', /lineage[\s\S]*(spec|scope)[\s\S]*(permissions|sensitivity)/i],
+      ['conditional handoffs', /(tiny|short) read-only[\s\S]*(bounded|direct)[\s\S]*(handoff|result)|ephemeral[\s\S]*(tiny|short) read-only[\s\S]*No handoff/i],
+      ['semantic runtime operations', /semantic operations/i],
+    ],
+    'Generated Codex execution guide'
+  );
+  expectFileContainsAll(
+    generatedEfficiencyGuide,
+    [
+      ['context capsule schema', /knowzcode\.context-capsule\/v1/],
+      ['agent lineage schema', /knowzcode\.agent-lineage\/v1/],
+      ['logical billing outcome separation', /logical[\s\S]*billed[\s\S]*outcome/i],
+      ['independent reviewer', /independent reviewer[\s\S]*(fresh|must not)/i],
+      ['forty-case corpus', /(?:at least|minimum(?: of)?)\s+40\s+tasks/i],
+      ['five balanced strata', /small\/Tier-2[\s\S]*backend[\s\S]*UI\/integration[\s\S]*security-sensitive[\s\S]*recovery\/invalidation/i],
+    ],
+    'Generated context-efficiency guide'
+  );
+  const canonicalRuntime = join(ROOT, 'knowzcode', 'knowzcode', 'context_efficiency_runtime.mjs');
+  if (existsSync(generatedEfficiencyRuntime) && existsSync(canonicalRuntime)) {
+    expect(
+      readFileSync(generatedEfficiencyRuntime, 'utf8') === readFileSync(canonicalRuntime, 'utf8'),
+      'Codex npm-installed context-efficiency runtime differs from canonical source'
+    );
+    try {
+      const installedRuntimeResponse = invokeRuntime(
+        generatedEfficiencyRuntime,
+        'result-policy',
+        { write_prohibited: true, material: true, resumable: true },
+        generatedCodexTarget
+      );
+      expect(
+        installedRuntimeResponse?.ok === true
+          && installedRuntimeResponse?.result?.mode === 'ephemeral',
+        'Codex npm-installed runtime must execute through temporary/symlink-normalized paths'
+      );
+      expect(
+        Object.values(installedRuntimeResponse?.result?.writes ?? {}).every((allowed) => allowed === false),
+        'Codex npm-installed write-prohibited runtime must authorize zero writes'
+      );
+    } catch (error) {
+      expect(false, `Codex npm-installed runtime execution failed: ${error.stderr || error.message}`);
+    }
+  }
+  expectFileContainsAll(
+    generatedAgents,
+    [
+      ['classification before work', /Classify the request as Micro, Light, or Full/i],
+      ['WorkGroup or capsule selection', /active WorkGroup or compact context capsule/i],
+      ['specification reuse', /resolve reusable specs\/`VERIFY:` criteria/i],
+      ['question-gated project and architecture reads', /project\.md[\s\S]*architecture\.md[\s\S]*only to answer a concrete unresolved planning question/i],
+      ['conditional execution guide', /codex_execution\.md` only when delegation, inheritance, warm-worker reuse, or a conditional handoff is eligible/i],
+      ['conditional relay and compliance', /relay guidance only after relay resolves non-`none`[\s\S]*enterprise guidance only when/i],
+      ['MCP health TTL', /Reuse MCP health within its configured TTL/i],
+    ],
+    'Generated Codex AGENTS progressive startup'
+  );
+  expectFileNotContains(
+    generatedAgents,
+    /Read `knowzcode\/knowzcode_loop\.md` before starting any feature work|^1\. Read `knowzcode\/knowzcode_tracker\.md`/m,
+    'Generated Codex AGENTS must not require broad eager startup reads'
+  );
+  expectFileContainsAll(
+    generatedExploreSkill,
+    [
+      ['classification before delegation', /before vault retrieval, parallel delegation, or file writes/i],
+      ['fresh reviewer lineage', /fresh reviewer-owned lineage/i],
+      ['strict zero-write audit', /MUST NOT create a findings, handoff, summary, or artifact file/i],
+      ['question-gated vault retrieval', /named prior-decision or convention question[\s\S]*mcp_health_ttl_minutes/i],
+    ],
+    'Generated Codex explore skill'
+  );
+  expectFileOrder(
+    generatedWorkSkill,
+    /Classify the request and resolve specification reuse/i,
+    /Discover applicable enterprise guidance/i,
+    'Generated Codex work skill must classify and resolve spec reuse before enterprise retrieval'
+  );
+  expectFileOrder(
+    generatedWorkSkill,
+    /Classify the request and resolve specification reuse/i,
+    /Resolve relay intent once/i,
+    'Generated Codex work skill must classify and resolve spec reuse before relay/delegation'
+  );
+  expectFileContainsAll(
+    generatedWorkSkill,
+    [
+      ['question-gated vault retrieval', /named question remains after local WorkGroup\/spec\/code evidence/i],
+      ['MCP health TTL', /mcp_health_ttl_minutes/i],
+      ['fresh reviewer lineage', /first independent reviewer must use a fresh reviewer-owned lineage/i],
+      ['strict zero-write audit', /MUST NOT create a handoff or artifact file/i],
+      ['context-efficiency enablement gate', /context[_ -]efficiency[\s\S]*enabled/i],
+      ['enabled runtime invocation', /\bnode\s+[^\r\n`]*context_efficiency_runtime\.mjs[\s\S]*(?:route|dispatch|capsule|lineage|result-policy)/i],
+      ['vault-delta batching invocation', /vault-delta[\s\S]*(?:skip|amend|update|batch|flush)/i],
+    ],
+    'Generated Codex work skill'
+  );
+  for (const rel of [
+    'context-capsule.schema.json',
+    'agent-lineage.schema.json',
+    'efficiency-event.schema.json',
+  ]) {
+    const generatedContract = join(generatedContractRoot, rel);
+    const canonicalContract = join(ROOT, 'knowzcode', 'knowzcode', 'contracts', rel);
+    expect(existsSync(generatedContract), `Codex npm install dropped portable contract: ${generatedContract}`);
+    if (existsSync(generatedContract) && existsSync(canonicalContract)) {
+      expect(
+        readFileSync(generatedContract, 'utf8') === readFileSync(canonicalContract, 'utf8'),
+        `Codex npm-installed portable contract differs from canonical source: ${rel}`
+      );
+    }
+  }
 } catch (error) {
   expect(false, `Codex adapter generation smoke test failed: ${error.stderr || error.message}`);
 } finally {
   rmSync(generatedCodexTarget, { recursive: true, force: true });
+}
+
+// A stale installed execution contract must be replaceable without overwriting
+// documented user-owned project state.
+const upgradedCodexTarget = mkdtempSync(join(tmpdir(), 'knowzcode-codex-upgrade-'));
+try {
+  const cli = join(ROOT, 'knowzcode', 'bin', 'knowzcode.mjs');
+  execFileSync(
+    process.execPath,
+    [cli, 'install', '--target', upgradedCodexTarget, '--platforms', 'codex', '--force'],
+    { cwd: ROOT, encoding: 'utf8', stdio: 'pipe' }
+  );
+  const installedGuide = join(upgradedCodexTarget, 'knowzcode', 'codex_execution.md');
+  const installedRuntime = join(upgradedCodexTarget, 'knowzcode', 'context_efficiency_runtime.mjs');
+  const installedCapsuleContract = join(upgradedCodexTarget, 'knowzcode', 'contracts', 'context-capsule.schema.json');
+  const preservedArchitecture = join(upgradedCodexTarget, 'knowzcode', 'knowzcode_architecture.md');
+  const architectureSentinel = '# USER-OWNED ARCHITECTURE SENTINEL\n';
+  writeFileSync(installedGuide, '# stale codex execution contract\n');
+  writeFileSync(installedRuntime, '// stale context-efficiency runtime\n');
+  writeFileSync(installedCapsuleContract, '{}\n');
+  writeFileSync(preservedArchitecture, architectureSentinel);
+
+  execFileSync(
+    process.execPath,
+    [cli, 'upgrade', '--target', upgradedCodexTarget, '--force'],
+    { cwd: ROOT, encoding: 'utf8', stdio: 'pipe' }
+  );
+
+  const canonicalGuide = join(ROOT, 'knowzcode', 'knowzcode', 'codex_execution.md');
+  expect(
+    readFileSync(installedGuide, 'utf8') === readFileSync(canonicalGuide, 'utf8'),
+    'Codex upgrade must replace a stale installed execution contract with the canonical source'
+  );
+  const canonicalCapsuleContract = join(ROOT, 'knowzcode', 'knowzcode', 'contracts', 'context-capsule.schema.json');
+  expect(
+    readFileSync(installedCapsuleContract, 'utf8') === readFileSync(canonicalCapsuleContract, 'utf8'),
+    'Codex upgrade must replace stale portable schema contracts'
+  );
+  const canonicalRuntime = join(ROOT, 'knowzcode', 'knowzcode', 'context_efficiency_runtime.mjs');
+  expect(
+    readFileSync(installedRuntime, 'utf8') === readFileSync(canonicalRuntime, 'utf8'),
+    'Codex upgrade must replace a stale installed context-efficiency runtime'
+  );
+  expect(
+    readFileSync(preservedArchitecture, 'utf8') === architectureSentinel,
+    'Codex upgrade must preserve user-owned architecture state'
+  );
+} catch (error) {
+  expect(false, `Codex upgrade parity smoke test failed: ${error.stderr || error.message}`);
+} finally {
+  rmSync(upgradedCodexTarget, { recursive: true, force: true });
 }
 
 const codexExecutionGuide = join(ROOT, 'plugins', 'knowzcode', 'knowzcode', 'codex_execution.md');
@@ -533,7 +847,146 @@ if (existsSync(codexExecutionGuide)) {
     /## Handoff|Next Action:|Artifact Paths:/,
     `Codex execution guide must not keep the old compact handoff schema: ${codexExecutionGuide}`
   );
+  expectFileNotContains(
+    codexExecutionGuide,
+    /\b(send_input|close_agent)\b/,
+    `Codex execution guide must use semantic operations instead of stale runtime names: ${codexExecutionGuide}`
+  );
+  expectFileContainsAll(
+    codexExecutionGuide,
+    [
+      ['semantic operations', /semantic operations/i],
+      ['context-efficient modes', /inherit-full[\s\S]*inherit-recent[\s\S]*fresh-capsule/i],
+      ['warm lease invalidation', /lease[\s\S]*(spec|scope|checkpoint|tools|permissions|sensitivity)/i],
+      ['conditional disk handoffs', /(tiny|short) read-only[\s\S]*(bounded|direct)[\s\S]*(handoff|result)|ephemeral[\s\S]*(tiny|short) read-only[\s\S]*No handoff/i],
+    ],
+    'Codex context-efficiency contract'
+  );
 }
+
+for (const file of [
+  join(ROOT, 'knowzcode', 'knowzcode', 'claude_code_execution.md'),
+  join(ROOT, 'plugins', 'knowzcode', 'knowzcode', 'claude_code_execution.md'),
+  join(ROOT, 'knowzcode', 'skills', 'work', 'SKILL.md'),
+]) {
+  expectFileNotContains(
+    file,
+    /\b(TeamCreate|TeamDelete)\b/,
+    `Claude current-runtime guidance must not call removed team lifecycle APIs: ${file}`
+  );
+}
+
+const activeClaudeWorkflowFiles = [
+  ['work', 'SKILL.md'],
+  ['audit', 'SKILL.md'],
+  ['explore', 'SKILL.md'],
+  ['continue', 'SKILL.md'],
+  ['status', 'SKILL.md'],
+  ['work', 'CLAUDE.md'],
+  ['audit', 'CLAUDE.md'],
+  ['explore', 'CLAUDE.md'],
+  ['continue', 'CLAUDE.md'],
+].map(([skill, name]) => join(ROOT, 'knowzcode', 'skills', skill, name));
+activeClaudeWorkflowFiles.push(
+  ...[
+    'light-workflow.md',
+    'parallel-orchestration.md',
+    'profile-models.md',
+    'quality-gates.md',
+    'spawn-prompts.md',
+  ].map((name) => join(ROOT, 'knowzcode', 'skills', 'work', 'references', name))
+);
+for (const file of activeClaudeWorkflowFiles) {
+  expectFileNotContains(
+    file,
+    /\b(TeamCreate|TeamDelete|TeamSpawn)\b/,
+    `Active Claude workflow file must not use removed team lifecycle APIs: ${file}`
+  );
+  expectFileNotContains(
+    file,
+    /Agent Teams is the expected execution mode|Knowledge capture and parallel orchestration degraded/i,
+    `Active Claude workflow file must not make teams a default quality tier: ${file}`
+  );
+}
+expectFileNotContains(
+  join(ROOT, 'knowzcode', 'skills', 'work', 'references', 'spawn-prompts.md'),
+  /mode\s*=\s*["']bypassPermissions["']|permissionMode:\s*bypassPermissions/,
+  'Claude spawn prompts must never dispatch a child with bypass permissions'
+);
+
+const claudeExecutionGuide = join(ROOT, 'knowzcode', 'knowzcode', 'claude_code_execution.md');
+expectFileContainsAll(
+  claudeExecutionGuide,
+  [
+    ['conversation fork semantics', /conversation fork/i],
+    ['skill fork distinction', /context:\s*fork[\s\S]*(does not|not)[\s\S]*(conversation|chat history)/i],
+    ['conditional team selection', /team[\s\S]*(peer coordination|shared task|mailbox)[\s\S]*(only|when)/i],
+    ['runtime-owned team cleanup', /runtime-managed cleanup|cleanup[\s\S]*automatic/i],
+    ['cache occupancy distinction', /cache[\s\S]*(billed|billing)[\s\S]*(context|occup)/i],
+  ],
+  'Claude context-efficiency contract'
+);
+
+const claudeAgentRoot = join(ROOT, 'knowzcode', 'agents');
+if (existsSync(claudeAgentRoot)) {
+  for (const entry of readdirSync(claudeAgentRoot, { withFileTypes: true })) {
+    if (!entry.isFile() || !entry.name.endsWith('.md')) continue;
+    const agentFile = join(claudeAgentRoot, entry.name);
+    const frontmatter = readFileSync(agentFile, 'utf8').match(/^---\r?\n([\s\S]*?)\r?\n---/);
+    if (!frontmatter) continue;
+    expect(
+      !/^(permissionMode|hooks|mcpServers):/m.test(frontmatter[1]),
+      `Claude plugin agent uses unsupported frontmatter fields: ${agentFile}`
+    );
+    const agentSource = readFileSync(agentFile, 'utf8');
+    if (/\bnode\s+[^\r\n`]*context_efficiency_runtime\.mjs/i.test(agentSource)) {
+      expect(
+        /^tools:[^\r\n]*\bBash\b/m.test(frontmatter[1]),
+        `Claude agent invokes the context runtime without Bash authority: ${agentFile}`
+      );
+    }
+  }
+}
+expectFileContainsAll(
+  join(claudeAgentRoot, 'closer.md'),
+  [
+    ['lead-owned final classifier', /FinalCaptureDelta[\s\S]*lead[\s\S]*vault-delta/i],
+    ['no direct closer mutation', /Do not call `create_knowledge`[\s\S]*`amend_knowledge`[\s\S]*`update_knowledge`/i],
+  ],
+  'Claude closer capture boundary'
+);
+expectFileContainsAll(
+  join(ROOT, 'knowzcode', 'skills', 'audit', 'SKILL.md'),
+  [
+    ['strict audit returns authorized delta', /AuthorizedVaultDelta[\s\S]*lead\/runtime owner[\s\S]*vault-delta/i],
+    ['strict audit does not persist skip or batch', /skip`?\/`?batch[\s\S]*(?:no writer|creates no writer)[\s\S]*pending/i],
+  ],
+  'Strict audit vault-classification boundary'
+);
+expectFileContainsAll(
+  join(ROOT, 'knowzcode', 'skills', 'explore', 'SKILL.md'),
+  [
+    ['explore invokes vault-delta before persistence', /node\s+knowzcode\/context_efficiency_runtime\.mjs\s+vault-delta[\s\S]*explicit_save/i],
+    ['explore sends exact classified action', /exact classified action[\s\S]*stable identity/i],
+  ],
+  'Explore vault-classification boundary'
+);
+for (const agentName of ['closer.md', 'knowledge-liaison.md']) {
+  expectFileContainsAll(
+    join(claudeAgentRoot, agentName),
+    [
+      ['pending queue preserves mutation operation', /Operation[^\r\n]*(?:amend|update)/i],
+      ['pending queue preserves KnowledgeId', /KnowledgeId[^\r\n]*required for amend\/update/i],
+      ['pending queue preserves vault-delta action', /Vault Delta Action/i],
+    ],
+    `Claude ${agentName} pending replay identity`
+  );
+}
+expectFileContains(
+  join(ROOT, 'knowzcode', 'knowzcode', 'platform_adapters.md'),
+  /KnowzCode Closer[\s\S]*FinalCaptureDelta[\s\S]*lead owns vault classification/i,
+  'Generated Gemini closer must return classification to the lead'
+);
 
 for (const file of [
   join(ROOT, 'knowzcode', 'knowzcode', 'platform_adapters.md'),
@@ -561,8 +1014,18 @@ for (const file of [
   );
   expectFileContains(
     file,
-    /Agent Teams is the expected execution mode for all KnowzCode workflows/,
-    `Claude adapter must include the full Agent Teams execution guidance: ${file}`
+    /## Context-Efficient Execution[\s\S]*local execution[\s\S]*worker[\s\S]*resume[\s\S]*fresh context capsule/i,
+    `Claude adapter must include adaptive context-efficient execution guidance: ${file}`
+  );
+  expectFileNotContains(
+    file,
+    /Agent Teams is the expected execution mode|fallback degraded|Knowledge capture and parallel orchestration degraded/i,
+    `Claude adapter must not present Agent Teams as the default or quality tier: ${file}`
+  );
+  expectFileNotContains(
+    file,
+    /\b(send_input|close_agent)\b/,
+    `Generated Codex adapter surfaces must not require stale runtime operation names: ${file}`
   );
 }
 
@@ -579,6 +1042,450 @@ if (existsSync(codexWorkSkill)) {
     /## Phase[\s\S]*## Status[\s\S]*complete`\s+\|\s+`blocked`\s+\|\s+`partial`[\s\S]*## Owned Files[\s\S]*## Remaining Work[\s\S]*## Next Phase Inputs/,
     `Codex work skill handoff schema must stay aligned with codex_execution.md: ${codexWorkSkill}`
   );
+  expectFileNotContains(
+    codexWorkSkill,
+    /\b(send_input|close_agent)\b/,
+    `Codex work skill must use semantic runtime operations: ${codexWorkSkill}`
+  );
+  expectFileContains(
+    codexWorkSkill,
+    /tiny read-only[\s\S]*(bounded|direct)[\s\S]*(handoff|result)/i,
+    `Codex work skill must permit bounded direct results for tiny read-only checks: ${codexWorkSkill}`
+  );
+}
+
+for (const file of [
+  join(ROOT, 'knowzcode', 'knowzcode', 'knowzcode_orchestration.md'),
+  join(ROOT, 'plugins', 'knowzcode', 'knowzcode', 'knowzcode_orchestration.md'),
+]) {
+  expectFileContainsAll(
+    file,
+    [
+      ['context-efficiency switch', /context_efficiency:/],
+      ['complete rollout stage set', /off\|observe\|shadow\|canary\|on/],
+      ['safe rollout default', /^\s*rollout:\s*off\s*$/m],
+      ['runtime activation guard', /stage is active only when[\s\S]*adapter calls context_efficiency_runtime\.mjs[\s\S]*records its redacted event/i],
+      ['warm lease', /warm_lease_minutes/],
+      ['MCP health TTL', /mcp_health_ttl_minutes/],
+      ['logical/billed/outcome telemetry', /logical[\s\S]*billed[\s\S]*outcome/i],
+    ],
+    'Context-efficiency configuration'
+  );
+}
+
+for (const file of [
+  join(ROOT, 'knowzcode', 'knowzcode', 'context_efficiency.md'),
+  join(ROOT, 'plugins', 'knowzcode', 'knowzcode', 'context_efficiency.md'),
+]) {
+  expectFileContainsAll(
+    file,
+    [
+      ['forty-case evaluation corpus', /(?:at least|minimum(?: of)?)\s+40\s+tasks/i],
+      ['small/Tier-2 stratum', /small\/Tier-2/i],
+      ['backend stratum', /\bbackend\b/i],
+      ['UI/integration stratum', /UI\/integration/i],
+      ['security-sensitive stratum', /security-sensitive/i],
+      ['recovery/invalidation stratum', /recovery\/invalidation/i],
+    ],
+    'Context-efficiency evaluation guide'
+  );
+  expectFileNotContains(
+    file,
+    /at least 32 tasks/i,
+    `Context-efficiency guide must not retain the obsolete 32-case corpus: ${file}`
+  );
+}
+
+const efficiencyRuntime = join(ROOT, 'knowzcode', 'knowzcode', 'context_efficiency_runtime.mjs');
+expectFileContainsAll(
+  efficiencyRuntime,
+  [
+    ['capsule schema validation', /CAPSULE_SCHEMA_INVALID/],
+    ['capsule privacy rejection', /CAPSULE_PRIVATE_CONTENT/],
+    ['reviewer-lineage invalidation', /REVIEW_LINEAGE_CONTAMINATION/],
+    ['writer ownership conflict', /WRITER_OWNERSHIP_CONFLICT/],
+    ['deep-query gate', /function shouldDeepQuery|export function shouldDeepQuery/],
+  ],
+  'Shipped context-efficiency runtime safety'
+);
+
+const vaultDeltaTarget = mkdtempSync(join(tmpdir(), 'knowzcode-vault-delta-'));
+try {
+  const before = snapshotDirectory(vaultDeltaTarget);
+  const vaultDeltaResponse = invokeRuntime(
+    efficiencyRuntime,
+    'vault-delta',
+    {
+      delta: {
+        category: 'decision',
+        title: 'Batch normal progress',
+        content: 'Retain the delta until a required flush boundary.',
+        semantic_key: 'progress-capture-policy',
+      },
+    },
+    vaultDeltaTarget
+  );
+  expect(vaultDeltaResponse?.ok === true, 'vault-delta runtime call must succeed');
+  expect(vaultDeltaResponse?.result?.action === 'batch', 'vault-delta runtime must batch a normal delta');
+  expect(
+    hashValue(snapshotDirectory(vaultDeltaTarget)) === hashValue(before),
+    'vault-delta runtime call must not mutate its working directory'
+  );
+} finally {
+  rmSync(vaultDeltaTarget, { recursive: true, force: true });
+}
+
+// A write-prohibited result-policy decision must be behaviorally side-effect free,
+// not merely described as zero-write in a skill prompt.
+const zeroWriteTarget = mkdtempSync(join(tmpdir(), 'knowzcode-zero-write-'));
+try {
+  const before = snapshotDirectory(zeroWriteTarget);
+  const response = invokeRuntime(
+    efficiencyRuntime,
+    'result-policy',
+    { write_prohibited: true, material: true, resumable: true },
+    zeroWriteTarget
+  );
+  const result = response?.result ?? response;
+  const writeFlags = result?.writes ?? {};
+  const allowedWrites = result?.allowed_writes
+    ?? result?.authorized_writes
+    ?? Object.entries(writeFlags).filter(([, allowed]) => allowed === true).map(([name]) => name);
+  expect(response?.ok === true, 'Write-prohibited result-policy runtime call must succeed');
+  expect(response?.__exitCode === 0, 'Write-prohibited result-policy runtime call must exit zero');
+  expect(result?.mode === 'ephemeral', 'Write-prohibited result-policy must return ephemeral mode');
+  expect(
+    Array.isArray(allowedWrites) && allowedWrites.length === 0,
+    'Write-prohibited result-policy must authorize zero writes'
+  );
+  for (const [field, nestedField] of [
+    ['create_handoff', 'handoff'],
+    ['create_artifact', 'artifact'],
+    ['write_vault', 'vault'],
+    ['write_settings', 'settings'],
+    ['write_workgroup', 'workgroup'],
+  ]) {
+    expect(
+      result?.[field] === false || writeFlags[nestedField] === false,
+      `Write-prohibited result-policy must deny ${nestedField} writes`
+    );
+  }
+  expect(
+    stableJson(snapshotDirectory(zeroWriteTarget)) === stableJson(before),
+    'Write-prohibited result-policy runtime call must not create or change any file or directory'
+  );
+} catch (error) {
+  expect(false, `Write-prohibited result-policy behavioral smoke failed: ${error.stderr || error.message}`);
+} finally {
+  rmSync(zeroWriteTarget, { recursive: true, force: true });
+}
+
+const efficiencyContractTests = join(ROOT, 'scripts', 'context-efficiency-contract.test.mjs');
+expectFileContainsAll(
+  efficiencyContractTests,
+  [
+    ['malformed capsule negative coverage', /CAPSULE_SCHEMA_INVALID/],
+    ['private capsule negative coverage', /CAPSULE_PRIVATE_CONTENT/],
+    ['reviewer-lineage negative coverage', /REVIEW_LINEAGE_CONTAMINATION|independent reviewers never inherit/i],
+    ['overlapping-writer negative coverage', /WRITER_OWNERSHIP_CONFLICT|overlapping writer/i],
+    ['nesting-limit local fallback coverage', /nesting[_ ]depth[\s\S]*max[_ ]nesting[_ ]depth[\s\S]*(?:mode,?\s*['"]local['"]|mode:\s*['"]local['"])/i],
+    ['embedded capsule-value privacy coverage', /approved_decisions[\s\S]*CAPSULE_PRIVATE_CONTENT|embedded[ -](?:private|secret|value)/i],
+    ['vault amend coverage', /action:\s*['"]amend['"]|changed content[\s\S]*amend/i],
+    ['strict telemetry-label coverage', /arbitrary-unapproved-model[\s\S]*EFFICIENCY_EVENT_INVALID|unapproved[ -](?:telemetry )?label/i],
+    ['per-scenario runnable corpus coverage', /scenario\.operation[\s\S]*scenario\.input[\s\S]*scenario\.oracle/i],
+  ],
+  'Context-efficiency negative test coverage'
+);
+try {
+  execFileSync(process.execPath, ['--test', efficiencyContractTests], {
+    cwd: ROOT,
+    encoding: 'utf8',
+    stdio: 'pipe',
+  });
+} catch (error) {
+  expect(false, `Context-efficiency executable contract suite failed: ${error.stderr || error.message}`);
+}
+
+const experimentRoot = join(ROOT, 'scripts', 'fixtures', 'context-efficiency', 'experiment-corpus');
+const experimentManifest = readJson('scripts', 'fixtures', 'context-efficiency', 'experiment-corpus', 'manifest.json');
+const experimentPairs = experimentManifest?.paired_results
+  ? readJson('scripts', 'fixtures', 'context-efficiency', 'experiment-corpus', experimentManifest.paired_results)
+  : null;
+if (experimentManifest?.scenarios) {
+  const scenarios = experimentManifest.scenarios;
+  expect(scenarios.length >= 40, 'Context-efficiency corpus must contain at least 40 runnable scenarios');
+  expect(
+    scenarios.every((scenario) => typeof scenario.operation === 'string'
+      && scenario.input && typeof scenario.input === 'object'
+      && (Object.hasOwn(scenario, 'expected')
+        || (['success', 'error'].includes(scenario.oracle?.status)
+          && (Object.hasOwn(scenario.oracle, 'match') || typeof scenario.oracle?.code === 'string')))),
+    'Every context-efficiency corpus scenario must contain operation, self-contained input, and a success/error oracle'
+  );
+  expect(
+    new Set(scenarios.map(({ operation, input }) => hashValue({ operation, input }))).size === scenarios.length,
+    'All context-efficiency corpus operation/input pairs must be unique'
+  );
+  for (const scenario of scenarios) {
+    if (typeof scenario.operation !== 'string' || !scenario.input) continue;
+    try {
+      const response = invokeRuntime(
+        efficiencyRuntime,
+        scenario.operation,
+        scenario.input,
+        experimentRoot,
+        { wrapInput: false }
+      );
+      if (scenario.oracle?.status === 'success') {
+        expect(response?.ok === true, `Context-efficiency corpus scenario must succeed: ${scenario.id}`);
+        expect(
+          matchesSubset(response?.result, scenario.oracle.match),
+          `Context-efficiency corpus runtime result differs from success oracle: ${scenario.id}`
+        );
+      } else if (scenario.oracle?.status === 'error') {
+        expect(response?.ok === false, `Context-efficiency corpus scenario must fail closed: ${scenario.id}`);
+        expect(response?.__exitCode !== 0, `Context-efficiency corpus error scenario must exit nonzero: ${scenario.id}`);
+        expect(
+          response?.code === scenario.oracle.code,
+          `Context-efficiency corpus runtime error differs from oracle: ${scenario.id}`
+        );
+        const failureJson = stableJson(response);
+        expect(
+          stringLeaves(scenario.input).every((value) => !failureJson.includes(value)),
+          `Context-efficiency corpus runtime failure must not echo input content: ${scenario.id}`
+        );
+      } else if (Object.hasOwn(scenario, 'expected')) {
+        const actual = scenario.expected?.ok === false || scenario.expected?.ok === true
+          ? response
+          : response?.result;
+        expect(
+          stableJson(actual) === stableJson(scenario.expected),
+          `Context-efficiency corpus runtime result differs from oracle: ${scenario.id}`
+        );
+      }
+    } catch (error) {
+      expect(false, `Context-efficiency corpus scenario failed to execute (${scenario.id}): ${error.stderr || error.message}`);
+    }
+  }
+}
+if (experimentManifest?.scenarios && experimentPairs?.pairs) {
+  const scenarioIds = experimentManifest.scenarios.map(({ id }) => id).sort();
+  const pairIds = experimentPairs.pairs.map(({ id }) => id).sort();
+  expect(stableJson(pairIds) === stableJson(scenarioIds), 'Paired corpus results must cover every runnable scenario exactly once');
+  expect(
+    new Set(experimentPairs.pairs.map(({ id: _id, ...measurements }) => hashValue(measurements))).size
+      === experimentPairs.pairs.length,
+    'Every context-efficiency scenario must have unique case-specific paired measurements'
+  );
+}
+
+for (const file of [
+  join(ROOT, 'knowzcode', 'knowzcode', 'relay_execution.md'),
+  join(ROOT, 'plugins', 'knowzcode', 'knowzcode', 'relay_execution.md'),
+  join(ROOT, 'knowzcode', 'skills', 'work', 'references', 'relay-execution.md'),
+  join(ROOT, 'plugins', 'knowzcode', 'skills', 'work', 'references', 'relay-execution.md'),
+]) {
+  expectFileContainsAll(
+    file,
+    [
+      ['Claude per-leg budget', /relay_claude_max_budget_usd|per-leg (budget|ceiling)/i],
+      ['Claude max-budget flag', /--max-budget-usd/],
+      ['warm delta prompt', /delta prompt|delta-prompt/i],
+      ['cold recovery prompt', /cold-recovery|recovery brief/i],
+    ],
+    'Claude relay efficiency boundary'
+  );
+  expectFileNotContains(
+    file,
+    /--tools\s+["'][^"'\n]*\bAgent\b/,
+    `Claude relay tool allowlist must not widen to Agent/fork: ${file}`
+  );
+  expectFileContains(
+    file,
+    /reject `?bypassPermissions`?|never add `?--dangerously-skip-permissions`?|Reject[\s\S]*--dangerously-skip-permissions/i,
+    `Claude relay must explicitly reject permission bypass: ${file}`
+  );
+}
+
+const installerFile = join(ROOT, 'knowzcode', 'bin', 'knowzcode.mjs');
+expectFileNotContains(
+  installerFile,
+  /Enable Agent Teams\? \(recommended for Claude Code\)/,
+  'Installer must keep Agent Teams explicit opt-in instead of recommending it by default'
+);
+expectFileNotContains(
+  installerFile,
+  /CLAUDE_CODE_FORK_SUBAGENT/,
+  'Installer must never enable Claude fork mode globally'
+);
+
+// Exercise Claude Teams as a strict explicit opt-in. Isolate HOME so a developer's
+// installed marketplace registry cannot influence plugin detection in these smokes.
+const claudeTeamsCli = join(ROOT, 'knowzcode', 'bin', 'knowzcode.mjs');
+const ordinaryClaudeTarget = mkdtempSync(join(tmpdir(), 'knowzcode-claude-ordinary-'));
+try {
+  execFileSync(
+    process.execPath,
+    [claudeTeamsCli, 'install', '--target', ordinaryClaudeTarget, '--platforms', 'claude', '--force'],
+    { cwd: ROOT, encoding: 'utf8', stdio: 'pipe', env: { ...process.env, HOME: ordinaryClaudeTarget } }
+  );
+  const generatedClaudeWork = join(ordinaryClaudeTarget, '.claude', 'skills', 'work', 'SKILL.md');
+  const generatedClaudeRuntime = join(ordinaryClaudeTarget, 'knowzcode', 'context_efficiency_runtime.mjs');
+  expect(existsSync(generatedClaudeRuntime), 'Fresh Claude install must ship context_efficiency_runtime.mjs');
+  expect(
+    readFileSync(generatedClaudeRuntime, 'utf8') === readFileSync(efficiencyRuntime, 'utf8'),
+    'Fresh Claude install runtime must be byte-identical to the canonical runtime'
+  );
+  expectFileContainsAll(
+    generatedClaudeWork,
+    [
+      ['context-efficiency enablement gate', /context[_ -]efficiency[\s\S]*enabled/i],
+      ['shipped safety runtime invocation', /\bnode\s+[^\r\n`]*context_efficiency_runtime\.mjs[\s\S]*(?:route|dispatch|capsule|lineage|result-policy)/i],
+      ['vault-delta batching invocation', /vault-delta[\s\S]*(?:skip|amend|update|batch|flush)/i],
+    ],
+    'Generated Claude work skill runtime integration'
+  );
+  const installedClaudeVaultDelta = invokeRuntime(
+    generatedClaudeRuntime,
+    'vault-delta',
+    {
+      delta: {
+        category: 'decision',
+        title: 'Installed Claude batching',
+        content: 'Classify without writing.',
+        semantic_key: 'installed-claude-vault-delta',
+      },
+    },
+    ordinaryClaudeTarget
+  );
+  expect(installedClaudeVaultDelta?.ok === true, 'Fresh Claude installed runtime must execute vault-delta');
+  expect(installedClaudeVaultDelta?.result?.action === 'batch', 'Fresh Claude installed runtime must batch normal deltas');
+  const settingsPath = join(ordinaryClaudeTarget, '.claude', 'settings.local.json');
+  if (existsSync(settingsPath)) {
+    const settings = JSON.parse(readFileSync(settingsPath, 'utf8'));
+    expect(
+      settings.env?.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS !== '1',
+      'Ordinary Claude install must not enable Agent Teams'
+    );
+  }
+} catch (error) {
+  expect(false, `Ordinary Claude install smoke test failed: ${error.stderr || error.message}`);
+} finally {
+  rmSync(ordinaryClaudeTarget, { recursive: true, force: true });
+}
+
+const malformedOrdinaryClaudeTarget = mkdtempSync(join(tmpdir(), 'knowzcode-claude-ordinary-malformed-'));
+try {
+  const claudeDir = join(malformedOrdinaryClaudeTarget, '.claude');
+  mkdirSync(claudeDir, { recursive: true });
+  const settingsPath = join(claudeDir, 'settings.json');
+  const malformedSentinel = '{ malformed ordinary settings: preserve exactly\n';
+  writeFileSync(settingsPath, malformedSentinel);
+  let rejected = false;
+  try {
+    execFileSync(
+      process.execPath,
+      [claudeTeamsCli, 'install', '--target', malformedOrdinaryClaudeTarget, '--platforms', 'claude', '--force'],
+      { cwd: ROOT, encoding: 'utf8', stdio: 'pipe', env: { ...process.env, HOME: malformedOrdinaryClaudeTarget } }
+    );
+  } catch {
+    rejected = true;
+  }
+  expect(rejected, 'Ordinary Claude install must fail closed when .claude/settings.json is malformed');
+  expect(
+    readFileSync(settingsPath, 'utf8') === malformedSentinel,
+    'Failed ordinary Claude install must preserve malformed .claude/settings.json byte-for-byte'
+  );
+} catch (error) {
+  expect(false, `Malformed ordinary Claude settings smoke setup failed: ${error.stderr || error.message}`);
+} finally {
+  rmSync(malformedOrdinaryClaudeTarget, { recursive: true, force: true });
+}
+
+const explicitTeamsTarget = mkdtempSync(join(tmpdir(), 'knowzcode-claude-teams-'));
+try {
+  execFileSync(
+    process.execPath,
+    [claudeTeamsCli, 'install', '--target', explicitTeamsTarget, '--platforms', 'claude', '--agent-teams', '--force'],
+    { cwd: ROOT, encoding: 'utf8', stdio: 'pipe', env: { ...process.env, HOME: explicitTeamsTarget } }
+  );
+  const settingsPath = join(explicitTeamsTarget, '.claude', 'settings.local.json');
+  const settings = JSON.parse(readFileSync(settingsPath, 'utf8'));
+  expect(
+    settings.env?.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS === '1',
+    'Explicit --agent-teams install must enable Agent Teams'
+  );
+} catch (error) {
+  expect(false, `Explicit Claude Teams install smoke test failed: ${error.stderr || error.message}`);
+} finally {
+  rmSync(explicitTeamsTarget, { recursive: true, force: true });
+}
+
+const malformedClaudeTarget = mkdtempSync(join(tmpdir(), 'knowzcode-claude-malformed-'));
+try {
+  execFileSync(
+    process.execPath,
+    [claudeTeamsCli, 'install', '--target', malformedClaudeTarget, '--platforms', 'claude', '--force'],
+    { cwd: ROOT, encoding: 'utf8', stdio: 'pipe', env: { ...process.env, HOME: malformedClaudeTarget } }
+  );
+  const settingsPath = join(malformedClaudeTarget, '.claude', 'settings.local.json');
+  const malformedSentinel = '{ malformed user settings: preserve exactly\n';
+  writeFileSync(settingsPath, malformedSentinel);
+  let rejected = false;
+  try {
+    execFileSync(
+      process.execPath,
+      [claudeTeamsCli, 'install', '--target', malformedClaudeTarget, '--platforms', 'claude', '--agent-teams', '--force'],
+      { cwd: ROOT, encoding: 'utf8', stdio: 'pipe', env: { ...process.env, HOME: malformedClaudeTarget } }
+    );
+  } catch {
+    rejected = true;
+  }
+  expect(rejected, 'Explicit Teams opt-in must fail closed when existing Claude settings are malformed');
+  expect(
+    readFileSync(settingsPath, 'utf8') === malformedSentinel,
+    'Failed Claude Teams opt-in must preserve malformed existing settings byte-for-byte'
+  );
+} catch (error) {
+  expect(false, `Malformed Claude settings smoke setup failed: ${error.stderr || error.message}`);
+} finally {
+  rmSync(malformedClaudeTarget, { recursive: true, force: true });
+}
+
+const malformedGlobalClaudeRoot = mkdtempSync(join(tmpdir(), 'knowzcode-claude-global-malformed-'));
+try {
+  const globalHome = join(malformedGlobalClaudeRoot, 'home');
+  const target = join(malformedGlobalClaudeRoot, 'project');
+  const claudeDir = join(globalHome, '.claude');
+  mkdirSync(claudeDir, { recursive: true });
+  mkdirSync(target, { recursive: true });
+  const settingsPath = join(claudeDir, 'settings.json');
+  const malformedShapeSentinel = '{\n  "env": "must-remain-a-string",\n  "keep": true\n}\n';
+  writeFileSync(settingsPath, malformedShapeSentinel);
+  const before = snapshotDirectory(claudeDir);
+  let rejected = false;
+  try {
+    execFileSync(
+      process.execPath,
+      [claudeTeamsCli, 'install', '--target', target, '--platforms', 'claude', '--global', '--agent-teams', '--force'],
+      { cwd: ROOT, encoding: 'utf8', stdio: 'pipe', env: { ...process.env, HOME: globalHome } }
+    );
+  } catch {
+    rejected = true;
+  }
+  expect(rejected, 'Global explicit Teams install must reject malformed settings before any mutation');
+  expect(
+    readFileSync(settingsPath, 'utf8') === malformedShapeSentinel,
+    'Failed global Teams preflight must preserve settings.json byte-for-byte'
+  );
+  expect(
+    stableJson(snapshotDirectory(claudeDir)) === stableJson(before),
+    'Failed global Teams preflight must not partially install skills, agents, or marketplace settings'
+  );
+} catch (error) {
+  expect(false, `Malformed global Claude settings smoke setup failed: ${error.stderr || error.message}`);
+} finally {
+  rmSync(malformedGlobalClaudeRoot, { recursive: true, force: true });
 }
 
 // VaultCaptureReinforcement capture-surface assertions (vault-capture spec, dual-queue flush,

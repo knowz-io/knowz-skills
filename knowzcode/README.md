@@ -121,6 +121,27 @@ On Claude Code, four profiles trade cost, quality, and parallelism. You're asked
 
 Full details — agent-by-agent model routing, fallback behavior, conflicts, rollback: **[docs/execution-profiles.md](./docs/execution-profiles.md)**.
 
+## Context-Efficient Orchestration
+
+KnowzCode routes each non-trivial unit through the cheapest safe context path:
+keep it local, resume a compatible worker, use real provider inheritance when
+eligible, send a fresh bounded context capsule, or form a genuine coordinated
+team only when peers need shared task state or messaging.
+
+The same contract works across Claude and Codex while preserving native
+differences. Claude conversation forks are distinct from skill `context: fork`;
+Codex uses semantic capability detection and never simulates Agent Teams. The
+first independent reviewer always starts fresh from approved specs and diff
+evidence.
+
+Rollout begins in observe/shadow mode. Telemetry keeps logical context, billed
+usage/cache counters, and accepted outcomes separate—cached input can cost less
+while still occupying context. Promotion requires paired cost, latency,
+quality, rework, and security evidence, so KnowzCode does not promise blanket
+token removal.
+
+Formal contract: **[knowzcode/specs/ContextEfficientOrchestration.md](./knowzcode/specs/ContextEfficientOrchestration.md)**.
+
 ## Cross-Agent Relay
 
 > Experimental
