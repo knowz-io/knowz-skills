@@ -110,6 +110,7 @@ Target selection uses flag > natural language > config > `/relay` default > nati
 | Claude effort | `--relay-effort=` | `relay_claude_effort:` | `high` |
 | Claude fix effort | — | `relay_claude_fix_effort:` | `high` |
 | Claude permission mode | — | `relay_claude_permission_mode:` | `dontAsk`; the only supported unattended value this version. Reject `bypassPermissions`; clamp other values to `dontAsk` with a warning |
+| Claude per-leg budget | — | `relay_claude_max_budget_usd:` | `null`; when set, require a positive number and pass `--max-budget-usd` to every initial/resumed/fresh Claude leg |
 
 Never feed a Codex model, sandbox, or legacy key into a Claude target. `relay_transport: auto` is target-aware:
 
@@ -237,7 +238,8 @@ All operational state lives in `knowzcode/workgroups/{wgid}-relay/` (under the e
 | `state.md` | host lead | Authoritative schema-2 state machine |
 | `brief-r0.md` | host lead | Initial implementation prompt |
 | `feedback-r{N}.md` | host lead | Structured Gate #3 findings |
-| `fix-prompt-r{N}.md` | host lead | Self-contained resume/fresh-session prompt |
+| `delta-prompt-r{N}.md` | host lead | Small changed-findings/checkpoint delta for a valid warm resume |
+| `fix-prompt-r{N}.md` | host lead | Self-contained cold-recovery prompt when resume is invalid/unavailable |
 | `{target}-last-r{N}.md` | adapter/wrapper | Target final message |
 | `{target}-log-r{N}.jsonl` | target stdout | Full event stream/liveness evidence |
 | `{target}-err-r{N}.log` | target stderr | Diagnostics |
@@ -550,6 +552,12 @@ message bodies or tool output verbatim.
 
 Claude receives prompts through stdin; spawn the wrapper from the recorded cwd. `RELAY_PERMISSION_MODE` defaults to `dontAsk`. The default invocation therefore uses `--permission-mode dontAsk`; reject `bypassPermissions` and never add `--dangerously-skip-permissions`.
 
+Resolve `RELAY_CLAUDE_BUDGET_FLAG` once per leg. It is empty when
+`relay_claude_max_budget_usd` is null/omitted; otherwise validate a positive
+number and set it to `--max-budget-usd {value}`. Budget exhaustion is a distinct
+provider-budget result, not an implementation/test failure, and must preserve
+the session ID and all artifacts.
+
 ### Round 0
 
 ```bash
@@ -563,6 +571,7 @@ cd {repo_root} && {
     --allowedTools "Bash Edit(./**) Write(./**)" \
     --model "{RELAY_MODEL}" \
     --effort "{RELAY_EFFORT}" \
+    {RELAY_CLAUDE_BUDGET_FLAG} \
     --settings "knowzcode/workgroups/{wgid}-relay/claude-settings.json" \
     --mcp-config "knowzcode/workgroups/{wgid}-relay/claude-mcp.json" \
     --strict-mcp-config \
@@ -593,7 +602,10 @@ jq -r 'select(.type=="result").session_id // empty' \
   "knowzcode/workgroups/{wgid}-relay/claude-log-r0.jsonl" | tail -1
 ```
 
-Persist the ID immediately. Persist final `.subtype`, `.is_error`, and last-output timestamp without copying account or cost metadata into user-facing status.
+Persist the ID immediately. Persist final `.subtype`, `.is_error`, last-output
+timestamp, and aggregate usage/cache counters when present. Redact account,
+organization, prompt, source, and raw-output fields; never copy them or a raw
+provider session ID into user-facing telemetry.
 
 ### Fix/resume round
 
@@ -610,11 +622,12 @@ cd {repo_root} && {
     --allowedTools "Bash Edit(./**) Write(./**)" \
     --model "{RELAY_MODEL}" \
     --effort "{RELAY_FIX_EFFORT}" \
+    {RELAY_CLAUDE_BUDGET_FLAG} \
     --settings "knowzcode/workgroups/{wgid}-relay/claude-settings.json" \
     --mcp-config "knowzcode/workgroups/{wgid}-relay/claude-mcp.json" \
     --strict-mcp-config \
     --no-chrome \
-    < "knowzcode/workgroups/{wgid}-relay/fix-prompt-r{N}.md" \
+    < "knowzcode/workgroups/{wgid}-relay/delta-prompt-r{N}.md" \
     > "knowzcode/workgroups/{wgid}-relay/claude-log-r{N}.jsonl" \
     2> "knowzcode/workgroups/{wgid}-relay/claude-err-r{N}.log"
   rc=$?
@@ -630,7 +643,13 @@ cd {repo_root} && {
 }
 ```
 
-Do not use `--continue`; it is cwd-relative and race-prone. Use the persisted session ID. If same-cwd resume fails or the interrupted turn cannot resume, launch a fresh Claude session with the self-contained fix prompt and replace the Session ID in state.
+Do not use `--continue`; it is cwd-relative and race-prone. Use the persisted
+session ID and a small delta prompt containing only changed findings, criteria,
+and checkpoint evidence. If same-cwd resume fails or the interrupted turn cannot
+resume, launch one fresh Claude session with the self-contained
+`fix-prompt-r{N}.md` recovery brief and replace the Session ID in state. Keep
+model and effort stable by default. When an explicit escalation changes either,
+record the expected cache/lineage invalidation before launch.
 
 ---
 
@@ -638,7 +657,7 @@ Do not use `--continue`; it is cwd-relative and race-prone. Use the persisted se
 
 The host chooses its native monitor without changing the provider command:
 
-- **Claude host:** delegate one target leg to `agents/relay-runner.md` (a teammate in Parallel/Sequential Teams or `Task()` under Subagent Delegation). The lead remains coordinator-only. If delegation is unavailable, the lead follows the same in-turn protocol.
+- **Claude host:** delegate one target leg to `agents/relay-runner.md` (a teammate only when coordinated Team mode is already justified, otherwise a named agent under adaptive or sequential delegation). The lead remains coordinator-only. If delegation is unavailable, the lead follows the same in-turn protocol.
 - **Codex host:** the coordinator owns a unified exec session and polls it in-turn. Do not simulate Claude Agent Teams or install a `plugins/knowzcode/agents` runner. A bounded Codex worker may monitor only when it can retain the same live exec session until completion.
 
 The spawn prompt supplies `TARGET`, `TRANSPORT`, complete `COMMAND` or Codex `TOOL_ARGS`, `SESSION_ID_COMMAND`, `COMPLETION_COMMAND`, `RESULT_SUBTYPE_COMMAND`, and, for exec, the provider-built `PROGRESS_COMMAND` plus `PROGRESS_INTERVAL_SECONDS`, target-qualified paths, round, already-clamped timeout, and optional complete `RESUME_COMMAND`. For exec, the runner launches, records PID, captures Session ID on the first poll, relays filtered progress, and never ends while the exit marker is absent. For Codex MCP it makes the blocking tool call. Claude MCP is never selected.

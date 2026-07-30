@@ -3,7 +3,6 @@ name: builder
 description: "KnowzCode: TDD implementation, verification loops, and code quality"
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: opus
-permissionMode: acceptEdits
 maxTurns: 40
 ---
 

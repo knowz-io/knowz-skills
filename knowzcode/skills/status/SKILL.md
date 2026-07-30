@@ -53,18 +53,25 @@ Check KnowzCode project status and report findings to the user.
 
    If `knowzcode/` is missing: suggest `/knowzcode:setup` and STOP.
 
-2. **Check Agent Teams Status**
+2. **Check Claude Agent and Context Capabilities**
 
    Check for agent definition files:
    - Glob for `agents/*.md`
    - List found agents with their names
 
+   Check project/user settings for Agent Teams configuration without invoking a lifecycle API. If `claude --version` is safely available, report the version and whether it meets the documented conversation-fork minimum; treat plugin-authored fork callability as separately `available|unavailable|unknown`. Never claim a cache hit from version or mode.
+
+   For active WorkGroups, count lineage records by `resumable`, `invalidated`, and `unknown`; do not print provider handles. Flag plugin-agent frontmatter containing unsupported `permissionMode`, `hooks`, or `mcpServers`.
+
    Report:
    ```
-   ## Agent Teams
+   ## Claude Runtime Capabilities
 
    Agent Definitions: {count} found ({comma-separated names})
-   Agent Teams: Verified at runtime — commands attempt TeamCreate and fall back to Subagent Delegation if unavailable
+   Agent Teams: {configured | not configured | unknown}; runtime teammate capability {available | unavailable | unknown}
+   Conversation Fork: version {supported | unsupported | unknown}; agent-callable {available | unavailable | unknown}; fresh capsule fallback always available
+   Named-Agent Lineage: {resumable N | invalidated N | unknown N}
+   Plugin Frontmatter: {supported | unsupported fields found: paths}
    ```
 
 3. **Check Active WorkGroups and Tracker**

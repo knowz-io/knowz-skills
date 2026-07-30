@@ -1,0 +1,118 @@
+{
+  "schema": "knowzcode.telemetry-cases/v1",
+  "valid_partial": {
+    "event": "dispatch_decision",
+    "observed_at": "2026-07-30T08:15:00Z",
+    "task_corpus_id": "small-tier2-01",
+    "provider": "claude",
+    "runtime": "cli",
+    "model": "unknown",
+    "profile": "balanced",
+    "mode": "fresh-capsule",
+    "reason_codes": [
+      "INDEPENDENT_CAPSULE"
+    ],
+    "logical": {
+      "prompt_bytes": 1200,
+      "capsule_bytes": 600
+    },
+    "billed": {},
+    "outcome": {
+      "verify_passed": 2,
+      "verify_total": 2
+    }
+  },
+  "private_invalid": [
+    {
+      "id": "raw-session",
+      "event": {
+        "event": "worker_usage",
+        "observed_at": "2026-07-30T08:15:00Z",
+        "provider": "codex",
+        "session_id": "thread-secret"
+      }
+    },
+    {
+      "id": "prompt-body",
+      "event": {
+        "event": "worker_usage",
+        "observed_at": "2026-07-30T08:15:00Z",
+        "provider": "claude",
+        "prompt_body": "private code"
+      }
+    },
+    {
+      "id": "api-key-value",
+      "event": {
+        "event": "worker_usage",
+        "observed_at": "2026-07-30T08:15:00Z",
+        "provider": "other",
+        "runtime": "Bearer abcdefghijklmnop"
+      }
+    },
+    {
+      "id": "repository-path",
+      "event": {
+        "event": "worker_usage",
+        "observed_at": "2026-07-30T08:15:00Z",
+        "provider": "codex",
+        "model": "/Users/example/private-repository"
+      }
+    },
+    {
+      "id": "internal-url",
+      "event": {
+        "event": "worker_usage",
+        "observed_at": "2026-07-30T08:15:00Z",
+        "provider": "other",
+        "model": "https://internal.example/repository"
+      }
+    },
+    {
+      "id": "email-account",
+      "event": {
+        "event": "worker_usage",
+        "observed_at": "2026-07-30T08:15:00Z",
+        "provider": "claude",
+        "model": "person@example.com"
+      }
+    },
+    {
+      "id": "account-identifier-field",
+      "event": {
+        "event": "worker_usage",
+        "observed_at": "2026-07-30T08:15:00Z",
+        "provider": "claude",
+        "organization_id": "org-private"
+      }
+    },
+    {
+      "id": "github-token",
+      "event": {
+        "event": "worker_usage",
+        "observed_at": "2026-07-30T08:15:00Z",
+        "provider": "other",
+        "model": "ghp_FAKEEXAMPLE1234567890"
+      }
+    }
+  ],
+  "schema_invalid": [
+    {
+      "id": "repository-like-corpus-id",
+      "event": {
+        "event": "dispatch_decision",
+        "observed_at": "2026-07-30T08:15:00Z",
+        "task_corpus_id": "private-repository-01",
+        "provider": "codex",
+        "runtime": "cli",
+        "model": "gpt-5",
+        "profile": "balanced",
+        "mode": "local",
+        "reason_codes": ["LOCAL_CHEAPER"],
+        "logical": {},
+        "billed": {},
+        "outcome": {}
+      }
+    }
+  ]
+}

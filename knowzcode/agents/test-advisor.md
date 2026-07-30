@@ -3,7 +3,6 @@ name: test-advisor
 description: "KnowzCode: TDD enforcement, test quality review, and coverage assessment"
 tools: Read, Glob, Grep, Bash
 model: sonnet
-permissionMode: default
 maxTurns: 15
 ---
 

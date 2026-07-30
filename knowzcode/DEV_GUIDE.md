@@ -62,26 +62,27 @@ For product overview, see [README.md](README.md). For detailed docs, see `docs/`
 - **`skills/regroup-trigger/SKILL.md`** is the non-writing pause/handoff detector. It only offers `/knowzcode:regroup`; it never writes directly.
 - **Gemini regroup trigger decision:** Gemini has no passive trigger-skill surface here, so Gemini gets explicit `/knowzcode:regroup` and `/knowzcode:continue` only.
 - **Source-of-truth rule:** source skills under `knowzcode/skills/` are canonical. Packaged Codex skills under `plugins/knowzcode/skills/` and templates in both `platform_adapters.md` files must stay behaviorally aligned; platform-specific frontmatter may differ.
-- Run `node scripts/sync-codex-relay-surfaces.mjs` from the repository root after changing the packaged Codex relay/work/continue/init/status/start-work surfaces; it refreshes their generated-adapter blocks and the byte-coupled adapter mirror.
+- Run `node scripts/sync-codex-relay-surfaces.mjs` from the repository root after changing packaged Codex skill surfaces or canonical framework/contracts; it refreshes generated-adapter blocks and byte-coupled plugin mirrors. CI/read-only checks use `--check`.
 - **`agents/`** contains agent definitions — each `.md` file defines one specialized agent
 - **`knowzcode/platform_adapters.md`** holds the adapter templates for all 6 platforms (Claude Code, Gemini, Codex, Cursor, Copilot, Windsurf)
 - **`knowzcode/prompts/`** holds phase prompt templates used by commands and agents
 - **`knowzcode/knowzcode_loop.md`** is the core methodology — must stay platform-neutral (no Task tool, no subagent references, no Claude Code-specific syntax)
 - **`scripts/compliance-check.sh` / `compliance-check.ps1`** are a deterministic spec-presence pre-screen for enterprise compliance in CI/CD — a fast floor, not the whole gate. Run from a project root: `bash scripts/compliance-check.sh [spec|impl|full]` (or `pwsh -File scripts/compliance-check.ps1 -Scope <...>`). They no-op (exit 0) unless `knowzcode/enterprise/compliance_manifest.md` has `compliance_enabled: true`. Spec-tier checks verify each active guideline's ARC criteria appear in `knowzcode/specs/`; implementation-tier checks are reported as REVIEW (deferred to the `enterprise-enforcer` agent via `/knowzcode:work` or `/knowzcode:audit compliance`), never auto-passed. Exit 1 on blocking **spec** violations (or advisory under `KC_COMPLIANCE_STRICT` / `-Strict`). A green run does **not** assert implementation-tier compliance — that requires the agent audit. See [docs/enterprise-compliance.md](docs/enterprise-compliance.md).
 
-## Agent Teams (Teammate Instructions)
+## Claude Workers and Agent Teams
 
 **If you were spawned as a teammate:**
-1. Your spawn prompt identifies your role and agent definition file — read it first
-2. Follow the conventions in your spawn prompt (WorkGroup updates, prefix rules, completion reporting)
-3. Follow the instructions in your assigned task
-4. Report results by updating the WorkGroup file and completing your task with a summary
-5. For detailed team conventions, see `knowzcode/claude_code_execution.md`
+1. Your referenced agent definition body, tools, and model are already applied; do not reread that definition unless the prompt identifies a version mismatch.
+2. Read only the assigned capsule/spec criteria, owned files, and conditional references.
+3. Follow the output policy: bounded result for a tiny read-only check; durable handoff for material/resumable work; artifact path for raw logs.
+4. Teams are optional and only for real peer coordination. The first teammate spawn forms the runtime-managed team; there is no `TeamCreate`/`TeamDelete` lifecycle.
+5. For current fork, resume, team, cache, and permission semantics, see `knowzcode/claude_code_execution.md`.
 
 ## Documentation References
 
 - [README.md](README.md) — Product overview, installation, architecture, usage
 - [docs/](docs/) — Detailed documentation
-- [knowzcode/claude_code_execution.md](knowzcode/claude_code_execution.md) — Agent Teams orchestration and conventions
+- [knowzcode/claude_code_execution.md](knowzcode/claude_code_execution.md) — Claude resume/fork/subagent/team conventions
+- [knowzcode/context_efficiency.md](knowzcode/context_efficiency.md) — portable context routing, lineage, and measurement
 - [knowzcode/platform_adapters.md](knowzcode/platform_adapters.md) — Platform adapter templates
 - [knowzcode/knowzcode_loop.md](knowzcode/knowzcode_loop.md) — Core methodology

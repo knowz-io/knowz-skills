@@ -10,29 +10,40 @@ Investigate a topic and stop with findings and recommendations.
 
 ## Instructions
 
-1. Read the KnowzCode framework files if they exist: `knowzcode/knowzcode_project.md` (project context), `knowzcode/knowzcode_architecture.md` (architecture notes), `knowzcode/knowzcode_loop.md` (methodology). If `knowzcode/codex_execution.md` exists, read it too — it documents the Codex-native delegation primitives this skill uses (`spawn_agent`, `send_input`, `wait_agent`, `close_agent`).
-2. Search the codebase for relevant files, patterns, specs (`knowzcode/specs/`), and prior WorkGroups (`knowzcode/workgroups/`).
-3. If the topic spans 2 or more independent subsystems (no shared files), parallelize read-only exploration using Codex `explorer` subagents per the Dispatch Contract below. Do not create overlapping write scopes and do not implement code in this mode.
-4. If Knowz MCP is available, use direct `mcp__knowz__search_knowledge` or `mcp__knowz__ask_question` calls for prior decisions and conventions.
-5. Write the **Exploration Deliverable** (see contract below) and present a summary in the chat reply.
-6. Do not implement changes unless the user explicitly asks to move into `/knowzcode:work` or `/knowzcode:fix`.
+1. Classify the exploration question and resolve any selected WorkGroup, capsule, reusable specification, and current phase **before vault retrieval, parallel delegation, or file writes**. Record the exact unresolved question and relevant subsystem boundaries.
+2. Load context progressively. Start with that selected WorkGroup/capsule and goal-relevant spec headings/`VERIFY:` criteria. If neither exists, search the topic first; read only the relevant project, architecture, spec, or prior-WorkGroup sections needed to answer the recorded question. Do not eagerly read the complete loop, project, architecture, history, or provider guides.
+3. Search the codebase for relevant files and patterns using targeted reads.
+4. If the topic spans 2 or more independently useful subsystems, read `knowzcode/codex_execution.md` and use its capability, context-mode, lineage, and result-policy contracts. Parallelize only within the active runtime's capacity. Do not create overlapping scopes and do not implement code in this mode.
+5. If the local evidence leaves a named prior-decision or convention question and Knowz MCP is available, reuse a healthy coordinator probe within `mcp_health_ttl_minutes`, then use a targeted `mcp__knowz__search_knowledge` or `mcp__knowz__ask_question` call. Do not issue a broad baseline vault query or let child explorers repeat the probe.
+6. Produce the **Exploration Deliverable** in chat. Write it to `knowzcode/explore/<topic-slug>/summary.md` only when writes are authorized and durable exploration output is requested or materially useful for recovery.
+7. Do not implement changes unless the user explicitly asks to move into `/knowzcode:work` or `/knowzcode:fix`.
+
+## Executable Context Runtime Boundary
+
+When `context_efficiency.enabled: true` (default), call `node knowzcode/context_efficiency_runtime.mjs dispatch` for every non-trivial explorer route. Send one JSON object on stdin with `{routing, rollout, lineage?, result_policy?}` and require one `{ok:true,operation:"dispatch",result}` object on stdout. Call `capsule` with `{capsule,max_bytes?,artifact_path?}` before a fresh capsule, `lineage` with `{lineage,current,now?}` before resume/inheritance, and `result-policy` with `{input}` before choosing output policy. The CLI is read-only.
+
+Rollout controls recommendation application and redacted telemetry, not safety validation. Privacy/schema, lineage, reviewer-independence, or ownership rejection fails closed; rebuild/reconcile and validate again or keep research local. Never use `CAPABILITY_FALLBACK` for a safety rejection. Use it only when a non-safety recommendation/telemetry function is unavailable while direct checks pass; if required validation is unavailable, keep research local and report `CONTEXT_RUNTIME_UNAVAILABLE`.
 
 ## Parallel Explorer Dispatch Contract
 
-When step 3 fires, dispatch all explorers in a single coordinator turn so they run concurrently. Each explorer must:
+When step 3 fires, detect the native capabilities callable in the active runtime and map them to semantic `spawn`, `follow up`, `message`, `wait`, `interrupt`, `inspect`, and `release` operations. Current runtime examples can include `spawn_agent`, `followup_task`, `send_message`, `wait_agent`, `interrupt_agent`, and `list_agents`, but capability detection is authoritative. Prefer a compatible warm explorer follow-up before spawning; otherwise select `inherit-full`, `inherit-recent`, or `fresh-capsule` per the canonical execution guide. Dispatch independent explorers concurrently only when capacity permits. Each explorer must:
 
 - **Scope boundary**: receive exactly one subsystem boundary (a path glob, a module name, or a domain). No two explorers share files.
-- **Read-only constraint**: receive an explicit instruction not to edit, write outside its findings file, or implement code.
-- **Output**: write findings to `knowzcode/explore/<topic-slug>/<subsystem>.md` containing — at minimum — the sections `## Current State`, `## Constraints`, `## Risks`, `## References` (file paths and line numbers).
-- **Return value**: only the path to that findings file.
+- **Read-only constraint**: receive an explicit instruction not to edit or implement code.
+- **Incremental context**: receive the topic, active WorkGroup/capsule if relevant, assigned subsystem, and exact read paths/questions. Do not hydrate unrelated framework or chat history.
+- **Reviewer independence**: when the exploration is an independent audit/review, start from approved requirements/evidence and a fresh reviewer-owned lineage, never builder reasoning.
+- **`ephemeral` output**: default for a short read-only slice. Return bounded `## Current State`, `## Constraints`, `## Risks`, and `## References` findings directly; do not write a file.
+- **`durable` output**: only when writes are authorized and material/resumable evidence requires recovery. Write `knowzcode/explore/<topic-slug>/<subsystem>.md` with the same four sections and return its path plus bounded status.
+- **`artifact` output**: only when writes are authorized and raw search/test evidence is too large. Return its path plus a bounded digest/delta; do not paste the raw output into follow-ups.
+- **Zero-write rule**: when the user, audit mode, or sandbox prohibits writes, use `ephemeral` and MUST NOT create a findings, handoff, summary, or artifact file.
 
-After all explorers complete, the coordinator reads each findings file from disk (not from return messages) and merges them into the Exploration Deliverable below.
+After all explorers complete, the coordinator merges bounded ephemeral results and reads only any explicitly durable/artifact paths. The coordinator owns the final conclusion and authoritative WorkGroup state.
 
 Skip parallel dispatch when the topic touches a single subsystem — run serially in the coordinator instead.
 
 ## Exploration Deliverable
 
-Write the final summary to `knowzcode/explore/<topic-slug>/summary.md` with this structure, and mirror the same content into the chat reply:
+Return the final summary in chat with this structure. If the output policy is `durable` and writes are authorized, write the same content to `knowzcode/explore/<topic-slug>/summary.md`:
 
 ```markdown
 # Exploration: {topic}

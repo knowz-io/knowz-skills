@@ -3,7 +3,6 @@ name: architect
 description: "KnowzCode: Specification drafting, architecture review, and design decisions"
 tools: Read, Write, Edit, Glob, Grep
 model: opus
-permissionMode: acceptEdits
 maxTurns: 20
 ---
 

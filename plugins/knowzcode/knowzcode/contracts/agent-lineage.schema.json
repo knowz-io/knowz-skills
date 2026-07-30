@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://knowz.io/schemas/agent-lineage.schema.json",
+  "title": "KnowzCode Agent Lineage v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "lineage_id",
+    "workgroup_id",
+    "platform",
+    "platform_handle",
+    "parent_lineage_id",
+    "role",
+    "scope",
+    "phase",
+    "fix_loop_id",
+    "mode",
+    "model",
+    "effort",
+    "runtime_prefix_hash",
+    "baseline_hash",
+    "tools_hash",
+    "permissions_hash",
+    "spec_hash",
+    "scope_hash",
+    "checkpoint_sha",
+    "capsule_hash",
+    "sensitivity",
+    "created_at",
+    "last_used_at",
+    "resumable",
+    "lease_expires_at"
+  ],
+  "properties": {
+    "schema": { "const": "knowzcode.agent-lineage/v1" },
+    "lineage_id": { "type": "string", "minLength": 1 },
+    "workgroup_id": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "platform": { "enum": ["claude", "codex", "other"] },
+    "platform_handle": {
+      "anyOf": [
+        { "type": "string", "minLength": 1 },
+        { "type": "null" }
+      ]
+    },
+    "parent_lineage_id": {
+      "anyOf": [
+        { "type": "string", "minLength": 1 },
+        { "type": "null" }
+      ]
+    },
+    "role": { "type": "string", "minLength": 1 },
+    "scope": { "type": "string", "minLength": 1 },
+    "phase": { "enum": ["1A", "1B", "2A", "2B", "3"] },
+    "fix_loop_id": {
+      "anyOf": [
+        { "type": "string", "minLength": 1, "maxLength": 128 },
+        { "type": "null" }
+      ]
+    },
+    "mode": {
+      "enum": [
+        "local",
+        "resume",
+        "inherit-full",
+        "inherit-recent",
+        "fresh-capsule",
+        "coordinated-team"
+      ]
+    },
+    "model": {
+      "anyOf": [
+        { "type": "string", "minLength": 1 },
+        { "type": "null" }
+      ]
+    },
+    "effort": {
+      "anyOf": [
+        { "type": "string", "minLength": 1 },
+        { "type": "null" }
+      ]
+    },
+    "runtime_prefix_hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "baseline_hash": {
+      "anyOf": [
+        { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+        { "type": "null" }
+      ]
+    },
+    "tools_hash": { "type": "string", "minLength": 1 },
+    "permissions_hash": { "type": "string", "minLength": 1 },
+    "spec_hash": { "type": "string", "minLength": 1 },
+    "scope_hash": { "type": "string", "minLength": 1 },
+    "checkpoint_sha": {
+      "anyOf": [
+        { "type": "string", "minLength": 7 },
+        { "type": "null" }
+      ]
+    },
+    "capsule_hash": {
+      "anyOf": [
+        { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+        { "type": "null" }
+      ]
+    },
+    "sensitivity": { "enum": ["normal", "restricted", "isolated"] },
+    "created_at": { "type": "string", "format": "date-time" },
+    "last_used_at": { "type": "string", "format": "date-time" },
+    "resumable": { "type": "boolean" },
+    "lease_expires_at": {
+      "anyOf": [
+        { "type": "string", "format": "date-time" },
+        { "type": "null" }
+      ]
+    }
+  }
+}

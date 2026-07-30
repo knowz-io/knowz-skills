@@ -1,6 +1,10 @@
 # Agent Spawn Prompts — Work Skill
 
-These spawn prompts are shared by all execution modes. In Parallel Teams mode, the lead uses these prompts when spawning agents at the appropriate stage. In Sequential Teams / Subagent mode, agents are spawned one at a time in phase order.
+These task packets are shared by adaptive, sequential, and coordinated execution. Claude automatically loads a referenced agent definition; never ask a named agent or teammate to reread its own definition. Include only the assigned scope and the fields needed below.
+
+**Rendering rule:** `Your Task: #{task-id}` / `TaskUpdate`, DM, mailbox, broadcast, and peer-message clauses are coordinated-team-only. Include them only after Team mode was independently selected and a real team task/message capability is callable. For local, resumed, forked, or fresh named-agent dispatch, omit those clauses, put dependency/context inputs directly in the capsule, and require the bounded result to return to the lead. Never form a team just to make a packet's coordination sentence usable.
+
+Every material dispatch includes the capsule version, WorkGroup/task ID, phase, objective, NodeIDs/microtask, owned/read files, approved spec paths and VERIFY IDs, checkpoint, constraints, concise failure summaries/artifact paths, lineage candidate, and next action. Every result is bounded to status, decisions/findings, `file:line` or test evidence, changed paths, VERIFY state, unresolved risks, artifact paths, and lineage status. Raw logs remain in artifacts.
 
 ## Contents
 
@@ -11,7 +15,7 @@ These spawn prompts are shared by all execution modes. In Parallel Teams mode, t
 - [Quality Gate Writer Dispatches](#quality-gate-writer-dispatches)
 - [Specialist Spawn Prompts (Group C)](#specialist-spawn-prompts-group-c--opt-in-via---specialists)
 - [Phase 1A: Impact Analysis](#phase-1a-impact-analysis)
-- [Stage 0: Architect Pre-load (Parallel Teams)](#stage-0-architect-pre-load-parallel-teams)
+- [Stage 0: Optional Architect Pre-load](#optional-architect-pre-load)
 - [Phase 1B: Specification](#phase-1b-specification)
 - [Phase 2A: Implementation](#phase-2a-implementation)
 - [Phase 2B: Completeness Audit](#phase-2b-completeness-audit)
@@ -100,7 +104,7 @@ See `references/profile-models.md` for the `{spec_depth_guidance}` resolution ru
 
 **Agent**: `general-purpose` (x2) | Lightweight codebase searchers (no agent definition file)
 
-Two temporary agents that scan the codebase in parallel with the analyst, broadcasting findings to accelerate impact analysis. Only spawned when `CODEBASE_SCANNER_ENABLED = true` (default).
+Temporary scanners are optional. Dispatch one only when deterministic local indexing left a material, independently useful uncertainty; `CODEBASE_SCANNER_ENABLED` is permission to use scanners, not a requirement to launch both.
 
 **scanner-direct spawn prompt**:
 > You are `scanner-direct` for WorkGroup `{wgid}`.
@@ -115,7 +119,7 @@ Two temporary agents that scan the codebase in parallel with the analyst, broadc
 > 4. Note public APIs and interfaces that may need changes
 >
 > **READ-ONLY.** Do NOT modify any files.
-> **Deliverable**: Broadcast findings to all teammates — affected files, code paths, module boundaries, and interface patterns.
+> **Deliverable**: Bounded summary of affected files, code paths, module boundaries, and interface patterns; put verbose matches in an artifact.
 > **Budget**: Complete within ~12 turns. Focus on breadth over depth.
 
 **scanner-tests spawn prompt**:
@@ -131,60 +135,50 @@ Two temporary agents that scan the codebase in parallel with the analyst, broadc
 > 4. Check for integration/e2e tests related to the goal area
 >
 > **READ-ONLY.** Do NOT modify any files.
-> **Deliverable**: Broadcast findings to all teammates — test file locations, testing patterns, coverage gaps, and fixture/mock patterns.
+> **Deliverable**: Bounded summary of test locations, patterns, gaps, and fixtures; put verbose matches in an artifact.
 > **Budget**: Complete within ~12 turns. Focus on breadth over depth.
 
-**Dispatch**:
-- *Parallel Teams*: Spawned at Stage 0 if `CODEBASE_SCANNER_ENABLED = true`. Use `subagent_type: "general-purpose"`, `maxTurns: 12`. Shut down after Stage 1 (analyst completes Change Set).
-- *Sequential Teams*: Not applicable (scanners are Parallel Teams only).
-- *Subagent*: `Task(subagent_type="general-purpose", description="Scan codebase for {focus}", maxTurns=12, prompt=<above>)` if `CODEBASE_SCANNER_ENABLED = true`.
+**Dispatch**: In adaptive or coordinated execution, use `subagent_type: "general-purpose"`, `maxTurns: 12`, only for an explicit scan focus. Sequential execution normally keeps deterministic scanning local. Release the scanner after its result.
 
 ---
 
-## Stage 0: Context & Knowledge Liaison (Persistent)
+## Context & Knowledge Liaison
 
-**Agent**: `knowledge-liaison` | Persistent context and vault coordination agent
+**Agent**: `knowledge-liaison` | Targeted context and vault coordination agent
 
 **Spawn prompt**:
 > You are the **knowledge-liaison** for WorkGroup `{wgid}`.
-> Read `agents/knowledge-liaison.md` for your full role definition.
 > **Your Task**: #{task-id} — claim immediately (`TaskUpdate(status: "in_progress")`).
 > **Goal**: {goal}
 > **Vault config**: `knowz-vaults.md` (project root)
 > **Lead Vault Baseline**: {VAULT_BASELINE or "No baseline — MCP not available or no vaults configured"}
-> **Lifecycle**: You persist from Stage 0 through team shutdown. You are the last agent shut down before team cleanup.
-> **Context gathering**: At startup, read local context directly and dispatch vault reader subagents in parallel (see `agents/knowledge-liaison.md` Startup). If baseline results are provided above, skip broad vault queries and dispatch deeper targeted research instead. If no baseline, perform full vault queries per your startup sequence. Push Context Briefing to analyst and architect.
-> **Ongoing**: Accept capture DMs from the lead (at quality gates) and closer (Phase 3). Accept `"Log: ..."` and `"Consider: ..."` from any agent. Accept `"VaultQuery: ..."` from any agent. Dispatch `knowz:writer` and `knowz:reader` as needed.
+> **Lifecycle**: Resume only while the same WorkGroup/scope/checkpoint lineage is compatible. Release after the bounded phase/capture lease.
+> **Context gathering**: Reuse the lead baseline. Skip broad vault queries when it exists; make only targeted follow-ups for the assigned gap. Return a concise Context Briefing and artifact pointers.
+> **Ongoing**: Accept only classified `amend`, `update`, or `flush` capture DMs from the lead. Normal `batch` and `skip` gate deltas remain coordinator-local. Return any raw `"Log: ..."` or `"Consider: ..."` candidate to the lead without dispatching; the liaison has no shell authority. Accept `"VaultQuery: ..."` from any agent. Dispatch `knowz:writer` and `knowz:reader` as needed.
 > **KnowledgeId sync**: When dispatching `knowz:writer`, check source files (specs, workgroups) for `**KnowledgeId:**` values and include them in dispatch prompts. After writer completes, parse output for `CREATED_KNOWLEDGE_ID`/`REMOVED_KNOWLEDGE_ID` signals and edit source files accordingly.
 
-**Dispatch**:
-- *Parallel Teams*: **Group A** — always spawned at Stage 0. Persistent — last agent shut down before team cleanup.
-- *Sequential Teams*: Spawn as first teammate. Create task `"Context & knowledge: research for {goal}"`. Wait for completion. Include findings in analyst spawn prompt as `> **Context Briefing**: {liaison findings}`.
-- *Subagent*: `Task(subagent_type="knowzcode:knowledge-liaison", description="Context & knowledge research", prompt=<spawn prompt>)`. Include results in analyst spawn prompt.
+**Dispatch**: Resume a compatible liaison or use `Task(subagent_type="knowledge-liaison", description="Targeted context research", prompt=<spawn prompt>)` only when the baseline is insufficient or `vault-delta` returned a persistence action. Team mode may keep it as the smallest justified coordination peer; it is never an unconditional Stage 0 spawn.
 
 ---
 
-## Quality Gate Writer Dispatches
+## Classified Vault Writer Dispatches
 
-**Agent**: `knowz:writer` | Dispatched by knowledge-liaison at each quality gate
+**Agent**: `knowz:writer` | Dispatched by knowledge-liaison only for `amend`, `update`, or `flush`
 
-Writers are dispatched by the knowledge-liaison at each quality gate. The lead DMs knowledge-liaison with capture requests (see [quality-gates.md](quality-gates.md)); knowledge-liaison constructs self-contained writer prompts and dispatches. Writers are non-persistent — each dispatch completes its writes and exits.
+The lead first invokes `vault-delta` as defined in [quality-gates.md](quality-gates.md). `skip` and `batch` create no writer task. For `amend`, `update`, or `flush`, the lead sends the classified action and stable identity to the knowledge-liaison, which constructs one self-contained writer prompt. Writers are non-persistent; the Phase 3 writer receives the consolidated journal.
 
 **Dispatch**:
-- *Parallel Teams*: Lead DMs knowledge-liaison at Gates #1, Phase 2A, Phase 2B. Closer DMs knowledge-liaison at Phase 3. Knowledge-liaison dispatches `knowz:writer` for each.
-- *Sequential Teams*: Not applicable — vault writes are handled by the closer during Phase 3 finalization (see Learning Capture in `agents/closer.md`).
-- *Subagent*: `Task(subagent_type="knowz:writer", description="Capture Phase {N} learnings", prompt=<gate-specific prompt>)`
+- *Coordinated Team*: When a team was independently justified, the lead DMs the knowledge-liaison only after a persistence action, including the Phase 3 flush returned by the closer.
+- *Sequential Delegation*: The lead performs the authorized classified Phase 3 persistence from the closer's `FinalCaptureDelta`; do not form a one-peer team.
+- *Subagent*: `Task(subagent_type="knowz:writer", description="Capture Delta {action}: Phase {N}", prompt=<classified action + stable identity + consolidated content>)`
 
 ---
 
 ## Specialist Spawn Prompts (Group C — opt-in via `--specialists`)
 
-The spawn prompts below are used when `SPECIALISTS_ENABLED` is non-empty. Specialists are spawned at Stage 0 alongside Groups A and B.
+Use these prompts when `SPECIALISTS_ENABLED` identifies a distinct evidence need. Do not launch the whole panel by default.
 
-**Dispatch** (all specialists):
-- *Parallel Teams*: Group C — spawned at Stage 0 if `SPECIALISTS_ENABLED` non-empty, no blockedBy. Security-officer and test-advisor persist through Gate #3. Project-advisor shuts down mid-Stage 2.
-- *Sequential Teams*: Not supported — announce skip reason.
-- *Subagent*: `Task()` calls with spawn prompts below.
+**Dispatch**: Use fresh named read-only agents for independent judgment, or minimal teammates only when direct peer coordination is required. Sequential mode runs selected specialists one at a time. Release or resume within a bounded phase lease; do not keep the full panel idle through Gate #3.
 
 ### Security Officer
 
@@ -192,13 +186,12 @@ The spawn prompts below are used when `SPECIALISTS_ENABLED` is non-empty. Specia
 
 **Spawn prompt**:
 > You are the **security-officer** for WorkGroup `{wgid}`.
-> Read `agents/security-officer.md` for your full role definition.
 > **Your Task**: #{task-id} — claim immediately (`TaskUpdate(status: "in_progress")`). Mark completed with summary when done.
 > **Goal**: {goal}
 > **READ-ONLY.** Do NOT modify any files. Bash is for read-only security scanning only.
 > **Stage 0 Deliverable**: Build STRIDE-lite threat model. Scan for auth/PII/crypto/session patterns. Broadcast initial threat assessment.
 > **Authority**: CRITICAL/HIGH findings use `[SECURITY-BLOCK]` tag — lead MUST pause autonomous mode.
-> **Communication**: DM lead at gates. DM architect with security VERIFY criteria needs. DM builders in security-sensitive scopes (max 2 per builder). DM test-advisor for cross-cutting test gaps (max 2).
+> **Communication**: In coordinated-team mode, use bounded DMs for the listed gate handoffs. In named-agent mode, return the same handoff fields to the lead for routing; do not assume peer messaging.
 > **Enterprise Compliance**: If `knowzcode/enterprise/compliance_manifest.md` exists and `compliance_enabled: true`, read active security guidelines and cross-reference findings with enterprise guideline IDs.
 
 ### Test Advisor
@@ -207,12 +200,11 @@ The spawn prompts below are used when `SPECIALISTS_ENABLED` is non-empty. Specia
 
 **Spawn prompt**:
 > You are the **test-advisor** for WorkGroup `{wgid}`.
-> Read `agents/test-advisor.md` for your full role definition.
 > **Your Task**: #{task-id} — claim immediately (`TaskUpdate(status: "in_progress")`). Mark completed with summary when done.
 > **Goal**: {goal}
 > **READ-ONLY.** Do NOT modify any files. Bash is for read-only operations only (git log, coverage reports).
 > **Stage 0 Deliverable**: Establish test coverage baseline. Glob test files, run coverage if available. Broadcast baseline.
-> **Communication**: DM lead at gates. DM architect if VERIFY criteria aren't testable. DM builders with test improvement feedback (max 2 per builder). DM security-officer for cross-cutting security test gaps (max 2).
+> **Communication**: In coordinated-team mode, use bounded DMs for the listed gate handoffs. In named-agent mode, return the same handoff fields to the lead for routing; do not assume peer messaging.
 > **Enterprise Compliance**: If `knowzcode/enterprise/compliance_manifest.md` exists and `compliance_enabled: true`, check enterprise ARC criteria for test coverage gaps.
 
 ### Project Advisor
@@ -221,24 +213,21 @@ The spawn prompts below are used when `SPECIALISTS_ENABLED` is non-empty. Specia
 
 **Spawn prompt**:
 > You are the **project-advisor** for WorkGroup `{wgid}`.
-> Read `agents/project-advisor.md` for your full role definition.
 > **Your Task**: #{task-id} — claim immediately (`TaskUpdate(status: "in_progress")`). Mark completed with summary when done.
 > **Goal**: {goal}
 > **READ-ONLY.** Do NOT modify any files.
-> **Stage 0 Deliverable**: Read tracker for existing REFACTOR tasks and backlog context. DM lead with context summary.
+> **Stage 0 Deliverable**: Read targeted tracker rows for existing relevant REFACTOR tasks/backlog context and return a bounded lead summary.
 > **Lifecycle**: You shut down mid-Stage 2 after delivering backlog proposals — before the gap loop.
-> **Communication**: DM lead with backlog context and proposals. Include idea captures in your proposals — the lead dispatches `knowz:writer` if warranted. Do NOT DM builders or other specialists.
+> **Communication**: Return backlog context and proposals to the lead. In coordinated-team mode this may be one bounded DM. The lead owns any authorized writer dispatch; do not message builders or other specialists.
 > **Enterprise Compliance**: If `knowzcode/enterprise/compliance_manifest.md` exists, note compliance configuration gaps in backlog proposals.
 
 ---
 
 ## Group D Spawn Prompts (Conditional Officers)
 
-The spawn prompts below are used when `FRONTEND_DESIGNER_ENABLED` or `ENTERPRISE_ENFORCER_ENABLED` is true (set by Steps 2.6.1 / 2.6.2 in `work/SKILL.md`). Both are persistent officers spawned at Stage 0 alongside Group A/C.
+Use these prompts when `FRONTEND_DESIGNER_ENABLED` or `ENTERPRISE_ENFORCER_ENABLED` is true. Each role may run as a fresh named worker or, when peer messaging is required, a teammate.
 
-**Dispatch** (both Group D officers):
-- *Parallel Teams*: Group D — spawned at Stage 0 if enabled, no blockedBy. Both persist through Stage 3. Shutdown wave: closer is spawned FIRST (Stage 3 step 2), then enforcer DMs closer with `ComplianceSummary` (step 2b), then officers shut down (step 2c). See `references/parallel-orchestration.md` Stage 3.
-- *Sequential Teams / Lightweight Teams / Subagent Delegation*: NOT supported — Step 2.6.1 / 2.6.2 in `work/SKILL.md` skip Group D in these modes. Compliance is covered by per-agent fallback paths (reviewer/architect/test-advisor/security-officer inline checks). Design review is not available in non-Parallel modes — user can `--tier full` and remove `--sequential`/`--subagent` to enable it.
+**Dispatch**: Tier 3 supports either named-agent or coordinated-team delivery. Sequential mode runs the required officer at the applicable gate. Tier 2 uses per-agent checks unless the user explicitly requests the officer. Preserve blocking compliance and design authority regardless of runtime mode.
 
 ### Frontend Designer
 
@@ -246,7 +235,6 @@ The spawn prompts below are used when `FRONTEND_DESIGNER_ENABLED` or `ENTERPRISE
 
 **Spawn prompt**:
 > You are the **frontend-designer** for WorkGroup `{wgid}`.
-> Read `agents/frontend-designer.md` for your full role definition.
 > **Your Task**: #{task-id} — claim immediately (`TaskUpdate(status: "in_progress")`). Mark completed with summary when done.
 > **Goal**: {goal}
 > **UI Surface Summary**: {detected entry points and framework — e.g., "React TypeScript app, index.html at apps/web/, Tailwind detected"}
@@ -254,7 +242,7 @@ The spawn prompts below are used when `FRONTEND_DESIGNER_ENABLED` or `ENTERPRISE
 > **Autonomous Defaults**: {`pause` or `accept-recommendations`}
 > **READ-ONLY.** Do NOT modify any source files. Bash is for read-only probing only — never start or stop the app.
 > **Browser MCP Loading**: Before any `mcp__claude-in-chrome__*` or `mcp__plugin_playwright_playwright__*` call, you MUST first invoke `ToolSearch` with `select:<tool_name>` to load the schema. Calling a browser tool without loading its schema returns `InputValidationError`.
-> **Stage 0 Deliverables**: (a) Probe project for UI surface, framework, design system, theme tokens, a11y config. (b) Produce a Design Questions Bundle (3–8 batched questions with recommended defaults + ASCII/Mermaid mockups) and send to lead as `[DESIGN-QUESTIONS]`. (c) Broadcast initial Design Posture to team.
+> **Stage 0 Deliverables**: (a) Probe project for UI surface, framework, design system, theme tokens, a11y config. (b) Produce a Design Questions Bundle (3–8 batched questions with recommended defaults + ASCII/Mermaid mockups) and return it with an initial Design Posture. In coordinated-team mode, the lead may route that posture to peers that need it.
 > **Authority**: Advisor by default — HIGH findings use `[DESIGN-CONCERN]` (do NOT pause autonomous mode). If Blocking Mode is true, HIGH findings use `[DESIGN-CONCERN-BLOCK]` and pause autonomous mode at Gate #3.
 > **Coordination with smoke-tester**: At Stage 2B, wait for smoke-tester to signal app-ready, then run spec-driven E2E on the same running app. Smoke-tester does NOT tear down until you mark your task complete.
 > **Coordination with enterprise-enforcer**: If active, expect DM at Stage 0 with active design guideline IDs (`DSN-*`); cross-reference in your Design Audit Report.
@@ -267,7 +255,6 @@ The spawn prompts below are used when `FRONTEND_DESIGNER_ENABLED` or `ENTERPRISE
 
 **Spawn prompt**:
 > You are the **enterprise-enforcer** for WorkGroup `{wgid}`.
-> Read `agents/enterprise-enforcer.md` for your full role definition.
 > **Your Task**: #{task-id} — claim immediately (`TaskUpdate(status: "in_progress")`). Mark completed with summary when done.
 > **Goal**: {goal}
 > **Compliance Manifest**: `knowzcode/enterprise/compliance_manifest.md` (verified exists with `compliance_enabled: true` and ≥1 active non-empty guideline by lead at Step 2.6.2)
@@ -286,36 +273,34 @@ The spawn prompts below are used when `FRONTEND_DESIGNER_ENABLED` or `ENTERPRISE
 
 **Spawn prompt**:
 > You are the **analyst** for WorkGroup `{wgid}`.
-> Read `agents/analyst.md` for your full role definition.
 >
 > **Goal**: {goal}
 > **Context files**: Read sections 1-2 and 3.1 of `knowzcode/knowzcode_loop.md` (skip other phases), `knowzcode/knowzcode_tracker.md`, `knowzcode/knowzcode_project.md`, `knowzcode/knowzcode_architecture.md`
 > **WorkGroup file**: `knowzcode/workgroups/{wgid}.md`
 >
 > **Your Task**: #{task-id} — claim immediately (`TaskUpdate(status: "in_progress")`). Mark completed with summary when done.
-> **Conventions**: In Parallel Teams, report results in your task summary and let the lead update the WorkGroup file. In Sequential/Subagent mode, update the WorkGroup file only when delegated. Prefix any task/todo entries with `KnowzCode:`. If blocked, report blocker and notify lead.
-> **Context**: The knowledge-liaison will DM you a Context Briefing with local project context and vault knowledge. Incorporate its findings into your analysis. For additional queries, DM: `"VaultQuery: {question}"`.
-> **Codebase scanners**: Scanner agents are running in parallel — their findings will arrive as broadcast messages. Incorporate them into your analysis but do NOT wait for them.
-> **Preliminary Findings Protocol**: As you discover high-confidence NodeIDs, DM the architect with `[PRELIMINARY]` messages (max 3 — see `agents/analyst.md` for format). This lets the architect start speculative research early.
-> **Deliverable**: Change Set proposal with NodeIDs, descriptions, affected files, risk assessment, and dependency map. In Parallel Teams, return it in task summary for lead consolidation; in Sequential/Subagent mode, write it to the WorkGroup file when delegated.
+> **Conventions**: In coordinated-team mode, report results in your task summary and let the lead update the WorkGroup file. In sequential/named-agent mode, update the WorkGroup file only when delegated. Prefix any task/todo entries with `KnowzCode:`. If blocked, report blocker and notify lead.
+> **Context**: Incorporate a Context Briefing only when the lead supplied one. In coordinated-team mode, request at most one targeted liaison follow-up; otherwise return the unresolved question to the lead.
+> **Codebase scanners**: If the lead supplied optional scanner summaries, incorporate them; never wait for or assume scanner fan-out.
+> **Preliminary Findings Protocol**: If a coordinated-team architect is already active, send at most three high-confidence `[PRELIMINARY]` NodeID messages. Otherwise include them in the bounded result.
+> **Deliverable**: Change Set proposal with NodeIDs, descriptions, affected files, risk assessment, and dependency map. In coordinated-team mode, return it in task summary for lead consolidation; in sequential/named-agent mode, write it to the WorkGroup file only when delegated.
 > {spec_depth_guidance}
 
 **Dispatch**:
-- *Parallel Teams*: Spawned at Stage 0 alongside knowledge-liaison, scanners, and architect. Starts immediately (no blockedBy).
-- *Sequential Teams*: Spawn teammate `analyst`, create task `Phase 1A: Impact analysis for "{goal}"`, wait for completion.
+- *Coordinated Team*: Use a teammate only when peer coordination was independently justified; it starts without an analysis dependency.
+- *Sequential Delegation*: Resume a compatible analyst or dispatch `Task(subagent_type="analyst", ...)`, then wait for its bounded result.
 - *Subagent*: `Task(subagent_type="analyst", description="Phase 1A impact analysis", prompt=<above>)`
 
 ---
 
-## Stage 0: Architect Pre-load (Parallel Teams)
+## Optional Architect Pre-load
 
-**Agent**: `architect` | Spawned at Stage 0 for context pre-loading and speculative research
+**Agent**: `architect` | Spawned early only when architecture ambiguity blocks classification
 
-In Parallel Teams mode, the architect is spawned at Stage 0 (not at Phase 1B). It pre-loads architecture context and performs speculative research on `[PRELIMINARY]` NodeIDs from the analyst.
+Normally dispatch the architect after Gate #1 with the approved Change Set. Pre-load it in Stage 0 only when the analyst cannot form a reliable Change Set without architectural investigation.
 
-**Stage 0 spawn prompt** (Parallel Teams only):
+**Optional pre-load prompt**:
 > You are the **architect** for WorkGroup `{wgid}`.
-> Read `agents/architect.md` for your full role definition.
 >
 > **Goal**: {goal}
 > **Context files**: Read sections 1-2 and 3.2 of `knowzcode/knowzcode_loop.md` (skip other phases), `knowzcode/knowzcode_project.md`, `knowzcode/knowzcode_architecture.md`
@@ -323,9 +308,9 @@ In Parallel Teams mode, the architect is spawned at Stage 0 (not at Phase 1B). I
 > **Specs directory**: `knowzcode/specs/`
 >
 > **Your Task**: #{task-id} — claim immediately (`TaskUpdate(status: "in_progress")`). Mark completed with summary when done.
-> **Context**: The knowledge-liaison will DM you a Context Briefing with local project context and vault knowledge. Incorporate its findings into speculative research. For additional queries, DM: `"VaultQuery: {question}"`.
+> **Context**: Incorporate a lead-supplied Context Briefing when present. In coordinated-team mode, request at most one targeted liaison follow-up; otherwise return the unresolved question to the lead.
 > **Stage 0 Role**: Pre-load architecture context, then perform speculative research on any `[PRELIMINARY]` NodeID messages from the analyst (see Speculative Research Protocol in `agents/architect.md`). READ-ONLY research — do NOT write specs yet.
-> **Lifecycle**: You persist through the entire workflow. After Gate #1, you will receive spec-drafting tasks via DM. After Gate #2, you shift to consultative role for builders.
+> **Lifecycle**: Retain this lineage only while the ambiguity/spec phase remains compatible. Release it when no concrete consultation remains.
 
 After Gate #1, the lead sends the approved Change Set via DM and creates spec-drafting tasks. For spec-drafting prompts, see Phase 1B below.
 
@@ -335,9 +320,8 @@ After Gate #1, the lead sends the approved Change Set via DM and creates spec-dr
 
 **Agent**: `architect` | **Loop.md**: Section 3.2
 
-**Spec-drafting prompt** (sent via DM to already-warm architect in Parallel Teams, or as spawn prompt in Sequential/Subagent):
+**Spec-drafting prompt** (sent as a bounded delta to an already-warm architect, or as a fresh named-agent/teammate prompt when needed):
 > You are the **architect** for WorkGroup `{wgid}`.
-> Read `agents/architect.md` for your full role definition.
 >
 > **Goal**: {goal}
 > **Approved Change Set**: {NodeIDs from Gate #1}
@@ -346,13 +330,12 @@ After Gate #1, the lead sends the approved Change Set via DM and creates spec-dr
 > **Specs directory**: `knowzcode/specs/`
 >
 > **Your Task**: #{task-id} — claim immediately (`TaskUpdate(status: "in_progress")`). Mark completed with summary when done.
-> **Conventions**: In Parallel Teams, report WorkGroup updates in your task summary and let the lead consolidate. In Sequential/Subagent mode, update the WorkGroup file only when delegated. Prefix any task/todo entries with `KnowzCode:`. If blocked, report blocker and notify lead.
+> **Conventions**: In coordinated-team mode, report WorkGroup updates in your task summary and let the lead consolidate. In sequential/named-agent mode, update the WorkGroup file only when delegated. Prefix any task/todo entries with `KnowzCode:`. If blocked, report blocker and notify lead.
 > **Deliverable**: Finalized specs for all NodeIDs written to `knowzcode/specs/`.
 > {spec_depth_guidance}
 
-**Spec-drafter spawn prompt** (Path B — 3+ NodeIDs, Parallel Teams only):
+**Spec-drafter spawn prompt** (Path B — 3+ disjoint NodeIDs; named agents by default, teammates only for real peer coordination):
 > You are `spec-drafter-{N}` for WorkGroup `{wgid}`.
-> Read `agents/architect.md` for your full role definition — you follow the same Spec Philosophy, Spec Format, and Consolidation Mandate.
 >
 > **Goal**: {goal}
 > **Your NodeIDs**: {partition — 1-2 NodeIDs assigned to this drafter}
@@ -367,13 +350,11 @@ After Gate #1, the lead sends the approved Change Set via DM and creates spec-dr
 > {spec_depth_guidance}
 
 **Dispatch**:
-- *Parallel Teams*:
-  - **Path A** (< PARALLEL_SPEC_THRESHOLD NodeIDs): Architect is already warm from Stage 0 pre-load + speculative research. Lead sends DM with approved Change Set, then creates spec-drafting tasks. **Plan approval enabled** — add to prompt: `Present your spec design for lead review BEFORE writing final specs. Wait for approval.` If `AUTONOMOUS_MODE = true`: auto-approve `plan_approval_request` immediately. Log `[AUTO-APPROVED] Architect plan`.
-  - **Path B** (>= PARALLEL_SPEC_THRESHOLD NodeIDs): Lead asks architect for partition plan. Architect proposes partitions. Lead spawns spec-drafters (`subagent_type: "architect"`, `permissionMode: "acceptEdits"`, `maxTurns: 15`) with partition-scoped prompts. After all drafters complete, architect runs consistency review and reports to lead.
-- *Sequential Teams*: Spawn teammate `architect`, create task `Phase 1B: Draft specifications for {N} NodeIDs`. **Plan approval enabled** — add to prompt: `Present your spec design for lead review BEFORE writing final specs. Wait for approval.` Wait for `plan_approval_request`, review, respond with `plan_approval_response`. If `AUTONOMOUS_MODE = true`: auto-approve immediately. Log `[AUTO-APPROVED] Architect plan`.
-- *Subagent*: `Task(subagent_type="architect", description="Phase 1B specification drafting", prompt=<above> + "Present your spec design in your output for lead review.")`
+- *Adaptive/sequential*: Resume a compatible architect or use `Task(subagent_type="architect", description="Phase 1B specification drafting", prompt=<bounded capsule>)`. If plan review is required, the first pass returns a plan only; after approval, resume the same lineage with the approval delta.
+- *Coordinated team*: Spawn the referenced architect type with the runtime's supported plan-review instruction. The lead answers every approval request; autonomous mode auto-approves except established safety exceptions.
+- **Path B**: After the architect partitions 3+ NodeIDs, dispatch `subagent_type: "architect"`, `maxTurns: 15` per disjoint partition. Agent body/tools/model load automatically. After bounded drafts return, resume the architect for consistency review.
 
-> **Note:** Plan approval (agent pauses for lead review) only works in Agent Teams mode via `permissionMode: plan`. In subagent mode, the architect presents its design in the output for post-hoc review. Spec-drafters (Path B) do NOT use plan approval — they follow the architect's partition briefing directly.
+Teammates inherit the lead's effective permissions. Do not depend on plugin-agent permission frontmatter or a per-child permission override.
 
 ---
 
@@ -383,7 +364,6 @@ After Gate #1, the lead sends the approved Change Set via DM and creates spec-dr
 
 **Spawn prompt**:
 > You are the **builder** for WorkGroup `{wgid}`.
-> Read `agents/builder.md` for your full role definition.
 >
 > **Goal**: {goal}
 > **Assigned scope**: {one NodeID or one named microtask; never an open-ended Change Set}
@@ -392,23 +372,22 @@ After Gate #1, the lead sends the approved Change Set via DM and creates spec-dr
 > **Owned files**: {exact writable file list or module boundary}
 > **Prior checkpoint**: {handoff/checkpoint for this scope, or "none"}
 > **Context files**: Read sections 1-2 and 3.3 of `knowzcode/knowzcode_loop.md` (skip other phases), `knowzcode/knowzcode_project.md`
-> **WorkGroup file**: `knowzcode/workgroups/{wgid}.md` (read for context; in Parallel Teams the lead is the only WorkGroup writer)
+> **WorkGroup file**: `knowzcode/workgroups/{wgid}.md` (read for context; in coordinated-team mode the lead is the only WorkGroup writer)
 >
 > **Your Task**: #{task-id} — claim immediately (`TaskUpdate(status: "in_progress")`). Mark completed with summary when done.
-> **Conventions**: Report results, blockers, and checkpoints in your task summary or handoff. In Parallel Teams, do not edit the WorkGroup file directly; the lead consolidates. If blocked, report blocker and notify lead.
+> **Conventions**: Report results, blockers, and checkpoints in your task summary or handoff. In coordinated-team mode, do not edit the WorkGroup file directly; the lead consolidates. If blocked, report blocker and notify lead.
 > **Scope guard**: If this assignment includes more than one NodeID, more than one microtask, missing/ambiguous assigned acceptance criteria, overlapping file ownership, or more than 6 likely touched files, stop before coding and ask the lead to split or clarify it unless the lead explicitly marked the task as a `--broad-builders` exception.
 > **Context discipline**: Read only the assigned spec(s), listed owned files, and targeted sections named above. Do not load every spec, tracker history, or broad architecture file unless a specific blocker requires it.
-> **Context**: The knowledge-liaison can provide vault knowledge. DM at most one targeted `"VaultQuery: {question}"` before writing tests; skip broad best-practice queries when the assigned scope is already clear.
+> **Context**: Use a supplied vault briefing when present. In coordinated-team mode only, request at most one targeted `"VaultQuery: {question}"`; otherwise return the unresolved question to the lead. Skip broad best-practice queries when scope is clear.
 > **TDD mandatory**: Write failing tests first, then implement, then refactor. Every assigned criterion must have tests or a documented reason why it is covered by an existing test.
 > **Checkpoint rule**: If you cannot finish the assigned scope cleanly in this dispatch, include a checkpoint in your task summary or handoff with Done, Files changed, Tests run, Remaining work, and Next microtask. Mark the task partial/blocked instead of restarting or expanding scope.
-> **Blocker protocol**: If you hit a blocker, document it as a Blocker Report in your task summary or handoff (see loop.md Section 11 format) and report to the lead immediately instead of guessing. The lead persists it to the WorkGroup file in Parallel Teams.
+> **Blocker protocol**: If you hit a blocker, document it as a Blocker Report in your task summary or handoff (see loop.md Section 11 format) and report to the lead immediately instead of guessing. The lead persists it to the WorkGroup file in coordinated-team mode.
 > **Deliverable**: Assigned NodeID/microtask implemented with passing targeted tests and a compact completion summary.
 > {advisor_guidance}
 
 **Dispatch**:
-- *Parallel Teams*: Builders spawn in dependency waves, one per ready independent NodeID/microtask. Each builder gets only its scope, spec(s), assigned acceptance criteria, owned files, and prior checkpoint. Builders create per-NodeID/microtask subtasks for visibility. **Plan approval enabled** — add to prompt: `Present your implementation approach for lead review BEFORE writing code. Wait for approval.` If `AUTONOMOUS_MODE = true`: auto-approve `plan_approval_request` immediately unless the plan exceeds the scope guard. Log `[AUTO-APPROVED] Builder plan`.
-- *Sequential Teams*: Spawn teammate `builder`, create task `Phase 2A: Implement next ready NodeID/microtask with TDD`. For multi-NodeID Change Sets, repeat sequentially by dependency wave. **Plan approval enabled** — add to prompt: `Present your implementation approach for lead review BEFORE writing code. Wait for approval.` Wait for `plan_approval_request`, review, respond. If `AUTONOMOUS_MODE = true`: auto-approve immediately unless the plan exceeds the scope guard. Log `[AUTO-APPROVED] Builder plan`.
-- *Subagent*: `Task(subagent_type="builder", description="Phase 2A TDD implementation", mode="bypassPermissions", prompt=<above>)`
+- *Adaptive/sequential*: Resume a compatible builder or use `Task(subagent_type="builder", description="Phase 2A TDD implementation", prompt=<bounded capsule>)`. Never override or bypass the lead/session permission policy. For a required plan gate, use a plan-only first pass and resume after approval.
+- *Coordinated team*: Spawn the referenced builder type for each ready disjoint scope. Add the supported plan-review instruction when needed; teammates inherit lead permissions.
 
 ---
 
@@ -418,7 +397,6 @@ After Gate #1, the lead sends the approved Change Set via DM and creates spec-dr
 
 **Spawn prompt**:
 > You are the **reviewer** for WorkGroup `{wgid}`.
-> Read `agents/reviewer.md` for your full role definition.
 >
 > **Goal**: {goal}
 > **Assigned scope**: {one NodeID or one named microtask}
@@ -436,9 +414,7 @@ After Gate #1, the lead sends the approved Change Set via DM and creates spec-dr
 > {advisor_guidance}
 
 **Dispatch**:
-- *Parallel Teams*: One reviewer per active builder scope, spawned at Stage 2. Each reviewer gets only its assigned NodeID/microtask, specs, assigned acceptance criteria, and owned files. Audit tasks use `addBlockedBy` per implementation task. Each reviewer uses structured gap report format (see `agents/reviewer.md`).
-- *Sequential Teams*: Spawn teammate `reviewer`, create task `Phase 2B: Completeness audit for {N} NodeIDs`, wait for completion.
-- *Subagent*: `Task(subagent_type="reviewer", description="Phase 2B completeness audit", prompt=<above>)`
+- Dispatch one fresh independent reviewer after its implementation scope completes. It gets only the assigned NodeID/microtask, spec, criteria, checkpoint diff, and read-only files. Never fork or resume the builder lineage. Preserve the reviewer handle for compatible re-audit deltas.
 
 ---
 
@@ -448,7 +424,6 @@ After Gate #1, the lead sends the approved Change Set via DM and creates spec-dr
 
 **Spawn prompt**:
 > You are the **smoke-tester** for WorkGroup `{wgid}`.
-> Read `agents/smoke-tester.md` for your full role definition.
 >
 > **Goal**: {goal}
 > **Change Set**: {NodeIDs}
@@ -462,9 +437,7 @@ After Gate #1, the lead sends the approved Change Set via DM and creates spec-dr
 > {advisor_guidance}
 
 **Dispatch**:
-- *Parallel Teams*: One smoke-tester spawned at Stage 2 alongside reviewers. Runs as background agent. Uses `addBlockedBy` on the implementation tasks. No builder scope — smoke-tester covers the whole app.
-- *Sequential Teams*: Spawn after reviewer completes, before Phase 3. Create task `Phase 2B: Smoke test for {wgid}`.
-- *Subagent*: `Task(subagent_type="smoke-tester", description="Phase 2B smoke testing", prompt=<above>)`
+- Dispatch a fresh smoke-tester after implementation dependencies complete. In adaptive/coordinated parallel execution it may run alongside independent reviewers; sequential mode runs it after review. Preserve its own handle for compatible re-smoke deltas.
 
 ---
 
@@ -472,9 +445,8 @@ After Gate #1, the lead sends the approved Change Set via DM and creates spec-dr
 
 **Agent**: `closer` | **Loop.md**: Section 3.5
 
-**Spawn prompt (Parallel Teams)**:
+**Spawn prompt (Coordinated Team)**:
 > You are the **closer** for WorkGroup `{wgid}`.
-> Read `agents/closer.md` for your full role definition.
 >
 > **Goal**: {goal}
 > **Change Set**: {NodeIDs}
@@ -483,15 +455,14 @@ After Gate #1, the lead sends the approved Change Set via DM and creates spec-dr
 > **WorkGroup file**: `knowzcode/workgroups/{wgid}.md`
 >
 > **Your Task**: #{task-id} — claim immediately (`TaskUpdate(status: "in_progress")`). Mark completed with summary when done.
-> **Conventions**: In Parallel Teams, report WorkGroup updates in your task summary and let the lead consolidate. In Sequential/Subagent mode, update the WorkGroup file only when delegated. Prefix any task/todo entries with `KnowzCode:`. If blocked, report blocker and notify lead.
-> **Vault writes**: DM knowledge-liaison for Phase 3 capture: `"Capture Phase 3: {wgid}. Your task: #{task-id}"`. The knowledge-liaison dispatches `knowz:writer`. Do NOT call `create_knowledge` directly.
+> **Conventions**: In coordinated-team mode, report WorkGroup updates in your task summary and let the lead consolidate. In sequential/named-agent mode, update the WorkGroup file only when delegated. Prefix any task/todo entries with `KnowzCode:`. If blocked, report blocker and notify lead.
+> **Vault writes**: Return one consolidated `FinalCaptureDelta` to the lead. The lead classifies it with `vault-delta` and `explicit_save: true`, then DMs knowledge-liaison once: `"Capture Delta flush: Phase 3: {wgid}. Your task: #{task-id}"`. The knowledge-liaison dispatches one `knowz:writer`. Do NOT call `create_knowledge` directly.
 > **Enterprise Compliance Handoff**: If `enterprise-enforcer` was active during this WorkGroup, expect a DM `"ComplianceSummary: {payload}"` shortly after you claim your task. ACK with `"ComplianceSummary received"`. Before final commit, append the payload to `knowzcode/enterprise/compliance_status.md` Review History (see `agents/closer.md` Enterprise-Enforcer Handoff section). The lead waits for your ACK before shutting down enterprise-enforcer.
 > **Deliverable**: Atomic finalization — update specs to FINAL, update tracker, write log entry, update architecture if needed, append compliance_status.md (if enforcer was active), dispatch learning capture to `knowz:writer`, and create final commit.
 > {advisor_guidance}
 
-**Spawn prompt (Sequential Teams / Subagent)**:
+**Spawn prompt (Sequential / Named Agent)**:
 > You are the **closer** for WorkGroup `{wgid}`.
-> Read `agents/closer.md` for your full role definition.
 >
 > **Goal**: {goal}
 > **Change Set**: {NodeIDs}
@@ -500,14 +471,11 @@ After Gate #1, the lead sends the approved Change Set via DM and creates spec-dr
 > **WorkGroup file**: `knowzcode/workgroups/{wgid}.md`
 >
 > **Your Task**: #{task-id} — claim immediately (`TaskUpdate(status: "in_progress")`). Mark completed with summary when done.
-> **Conventions**: In Parallel Teams, report WorkGroup updates in your task summary and let the lead consolidate. In Sequential/Subagent mode, update the WorkGroup file only when delegated. Prefix any task/todo entries with `KnowzCode:`. If blocked, report blocker and notify lead.
+> **Conventions**: In coordinated-team mode, report WorkGroup updates in your task summary and let the lead consolidate. In sequential/named-agent mode, update the WorkGroup file only when delegated. Prefix any task/todo entries with `KnowzCode:`. If blocked, report blocker and notify lead.
 > **Vault writes**: You own all vault writes directly. Follow the Learning Capture instructions in `agents/closer.md`.
 > **MCP Status**: {MCP_ACTIVE} — Vaults configured: {VAULTS_CONFIGURED}. Vault config: `knowz-vaults.md` (project root).
-> **Enterprise Compliance**: enterprise-enforcer is not supported in Sequential Teams / Subagent / Lightweight modes. Per-agent compliance fallback paths (reviewer/architect/test-advisor/security-officer in-line checks) cover compliance in these modes; no ComplianceSummary handoff is expected.
+> **Enterprise Compliance**: In sequential/named-agent mode, dispatch a fresh enterprise-enforcer only when active controls require it; otherwise use the documented per-agent compliance checks. A coordinated-team ComplianceSummary handoff is not expected outside Team mode.
 > **Deliverable**: Atomic finalization — update specs to FINAL, update tracker, write log entry, update architecture if needed, write learnings to vaults, and create final commit.
 > {advisor_guidance}
 
-**Dispatch**:
-- *Parallel Teams*: Spawned at Stage 3 (`addBlockedBy`: last audit/re-audit task). Use the **Parallel Teams** spawn prompt. All other agents shut down before closer starts.
-- *Sequential Teams*: Spawn teammate `closer`, create task `Phase 3: Finalize WorkGroup {wgid}`, wait for completion. Use the **Sequential Teams / Subagent** spawn prompt.
-- *Subagent*: `Task(subagent_type="closer", description="Phase 3 finalization", prompt=<Sequential/Subagent spawn prompt above>)`
+**Dispatch**: After all required audits pass, dispatch or resume a compatible closer with only finalization inputs. In coordinated mode, obtain required officer handoffs before releasing them. In named-agent mode, use `Task(subagent_type="closer", description="Phase 3 finalization", prompt=<bounded finalization packet>)`.

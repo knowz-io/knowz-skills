@@ -7,7 +7,7 @@
 ## Builder Configuration
 
 ```yaml
-# Maximum concurrent builders in Parallel Teams mode (default: 2, range: 1-3)
+# Maximum concurrent builders in parallel delegation (default: 2, range: 1-3)
 # Lower values reduce duplicated context loading and partial-completion churn.
 # Higher values should be reserved for truly independent, disjoint microtasks.
 # If the dependency map produces fewer ready microtasks, fewer builders spawn regardless.
@@ -76,10 +76,10 @@ mcp_agents_enabled: true
 #          run on Sonnet; the advisor tool provides Opus-level guidance when
 #          strategic decisions arise. Strategic agents (architect, analyst,
 #          security-officer) stay on Opus.
-#          FORCES: Parallel Teams mode.
+#          Uses the normal adaptive delegation router; it never forces Agent Teams.
 #          REQUIRES: Claude Code v2.1.100+, direct Anthropic API access.
 #
-# classic: Forces Subagent Delegation mode. No Agent Teams, no advisor.
+# classic: Forces named-agent delegation mode. No Agent Teams, no advisor.
 #          Use when Agent Teams is unavailable or you want deterministic
 #          single-threaded execution.
 profile: frontier
@@ -96,6 +96,38 @@ execute_on_fable: false
 See `knowzcode/skills/work/references/profile-models.md` for the full profile → agent-model mapping.
 
 > **Codex note:** profile-based per-agent model routing (frontier's Fable/Opus split, advisor's Sonnet routing, and `execute_on_fable`) is a **Claude Code** capability. The Codex skills run their native coordinator/subagent flow and do not switch models per agent, so on Codex `profile:` and `execute_on_fable:` are informational only — kept for cross-platform config parity — and do not change behavior. (Claude Code honors them in full.)
+
+---
+
+## Context-Efficiency Configuration
+
+```yaml
+context_efficiency:
+  enabled: true
+  # off|observe|shadow|canary|on. Defaults off. When enabled is true, adapters
+  # always call context_efficiency_runtime.mjs for routing, capsule, lineage,
+  # privacy, and result-policy safety checks. Rollout controls only whether an
+  # adaptive recommendation is applied and whether redacted telemetry is recorded.
+  rollout: off
+  # When explicitly selected through that runtime, observe records actual
+  # decisions and shadow also records the recommendation without applying it.
+  # quality|balanced|economy|latency. Keep model/profile changes separate from
+  # routing experiments so measured savings remain attributable.
+  profile: balanced
+  max_active_inherited: 2
+  max_nesting_depth: 2
+  warm_lease_minutes: 20
+  mcp_health_ttl_minutes: 15
+  # ephemeral for tiny read-only checks; durable for material/resumable work;
+  # artifact for large raw output. "material" selects automatically.
+  disk_handoff_threshold: material
+  telemetry: local
+  canary_percent: 10
+```
+
+A non-`off` rollout stage is active only when the adapter calls context_efficiency_runtime.mjs for the decision and records its redacted event according to that stage. This activation guard does not control safety: when `enabled: true`, direct capsule/privacy, lineage, ownership, reviewer-independence, and result-policy validation still runs and fails closed even at `rollout: off`.
+
+Telemetry keeps **logical**, **billed**, and **outcome** measures separate. Read `knowzcode/context_efficiency.md` only when delegation, context reuse, or efficiency measurement is active.
 
 ---
 
@@ -137,6 +169,9 @@ relay_claude_model: opus
 relay_claude_effort: high
 relay_claude_fix_effort: high
 relay_claude_permission_mode: dontAsk
+# Positive USD ceiling applied to each Claude relay leg through
+# `--max-budget-usd`. Null/omitted means no CLI dollar ceiling is invented.
+relay_claude_max_budget_usd: null
 
 # Target fix rounds before the host takes over remaining fixes (default: 2,
 # range: 1-3). Per-invocation flag: --relay-max-fix-rounds=N.
@@ -167,7 +202,7 @@ See `knowzcode/relay_execution.md` for the full relay protocol (resolution, dete
 # false: Force-skip entirely.
 #
 # Per-invocation flags: --frontend-designer / --no-frontend-designer override.
-# Mode constraints: Tier 3 only. Skipped in Tier 2 Light and Sequential Teams.
+# Mode constraints: Tier 3 only. Skipped in Tier 2 Light and sequential delegation.
 frontend_designer: auto
 
 # Officer mode for frontend-designer (default: false).
@@ -209,6 +244,7 @@ The enterprise-enforcer agent (v0.16.0+) auto-activates when `knowzcode/enterpri
 | mcp_agents_enabled | `mcp_agents_enabled:` | `--no-mcp` |
 | profile | `profile:` | `--profile={advisor\|teams\|classic\|frontier}` |
 | execute_on_fable | `execute_on_fable:` | `--fable-execution` |
+| context_efficiency | `context_efficiency:` block | provider/runtime capability and rollout policy |
 | relay | `relay:` | `--relay=none\|auto\|other\|claude\|codex` or unambiguous natural language |
 | relay target model | `relay_codex_model:` / `relay_claude_model:` | `--relay-model=` |
 | relay target effort | `relay_codex_effort:` / `relay_claude_effort:` | `--relay-effort=` |

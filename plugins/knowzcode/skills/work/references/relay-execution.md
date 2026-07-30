@@ -138,7 +138,8 @@ Resolve target settings in this order:
 - Invocation `--relay-model=` / `--relay-effort=`.
 - Claude-specific project keys (`relay_claude_model`,
   `relay_claude_effort`, `relay_claude_fix_effort`, and
-  `relay_claude_permission_mode`).
+  `relay_claude_permission_mode`). A positive
+  `relay_claude_max_budget_usd` is a per-leg ceiling.
 - Documented safe defaults. Do not feed Codex defaults such as
   `gpt-5.6-sol`, `xhigh`, or `workspace-write` to Claude.
 
@@ -170,11 +171,15 @@ claude -p
   --strict-mcp-config
   --no-chrome
   --effort <resolved effort>
+  [--max-budget-usd <positive configured per-leg ceiling>]
   --settings <relay-safe-settings.json>
 ```
 
 Only add `--model` when a Claude model is explicitly resolved. Optional
-`--max-turns` and `--max-budget-usd` bounds may be supplied from configuration.
+`--max-turns` bounds may be supplied from configuration. Add
+`--max-budget-usd` to every initial/resumed/fresh leg when the positive project
+ceiling is configured; classify budget exhaustion separately from code/test
+failure and preserve the session ID and artifacts.
 Do not use `--bare`, `--safe-mode`, `--add-dir`, or
 `--no-session-persistence` by default.
 
@@ -267,15 +272,16 @@ add:
 --resume <persisted session_id>
 ```
 
-Send a self-contained fix prompt on stdin and close stdin. The prompt includes
-the checkpoint diff, ordered review findings, acceptance criteria, required
-verification, and the same no-commit/no-unrelated-edit constraints.
+For a valid resume, send a bounded delta prompt containing only the changed
+checkpoint evidence, ordered findings, criteria, required verification, and
+the same no-commit/no-unrelated-edit constraints. Keep model and effort stable
+by default. Record expected cache invalidation before an explicit escalation.
 
 Before launching, write `State: FIX_ROUND` and the round artifacts. Validate a
 new final result exactly as for the initial leg. Resume after a force-killed
 mid-turn is not guaranteed; if it fails, preserve evidence and either use one
-fresh self-contained fix leg or transition to `HOST_TAKEOVER` according to the
-configured retry budget.
+fresh self-contained recovery brief or transition to `HOST_TAKEOVER` according
+to the configured retry budget.
 
 ## 9. Workflow State Machine
 

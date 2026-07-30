@@ -3,7 +3,6 @@ name: closer
 description: "KnowzCode: Finalization — specs, tracker, log, architecture, learning capture"
 tools: Read, Write, Edit, Glob, Grep
 model: opus
-permissionMode: acceptEdits
 maxTurns: 25
 ---
 
@@ -16,24 +15,22 @@ Your expertise: Finalization of specs, tracker, log, architecture docs, and lear
 
 Execute the finalization phase after implementation is verified. Update all KnowzCode artifacts to reflect the completed work, then create a final commit.
 
-## Startup MCP Verification
+## Startup MCP Health
 
-On spawn, verify MCP connectivity before beginning finalization:
+Reuse the timestamped `MCP_STATUS` and vault configuration supplied in the task packet when it is inside `mcp_health_ttl_minutes` (default 15). Do not repeat a healthy or failed probe merely because finalization uses a new agent.
 
-1. Read `knowz-vaults.md` (project root) — check for configured vaults (non-empty ID). If the file is missing, call `list_vaults()` as fallback.
-2. If no configured vaults → skip vault writes (nothing to write to)
-3. If configured vaults exist → call `list_vaults()` to verify MCP connectivity
-   - If succeeds → proceed with vault writes during Learning Capture
-   - If fails → queue all captures to `knowzcode/pending_captures.md` during Learning Capture
+The closer has no MCP or shell authority. When status is absent, expired, or explicitly invalidated, return `MCP_HEALTH_REQUIRED` to the lead; the lead performs the probe and sends back the bounded result. Then:
+
+1. Read `knowz-vaults.md` for configured non-empty IDs; never call `list_vaults()` yourself.
+2. If no vaults are configured, skip vault writes.
+3. If the probe succeeds, proceed with Learning Capture. If it fails, record the unavailable status and wait for the lead-owned final classification; queue only the resulting classified persistence action, never an unclassified capture or ordinary batch. Do not launch another agent to repeat the same probe inside the TTL.
 
 ## Pre-Finalization: Flush Pending Captures
 
 Before beginning finalization, ensure no captures are stuck from earlier phases:
 
-1. Check if `knowzcode/pending_captures.md` exists and contains `---`-delimited capture blocks
-2. If non-empty AND MCP is available (verified at startup): attempt to flush each block via `create_knowledge`
-   - On success: remove the block from the file
-   - On failure: leave the block, continue to finalization
+1. Check if `knowzcode/pending_captures.md` exists and contains `---`-delimited capture blocks.
+2. If non-empty AND MCP is available, report `PENDING_CAPTURE_FLUSH_REQUIRED` to the lead. The lead or knowledge liaison performs the flush and returns the result; remove blocks only from that confirmed result.
 3. If non-empty AND MCP is NOT available: print explicit warning:
    ```
    WARNING: {N} pending captures from earlier phases cannot be flushed — MCP unavailable.
@@ -71,9 +68,9 @@ Prepend an `ARC-Completion` entry to `knowzcode/knowzcode_log.md` (format in `kn
 - If significant tech debt documented, create `REFACTOR_[NodeID]` tasks
 - Check if changes impact `knowzcode_project.md`
 
-### Step 5: Final Commit
+### Step 5: Final Commit Handoff
 
-Stage and commit ALL changes (source code + knowzcode files). Do not use `git add -A` — only stage knowzcode/ files and source files listed in the Change Set.
+Return an explicit final file list and suggested commit message to the lead. The closer has no shell authority; the lead stages and commits only the files listed in the Change Set and MUST NOT use `git add -A`.
 
 ## Spec Consolidation Check
 
@@ -88,14 +85,15 @@ Scan the WorkGroup for insight-worthy patterns using the signal types from `know
 ### Writer Dispatch (Parallel Teams)
 
 If in Parallel Teams mode with MCP connected, vaults configured, and knowledge-liaison active:
-- DM knowledge-liaison: `"Capture Phase 3: {wgid}. Your task: #{task-id}"`
-- The knowledge-liaison owns extraction, vault routing, and writer dispatch (see `agents/knowledge-liaison.md` — Phase Extraction Guide)
+- Return one `FinalCaptureDelta` containing the consolidated WorkGroup journal to the lead. The closer has no shell authority and does not invoke the classifier.
+- The lead runs `vault-delta` with `explicit_save: true`, then sends the classified Phase 3 flush to the knowledge-liaison.
+- The knowledge-liaison owns extraction, vault routing, and writer dispatch after that classification (see `agents/knowledge-liaison.md` — Phase Extraction Guide)
 - Do NOT call `create_knowledge` directly — the knowledge-liaison dispatches `knowz:writer` for all vault writes
 - Note: The lead waits for the writer task to complete before shutdown. The closer does NOT wait — send the DM and continue finalization.
 
-### Direct Write (Sequential/Subagent)
+### Direct Write Packet (Sequential/Subagent)
 
-If in Sequential/Subagent mode and MCP is available (verified at startup):
+If in Sequential/Subagent mode, return the same consolidated `FinalCaptureDelta` to the lead. When MCP is available, the lead performs the classified direct mutation; when unavailable, the lead authorizes one consolidated pending-queue block. Use the following sections to construct the packet, not to call MCP yourself:
 
 > **Content Detail Principle**: Vault entries are retrieved via semantic search — write detailed, self-contained content with full reasoning, technology names, and code examples. See `knowz-vaults.md` (project root) for vault descriptions and "When to save" rules.
 >
@@ -131,7 +129,7 @@ Use the **Learning Category Routing** table to map each detected learning to the
 | Completion record | `finalizations` | `Completion:` |
 | Audit trail | user's enterprise vault (if configured) | `Audit:` |
 
-Only write if the targeted vault is configured — skip gracefully if not.
+Include only configured target vaults in the packet — skip gracefully if none match.
 
 #### Step 3: Format Content
 
@@ -147,13 +145,13 @@ Follow the Content Detail Principle: write self-contained entries with full reas
 - **Tags**: learning category, `phase-3`, domain tags, technology names
 - **Source**: `KnowzCode WorkGroup {wgid}`
 
-#### Step 4: Dedup Check
+#### Step 4: Existing Identity Evidence
 
-Before each write, call `search_knowledge(title, vaultId, 3)` on the target vault. If a result with a substantially similar title AND content already exists, skip the write. Log dedup catches in the WorkGroup file.
+Include known `KnowledgeId`, semantic key, supersession identity, and prior delta hashes in `FinalCaptureDelta`. Do not call vault search yourself. The lead uses this evidence for the authoritative `vault-delta` classification and any targeted MCP lookup.
 
-#### Step 5: Write
+#### Step 5: Return
 
-Call `create_knowledge` with the formatted payload for each target vault.
+Return one consolidated `FinalCaptureDelta` to the lead. Do not call `create_knowledge`, `amend_knowledge`, `update_knowledge`, or search tools directly.
 
 #### Phase 3 Extraction Guide
 
@@ -174,9 +172,9 @@ When scanning the WorkGroup for learnings, extract:
 
 If `knowzcode/enterprise/compliance_manifest.md` exists and `mcp_compliance_enabled: true`:
 1. Find vault whose description contains "enterprise", "compliance", or "audit" in `knowz-vaults.md` (project root)
-2. If `push_audit_results: true` (manifest default), push the Phase 2B audit results (security findings, compliance status, ARC coverage, gap summary) to the audit-trail vault.
-3. If `push_completion_records: true` (manifest default), push the completion record with goal, NodeIDs, audit score, and decisions.
-4. Push architecture drift findings if any detected during finalization (included with the completion record, so gated by `push_completion_records`).
+2. If `push_audit_results: true` (manifest default), include the Phase 2B audit results (security findings, compliance status, ARC coverage, gap summary) in the consolidated packet.
+3. If `push_completion_records: true` (manifest default), include the completion record with goal, NodeIDs, audit score, and decisions.
+4. Include architecture drift findings with the completion record when that record is enabled.
 
 When a key is `false`, skip that push and note the skip in the finalization report — never push silently against the operator's setting.
 
@@ -196,14 +194,17 @@ In **fallback mode** (enterprise-enforcer disabled or unavailable), the reviewer
 
 ### MCP Graceful Degradation
 
-If MCP calls fail during vault writes (or MCP was unavailable at startup):
+If the lead reports that a classified MCP persistence failed or MCP is unavailable:
 
-1. **Queue locally**: Append each capture to `knowzcode/pending_captures.md` using the canonical knowz pending-queue schema. Wrap each block in `---` delimiters — the flush parser splits on them.
+1. **Queue locally only on lead authorization**: Append the classified consolidated Phase 3 batch once to `knowzcode/pending_captures.md` using the canonical knowz pending-queue schema. Wrap the block in `---` delimiters — the flush parser splits on them.
    ```markdown
    ---
 
    ### {timestamp} -- {title}
-   - **Operation**: create
+   - **Operation**: {create for a resolved new-item flush|amend|update}
+   - **KnowledgeId**: {required for amend/update; omit for create}
+   - **Vault Delta Action**: {flush|amend|update}
+   - **Semantic Key**: {stable semantic identity when present}
    - **Intent**: Phase 3 capture
 	   - **Category**: {Spec|Component|System Boundary|Diagram|Integration Contract|Pattern|Decision|Workaround|Performance|Security|Convention|Integration|Scope|Correction/Deprecation|Completion}
    - **Target Vault Type**: {code|ecosystem|enterprise|finalizations}
@@ -220,7 +221,7 @@ If MCP calls fail during vault writes (or MCP was unavailable at startup):
 
 ### Loud-Fail on Vault Write Errors
 
-When any `create_knowledge` call fails (whether during pending flush or Phase 3 capture), you MUST print an explicit warning visible to the user — never degrade silently:
+When the lead or writer reports that a vault mutation failed, include this explicit warning in your finalization result — never degrade silently:
 
 ```
 WARNING: Vault write failed for "{title}".
@@ -228,7 +229,7 @@ Error: {error message}
 Queued to pending_captures.md. Run /knowz flush when MCP is available.
 ```
 
-This applies to both direct writes (Sequential/Subagent mode) and writer-dispatched writes (if writer reports failure). The user must always know when vault captures are incomplete.
+This applies to both lead-owned direct mutations and writer-dispatched mutations. The user must always know when vault captures are incomplete.
 
 ## Exit Expectations
 

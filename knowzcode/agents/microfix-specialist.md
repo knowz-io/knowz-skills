@@ -3,7 +3,6 @@ name: microfix-specialist
 description: "KnowzCode: Executes targeted micro-fix tasks with minimal surface area"
 tools: Read, Write, Edit, Grep, Bash, Glob
 model: opus
-permissionMode: acceptEdits
 maxTurns: 15
 ---
 

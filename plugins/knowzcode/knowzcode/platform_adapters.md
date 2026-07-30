@@ -57,27 +57,27 @@ Never skip phases. PAUSE for user approval at each gate:
 TDD is mandatory — no production code without a failing test first.
 Apply Red-Green-Refactor within the assigned NodeID or microtask; verify assigned acceptance criteria before broadening scope.
 
-## Agent Teams (Expected Execution Mode)
+## Context-Efficient Execution
 
-Agent Teams is the expected execution mode for all KnowzCode workflows (Tier 2+).
-Without it, knowledge capture is degraded and parallel orchestration is unavailable.
+Classify complexity and spec reuse before broad vault work or worker creation.
+For each non-trivial unit choose, in order: local execution, compatible worker
+resume, eligible real conversation inheritance, a fresh context capsule, or an
+optional coordinated team. Read `knowzcode/context_efficiency.md` only when
+delegation or measurement is active.
 
-| Tier | Team Mode | Agents |
-|------|-----------|--------|
-| Tier 1 (Micro) | No team | Redirected to `/knowzcode:fix` |
-| Tier 2 (Light) | Lightweight team | `knowledge-liaison` (persistent) + `builder` |
-| Tier 3 (Full) | Full parallel team | `knowledge-liaison`, `analyst`, `architect`, `builder(s)`, `reviewer(s)`, `closer` + opt-in specialists |
+Agent Teams are experimental and optional. Use a team only when at least two
+disjoint workers genuinely need peer messages or shared task state; independent
+parallel work uses scoped subagents. The first teammate spawn forms the current
+runtime-managed team and cleanup is automatic—do not call removed team
+lifecycle APIs. Teammates do not inherit lead history and receive a bounded
+capsule. Team availability changes coordination mechanics, not TDD, audit,
+capture durability, or quality gates.
 
-If Agent Teams is not available, KnowzCode falls back to subagent delegation with a degradation warning.
-Enable via `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` in `.claude/settings.local.json`.
-
-### Why Agent Teams Matters
-The `knowledge-liaison` agent runs persistently across all phases, coordinating vault reads (two-tier: baseline + deep research) and vault writes (at every quality gate). Without Agent Teams:
-- Vault reads collapse to baseline-only (one-shot queries, no deep research)
-- Vault writes happen inconsistently (no persistent coordinator)
-- No parallel orchestration (builders run sequentially)
-
-**Always prefer `/knowzcode:work` over `/knowzcode:fix`** for anything beyond single-file micro-fixes to ensure knowledge-liaison coverage.
+Resume a compatible builder for same-scope fixes and a compatible clean
+reviewer for re-audit. The first independent reviewer always starts fresh from
+approved specs and diff evidence. Cached input may be billed less while still
+occupying logical context; report billed, logical, and outcome measures
+separately.
 
 ## Commands
 - `/knowzcode:work "goal"` — Start feature workflow
@@ -93,27 +93,27 @@ If configured, agents use `search_knowledge`, `ask_question`, and `create_knowle
 All commands work without MCP — it enhances but never blocks.
 
 ### Knowledge Capture (CRITICAL — DO NOT SKIP)
-Every piece of durable knowledge — decisions, patterns, gotchas, workarounds, convention changes —
-**must** be captured. Knowledge lives in two places:
+Every durable knowledge candidate — decisions, patterns, gotchas, workarounds, convention changes —
+**must** be classified by the lead with `vault-delta`. `skip` and `batch` make no vault or pending-queue write; only `amend`, `update`, or `flush` persists. Knowledge lives in two places:
 
 - **MCP vaults** (when connected): `knowz-vaults.md` (project root) defines vault IDs, routing rules,
   and write conditions. Always pass `vaultId` when calling `create_knowledge` — omitting it saves
   to the tenant default vault, NOT the project vault.
 - **Local files** (always available): specs, workgroup files, log entries, architecture docs, and
-  `knowzcode/pending_captures.md` (writer fallback queue when MCP is unavailable).
+  `knowzcode/pending_captures.md` (fallback for a classified persistence action when MCP is unavailable).
 
-If MCP is not connected, knowledge still gets captured locally. Never let insights die in the conversation.
+If MCP is not connected, normal batches remain in the WorkGroup journal and one required classified action is queued at its durability boundary. Never let insights die in the conversation.
 
 **Vault content detail**: Vault entries are retrieved via semantic search, not read directly like local files. Write detailed, self-contained entries with full reasoning, specific technology names, code examples, and file paths. Terse entries produce poor search results. See `knowz-vaults.md` (project root) Content Detail Principle.
 
 ### Knowledge Liaison Dispatch
-When in Agent Teams mode, vault writes are handled by the knowledge-liaison — do NOT call `create_knowledge` directly. Send knowledge via DM to the knowledge-liaison instead:
+When in Agent Teams mode, vault writes are handled by the knowledge-liaison — do NOT call `create_knowledge` directly. Classify every candidate with `vault-delta` before persistence:
 
-- **Phase captures**: Lead DMs knowledge-liaison at quality gates: `"Capture Phase {N}: {wgid}. Your task: #{task-id}"`
-- **Explicit**: `"Log: {description}"` — knowledge-liaison dispatches knowz:writer, which MUST write it
-- **Soft**: `"Consider: {description}"` — knowledge-liaison dispatches knowz:writer, which evaluates whether to log
+- **Phase deltas**: Lead sends only classified `amend`, `update`, or `flush`: `"Capture Delta {action}: Phase {N}: {wgid}. Your task: #{task-id}"`; `skip` and `batch` do not dispatch
+- **Explicit**: send `"Log: {description}"` to the lead, which classifies with `explicit_save: true` and sends the resulting flush
+- **Soft**: send `"Consider: {description}"` to the lead, which classifies first; `batch` remains in the coordinator journal
 
-Any agent can DM the knowledge-liaison at any time. The knowledge-liaison dispatches knowz:writer for routing, dedup, and formatting. If MCP is unavailable, captures are queued to `knowzcode/pending_captures.md` for later sync. When no agent team is active, use `/knowz save "insight"` for automatic routing.
+Any agent can send a candidate to the lead. The lead owns the runtime classifier because the liaison intentionally has no shell authority. The liaison accepts only classified `amend`, `update`, or `flush`, with routing, stable identity, dedup, and formatting context. If MCP is unavailable, only a required consolidated flush is queued to `knowzcode/pending_captures.md` for later sync. When no agent team is active, the lead applies the same classifier before any direct `/knowz save` persistence.
 
 ## WorkGroup Files
 - Created in `knowzcode/workgroups/` (gitignored)
@@ -131,15 +131,16 @@ Create `AGENTS.md` in project root when the repository wants a project-level met
 # KnowzCode Development Methodology
 
 This project uses KnowzCode for structured TDD development.
-Read `knowzcode/knowzcode_loop.md` before starting any feature work. If `knowzcode/codex_execution.md` exists, read it too for Codex-native delegation, structured disk handoffs, Knowz MCP usage, and enterprise enforcement.
+Use the matching KnowzCode skill for feature work; do not preload every framework file. The skill retains the phase, gate, TDD, ownership, and safety rules and loads supporting documents only when the selected path requires them.
 
 ## Phase Walkthrough
 
 ### Before Starting
-1. Read `knowzcode/knowzcode_tracker.md` — check for active WorkGroups
-2. Read `knowzcode/knowzcode_project.md` — understand project context
-3. Read `knowzcode/knowzcode_architecture.md` — understand current architecture
-4. Read `knowzcode/codex_execution.md` when present — apply Codex-specific execution rules
+1. Classify the request as Micro, Light, or Full and record the concrete goal.
+2. Select an explicitly named active WorkGroup or compact context capsule. If none is named, inspect only the tracker slice needed to select active work, then resolve reusable specs/`VERIFY:` criteria and the current phase.
+3. Read only the assigned criteria and relevant source paths. Read `knowzcode/knowzcode_project.md` or `knowzcode/knowzcode_architecture.md` only to answer a concrete unresolved planning question.
+4. Read `knowzcode/codex_execution.md` only when delegation, inheritance, warm-worker reuse, or a conditional handoff is eligible. Read relay guidance only after relay resolves non-`none`; read enterprise guidance only when its master switch or an explicit source activates it.
+5. Do not query vaults, spawn or form workers, launch relay, or write WorkGroup state before classification and spec reuse are resolved. Reuse MCP health within its configured TTL and query only for a named unresolved question.
 
 ### Phase 1A: Impact Analysis
 - Analyze what needs to change for the given goal
@@ -191,10 +192,10 @@ Read `knowzcode/knowzcode_loop.md` before starting any feature work. If `knowzco
 - Target <20 specs per project — consolidate when domains overlap
 
 ## Knowledge Capture (CRITICAL — DO NOT SKIP)
-Every piece of durable knowledge — decisions, patterns, gotchas, workarounds — **must** be captured.
-When MCP is connected, write to vaults per `knowz-vaults.md` (project root) — always pass `vaultId` with `create_knowledge`.
-When MCP is unavailable, capture locally in specs, log entries, or docs. Never let insights die in the conversation.
-Use `/knowz save "insight"` for automatic routing.
+Every durable candidate — decisions, patterns, gotchas, workarounds — **must** be classified by the lead with `node knowzcode/context_efficiency_runtime.mjs vault-delta`.
+`skip` and `batch` perform no MCP or pending-queue write. Persist only the returned `amend`, `update`, or consolidated `flush`, always passing the configured `vaultId`.
+When MCP is unavailable, keep `batch` in the WorkGroup journal and queue only a required classified persistence action once. Never let insights die in the conversation.
+Use `/knowz save "insight"` as an explicit-save candidate; it still passes through the classifier.
 Vault entries are retrieved via semantic search — write detailed, self-contained content. See `knowz-vaults.md` (project root) Content Detail Principle.
 
 ## Quick Fix (Micro-Fix)
@@ -235,42 +236,58 @@ when the relay contract below resolves an external target.
 
 ## Instructions
 
-1. Verify the project is initialized by checking for:
+1. Verify the project is initialized by checking for, but do not eagerly read:
    - `knowzcode/knowzcode_loop.md`
    - `knowzcode/knowzcode_project.md`
    - `knowzcode/knowzcode_tracker.md`
    - `knowzcode/knowzcode_architecture.md`
-2. Read those files before planning work. If `knowzcode/codex_execution.md` exists, read it too and follow its Codex-native delegation rules.
-3. Discover enterprise guidance before planning:
+2. Classify the request and resolve specification reuse **before any enterprise/vault retrieval, relay launch, worker or team delegation, WorkGroup write, or other side effect**:
+   - Micro fix -> use `/knowzcode:fix`.
+   - Light change -> streamlined change set, reusable or focused spec, implementation, verification.
+   - Full change -> Phase 1A, 1B, 2A, 2B, 3.
+   - Inspect only the selected active WorkGroup/capsule, the tracker slice needed to select one, and goal-relevant spec headings/`VERIFY:` criteria. Record whether an existing specification applies before requesting broader context.
+   - Relay is Full-only. For Micro/Light, announce `[RELAY-SKIP]` and use the native path unless the user explicitly expands the scope.
+3. Load context progressively:
+   - Start with an explicitly selected active WorkGroup or compact context capsule and the current phase contract.
+   - If no WorkGroup is selected, inspect the tracker only far enough to resolve active work, then read the project/architecture file only for a concrete planning question.
+   - Read only assigned specs, `VERIFY:` criteria, and relevant source paths for the current phase. Do not eagerly load the complete loop, project, tracker, architecture, provider, or history set.
+   - Read `knowzcode/codex_execution.md` only when native delegation, context inheritance, warm-agent reuse, or conditional handoffs are eligible. Its semantic capability contract is authoritative.
+   - Load the relay reference only after relay resolves non-`none`; load detailed enterprise guidance only when the compliance master switch or an explicit guideline source activates it.
+4. Discover applicable enterprise guidance after classification and spec reuse:
    - Read `knowzcode/enterprise/compliance_manifest.md` if present.
    - **Master switches first:** do compliance work only when `compliance_enabled: true` (default false — if false or no manifest, skip the rest of this step). The vault flow (the standards pull below and the Phase 2B/3 pushes) additionally requires `mcp_compliance_enabled: true`; when it is false, do not pull from or push to the enterprise vault even if `compliance_vault_id` / `guideline_vault_sources` are set — honor only local active guidelines and explicit user-provided sources.
    - Parse `COMPLIANCE_CONFIG` from the manifest and apply documented defaults for `include_in_audit`, `require_signoff_for_finalization`, `show_advisory_issues`, `pull_standards_at_start`, `push_audit_results`, `push_completion_records`, and `preserve_guideline_provenance`.
    - Read `knowzcode/enterprise.md` if present.
    - Discover active local guidelines in `knowzcode/enterprise/guidelines/**/*.md`.
-   - If `pull_standards_at_start` is not false and the manifest, user, or prompt provides `compliance_vault_id` or `guideline_vault_sources`, retrieve goal-relevant standards with Knowz MCP. Explicit `guideline_knowledge_ids`, explicit user-provided `KnowledgeId` values, and local active guidelines are always honored even when the broad standards pull is disabled.
-   - Use `mcp__knowz__get_knowledge_item` for exact KnowledgeIds and `mcp__knowz__search_knowledge` / `mcp__knowz__ask_question` for vault-source discovery.
+   - If `pull_standards_at_start` is not false and the manifest, user, or prompt provides `compliance_vault_id` or `guideline_vault_sources`, retrieve only goal-relevant standards needed by a concrete unresolved planning question. Explicit `guideline_knowledge_ids`, explicit user-provided `KnowledgeId` values, and local active guidelines are always honored even when the broad standards pull is disabled.
+   - Reuse the coordinator's healthy MCP probe within `mcp_health_ttl_minutes`; children do not repeat it. Use `mcp__knowz__get_knowledge_item` for an exact KnowledgeId. Use `mcp__knowz__search_knowledge` / `mcp__knowz__ask_question` only when a named question remains after local WorkGroup/spec/code evidence; do not issue a broad baseline vault query at startup.
    - Preserve provenance for vault-sourced rules unless `preserve_guideline_provenance` is false: vault, KnowledgeId, title, created/updated date when available, retrieval date, enforcement level, and applies-to scope.
    - Convert active enterprise rules into Change Set mapping, spec `VERIFY:` criteria, implementation guidance, Phase 2B audit checks, and Phase 3 compliance reporting. Do not skip this in Codex just because `enterprise-enforcer` is not available.
    - When `show_advisory_issues` is false, keep blocking-tier findings visible and suppress only advisory-tier rows/counts in gate output.
-4. Resolve relay intent once using **Codex Relay Resolution** below. Record `RELAY_HOST`, `RELAY_TARGET`, and `RELAY_INTENT_SOURCE` in the WorkGroup. Do not re-resolve later.
-5. Classify scope:
-   - Micro fix -> use `/knowzcode:fix`
-   - Light change -> streamlined change set, spec, implementation, verification
-   - Full change -> Phase 1A, 1B, 2A, 2B, 3
-   - Relay is Full-only. For Micro/Light, announce `[RELAY-SKIP]` and use the native path unless the user explicitly expands the scope.
+5. Resolve relay intent once using **Codex Relay Resolution** below. Record `RELAY_HOST`, `RELAY_TARGET`, and `RELAY_INTENT_SOURCE` in the WorkGroup. Do not re-resolve later.
 6. Create or update a WorkGroup file in `knowzcode/workgroups/{wgid}.md`.
 7. **Optional parallel discovery (before Phase 1A).** If the topic spans 2 or more independent subsystems, dispatch 1-3 parallel read-only Codex `explorer` agents per the Spawned-Agent Contract below. Merge their findings into the WorkGroup file before proposing the Change Set. Skip when the scope clearly touches one subsystem.
 8. Phase 1A: propose a Change Set with affected files, NodeIDs, risks, and enterprise guideline mapping. Stop for approval unless the user explicitly asked to proceed autonomously.
 9. Phase 1B: draft or update specs in `knowzcode/specs/` with clear `VERIFY:` criteria, including applicable enterprise guideline criteria with source IDs or KnowledgeIds. Stop for approval.
 10. Phase 2A:
-    - With no resolved relay: implement with strict TDD. Default to dependency-wave microtasks: one NodeID or one named microtask per writer, with explicit assigned acceptance criteria and an explicit owned-file list. Use Codex delegation only through native mechanisms such as `spawn_agent`, `send_input`, `wait_agent`, and `close_agent` when parallel work is useful. Give each writer an explicit file or module ownership boundary. Never let two writers edit the same file. Do not dispatch broad bundles such as `N3+N4` unless they are tiny, independent, and share one bounded owned-file set.
+    - With no resolved relay: implement with strict TDD. Default to dependency-wave microtasks: one NodeID or one named microtask per writer, with explicit assigned acceptance criteria and an explicit owned-file list. When parallel work is useful, detect the native capabilities callable in the active runtime and map them to the semantic operations `spawn`, `follow up`, `message`, `wait`, `interrupt`, `inspect`, and `release`; current runtime examples can include `spawn_agent`, `followup_task`, `send_message`, `wait_agent`, `interrupt_agent`, and `list_agents`. Prefer a compatible warm-agent follow-up before spawning. Choose `local`, `resume`, `inherit-full`, `inherit-recent`, or `fresh-capsule` per `knowzcode/codex_execution.md`; unavailable modes fall back to a capsule or local work. Give each writer an explicit file or module ownership boundary. Never let two writers edit the same file. Do not dispatch broad bundles such as `N3+N4` unless they are tiny, independent, and share one bounded owned-file set.
     - With `RELAY_TARGET=claude`: follow `references/relay-execution.md`. Claude performs Phase 2A and bounded review-fix legs; Codex owns preflight, state, process polling, checkpoints, review, gates, and finalization. Do not also run native writers against the same files.
-11. Keep inter-agent communication structured. Require short handoffs with owned files, findings, blockers, and next actions. Persist shared state in the WorkGroup file and, when helpful, `knowzcode/workgroups/{wgid}/handoffs/{agent-id}.md`.
-12. Phase 2B: perform a read-only audit against the approved specs, verification criteria, and active enterprise guidelines. Split large audits by disjoint file areas only if the review can stay read-only. **Cap the audit -> fix loop at 3 iterations.** If the audit still surfaces failures after the 3rd fix attempt, stop and surface the residual issues to the user with a recommended downscope or spec revision; do not loop indefinitely. If enterprise vaults are configured and `push_audit_results` is true, capture audit results; if false, record the skip reason. For relay work, send gaps through the bounded target fix rounds first, then transition visibly to Codex `HOST_TAKEOVER` if gaps remain.
+11. Keep inter-agent communication structured and resolve an output policy per the Spawned-Agent Contract: bounded `ephemeral` results for tiny read-only side checks, `durable` handoffs for material/resumable/writer work, and `artifact` pointers plus bounded deltas for authorized large logs. The coordinator consolidates authoritative shared state into the WorkGroup.
+12. Phase 2B: perform a read-only audit against the approved specs, verification criteria, and active enterprise guidelines. The first independent reviewer must use a fresh reviewer-owned lineage and MUST NOT inherit or resume builder reasoning. Split large audits by disjoint file areas only if the review can stay read-only. **Cap the audit -> fix loop at 3 iterations.** Route each gap back to the compatible original builder before spawning a replacement, and resume the same compatible reviewer for its bounded re-audit. If the audit still surfaces failures after the 3rd fix attempt, stop and surface the residual issues to the user with a recommended downscope or spec revision; do not loop indefinitely. If enterprise vaults are configured and `push_audit_results` is true, classify the audit delta with `vault-delta`; persist only an `amend`, `update`, or `flush`, and otherwise retain `batch` until final consolidation. If false, record the skip reason. For relay work, send gaps through the bounded target fix rounds first, then transition visibly to Codex `HOST_TAKEOVER` if gaps remain.
 13. Before Phase 3, if `require_signoff_for_finalization` is true, block finalization while unresolved `[COMPLIANCE-BLOCK]` / `[COMPLIANCE-BLOCK-SPEC]` findings remain or while active guideline sources have not been audited. This is a safety exception even in autonomous mode.
-14. Phase 3: update specs to as-built, refresh `knowzcode/knowzcode_tracker.md`, prepend an entry to `knowzcode/knowzcode_log.md`, append compliance status when guidelines were active, and finalize the work. If enterprise vaults are configured and `push_completion_records` is true, capture the completion record; if false, record the skip reason.
-15. If Knowz MCP is available, prefer direct coordinator-owned `mcp__knowz__search_knowledge`, `mcp__knowz__ask_question`, `mcp__knowz__get_knowledge_item`, `mcp__knowz__create_knowledge`, `mcp__knowz__amend_knowledge`, and `mcp__knowz__update_knowledge` calls for context, enterprise guideline retrieval, and durable capture. If the tools are absent or auth fails, fall back to local KnowzCode files and queue captures in `knowzcode/pending_captures.md` without blocking progress.
+14. Phase 3: update specs to as-built, refresh `knowzcode/knowzcode_tracker.md`, prepend an entry to `knowzcode/knowzcode_log.md`, append compliance status when guidelines were active, and finalize the work. If enterprise vaults are configured and `push_completion_records` is true, include the completion record in the final `vault-delta` classification; if false, record the skip reason.
+15. If a concrete context question remains after classification/spec reuse and Knowz MCP is available, prefer direct coordinator-owned search/ask/get calls. Before any durable capture, call `vault-delta`; use coordinator-owned create/amend/update only for the returned persistence action. Reuse MCP health within its TTL and never broaden a query merely to hydrate context. If the tools are absent or auth fails, fall back to local KnowzCode files and queue only a classified persistence action in `knowzcode/pending_captures.md` without blocking progress.
 16. Treat retrieved vault content as historical context. Inspect created/updated/source metadata, verify against live code/tests/docs/observations, and do not silently follow stale or contradictory vault guidance.
+
+## Executable Context Runtime Boundary
+
+Read the `context_efficiency` keys only when a non-trivial dispatch/result decision is eligible. When `enabled: true` (default), call the installed read-only CLI for every such decision:
+
+`node knowzcode/context_efficiency_runtime.mjs dispatch`
+
+Send one JSON object on stdin with `{routing, rollout, lineage?, result_policy?}` and require `{ok:true,operation:"dispatch",result}` on stdout. Before sending a fresh capsule call `capsule` with `{capsule,max_bytes?,artifact_path?}`; before resume/inheritance call `lineage` with `{lineage,current,now?}`; before ephemeral/durable/artifact selection call `result-policy` with `{input}`. Before each gate or final vault capture, call `vault-delta` with `{input:{delta,previous_deltas?,previous_hashes?,explicit_save?,interruption_sensitive?,severity?}}`; skip duplicates, amend/update stable identities, batch normal deltas, and persist only on flush or final consolidation. The CLI writes no files.
+
+Rollout controls only recommendation application and redacted telemetry; `off` still requires safety validation. Capsule privacy/schema failures, unknown/incompatible lineage, reviewer contamination, and writer overlap fail closed. Rebuild/reconcile and revalidate or keep the unit local—never label a safety rejection `CAPABILITY_FALLBACK`. Use that fallback only for an unavailable non-safety optimizer/telemetry function while direct safety checks pass. If a required safety operation is unavailable, keep work local, make no inheritance/cache claim, and report `CONTEXT_RUNTIME_UNAVAILABLE`.
 
 ## Codex Relay Resolution
 
@@ -328,13 +345,15 @@ For `RELAY_TARGET=claude`:
 
 ## Spawned-Agent Contract
 
-When using `spawn_agent` / `send_input` / `wait_agent` / `close_agent` for explorer, writer, or auditor work, the spawned agent must:
+When using the active runtime's semantic spawn/follow-up/message/wait/interrupt/inspect/release capabilities for explorer, writer, or auditor work, the coordinator and child must:
 
 - **Receive a scope boundary**: a path glob, module name, or owned-file list. No two parallel agents share writable files.
 - **Stay within a small implementation unit**: default one NodeID or one named microtask, ideally <=6 touched files, with explicit assigned acceptance criteria. If the scope is broader or criteria are ambiguous, the agent must checkpoint and ask the coordinator to split or clarify it.
-- **Load context incrementally**: read only assigned specs, owned files, and the current WorkGroup state needed for the task. Do not reread all specs or architecture history inside every delegated turn.
-- **Persist its work to disk, not chat.** The coordinator reads from the filesystem after `wait_agent` returns; do not rely on the agent's stdout to carry results.
-- **Write a phase report** to `knowzcode/workgroups/{wgid}/handoffs/{agent-id}.md` with these sections:
+- **Resolve context mode**: record `local`, `resume`, `inherit-full`, `inherit-recent`, or `fresh-capsule`, the reason code, lineage compatibility, and fallback. Resume a compatible same-role/scope worker before spawning. Never fabricate a team or unavailable capability.
+- **Load context incrementally**: read the active WorkGroup/capsule, current phase, assigned specs/criteria, owned/read files, and only activated references. Do not reread all specs, framework files, or architecture history inside every delegated turn.
+- **Keep reviewers independent**: the first reviewer uses a fresh reviewer-owned lineage from approved specs, diff, and test evidence, not builder reasoning. A compatible reviewer may resume only for its own bounded re-audit.
+- **Choose `ephemeral`** for a tiny read-only side check. Return a bounded structured result with scope, evidence, conclusion, blockers, and next input; do not write a handoff.
+- **Choose `durable`** for writer, material, partial, multi-turn, interruption-recovery, or phase-crossing work. Write `knowzcode/workgroups/{wgid}/handoffs/{agent-id}.md` with these sections:
   - `## Phase` — `1A` | `1B` | `2A` | `2B` | `3`
   - `## Status` — `complete` | `blocked` | `partial`
   - `## Owned Files` — paths the agent touched (read for explorers/auditors; written for writers)
@@ -342,9 +361,10 @@ When using `spawn_agent` / `send_input` / `wait_agent` / `close_agent` for explo
   - `## Blockers` — open questions or external dependencies (omit if `Status: complete`)
   - `## Remaining Work` — only when partial; exact next microtask and files needed
   - `## Next Phase Inputs` — paths and notes the next phase must consume
-- **Return only the path to its handoff file** so the coordinator can read it.
+- **Choose `artifact`** for authorized large search/test/audit/build output. Keep raw output outside model context and return the path, status, failure signature, bounded excerpt/delta, and affected criteria.
+- **Honor zero-write scopes**: when the user, audit mode, or sandbox prohibits writes, use `ephemeral` and MUST NOT create a handoff or artifact file.
 
-The coordinator merges handoff files into the WorkGroup file and never trusts in-memory return values for shared state.
+For durable work, return the handoff path plus bounded status. For ephemeral work, return the bounded result directly. The coordinator reconciles either result, but only coordinator-consolidated WorkGroup phase, approval, checkpoint, and lineage state is authoritative.
 ```
 
 #### .agents/skills/knowzcode-explore/SKILL.md
@@ -352,28 +372,75 @@ The coordinator merges handoff files into the WorkGroup file and never trusts in
 ```markdown
 ---
 name: knowzcode-explore
-description: Research and investigate a topic in the codebase before implementing changes. Triggers on exploratory questions, architecture review, or pre-implementation research.
+description: "Research a codebase area before implementation. Use when the user wants investigation, architectural context, prior art, or options before changing code."
 ---
 <!-- Generated by KnowzCode vX.Y.Z -->
 
-# /knowzcode:explore — Research Before Implementing
+# /knowzcode:explore - Research Before Implementing
 
-Investigate a topic in the codebase before implementing changes.
+Investigate a topic and stop with findings and recommendations.
 
 ## Instructions
 
-Read these files for context:
-- `knowzcode/knowzcode_loop.md` — Methodology
-- `knowzcode/knowzcode_project.md` — Project context
-- `knowzcode/knowzcode_architecture.md` — Architecture docs
+1. Classify the exploration question and resolve any selected WorkGroup, capsule, reusable specification, and current phase **before vault retrieval, parallel delegation, or file writes**. Record the exact unresolved question and relevant subsystem boundaries.
+2. Load context progressively. Start with that selected WorkGroup/capsule and goal-relevant spec headings/`VERIFY:` criteria. If neither exists, search the topic first; read only the relevant project, architecture, spec, or prior-WorkGroup sections needed to answer the recorded question. Do not eagerly read the complete loop, project, architecture, history, or provider guides.
+3. Search the codebase for relevant files and patterns using targeted reads.
+4. If the topic spans 2 or more independently useful subsystems, read `knowzcode/codex_execution.md` and use its capability, context-mode, lineage, and result-policy contracts. Parallelize only within the active runtime's capacity. Do not create overlapping scopes and do not implement code in this mode.
+5. If the local evidence leaves a named prior-decision or convention question and Knowz MCP is available, reuse a healthy coordinator probe within `mcp_health_ttl_minutes`, then use a targeted `mcp__knowz__search_knowledge` or `mcp__knowz__ask_question` call. Do not issue a broad baseline vault query or let child explorers repeat the probe.
+6. Produce the **Exploration Deliverable** in chat. Write it to `knowzcode/explore/<topic-slug>/summary.md` only when writes are authorized and durable exploration output is requested or materially useful for recovery.
+7. Do not implement changes unless the user explicitly asks to move into `/knowzcode:work` or `/knowzcode:fix`.
 
-1. Explore the codebase for relevant files, patterns, and implementations
-2. Check `knowzcode/specs/` for related component specs
-3. Scan `knowzcode/workgroups/` for past WorkGroups in similar areas
-4. Review `knowzcode/knowzcode_architecture.md` for structural context
-5. Present findings with current state, patterns, options, and recommended approach
+## Executable Context Runtime Boundary
 
-**STOP** — Present research findings. To implement, use `/knowzcode:work` with the chosen approach.
+When `context_efficiency.enabled: true` (default), call `node knowzcode/context_efficiency_runtime.mjs dispatch` for every non-trivial explorer route. Send one JSON object on stdin with `{routing, rollout, lineage?, result_policy?}` and require one `{ok:true,operation:"dispatch",result}` object on stdout. Call `capsule` with `{capsule,max_bytes?,artifact_path?}` before a fresh capsule, `lineage` with `{lineage,current,now?}` before resume/inheritance, and `result-policy` with `{input}` before choosing output policy. The CLI is read-only.
+
+Rollout controls recommendation application and redacted telemetry, not safety validation. Privacy/schema, lineage, reviewer-independence, or ownership rejection fails closed; rebuild/reconcile and validate again or keep research local. Never use `CAPABILITY_FALLBACK` for a safety rejection. Use it only when a non-safety recommendation/telemetry function is unavailable while direct checks pass; if required validation is unavailable, keep research local and report `CONTEXT_RUNTIME_UNAVAILABLE`.
+
+## Parallel Explorer Dispatch Contract
+
+When step 3 fires, detect the native capabilities callable in the active runtime and map them to semantic `spawn`, `follow up`, `message`, `wait`, `interrupt`, `inspect`, and `release` operations. Current runtime examples can include `spawn_agent`, `followup_task`, `send_message`, `wait_agent`, `interrupt_agent`, and `list_agents`, but capability detection is authoritative. Prefer a compatible warm explorer follow-up before spawning; otherwise select `inherit-full`, `inherit-recent`, or `fresh-capsule` per the canonical execution guide. Dispatch independent explorers concurrently only when capacity permits. Each explorer must:
+
+- **Scope boundary**: receive exactly one subsystem boundary (a path glob, a module name, or a domain). No two explorers share files.
+- **Read-only constraint**: receive an explicit instruction not to edit or implement code.
+- **Incremental context**: receive the topic, active WorkGroup/capsule if relevant, assigned subsystem, and exact read paths/questions. Do not hydrate unrelated framework or chat history.
+- **Reviewer independence**: when the exploration is an independent audit/review, start from approved requirements/evidence and a fresh reviewer-owned lineage, never builder reasoning.
+- **`ephemeral` output**: default for a short read-only slice. Return bounded `## Current State`, `## Constraints`, `## Risks`, and `## References` findings directly; do not write a file.
+- **`durable` output**: only when writes are authorized and material/resumable evidence requires recovery. Write `knowzcode/explore/<topic-slug>/<subsystem>.md` with the same four sections and return its path plus bounded status.
+- **`artifact` output**: only when writes are authorized and raw search/test evidence is too large. Return its path plus a bounded digest/delta; do not paste the raw output into follow-ups.
+- **Zero-write rule**: when the user, audit mode, or sandbox prohibits writes, use `ephemeral` and MUST NOT create a findings, handoff, summary, or artifact file.
+
+After all explorers complete, the coordinator merges bounded ephemeral results and reads only any explicitly durable/artifact paths. The coordinator owns the final conclusion and authoritative WorkGroup state.
+
+Skip parallel dispatch when the topic touches a single subsystem — run serially in the coordinator instead.
+
+## Exploration Deliverable
+
+Return the final summary in chat with this structure. If the output policy is `durable` and writes are authorized, write the same content to `knowzcode/explore/<topic-slug>/summary.md`:
+
+```markdown
+# Exploration: {topic}
+
+## Current State
+{what exists today, with file:line citations}
+
+## Constraints
+{rules, conventions, dependencies that must hold}
+
+## Options
+1. {option name} — {one-paragraph description}
+2. {option name} — {one-paragraph description}
+
+## Risks
+{risk → mitigation, one per bullet}
+
+## Recommendation
+{one option from the list above, with rationale}
+
+## Suggested Next Skill
+{`/knowzcode:work` for full build, `/knowzcode:fix` for single-file change, or `/knowzcode:audit` for review-only — pick one}
+```
+
+The `<topic-slug>` is the topic in 2-4 word kebab-case.
 ```
 
 #### .agents/skills/knowzcode-fix/SKILL.md
@@ -381,31 +448,22 @@ Read these files for context:
 ```markdown
 ---
 name: knowzcode-fix
-description: Quick targeted fix for single-file changes using the micro-fix protocol. Triggers on bug fixes, typos, small corrections, and CSS tweaks.
+description: "Apply a quick, targeted KnowzCode micro-fix. Use when the requested change is small, localized, and does not need the full multi-phase workflow."
 ---
 <!-- Generated by KnowzCode vX.Y.Z -->
 
-# /knowzcode:fix — Quick Targeted Fix
+# /knowzcode:fix - Micro-Fix
 
-Apply a targeted fix using the micro-fix protocol.
-
-## Scope Guard
-
-This workflow is for changes that are:
-- Single file (or minimal multi-file with no ripple effects)
-- <50 lines changed
-- No architectural impact
-
-If the fix exceeds this scope, suggest `/knowzcode:work` instead.
+Use the KnowzCode micro-fix path for small, contained changes.
 
 ## Instructions
 
-Read `knowzcode/knowzcode_loop.md` section on Micro-Fix.
-
-1. Implement the fix
-2. Run targeted tests for the affected code
-3. Prepend a MicroFix entry to `knowzcode/knowzcode_log.md`
-4. Commit with `fix: {description}` message
+1. Confirm the change is narrow in scope: typically one file, low ripple, under roughly 50 lines.
+2. Read the micro-fix guidance in `knowzcode/knowzcode_loop.md` if available.
+3. Implement the fix.
+4. Run the smallest meaningful verification set for the touched behavior.
+5. Prepend a `MicroFix` entry to `knowzcode/knowzcode_log.md` describing the request, action, and verification outcome.
+6. If the work grows beyond micro-fix scope, stop and move to `/knowzcode:work`.
 ```
 
 #### .agents/skills/knowzcode-audit/SKILL.md
@@ -413,38 +471,31 @@ Read `knowzcode/knowzcode_loop.md` section on Micro-Fix.
 ```markdown
 ---
 name: knowzcode-audit
-description: Read-only quality audit comparing implementation against specs. Triggers on audit requests, quality checks, security reviews, and compliance verification.
+description: "Run a read-only KnowzCode audit against specs, code quality, architecture, security, or enterprise compliance expectations. Use when the user asks for review, audit, compliance check, or verification without implementation."
 ---
 <!-- Generated by KnowzCode vX.Y.Z -->
 
-# /knowzcode:audit — Quality Audit
+# /knowzcode:audit - Read-Only Audit
 
-Perform a READ-ONLY audit comparing implementation against specs.
+Perform a read-only audit and report findings first.
 
 ## Instructions
 
-Read these files:
-- `knowzcode/knowzcode_loop.md` — Phase 2B methodology
-- `knowzcode/codex_execution.md` — Codex-native audit delegation and enterprise enforcement (if present)
-- `knowzcode/knowzcode_tracker.md` — Find active WorkGroups
-
-**CRITICAL: This is a READ-ONLY audit. Do NOT modify source files.**
-
-**Whole-WorkGroup audit** — this command audits all completed NodeIDs together. For per-scope Stage 2 audits, builders/reviewers use only their assigned acceptance criteria; this standalone command intentionally covers the full WorkGroup.
-
-1. Compare implementation against all VERIFY statements in specs from `knowzcode/specs/`
-2. Calculate completion percentage per NodeID and overall
-3. Identify gaps: missing features, incomplete criteria, untested paths
-4. Check for security concerns
-5. Assess risk for any gaps found
-
-### Standalone Audit Types
-- **spec**: Audit spec quality and VERIFY statement coverage
-- **architecture**: Compare architecture doc against codebase
-- **security**: OWASP top 10, input validation, auth flows
-- **integration**: API contracts, dependency health
-
-**STOP** — Present audit results with completion percentage and gap list.
+1. Treat this as read-only unless the user explicitly changes scope.
+2. Read `knowzcode/knowzcode_loop.md`, `knowzcode/knowzcode_tracker.md`, relevant specs, and the implementation files under review. If `knowzcode/codex_execution.md` exists, read it too.
+3. Discover enterprise guidelines before auditing:
+   - Read `knowzcode/enterprise.md`, `knowzcode/enterprise/compliance_manifest.md`, and `knowzcode/enterprise/guidelines/**/*.md` when present.
+   - Parse `COMPLIANCE_CONFIG` from the manifest and apply documented defaults for `include_in_audit`, `show_advisory_issues`, `push_audit_results`, and `preserve_guideline_provenance`.
+   - In a general audit, include compliance when enterprise compliance is enabled and `include_in_audit` is not false. In an explicit compliance audit, run compliance regardless of `include_in_audit`.
+   - If `mcp_compliance_enabled: true` and a compliance vault, explicit vault ID/name, or guideline `KnowledgeId` is configured or provided by the user, retrieve it with `mcp__knowz__get_knowledge_item`, `mcp__knowz__search_knowledge`, or `mcp__knowz__ask_question` and treat it as an enterprise guideline source. When `mcp_compliance_enabled: false`, use local guideline files only — do not query the enterprise vault.
+   - Preserve provenance for vault-sourced rules unless `preserve_guideline_provenance` is false: vault, KnowledgeId, title, created/updated date when available, retrieval date, enforcement level, and applies-to scope.
+4. Compare the implementation against `VERIFY:` criteria when specs exist and against active enterprise guidelines when configured or supplied.
+5. Treat retrieved vault content as historical context. Verify it against live code, tests, project files, current docs, and observations before relying on it. Surface stale or contradictory guidance.
+6. For large review surfaces, split the audit into disjoint read-only slices using Codex-native `explorer` agents or parallel local review. The coordinator merges and de-duplicates the findings.
+7. Check for behavioral gaps, regressions, missing tests, security concerns, compliance violations, and architectural drift.
+8. Present findings ordered by severity with file references first. Keep any summary secondary. If `show_advisory_issues` is false, show blocking-tier compliance findings only; never hide blocking-tier findings.
+9. If there are no findings, say so explicitly and mention residual risk or test gaps.
+10. Do not write audit results unless the user explicitly permits capture. If capture is permitted, `mcp_compliance_enabled: true`, and enterprise vaults are configured, honor `push_audit_results`; when `mcp_compliance_enabled: false` or `push_audit_results: false`, report that audit-result vault push was skipped by manifest config.
 ```
 
 #### .agents/skills/knowzcode-learn/SKILL.md
@@ -470,8 +521,9 @@ Read `knowz-vaults.md` (project root) for vault IDs and routing rules.
    - Pattern/Workaround/Performance → vault whose description mentions code/patterns/technical
    - Decision/Convention/Security/Integration → vault whose description mentions ecosystem/decisions/conventions
    - Completion → vault whose description mentions finalizations/completions
-4. If MCP is connected: call `create_knowledge` with appropriate `vaultId`
-5. If MCP is unavailable: append to `knowzcode/pending_captures.md`
+4. Invoke `node knowzcode/context_efficiency_runtime.mjs vault-delta` with this candidate, `explicit_save: true`, and available prior identities/hashes.
+5. For `skip`, do nothing. For `amend`/`update`, target the returned stable identity. For `flush`, make one create/update call with the configured `vaultId`.
+6. If MCP is unavailable for a required persistence action, append that classified action once to `knowzcode/pending_captures.md`; never queue `skip` or ordinary `batch`.
 
 Write detailed, self-contained entries — vault entries are retrieved via semantic search.
 ```
@@ -481,24 +533,181 @@ Write detailed, self-contained entries — vault entries are retrieved via seman
 ```markdown
 ---
 name: knowzcode-regroup
-description: Create a local KnowzCode handoff before clearing context. Use when the user wants to pause, wrap up, step away, clear context, or resume an active WorkGroup later.
+description: "Create a local KnowzCode handoff before clearing context. Use when the user wants to pause, wrap up, step away, clear context, or resume an active WorkGroup later without losing workflow state."
 ---
-<!-- Generated by KnowzCode vX.Y.Z -->
+<!-- Packaged Codex mirror of knowzcode/skills/regroup/SKILL.md. Keep behavior in sync with the source skill and platform adapters. -->
 
 # /knowzcode:regroup - Local Workflow Handoff
 
-Create a local handoff in `knowzcode/handoffs/`. Do not save the handoff itself to Knowz vaults; only durable learning candidates may be captured later.
+**Purpose**: Preserve local workflow continuity before the user clears context. Regroup writes operational state to KnowzCode local files. It does not store session handoffs in Knowz vaults.
+
+## Source Of Truth
+
+The canonical source skill is `knowzcode/skills/regroup/SKILL.md`. Keep these surfaces behaviorally aligned when editing regroup:
+
+- `knowzcode/skills/regroup/SKILL.md`
+- `plugins/knowzcode/skills/regroup/SKILL.md`
+- `knowzcode/knowzcode/platform_adapters.md`
+- `plugins/knowzcode/knowzcode/platform_adapters.md`
+
+Platform-specific frontmatter may differ, but the workflow contract and handoff schema must stay in sync.
+
+## Ownership Boundary
+
+- KnowzCode owns workflow state: active WorkGroup, phase, branch, dirty files, blockers, next steps, autonomy mode, and resume instructions.
+- Knowz owns durable knowledge: decisions, patterns, workarounds, conventions, architecture findings, audit findings, and completion records.
+- Do not write the handoff itself to Knowz. If durable learnings are discovered, list them as extraction candidates or route them through the normal KnowzCode knowledge-liaison / `/knowz save` path.
 
 ## Instructions
 
-1. Verify `knowzcode/` and `knowzcode/knowzcode_tracker.md` exist.
-2. Resolve the active WorkGroup from the user's argument or `[WIP]` entries in `knowzcode/knowzcode_tracker.md`.
-3. Read the selected WorkGroup file when available.
-4. Collect goal, current phase, state, blockers, next step, autonomy mode, branch, commit, dirty files, and useful references.
-5. Create `knowzcode/handoffs/` if missing.
-6. Write `knowzcode/handoffs/{YYYYMMDD-HHMM}-{slug}.md` with metadata, Goal, Session Summary, Current State, Next Step, Dirty Files, References, Durable Learning Candidates, and Fresh Context Prompt sections.
-7. If a WorkGroup file exists, append a `## Handoffs` entry pointing to the new file.
-8. Report the handoff path, WorkGroup, next step, autonomy mode, and Fresh Context Prompt.
+### Step 1: Prerequisite Check
+
+Verify this is a KnowzCode project:
+
+1. Check that `knowzcode/` exists.
+2. Check for `knowzcode/knowzcode_tracker.md`.
+3. If missing, stop and suggest `/knowzcode:setup`.
+
+### Step 2: Resolve WorkGroup
+
+Find the WorkGroup this handoff belongs to:
+
+1. If the user supplied a WorkGroup ID or path, use it.
+2. Else read `knowzcode/knowzcode_tracker.md` for active `[WIP]` entries.
+3. If one active WorkGroup exists, use it.
+4. If multiple active WorkGroups exist, choose the one clearly referenced by the current session; otherwise ask the user to choose.
+5. If none exist, create a standalone handoff with `WorkGroupID: none` and point the user toward `/knowzcode:work` after resume.
+
+Read the selected WorkGroup file when available:
+
+```text
+knowzcode/workgroups/{WorkGroupID}.md
+```
+
+### Step 3: Collect Local Resume State
+
+Summarize the current session and local repo state. Keep it dense and actionable:
+
+- Goal and current phase
+- Completed work or findings
+- Current blockers and unresolved questions
+- Next step from the user's argument, if supplied
+- Active autonomy mode:
+  - `Active` if the user requested autonomous mode, auto-approved gates, hands-off continuation, or the WorkGroup contains `**Autonomous Mode**: Active`
+  - `Inactive` if the WorkGroup or current session clearly expects manual gates
+  - `Unspecified` if there is no clear signal
+- Important files, commands, and references
+- Current branch, commit, and dirty-file summary from:
+  - `git branch --show-current`
+  - `git rev-parse --short HEAD`
+  - `git status --short`
+
+Do not paste raw transcript text. Preserve only state needed to continue intelligently.
+
+### Step 4: Write Handoff File
+
+Create `knowzcode/handoffs/` if it does not exist.
+
+Write a new file:
+
+```text
+knowzcode/handoffs/{YYYYMMDD-HHMM}-{slug}.md
+```
+
+Use a 2-5 word kebab-case slug from the goal or WorkGroup. If a file already exists, append `-2`, `-3`, etc.
+
+Use this schema:
+
+```markdown
+# KnowzCode Handoff: {short goal}
+
+**Created:** {ISO timestamp}
+**WorkGroupID:** {id or none}
+**WorkGroup File:** {path or none}
+**Current Phase:** {phase or unknown}
+**Autonomous Mode:** {Active|Inactive|Unspecified}
+**Branch:** {branch}
+**Commit:** {short sha}
+**Status:** Active
+
+## Goal
+{exact goal to resume}
+
+## Session Summary
+{<=100 words}
+
+## Current State
+{completed work, current status, blockers; <=180 words}
+
+## Next Step
+{immediate next actions; <=80 words}
+
+## Dirty Files
+{git status --short summary; omit generated noise unless relevant}
+
+## References
+- file:{path} | {why useful}
+- cmd:{command} | {why useful}
+- kz:{knowledge-id} | {title} | {why useful}
+- url:{href} | {why useful}
+
+## Durable Learning Candidates
+{Only decisions, patterns, workarounds, conventions, architecture findings, audit findings, or completion records that may belong in Knowz. Use "None" if there are no durable learnings.}
+
+## Fresh Context Prompt
+Resume this KnowzCode work.
+
+Read:
+- {handoff path}
+- {WorkGroup file or "no active WorkGroup"}
+- knowzcode/knowzcode_loop.md
+
+Goal: {goal}
+Continue from the saved state. Preserve Autonomous Mode only if the user confirms it in the new session.
+```
+
+### Step 5: Link From WorkGroup
+
+If an active WorkGroup file exists, append or update a `## Handoffs` section with:
+
+```markdown
+- {timestamp}: `knowzcode/handoffs/{file}.md` - {next step summary}
+```
+
+Do not rewrite unrelated WorkGroup content.
+
+### Step 6: Durable Knowledge Extraction
+
+Do not save the whole handoff to Knowz.
+
+For `## Durable Learning Candidates`:
+
+- Include only durable learnings that should survive outside this local workflow.
+- Prefer categories already used by KnowzCode capture: Decision, Pattern, Workaround, Performance, Security, Convention, Integration, Scope, Audit, Completion.
+- If the current workflow has a knowledge-liaison or writer capture path active, route candidates through that path as `Consider: {candidate}`.
+- If no capture path is active, leave candidates in the handoff for Phase 3 capture or explicit `/knowz save`.
+- If MCP is unavailable, do not block regroup. The local handoff is the primary artifact.
+
+### Step 7: Report
+
+Report:
+
+```markdown
+KnowzCode handoff saved.
+
+Path: {handoff path}
+WorkGroup: {id or none}
+Next: {next step}
+Autonomous Mode: {Active|Inactive|Unspecified}
+```
+
+Then provide the `Fresh Context Prompt` from the file for copy/paste.
+
+## Related Skills
+
+- `/knowzcode:continue` - Load the latest handoff or active WorkGroup and resume
+- `/knowzcode:work` - Start a WorkGroup if there is no active workflow
+- `/knowz save` - Capture durable learnings, not workflow handoffs
 ```
 
 #### .agents/skills/knowzcode-regroup-trigger/SKILL.md
@@ -506,9 +715,9 @@ Create a local handoff in `knowzcode/handoffs/`. Do not save the handoff itself 
 ```markdown
 ---
 name: knowzcode-regroup-trigger
-description: Offer a KnowzCode regroup handoff when the user signals pause, wrap-up, handoff, clear-context, fresh-session, or resume-later intent.
+description: "Detect pause, wrap-up, handoff, or clear-context intent and offer a KnowzCode regroup handoff. Triggers when the user says they need to stop, step away, clear context, start fresh, hand off, or resume later."
 ---
-<!-- Generated by KnowzCode vX.Y.Z -->
+<!-- Packaged Codex mirror of knowzcode/skills/regroup-trigger/SKILL.md. Keep behavior in sync with the source skill and platform adapters. -->
 
 # KnowzCode Regroup Trigger - Intent Router
 
@@ -526,7 +735,10 @@ Use this as a lightweight router into `/knowzcode:regroup`. It never writes hand
 3. Do not trigger during explicit `/knowzcode:*` or `/knowz` command execution.
 4. Check that `knowzcode/` exists. If not, do nothing.
 5. Read `knowzcode/knowzcode_tracker.md` when available to detect active WorkGroups, but do not block if the read fails and the user's handoff intent is explicit.
-6. Offer exactly once: "This looks like a good checkpoint. Want me to run `/knowzcode:regroup` with the current goal and next step so you can resume cleanly after clearing context?"
+6. Offer exactly once:
+   ```text
+   This looks like a good checkpoint. Want me to run `/knowzcode:regroup` with the current goal and next step so you can resume cleanly after clearing context?
+   ```
 7. If the user agrees, hand off to the same workflow as `/knowzcode:regroup`, passing any explicit next-step hint.
 8. If the user declines or ignores the offer, do nothing.
 9. Never auto-regroup, never save workflow state to Knowz, and never write the handoff directly from this trigger.
@@ -849,25 +1061,25 @@ The user will be ready to use MCP-powered features after registration.
 ```markdown
 ---
 name: knowzcode-telemetry
-description: Investigate production telemetry from Sentry and App Insights. Triggers on error investigation, production debugging, or telemetry queries.
+description: "Investigate telemetry and monitoring signals for a bug or outage. Use when the user asks to diagnose production or staging errors from Sentry, App Insights, or other configured telemetry sources."
 ---
 <!-- Generated by KnowzCode vX.Y.Z -->
 
-# /knowzcode:telemetry — Investigate Telemetry
+# /knowzcode:telemetry - Telemetry Investigation
 
-Investigate production telemetry to diagnose errors, trace issues, and identify root causes.
+Investigate telemetry directly with the tools available in the current environment.
 
 ## Instructions
 
-Usage: `/knowzcode:telemetry "<natural language description>"`
-
-1. Parse the natural language query for environment, timeframe, and error context
-2. Read `knowzcode/knowzcode_telemetry.md` for configured sources
-3. Query configured telemetry sources (Sentry, App Insights) via MCP tools
-4. Correlate findings across sources
-5. Present timeline, root cause analysis, and recommended fixes
-
-If no telemetry sources are configured, suggest `/knowzcode:telemetry-setup`.
+1. Read `knowzcode/telemetry_config.md` if it exists.
+2. Parse the user's request for environment, timeframe, symptom, and target service.
+3. Detect which telemetry access paths are actually available:
+   - local CLIs such as `sentry-cli` or `az`
+   - MCP tools, if present for a telemetry provider
+4. Use the available tools directly. Do not rely on Claude-specific task delegation APIs.
+5. Build a concise incident summary with timeline, strongest hypothesis, supporting evidence, and the recommended next action.
+6. If the issue is small and local, suggest `/knowzcode:fix`. If it needs broader changes, suggest `/knowzcode:work`.
+7. Append a brief telemetry investigation entry to `knowzcode/knowzcode_log.md` when the project is initialized.
 ```
 
 #### .agents/skills/knowzcode-telemetry-setup/SKILL.md
@@ -875,27 +1087,51 @@ If no telemetry sources are configured, suggest `/knowzcode:telemetry-setup`.
 ```markdown
 ---
 name: knowzcode-telemetry-setup
-description: Configure telemetry sources (Sentry, App Insights) for /knowzcode:telemetry. Triggers on telemetry configuration or source setup.
+description: "Configure telemetry sources for KnowzCode investigations. Use when the user wants to connect or refresh Sentry, App Insights, or other monitoring configuration for /knowzcode:telemetry. Do NOT trigger when investigating an existing error — use /knowzcode:telemetry."
 ---
 <!-- Generated by KnowzCode vX.Y.Z -->
 
-# /knowzcode:telemetry-setup — Configure Telemetry Sources
+# /knowzcode:telemetry-setup - Configure Telemetry
 
-Configure telemetry sources for `/knowzcode:telemetry` investigations.
+Set up the telemetry sources that `/knowzcode:telemetry` should use.
 
 ## Instructions
 
-Usage: `/knowzcode:telemetry-setup [sentry|appinsights|all]`
+1. Detect available telemetry tools and authentication state in the current environment. Probe at minimum: `sentry-cli info`, `az account show`, and any registered `mcp__sentry__*` / `mcp__azure*__*` tools.
+2. Discover accessible resources such as Sentry projects or App Insights applications.
+3. Ask the user only for the mappings that cannot be inferred automatically.
+4. Write or update `knowzcode/telemetry_config.md` with the selected resources and environment mappings using the format below.
+5. Do not store secrets in the config file. Prefer existing CLI login state or environment variables.
+6. End with a concrete invocation the user can run, e.g. `/knowzcode:telemetry investigate errors in <env> for <service> over the last 1h`, choosing values that match the resources just configured.
 
-1. Detect available telemetry MCP tools (Sentry, App Insights)
-2. For each selected source:
-   - Verify MCP tool connectivity
-   - Test authentication and permissions
-   - Detect available projects/resources
-3. Write configuration to `knowzcode/knowzcode_telemetry.md`
-4. Run a test query to verify end-to-end connectivity
+## Config File Format
 
-Report configured sources and their status.
+`knowzcode/telemetry_config.md` should contain, at minimum:
+
+- One H2 section per provider (e.g. `## Sentry`, `## Azure Application Insights`).
+- For each provider:
+  - A field table with `Enabled` (`true`/`false`), detection `Method` (`cli` | `mcp`), and identifying values (organization, subscription, etc.).
+  - An **Environment Mapping** table mapping `production` / `staging` / `dev` to the concrete project or resource id.
+- No secrets. Reference auth env vars by name only (e.g. `SENTRY_AUTH_TOKEN`, Azure CLI session).
+
+Example skeleton:
+
+```markdown
+## Sentry
+
+| Field | Value |
+|-------|-------|
+| Enabled | true |
+| Method | cli |
+| Organization | my-company |
+
+### Environment Mapping
+
+| Environment | Project |
+|-------------|---------|
+| production | my-company/backend-api |
+| staging | my-company/backend-staging |
+```
 ```
 
 #### .agents/skills/knowzcode-relay/SKILL.md
@@ -1134,7 +1370,8 @@ Resolve target settings in this order:
 - Invocation `--relay-model=` / `--relay-effort=`.
 - Claude-specific project keys (`relay_claude_model`,
   `relay_claude_effort`, `relay_claude_fix_effort`, and
-  `relay_claude_permission_mode`).
+  `relay_claude_permission_mode`). A positive
+  `relay_claude_max_budget_usd` is a per-leg ceiling.
 - Documented safe defaults. Do not feed Codex defaults such as
   `gpt-5.6-sol`, `xhigh`, or `workspace-write` to Claude.
 
@@ -1166,11 +1403,15 @@ claude -p
   --strict-mcp-config
   --no-chrome
   --effort <resolved effort>
+  [--max-budget-usd <positive configured per-leg ceiling>]
   --settings <relay-safe-settings.json>
 ```
 
 Only add `--model` when a Claude model is explicitly resolved. Optional
-`--max-turns` and `--max-budget-usd` bounds may be supplied from configuration.
+`--max-turns` bounds may be supplied from configuration. Add
+`--max-budget-usd` to every initial/resumed/fresh leg when the positive project
+ceiling is configured; classify budget exhaustion separately from code/test
+failure and preserve the session ID and artifacts.
 Do not use `--bare`, `--safe-mode`, `--add-dir`, or
 `--no-session-persistence` by default.
 
@@ -1263,15 +1504,16 @@ add:
 --resume <persisted session_id>
 ```
 
-Send a self-contained fix prompt on stdin and close stdin. The prompt includes
-the checkpoint diff, ordered review findings, acceptance criteria, required
-verification, and the same no-commit/no-unrelated-edit constraints.
+For a valid resume, send a bounded delta prompt containing only the changed
+checkpoint evidence, ordered findings, criteria, required verification, and
+the same no-commit/no-unrelated-edit constraints. Keep model and effort stable
+by default. Record expected cache invalidation before an explicit escalation.
 
 Before launching, write `State: FIX_ROUND` and the round artifacts. Validate a
 new final result exactly as for the initial leg. Resume after a force-killed
 mid-turn is not guaranteed; if it fails, preserve evidence and either use one
-fresh self-contained fix leg or transition to `HOST_TAKEOVER` according to the
-configured retry budget.
+fresh self-contained recovery brief or transition to `HOST_TAKEOVER` according
+to the configured retry budget.
 
 ## 9. Workflow State Machine
 
@@ -1452,7 +1694,7 @@ prompt = """Read .gemini/skills/knowzcode-learn/SKILL.md for full instructions.
 Capture the following learning: <ARGS/>
 Route to the appropriate vault per knowz-vaults.md (project root) routing rules.
 Find vault by description: patterns/workarounds/technical, decisions/conventions/ecosystem, or finalizations/completions.
-If MCP is unavailable, save to knowzcode/pending_captures.md."""
+The referenced skill must run `vault-delta`; if MCP is unavailable, queue only its classified persistence action once."""
 ```
 
 ```toml
@@ -1601,10 +1843,10 @@ Read these files before starting any feature work (use @import syntax for direct
 - Target <20 specs — consolidate when domains overlap >50%
 
 ## Knowledge Capture (CRITICAL — DO NOT SKIP)
-Every piece of durable knowledge — decisions, patterns, gotchas, workarounds — **must** be captured.
-When MCP is connected, write to vaults per `knowz-vaults.md` (project root) — always pass `vaultId` with `create_knowledge`.
-When MCP is unavailable, capture locally in specs, log entries, or docs. Never let insights die in the conversation.
-Use `/knowz save "insight"` for automatic routing.
+Every durable candidate — decisions, patterns, gotchas, workarounds — **must** be classified by the lead with `node knowzcode/context_efficiency_runtime.mjs vault-delta`.
+`skip` and `batch` perform no MCP or pending-queue write. Persist only the returned `amend`, `update`, or consolidated `flush`, always passing the configured `vaultId`.
+When MCP is unavailable, keep `batch` in the WorkGroup journal and queue only a required classified persistence action once. Never let insights die in the conversation.
+Use `/knowz save "insight"` as an explicit-save candidate; it still passes through the classifier.
 Vault entries are retrieved via semantic search — write detailed, self-contained content. See `knowz-vaults.md` (project root) Content Detail Principle.
 
 ## MCP Server Configuration (Gemini CLI)
@@ -1785,8 +2027,9 @@ Read `knowz-vaults.md` (project root) for vault IDs and routing rules.
    - Pattern/Workaround/Performance → vault whose description mentions code/patterns/technical
    - Decision/Convention/Security/Integration → vault whose description mentions ecosystem/decisions/conventions
    - Completion → vault whose description mentions finalizations/completions
-4. If MCP is connected: call `create_knowledge` with appropriate `vaultId`
-5. If MCP is unavailable: append to `knowzcode/pending_captures.md`
+4. Invoke `node knowzcode/context_efficiency_runtime.mjs vault-delta` with this candidate, `explicit_save: true`, and available prior identities/hashes.
+5. For `skip`, do nothing. For `amend`/`update`, target the returned stable identity. For `flush`, make one create/update call with the configured `vaultId`.
+6. If MCP is unavailable for a required persistence action, append that classified action once to `knowzcode/pending_captures.md`; never queue `skip` or ordinary `batch`.
 
 Write detailed, self-contained entries — vault entries are retrieved via semantic search.
 ```
@@ -2369,7 +2612,7 @@ timeout_mins: 10
 You are the **Finalization Agent** for the KnowzCode development workflow.
 
 ## Role
-Perform Phase 3: Finalization. Update all project documentation to reflect the completed work, capture learnings, and create the final commit.
+Perform Phase 3 finalization and return one consolidated `FinalCaptureDelta` plus an explicit commit file list to the lead. The lead owns vault classification and the final commit.
 
 ## Instructions
 
@@ -2378,8 +2621,8 @@ Perform Phase 3: Finalization. Update all project documentation to reflect the c
 3. Update `knowzcode/knowzcode_tracker.md` — set WorkGroup status to `[VERIFIED]`
 4. Prepend a log entry to `knowzcode/knowzcode_log.md`
 5. Review `knowzcode/knowzcode_architecture.md` for drift — update if needed
-6. Capture learnings to vaults if MCP is connected (per `knowz-vaults.md` at project root)
-7. Create final commit with all documentation updates
+6. Return one consolidated `FinalCaptureDelta` to the lead; do not call vault tools or queue an unclassified capture
+7. Return the explicit documentation file list and suggested commit message; the lead creates the final commit
 ```
 
 #### .gemini/agents/knowzcode-knowz-reader.md
@@ -2435,18 +2678,18 @@ timeout_mins: 8
 You are the **MCP Vault Writer** for the KnowzCode development workflow, dispatched as knowz:writer.
 
 ## Role
-Capture durable knowledge — decisions, patterns, gotchas, workarounds — to MCP vaults throughout the workflow. Route each learning to the appropriate vault.
+Apply a lead-classified knowledge mutation — decisions, patterns, gotchas, workarounds — to the appropriate MCP vault. Do not decide whether a raw candidate should persist.
 
 ## Instructions
 
-1. Read `knowz-vaults.md` (project root) for vault IDs and routing rules
-2. For each learning, find the vault whose description matches the content:
+1. Require a classified `amend`, `update`, or `flush` plus stable identity. Return any raw candidate to the lead; `skip` and `batch` never dispatch this writer.
+2. Read `knowz-vaults.md` (project root) for vault IDs and routing rules, then find the matching vault:
    - Pattern/Workaround/Performance → vault whose description mentions code/patterns/technical
    - Decision/Convention/Security/Integration → vault whose description mentions ecosystem/decisions/conventions
    - Completion → vault whose description mentions finalizations/completions
-3. Deduplicate via `search_knowledge` before writing
-4. Write detailed, self-contained entries (vault retrieval is via semantic search)
-5. If MCP is unavailable, queue to `knowzcode/pending_captures.md`
+3. Apply `amend`/`update` to the supplied identity or make one consolidated create/update for `flush`; never turn a targeted action into a duplicate create.
+4. Write detailed, self-contained entries (vault retrieval is via semantic search).
+5. If MCP is unavailable, return the classified failure to the lead; the lead owns the single pending-queue fallback.
 ```
 
 #### .gemini/agents/knowzcode-microfix.md
@@ -2708,10 +2951,10 @@ Before any feature work, read:
 - Log completions in `knowzcode/knowzcode_log.md`
 
 ## Knowledge Capture (CRITICAL — DO NOT SKIP)
-Every piece of durable knowledge — decisions, patterns, gotchas, workarounds — **must** be captured.
-When MCP is connected, write to vaults per `knowz-vaults.md` (project root) — always pass `vaultId` with `create_knowledge`.
-When MCP is unavailable, capture locally in specs, log entries, or docs. Never let insights die in the conversation.
-Use `/knowz save "insight"` for automatic routing.
+Every durable candidate — decisions, patterns, gotchas, workarounds — **must** be classified by the lead with `node knowzcode/context_efficiency_runtime.mjs vault-delta`.
+`skip` and `batch` perform no MCP or pending-queue write. Persist only the returned `amend`, `update`, or consolidated `flush`, always passing the configured `vaultId`.
+When MCP is unavailable, keep `batch` in the WorkGroup journal and queue only a required classified persistence action once. Never let insights die in the conversation.
+Use `/knowz save "insight"` as an explicit-save candidate; it still passes through the classifier.
 Vault entries are retrieved via semantic search — write detailed, self-contained content. See `knowz-vaults.md` (project root) Content Detail Principle.
 
 ## MCP Configuration
@@ -2812,10 +3055,10 @@ If configured in `.vscode/mcp.json`, use `search_knowledge` and `ask_question` t
 for enhanced context from knowledge vaults. All prompts work without MCP.
 
 ## Knowledge Capture (CRITICAL — DO NOT SKIP)
-Every piece of durable knowledge — decisions, patterns, gotchas, workarounds — **must** be captured.
-When MCP is connected, write to vaults per `knowz-vaults.md` (project root) — always pass `vaultId` with `create_knowledge`.
-When MCP is unavailable, capture locally in specs, log entries, or docs. Never let insights die in the conversation.
-Use `/knowz save "insight"` for automatic routing.
+Every durable candidate — decisions, patterns, gotchas, workarounds — **must** be classified by the lead with `node knowzcode/context_efficiency_runtime.mjs vault-delta`.
+`skip` and `batch` perform no MCP or pending-queue write. Persist only the returned `amend`, `update`, or consolidated `flush`, always passing the configured `vaultId`.
+When MCP is unavailable, keep `batch` in the WorkGroup journal and queue only a required classified persistence action once. Never let insights die in the conversation.
+Use `/knowz save "insight"` as an explicit-save candidate; it still passes through the classifier.
 Vault entries are retrieved via semantic search — write detailed, self-contained content. See `knowz-vaults.md` (project root) Content Detail Principle.
 
 ## Copilot Coding Agent
@@ -3397,10 +3640,10 @@ Follow `knowzcode/knowzcode_loop.md` for all feature development.
 - Every WorkGroup todo starts with `KnowzCode:` prefix
 
 ## Knowledge Capture (CRITICAL — DO NOT SKIP)
-Every piece of durable knowledge — decisions, patterns, gotchas, workarounds — **must** be captured.
-When MCP is connected, write to vaults per `knowz-vaults.md` (project root) — always pass `vaultId` with `create_knowledge`.
-When MCP is unavailable, capture locally in specs, log entries, or docs. Never let insights die in the conversation.
-Use `/knowz save "insight"` for automatic routing.
+Every durable candidate — decisions, patterns, gotchas, workarounds — **must** be classified by the lead with `node knowzcode/context_efficiency_runtime.mjs vault-delta`.
+`skip` and `batch` perform no MCP or pending-queue write. Persist only the returned `amend`, `update`, or consolidated `flush`, always passing the configured `vaultId`.
+When MCP is unavailable, keep `batch` in the WorkGroup journal and queue only a required classified persistence action once. Never let insights die in the conversation.
+Use `/knowz save "insight"` as an explicit-save candidate; it still passes through the classifier.
 Vault entries are retrieved via semantic search — write detailed, self-contained content. See `knowz-vaults.md` (project root) Content Detail Principle.
 
 ## MCP Configuration

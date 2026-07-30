@@ -767,9 +767,32 @@ function setMarketplaceConfig(claudeDir) {
   if (existsSync(settingsFile)) {
     try {
       settings = JSON.parse(readFileSync(settingsFile, 'utf8'));
-    } catch {
-      settings = {};
+    } catch (error) {
+      throw new Error(
+        `Cannot update the Claude marketplace because ${settingsFile} is not valid JSON. `
+        + `The existing file was preserved unchanged: ${error.message}`
+      );
     }
+  }
+
+  if (settings === null || Array.isArray(settings) || typeof settings !== 'object') {
+    throw new Error(
+      `Cannot update the Claude marketplace because ${settingsFile} must contain a JSON object. `
+      + 'The existing file was preserved unchanged.'
+    );
+  }
+  if (
+    settings.extraKnownMarketplaces !== undefined
+    && (
+      settings.extraKnownMarketplaces === null
+      || Array.isArray(settings.extraKnownMarketplaces)
+      || typeof settings.extraKnownMarketplaces !== 'object'
+    )
+  ) {
+    throw new Error(
+      `Cannot update the Claude marketplace because extraKnownMarketplaces in ${settingsFile} must be a JSON object. `
+      + 'The existing file was preserved unchanged.'
+    );
   }
 
   if (!settings.extraKnownMarketplaces) settings.extraKnownMarketplaces = {};
@@ -1081,18 +1104,40 @@ async function promptConfirm(message, defaultYes = false) {
 
 // ─── Agent Teams Enablement ──────────────────────────────────────────────────
 
-function enableAgentTeams(claudeDir, isGlobal) {
-  ensureDir(claudeDir);
+function readAgentTeamsSettings(claudeDir, isGlobal) {
   const settingsFile = join(claudeDir, isGlobal ? 'settings.json' : 'settings.local.json');
 
   let settings = {};
   if (existsSync(settingsFile)) {
     try {
       settings = JSON.parse(readFileSync(settingsFile, 'utf8'));
-    } catch {
-      settings = {};
+    } catch (error) {
+      throw new Error(
+        `Cannot enable Agent Teams because ${settingsFile} is not valid JSON. `
+        + `The existing file was preserved unchanged: ${error.message}`
+      );
     }
   }
+
+  if (settings === null || Array.isArray(settings) || typeof settings !== 'object') {
+    throw new Error(
+      `Cannot enable Agent Teams because ${settingsFile} must contain a JSON object. `
+      + 'The existing file was preserved unchanged.'
+    );
+  }
+  if (settings.env !== undefined && (settings.env === null || Array.isArray(settings.env) || typeof settings.env !== 'object')) {
+    throw new Error(
+      `Cannot enable Agent Teams because env in ${settingsFile} must be a JSON object. `
+      + 'The existing file was preserved unchanged.'
+    );
+  }
+
+  return { settingsFile, settings };
+}
+
+function enableAgentTeams(claudeDir, isGlobal) {
+  const { settingsFile, settings } = readAgentTeamsSettings(claudeDir, isGlobal);
+  ensureDir(claudeDir);
 
   if (!settings.env) settings.env = {};
   settings.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS = '1';
@@ -1272,6 +1317,16 @@ async function generateAdapters(dir, selectedPlatforms, opts) {
   let agentTeamsEnabled = false;
   let claudePluginActive = false;
   let claudePluginStale = false;
+
+  // In global mode, marketplace registration and Agent Teams share
+  // settings.json. Validate explicit Teams settings before any Claude files or
+  // marketplace entries are changed so a rejected install is atomic.
+  if (opts.agentTeams && selectedPlatforms.includes('claude')) {
+    const preflightClaudeDir = opts.global
+      ? join(process.env.HOME || process.env.USERPROFILE || '~', '.claude')
+      : join(dir, '.claude');
+    readAgentTeamsSettings(preflightClaudeDir, opts.global);
+  }
 
   for (const platformId of selectedPlatforms) {
     const platform = PLATFORMS[platformId];
@@ -1466,14 +1521,7 @@ async function generateAdapters(dir, selectedPlatforms, opts) {
     enableAgentTeams(agentTeamsClaudeDir, opts.global);
     agentTeamsEnabled = true;
   } else if (selectedPlatforms.includes('claude') && !opts.force) {
-    console.log('');
-    console.log(`${c.bold}Agent Teams${c.reset} enables multi-agent coordination where specialized`);
-    console.log(`teammates handle each workflow phase. ${c.dim}(experimental)${c.reset}`);
-    const wantTeams = await promptConfirm('Enable Agent Teams? (recommended for Claude Code)');
-    if (wantTeams) {
-      enableAgentTeams(agentTeamsClaudeDir, opts.global);
-      agentTeamsEnabled = true;
-    }
+    log.info('Agent Teams remains disabled by default; use --agent-teams only when peer coordination is needed.');
   }
 
   return { adapterFiles, agentTeamsEnabled, claudePluginActive, claudePluginStale };
@@ -1606,6 +1654,12 @@ async function cmdInstall(opts) {
   const userSpecs = existsSync(specsDir) ? readdirSync(specsDir).filter(f => f.endsWith('.md') && f !== 'Readme.md') : [];
   if (userSpecs.length === 0 && existsSync(join(srcKc, 'specs', 'Readme.md'))) {
     writeFileSync(join(kcDir, 'specs', 'Readme.md'), readFileSync(join(srcKc, 'specs', 'Readme.md')));
+  }
+
+  // Copy machine-readable portable contracts. These are versioned framework
+  // files, not user-authored specs, so installs and upgrades keep them current.
+  if (existsSync(join(srcKc, 'contracts'))) {
+    copyDirContents(join(srcKc, 'contracts'), join(kcDir, 'contracts'));
   }
 
   // Copy enterprise/ if exists
@@ -2073,6 +2127,14 @@ async function cmdUpgrade(opts) {
     if (existsSync(promptsDst)) rmSync(promptsDst, { recursive: true, force: true });
     copyDirContents(join(srcKc, 'prompts'), promptsDst);
     if (opts.verbose) log.info('Updated: prompts/');
+  }
+
+  // Update portable schema contracts (always replace).
+  if (existsSync(join(srcKc, 'contracts'))) {
+    const contractsDst = join(kcDir, 'contracts');
+    if (existsSync(contractsDst)) rmSync(contractsDst, { recursive: true, force: true });
+    copyDirContents(join(srcKc, 'contracts'), contractsDst);
+    if (opts.verbose) log.info('Updated: contracts/');
   }
 
   // Update enterprise/ (always replace)

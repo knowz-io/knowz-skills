@@ -1,6 +1,6 @@
 # Enterprise Compliance Manifest
 
-> **Status: Beta** — Centralized enforcement via the `enterprise-enforcer` agent (introduced in v0.16.0). When `compliance_enabled: true` and at least one active non-empty guideline exists, the enforcer is auto-spawned at Stage 0 of `/knowzcode:work` Tier 3 workflows. Per-agent compliance hooks in `reviewer`, `architect`, `test-advisor`, and `security-officer` remain as fallback paths used when the enforcer is disabled via `--no-enterprise-enforcer` or unavailable (Tier 2 Light, Sequential Teams).
+> **Status: Beta** — Centralized enforcement via the `enterprise-enforcer` agent (introduced in v0.16.0). When `compliance_enabled: true` and at least one active non-empty guideline exists, the enforcer is auto-spawned at Stage 0 of `/knowzcode:work` Tier 3 workflows. Per-agent compliance hooks in `reviewer`, `architect`, `test-advisor`, and `security-officer` remain as fallback paths used when the enforcer is disabled via `--no-enterprise-enforcer` or unavailable (Tier 2 Light or sequential delegation).
 
 **Purpose:** Defines which enterprise guidelines are active and their enforcement level.
 
@@ -148,20 +148,21 @@ When `mcp_compliance_enabled: true`:
 - Preserve provenance for every vault-sourced rule: vault ID/name, KnowledgeId, title, created/updated date when available, retrieval date, and enforcement level.
 
 **After Phase 2B audit:**
-- Push audit results to enterprise vault: `create_knowledge(audit_trail_vault, "Audit: {wgid} - {score}%")`
-- Include security findings, compliance status, and gap summary
+- Classify the audit delta through the lead-owned `vault-delta` runtime. Persist only `amend`, `update`, or `flush`; retain normal `batch` until final consolidation.
+- Include security findings, compliance status, and gap summary in that classified delta.
 
 **After Phase 3 finalization:**
-- Push completion record: `create_knowledge(audit_trail_vault, "Completion: {wgid}")`
-- Include goal, NodeIDs, audit score, key decisions, and architecture changes
+- Include the completion record in the consolidated delta and classify with `explicit_save: true`.
+- Apply one exact returned persistence action; when MCP is unavailable, queue the consolidated classified delta once.
 
 ### Agent-to-Enterprise-Vault Operations
 
 | Agent | Operation | When | Content |
 |-------|-----------|------|---------|
-| analyst | create_knowledge | After 1A approval | Scope decisions, risk assessment |
-| reviewer | create_knowledge | After 2B audit | Audit findings, security posture |
-| closer | create_knowledge | After Phase 3 | Completion record, architecture changes |
+| lead | vault-delta then classified mutation | After candidate/gate/final boundary | Scope, audit, or completion delta; `skip`/`batch` never writes |
+| analyst | return candidate to lead | After 1A approval | Scope decisions, risk assessment |
+| reviewer | return candidate to lead | After 2B audit | Audit findings, security posture |
+| closer | return FinalCaptureDelta to lead | After Phase 3 | Completion record, architecture changes |
 | security-officer | search_knowledge | Stage 0, Stage 2 | Organization security standards, past security findings |
 | test-advisor | (read-only) | Stage 2 | Enterprise ARC criteria for test coverage check |
 | project-advisor | (read-only) | Stage 0 | Compliance config gaps for backlog proposals |

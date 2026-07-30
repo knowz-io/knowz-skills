@@ -9,6 +9,18 @@
 ---
 **[NEWEST ENTRIES APPEAR HERE - DO NOT REMOVE THIS MARKER]**
 ---
+**Type:** ARC-Completion
+**Timestamp:** 2026-07-30 05:34:06 EDT
+**WorkGroupID:** kc-feat-context-efficient-orchestration-20260730-035714
+**NodeID(s):** ContextEfficientOrchestration, ClaudeRuntimeCompatibility, CodexRuntimeParity
+**Logged By:** AI-Agent (Codex lead, autonomous multi-agent workflow)
+**Details:**
+- Formalized and shipped context-efficient orchestration for Claude and Codex: deterministic local/resume/inheritance/capsule/team routing, versioned capsules and lineage, progressive skill loading, bounded results, current Claude lifecycle semantics, canonical Codex distribution, redacted telemetry, lead-owned vault batching, and fail-closed rollout promotion.
+- Independent audits iterated through all reported gaps. Final verification was 41/41 criteria (100%), with no unresolved critical/high/medium finding.
+- Evidence: 20/20 contract tests, 40/40 executable corpus oracles across five balanced strata, platform/install/upgrade validator PASS, mirror sync PASS, 96-file package dry-run PASS, and `git diff --check` PASS.
+- Repository fixtures remain non-empirical and cannot promote rollout. Default rollout is `off`; real paired provider measurements are required before observe/shadow/canary promotion.
+- Knowz MCP was unavailable under the cached failed health probe; the consolidated Phase 3 completion delta was classified `flush / EXPLICIT_SAVE` and queued once in `knowzcode/pending_captures.md`.
+---
 **Type:** MicroFix
 **Timestamp:** 2026-07-19 16:05:32 EDT
 **NodeID(s)/File:** CrossAgentRelay / timeout and continuation protocol

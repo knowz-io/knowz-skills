@@ -6,7 +6,7 @@ Detailed phase instructions for Tier 2 (Light) execution. The lead reads this fi
 
 ## Contents
 
-- [Team Setup](#team-setup)
+- [Dispatch Setup](#dispatch-setup)
 - [Light Phase 1: Impact Scan + Spec](#light-phase-1-impact-scan--spec)
 - [Light Phase 2A: Implementation](#light-phase-2a-implementation-builder-teammate)
 - [Light Phase 2B: Smoke Testing (Opt-in)](#light-phase-2b-smoke-testing-opt-in)
@@ -14,16 +14,9 @@ Detailed phase instructions for Tier 2 (Light) execution. The lead reads this fi
 
 ---
 
-## Team Setup
+## Dispatch Setup
 
-If Agent Teams is available (TeamCreate succeeded in Step 2):
-1. Create team `kc-{wgid}` (already done in Step 2)
-2. Spawn `knowledge-liaison` as persistent teammate using the Stage 0 spawn prompt from `references/spawn-prompts.md`. Pass `VAULT_BASELINE` from Step 3.6 in the spawn prompt.
-3. Knowledge-liaison performs startup protocol (reads local context, dispatches vault readers if vaults configured, sends Context Briefing — but only to lead since no analyst/architect in Tier 2)
-
-If Agent Teams is NOT available (subagent fallback):
-- Knowledge-liaison dispatched as one-shot `Task(subagent_type="knowzcode:knowledge-liaison")` for vault baseline research before Phase 2
-- Degradation warning already shown in Step 2
+Tier 2 does not form a team. Use the lead's `VAULT_BASELINE`; only when a material component-specific knowledge gap remains, resume a compatible knowledge-liaison or dispatch one bounded `Task(subagent_type="knowledge-liaison")`. Pass the baseline and targeted question, and require a concise Context Briefing. Skip duplicate broad vault queries.
 
 ---
 
@@ -60,11 +53,9 @@ Approve Change Set and spec to proceed to implementation?
 
 ---
 
-## Light Phase 2A: Implementation (Builder teammate)
+## Light Phase 2A: Implementation
 
-**Agent Teams mode**: Spawn the builder as a teammate in the `kc-{wgid}` team using the standard Phase 2A spawn prompt from `references/spawn-prompts.md` (same prompt for both tiers). The builder runs as a persistent teammate alongside the knowledge-liaison.
-
-**Subagent fallback**: Spawn the builder via `Task(subagent_type="knowzcode:builder")` with the standard Phase 2A prompt (current behavior).
+Resume a compatible builder lineage when one owns this exact spec/scope/checkpoint. Otherwise dispatch `Task(subagent_type="builder")` with the standard Phase 2A task packet from `references/spawn-prompts.md`. Include only the lightweight spec, assigned VERIFY IDs, owned files, checkpoint, constraints, and a bounded result contract.
 
 The builder self-verifies against spec VERIFY criteria — no separate audit phase.
 
@@ -74,9 +65,7 @@ The builder self-verifies against spec VERIFY criteria — no separate audit pha
 
 Only if user explicitly requested smoke testing (e.g., `--smoke-test` in `$ARGUMENTS` or natural language: "smoke test", "test it running", "verify it works"):
 
-**Agent Teams mode**: Spawn the smoke-tester as a teammate in the `kc-{wgid}` team using the Phase 2B smoke-tester spawn prompt from `references/spawn-prompts.md`.
-
-**Subagent fallback**: Spawn via `Task(subagent_type="smoke-tester", description="Smoke test", prompt=<spawn prompt>)`.
+Dispatch a fresh independent smoke-tester via `Task(subagent_type="smoke-tester", description="Smoke test", prompt=<bounded task packet>)`. Do not fork or resume the builder lineage.
 
 If smoke test fails: create fix tasks for builder, re-run smoke-tester. 3-iteration cap, then escalate. App lifecycle managed by smoke-tester (see `agents/smoke-tester.md`).
 
@@ -102,26 +91,25 @@ After builder completes successfully:
    ```
 4. Final commit: `git add knowzcode/ <changed files> && git commit -m "feat: {goal} (WorkGroup {wgid})"`
 5. Report completion.
-6. **Knowledge-Liaison Capture** (Agent Teams mode only):
-   - DM the knowledge-liaison: `"Capture Phase 3: {wgid}. Your task: #{task-id}"`
-   - Wait for knowledge-liaison to confirm capture (max 2 minutes, else proceed with warning)
-   - After capture, shut down knowledge-liaison, then delete team `kc-{wgid}`
+6. **Knowledge capture**:
+   - Classify the consolidated delta with `vault-delta` and `explicit_save: true`; store `FINAL_CAPTURE_ACTION` and its stable identity/reason.
+   - For `skip`, make no MCP or pending-queue write. For `batch` (defensive fallback), retain it and reclassify at the explicit final boundary. For `amend`, `update`, or `flush`, send that exact classified action to a compatible knowledge-liaison and wait for confirmation (max 2 minutes), or perform one matching direct MCP mutation. Release the lineage after capture.
 7. **Vault Write Checklist (MUST — do not skip, do not defer)**:
    You MUST attempt every item. Check each off or report failure to the user.
    - [ ] WorkGroup file exists in `knowzcode/workgroups/{wgid}.md`
    - [ ] `knowzcode_tracker.md` updated with NodeID status
    - [ ] `knowzcode_log.md` entry written
-   - [ ] MCP progress capture attempted:
+   - [ ] Classified persistence handled exactly once when `FINAL_CAPTURE_ACTION` is `amend`, `update`, or `flush`:
      - Read `knowz-vaults.md`, resolve vault IDs. Read the WorkGroup file for the `**KnowledgeId:**` value.
-     - **If KnowledgeId exists**: call `get_knowledge_item(id)`. If found → `update_knowledge` with the completion record. If not found → remove `**KnowledgeId:**` from the WorkGroup file, fall through to create.
-     - **If no KnowledgeId**: check for existing entry via `search_by_title_pattern("WorkGroup: {wgid}*")` — update if found, create if not.
+     - **For `amend`/`update`**: resolve the returned stable identity and perform that targeted mutation; never create a duplicate.
+     - **For `flush`**: consolidate the journal and perform one create/update transaction, using KnowledgeId or one targeted title lookup when available.
      - **After create**: write the returned ID back as `**KnowledgeId:**` in the WorkGroup file.
-   - [ ] If MCP unavailable: queue capture to `knowzcode/pending_captures.md` (same format as closer — see `agents/closer.md` MCP Graceful Degradation) AND announce to user: `**Vault capture skipped — MCP unavailable. Queued to pending_captures.md. Run /knowz flush when MCP is available.**`
+   - [ ] If MCP is unavailable for a required persistence action: queue the classified consolidated delta once to `knowzcode/pending_captures.md` (same format as closer — see `agents/closer.md` MCP Graceful Degradation) AND announce to user: `**Vault capture skipped — MCP unavailable. Consolidated delta queued to pending_captures.md. Run /knowz flush when MCP is available.**`
 
    Do NOT silently skip. "Light mode" means fewer agents — not fewer artifacts.
 
-**DONE** — Lightweight team: knowledge-liaison (persistent) + builder. Skipped: analyst, architect, reviewer, closer, scanners (scanner-direct, scanner-tests), all Group C specialists, and both Group D officers (frontend-designer, enterprise-enforcer).
+**DONE** — Lightweight workflow: bounded knowledge context + one builder lineage. Skipped: analyst, architect, reviewer, closer, scanners, and default specialist fan-out.
 
-> **Note on compliance in Tier 2**: enterprise-enforcer is not spawned in Light mode. If `compliance_enabled: true`, the lead announces `> **Enterprise Enforcer: SKIPPED** — not supported in Tier 2 Light; compliance checks are not performed in Light mode. For compliance enforcement, use Tier 3.`
+> **Note on compliance in Tier 2**: use per-agent compliance criteria by default. If blocking compliance is required or explicitly requested, route to Tier 3 or dispatch one fresh enterprise-enforcer; never silently omit active blocking controls.
 >
 > **Note on UI design in Tier 2**: frontend-designer is not spawned in Light mode. If the user explicitly requests design review in a Light workflow, the lead recommends `--tier full` for the design-intensive scope.

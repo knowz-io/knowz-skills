@@ -365,17 +365,18 @@ The KnowzCode workflow is orchestrated by **commands** (not a spawnable agent) t
 
 ## Agent Teams (Experimental)
 
-When the environment variable `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` is set, commands use **teammate spawning** instead of `Task()` subagent calls. This gives you:
+When the environment variable `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` is set, KnowzCode may use **teammate spawning** when multiple workers genuinely need peer messages or shared task state. Independent work normally uses local execution, a compatible resumed worker, a real conversation fork when eligible, or a fresh context capsule. Teams are not the Tier 2+ default.
 
 - A **team lead** that coordinates workflow and delegates to specialized teammates
 - **Shared task lists** with dependencies between phases
 - **Mailbox messaging** for inter-agent coordination (e.g., reviewer sending gap details directly to builder)
 
-The same phases, quality gates, and approval points apply regardless of execution model. Agent Teams is the richer experience; subagent delegation is the reliable fallback.
+The same phases, quality gates, and approval points apply regardless of execution mode. Team availability changes coordination mechanics, not workflow quality. Teammates do not inherit the lead conversation and each adds a separate model context, so the smallest viable team is used.
+
+Current Claude Code forms the team when the first teammate is spawned and manages cleanup automatically. KnowzCode does not call removed `TeamCreate` or `TeamDelete` APIs. Referenced teammate definitions apply their body/tools/model automatically.
 
 **Enabling Agent Teams:**
-- `/knowzcode:setup` offers to enable it during project setup
-- `npx knowzcode install --agent-teams` enables it via the CLI installer
+- `npx knowzcode install --agent-teams` explicitly opts in via the CLI installer
 - Or manually set it in `.claude/settings.local.json`:
   ```json
   { "env": { "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1" } }
