@@ -9,6 +9,7 @@
   "files": [
     "bin/",
     "knowzcode/",
+    "docs/",
     "agents/",
     "skills/",
     ".claude-plugin/"

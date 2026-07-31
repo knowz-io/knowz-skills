@@ -174,9 +174,11 @@ START LOOP (for WorkGroupID)
 
 ## Phase Agent Delegation Patterns
 
+The labeled blocks below are conceptual prompt-body shorthand. Every actual call supplies the exact installation-mode `subagent_type`, a short `description`, and the entire shown block as `prompt`.
+
 ### Phase 1A - Impact Analysis
 ```
-Task(analyst):
+Agent(subagent_type="analyst"):
   Perform Loop 1A impact analysis.
 
   Context:
@@ -198,7 +200,7 @@ Task(analyst):
 
 ### Phase 1B - Specification
 ```
-Task(architect):
+Agent(subagent_type="architect"):
   Draft specifications for all Change Set nodes.
 
   Context:
@@ -221,7 +223,7 @@ Task(architect):
 
 ### Phase 2A - Implementation (With Inner Verification Loop)
 ```
-Task(builder):
+Agent(subagent_type="builder"):
   Implement the Change Set using strict TDD.
 
   Context:
@@ -249,7 +251,7 @@ Task(builder):
 
 ### Phase 2B - Completeness Audit (READ-ONLY)
 ```
-Task(reviewer):
+Agent(subagent_type="reviewer"):
   Perform independent completeness audit (READ-ONLY).
 
   Context:
@@ -273,7 +275,7 @@ Task(reviewer):
 
 ### Phase 3 - Atomic Finalization
 ```
-Task(closer):
+Agent(subagent_type="closer"):
   Execute atomic finalization for verified WorkGroup.
 
   Context:

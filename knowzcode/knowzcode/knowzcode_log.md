@@ -9,6 +9,19 @@
 ---
 **[NEWEST ENTRIES APPEAR HERE - DO NOT REMOVE THIS MARKER]**
 ---
+**Type:** ARC-Completion-Correction
+**Timestamp:** 2026-07-30 22:45:21 EDT
+**WorkGroupID:** kc-fix-context-orchestration-hardening-20260731-003258
+**NodeID(s):** ContextEfficientOrchestration, ClaudeRuntimeCompatibility, CodexRuntimeParity
+**Logged By:** AI-Agent (Codex lead, autonomous multi-agent hardening workflow)
+**Details:**
+- Supersedes the release-readiness conclusion recorded for `kc-feat-context-efficient-orchestration-20260730-035714`. Fresh adversarial review reopened the three nodes and produced runtime, workflow, installer, ownership, package, and crash-recovery fixes; the obsolete pending completion remains quarantined as `superseded`.
+- Final formal verification is 66/66 criteria: CEO 21/21, CRC 25/25, and CRP 20/20. The executable runtime suite passes 32/32 contracts over a balanced 40-case corpus, with default rollout still `off` and synthetic evidence prohibited from live promotion.
+- Lifecycle validation now covers exact Knowz/KnowzCode ownership, atomic preflight, project/HOME isolation, Claude plugin/local resource and namespace matrices, Copilot structural merges, both Gemini shared-custody orders, immutable co-owned updates, both uninstall orders, arbitrary unowned non-claim, malformed settings, and symmetric missing/replaced/leaf-/ancestor-symlinked interrupted-peer evidence.
+- Final gates: platform validator PASS; mirror sync PASS (13 Codex skills + one generated reference, seven framework mirrors, three contracts); syntax/JSON/diff checks PASS; KnowzCode dry-run package 104 files and Knowz package 20 files PASS.
+- Independent final audits scored 98/100 for workflow/resource/traceability and 100/100 for runtime/security/actual-packed behavior. Weighted release readiness is **98/100**, with no unresolved critical/high/medium/low finding.
+- The final durable completion delta is queued once in project-root `knowz-pending.md` because no live Knowz MCP writer is callable in this environment.
+---
 **Type:** ARC-Completion
 **Timestamp:** 2026-07-30 05:34:06 EDT
 **WorkGroupID:** kc-feat-context-efficient-orchestration-20260730-035714

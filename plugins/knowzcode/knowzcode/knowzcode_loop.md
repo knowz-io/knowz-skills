@@ -120,7 +120,7 @@ Known limitations and future work.
 #### Quality Gate: Spec Approval
 Present drafted specs to the user. **PAUSE and await user approval.** Log "SpecApproved" events. In autonomous mode, auto-approve and proceed immediately (see Section 5).
 
-**Pre-Implementation Commit:** After specs are approved, commit `knowzcode/` to create a checkpoint before implementation begins.
+**Pre-Implementation Commit:** After specs are approved, inspect status and scoped diffs, then stage only the active WorkGroup file, tracker row changes, and explicit approved spec paths. Verify `git diff --cached --check` and the exact staged name list before committing. Abort if any unrelated path is staged; never stage the `knowzcode/` directory wholesale.
 
 ---
 
@@ -234,7 +234,7 @@ Successfully implemented and verified the Change Set for [goal].
 - Check if changes impact `knowzcode_project.md` (new features, stack changes)
 
 **Step 11: Final Commit**
-Stage and commit all changes (source code + knowzcode files).
+Inspect `git status --short` and scoped diffs. Resolve an explicit reviewed list containing only active WorkGroup artifacts and approved implementation paths, stage it with `git add -- {explicit-paths}`, then verify `git diff --cached --check` and the exact `git diff --cached --name-only` list before committing. Abort on unrelated or ambiguous paths; never use broad directory staging, `git add -A`, or `git add .`.
 
 **Step 12: Report & Close**
 Report completion, mention any `REFACTOR_` tasks created. WorkGroup is closed.
@@ -317,11 +317,11 @@ Vault routing is driven by `knowz-vaults.md` — each vault entry has "When to q
 
 On platforms with multi-agent orchestration (e.g., Claude Code Agent Teams), **`knowz:reader`** has read-only access to MCP vaults, and **`knowz:writer`** has full read/write access to MCP vaults. Both have read/write access to local knowzcode files:
 
-- **`knowz:reader`** is dispatched at Stage 0 — queries vaults for business context, conventions, and past decisions. Broadcasts findings to inform analyst and architect work.
-- **`knowz:writer`** is dispatched only after `vault-delta` returns `amend`, `update`, or `flush`. It receives the action, stable identity, phase, WorkGroup ID, and consolidated content; normal `skip`/`batch` gates create no writer.
+- **`knowz:reader`** is dispatched only for a bounded Stage 0 gap — queries vaults for business context, conventions, and past decisions, then returns one bounded result to the lead. The lead routes findings to analyst and architect directly; in Team mode it uses one targeted `SendMessage` per recipient because no broadcast primitive exists.
+- **`knowz:writer`** is dispatched only after `vault-delta` returns `amend`, `update`, or `flush`. It receives the explicit mutation plan, content-bound parent identity/key, one distinct deterministic child key per logical mutation, exact `KnowledgeId` values for amend/update, phase, WorkGroup ID, and consolidated content; normal `skip`/`batch` gates create no writer.
 - Writers are short-lived and action-triggered; readers are dispatched only for named unresolved questions rather than automatic Stage 0 hydration.
 
-On platforms without multi-agent orchestration, the closer handles vault writes directly (see Section 7).
+On platforms without multi-agent orchestration, the current lead executes the same classified mutation plan directly (see Section 7); a separately dispatched closer never owns vault mutation authority.
 
 ### Enterprise: Team Standards
 
@@ -427,19 +427,21 @@ During finalization, scan the WorkGroup for insight-worthy patterns:
 Learning candidates are detected at each quality gate. **The lead/outer orchestrator is responsible for classifying each delta** with `node knowzcode/context_efficiency_runtime.mjs vault-delta`. A normal `batch` result stays in the coordinator-owned WorkGroup journal; it does not dispatch a writer or create a pending-capture entry at that gate. The lead routes `amend`, `update`, and `flush` results through the knowledge liaison on multi-agent platforms or the direct-write fallback on single-agent/sequential platforms. `skip` produces no write.
 
 Maintain an append-only local knowledge delta for the WorkGroup. Before a
-writer dispatch, compare the new delta with already queued/saved content and
-skip empty or semantic-duplicate captures. Reuse one compatible writer or batch
-related changes at a quality gate/finalization instead of starting a cold writer
-for every unchanged gate. Flush immediately for explicit user saves,
+writer dispatch, resolve the complete ordered mutation plan, compare it with
+already queued/saved content, and reject empty, conflicting, or ambiguous
+identities. Give every logical mutation a distinct deterministic child key from
+the content-bound parent classification key. Use one bounded writer dispatch for
+each classified operation or consolidated batch; writers are non-persistent, so
+do not advertise cross-gate writer resume. Flush immediately for explicit user saves,
 corrections/deprecations, HIGH/CRITICAL security or compliance findings, and
 interruption-sensitive decisions. Tier 2 has exactly one completion capture
 path; liaison and direct-capture paths must not both write the same outcome.
 
-**Multi-agent platforms (knowledge-liaison dispatches):**
+**Multi-agent platforms (knowledge-liaison prepares requests):**
 
-For a classified `amend`, `update`, or `flush`, the lead DMs the knowledge-liaison: `"Capture Delta {action}: Phase {N}: {wgid}. Your task: #{task-id}"`. The knowledge-liaison performs one targeted mutation or consolidated writer dispatch. At Phase 3, the closer returns the consolidated journal delta to the lead; the lead classifies with `explicit_save: true` and sends one `flush` request. Normal per-gate `batch` results do not create liaison/writer tasks.
+For a classified `amend`, `update`, or `flush`, the lead sends the knowledge-liaison the action, complete mutation plan, stable parent identity/key, exact `KnowledgeId` values, phase, WorkGroup ID, and any coordinated-team task ID. The liaison prepares exactly one self-contained `WriterRequest` with one distinct deterministic child key per logical mutation; missing amend/update identity returns `MISSING_AMEND_IDENTITY` or `MISSING_UPDATE_IDENTITY` and never becomes create. The lead dispatches `knowz:writer` and owns its task state. At Phase 3, the closer returns the consolidated journal delta to the lead; the lead classifies with `explicit_save: true`, obtains one request, and dispatches one writer. Normal per-gate `batch` results do not create liaison/writer tasks.
 
-The knowledge-liaison owns extraction, vault routing, and writer dispatch. No other agent dispatches `knowz:writer` or calls `create_knowledge` directly.
+The knowledge-liaison owns bounded request preparation and vault-routing advice. The lead alone dispatches `knowz:reader`/`knowz:writer`; the writer owns any post-dispatch failure queue entry. No other agent calls `create_knowledge` directly.
 
 **Ad-hoc captures (any agent, any time):**
 
@@ -447,33 +449,33 @@ Any agent can send the lead a capture candidate:
 - `"Log: {description}"` — the lead classifies with `explicit_save: true` and routes the resulting flush
 - `"Consider: {description}"` — the lead runs `vault-delta`; `skip`/`batch` create no writer and persistence actions route to the liaison/direct path
 
-The knowledge-liaison handles only lead-classified routing and dispatch. If MCP is unavailable, the lead queues only a required consolidated flush to `knowzcode/pending_captures.md` for later sync.
+The knowledge-liaison handles only lead-classified request preparation. If MCP is unavailable before writer dispatch, the lead queues only a required consolidated flush to project-root `knowz-pending.md` for later sync. The writer alone queues failures after an MCP mutation was dispatched. Every block uses the canonical idempotent queue schema; `/knowz flush` migrates the legacy `knowzcode/pending_captures.md` queue before replay.
 
 **Single-agent / no writer (direct MCP writes):**
 
 If MCP is available but no `knowz:writer`, resolve vault IDs from `knowz-vaults.md` (project root) before writing. Apply the following phase payload templates only when `vault-delta` returned `amend`, `update`, or `flush`; retain `batch` payloads for final consolidation:
 
-- After Phase 1A: `create_knowledge({ecosystem_vault}, title="Scope: {descriptive goal summary}", content="[CONTEXT] {problem description, what prompted this work, constraints}\n[INSIGHT] {scope decisions — what's included/excluded and why}\n[RATIONALE] {risk assessment with full reasoning, affected files, mitigation}\n[TAGS] scope, {domain}", tags=["scope", "{domain}"])`
+- After Phase 1A: return a Scope/Decision candidate containing the problem, constraints, included/excluded scope, risk reasoning, affected files, and mitigation; the lead classifies and routes it
 - After Phase 1B: Capture approved specs, component/system boundaries, integration contracts, diagrams, and spec decisions — include NodeIDs, spec paths, VERIFY criteria, source files, and enterprise guideline provenance when applicable
 - After Phase 2A: Capture implementation patterns and workarounds discovered during TDD cycles — include specific file paths, code examples, and the problem each pattern solves
-- After Phase 2B: `create_knowledge({ecosystem_vault}, title="Audit: {wgid} - {score}% — {key finding summary}", content="[CONTEXT] {what was audited, scope of the review}\n[INSIGHT] {specific gaps with file paths and line references, security findings with severity reasoning}\n[RATIONALE] {gap resolution decisions — what was deferred vs fixed and why}\n[TAGS] audit, {domain}", tags=["audit", "{domain}"])`
+- After Phase 2B: return an Audit candidate containing the audited scope, score, findings with file/line evidence, security severity, and gap-resolution rationale; the lead classifies and routes it
 - After Phase 2B (enterprise): If `mcp_compliance_enabled: true`, an enterprise vault is configured, and `push_audit_results: true` (default), classify the audit delta and persist only `amend`, `update`, or `flush`; retain `batch` for final consolidation
 - After Phase 3: Capture architectural learnings and consolidation decisions (handled by closer agent)
 
 ### Capture Protocol
 
 **When knowz:writer is available (multi-agent platforms), after `vault-delta` returns `amend`, `update`, or `flush`:**
-1. Dispatch `knowz:writer` with a self-contained prompt including action, stable identity, phase identifier, and WorkGroup ID
-2. The writer handles: vault ID resolution, duplicate checking, user approval prompting, and writing
+1. The lead dispatches `knowz:writer` with the liaison's self-contained request including explicit per-item operations, parent identity/key, distinct mutation keys, exact amend/update `KnowledgeId` values, phase identifier, and WorkGroup ID
+2. The writer resolves vault IDs, preflights the exact target/identity, reconciles already-applied content, and executes each eligible logical mutation at most once. It does not reinterpret or prompt to change the lead-classified operation.
 3. No other agent should call `create_knowledge` directly
 
 **When no knowz:writer (single-agent / sequential), after a persistence action:**
 1. Read `knowz-vaults.md` (project root) to resolve vault IDs and routing rules
 2. Detect learning candidates from WorkGroup file content
-3. Check for duplicates via `search_knowledge` — skip if substantially similar exists
-4. Prompt user for approval before saving
-5. Only write if the targeted vault is configured — skip gracefully if not
-6. Create learning via `create_knowledge` with appropriate title prefix
+3. Resolve the complete ordered mutation plan and one distinct deterministic key per logical mutation from the content-bound classification identity. Require an exact non-empty `KnowledgeId` for every amend/update; missing identity fails explicitly and never becomes create.
+4. Preflight each exact target. For create, one materially equivalent match reconciles success, no match permits create, and conflicts/multiple matches stop. For amend/update, fetch the exact `KnowledgeId`, reconcile already-applied content, and leave a missing or ambiguous target unchanged.
+5. Execute only the classified operation with the matching MCP tool and only in an unambiguously configured target vault. Never reinterpret amend/update as create.
+6. On MCP failure, read canonical project-root `knowz-pending.md` first and append one block per failed logical mutation using its exact operation and distinct key. Identical key/content is already queued; a key/content collision fails closed. Never queue amend/update without its exact `KnowledgeId`.
 
 ### Audit Trail (Enterprise)
 
@@ -483,8 +485,10 @@ After Phase 3:
 - Push WorkGroup completion record with goal, NodeIDs, audit score, and decisions
 - Push architecture drift findings if any detected during finalization
 
-If MCP is not available, queue durable learning deltas locally when required and
-skip the remote audit trail — all other phases work normally.
+If MCP is not available, queue each eligible durable learning mutation exactly
+once under its distinct key when required; missing-identity amend/update entries
+remain errors and are not queued or recreated. Skip the remote audit trail only
+after reporting the exact confirmed queue keys — all other phases work normally.
 
 ---
 
@@ -668,7 +672,7 @@ The user MUST select a recovery option before work continues.
 
 If a WorkGroup needs to be abandoned mid-workflow:
 
-1. **Revert uncommitted changes**: If implementation was in progress, revert source code changes (keep knowzcode files)
+1. **Preserve user state and unwind only proven workflow-owned changes**: Compare the pre-WorkGroup checkpoint, `git status --short`, and the explicit writer-owned path list. Never run a blanket revert, reset, checkout, clean, or stash. Restore a path only when the workflow created its current delta, the prior state is known, and restoration cannot overwrite unrelated user work; otherwise preserve the delta and list it in the abandonment record for user direction.
 2. **Update tracker**: Set all affected NodeIDs back to their pre-WorkGroup status
 3. **Log abandonment**: Create a log entry with type `WorkGroup-Abandoned` including the reason
 4. **Close WorkGroup file**: Mark the WorkGroup file as abandoned with reason

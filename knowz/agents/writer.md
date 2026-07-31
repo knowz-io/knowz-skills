@@ -1,9 +1,8 @@
 ---
 name: writer
 description: "Knowz: Generic vault write executor — captures knowledge to vaults from self-contained dispatch prompts"
-tools: Read, Write, Glob, mcp__knowz__create_knowledge, mcp__knowz__update_knowledge, mcp__knowz__amend_knowledge, mcp__knowz__search_knowledge, mcp__knowz__search_by_title_pattern, mcp__knowz__list_vaults, mcp__knowz__get_knowledge_item
+tools: Read, Write, Edit, Glob, ToolSearch, mcp__knowz__create_knowledge, mcp__knowz__update_knowledge, mcp__knowz__amend_knowledge, mcp__knowz__search_knowledge, mcp__knowz__search_by_title_pattern, mcp__knowz__list_vaults, mcp__knowz__get_knowledge_item
 model: sonnet
-permissionMode: acceptEdits
 maxTurns: 10
 ---
 
@@ -24,6 +23,14 @@ Receive a self-contained write prompt describing **what to extract**, **where to
 
 ## Write Process
 
+### Idempotency Identity
+
+Resolve the complete mutation plan and one stable key **per logical mutation** before the first MCP call. An explicit `Mutation Idempotency Key` belongs to exactly one mutation. A one-item request may use its explicit `Idempotency Key` directly.
+
+For a multi-item consolidated request, treat the explicit classified `Idempotency Key` as a content-bound **parent key** unless the caller already supplied a complete per-item key map. Sort the complete mutation plan by `Operation | canonical target vault | KnowledgeId-or-semantic-key | normalized title`, assign stable one-based ordinals, and derive a distinct child key as `{parent-key}:mutation:{ordinal}:{operation}:{normalized-target-identity}`. A caller-supplied map is acceptable only when it covers every mutation exactly once, every key is distinct, and no key maps to different normalized mutation content. Reject duplicate operation/target identities with different content as `AMBIGUOUS_MUTATION_IDENTITY` and reject an invalid supplied map as `INVALID_MUTATION_KEY_MAP`. Preserve the same order and child keys across retries, and never reuse one key for two different mutations.
+
+For a legacy/general one-item dispatch without an explicit key, derive a stable mutation key from the exact operation, target vault, `KnowledgeId` or semantic key, source, intent, and normalized title. If those fields do not identify one logical mutation unambiguously, stop with `MISSING_IDEMPOTENCY_IDENTITY` instead of guessing or issuing a write. Never use a retry timestamp, agent/session ID, or attempt number in any key.
+
 For each item to capture (as specified in your dispatch prompt):
 
 ### Step 1: Read Source Material
@@ -40,29 +47,29 @@ Apply the content format template provided in your dispatch prompt. If no templa
 
 > **Content Detail Principle**: Vault entries are retrieved via semantic search, not read directly like local files. Every entry must be self-contained and detailed — include full reasoning, specific technology names, code examples, file paths, and error messages. A terse entry like `"[Risk] Medium"` is useless when retrieved months later.
 
-### Step 3: Dedup Check
+### Step 3: Resolve Mode and Check KnowledgeId
 
-Before writing, call `search_knowledge(title, vaultId, 3)` on the target vault. If a result with a substantially similar title AND content already exists, skip the write and note the dedup catch.
+Determine the **intended mode** from the explicit classified `Operation` or persistence action first, then verify the target. An explicit operation always takes precedence over inference:
 
-### Step 3.5: KnowledgeId Check
-
-Determine the **intended mode** from your dispatch prompt first, then verify the target:
-
-- Prompt supplies a `knowledgeId` and describes a **targeted delta** (add/append/change a specific field, fix a phrase, adjust tags) → intended mode is **AMEND**.
-- Prompt supplies a `knowledgeId` and a **full replacement payload** or says "replace" / "rewrite" → intended mode is **UPDATE**.
-- Prompt supplies a `knowledgeId` but the shape is ambiguous → default to **AMEND** (preserves untouched content).
-- No `knowledgeId` → intended mode is **CREATE**.
+- Explicit `amend` requires an exact `knowledgeId` and a targeted delta. If the ID is absent, stop with `MISSING_AMEND_IDENTITY`; do not search, write, or queue it as create.
+- Explicit `update` requires an exact `knowledgeId` and a full replacement payload. If the ID is absent, stop with `MISSING_UPDATE_IDENTITY`; do not search, write, or queue it as create.
+- Explicit `create` requires no `knowledgeId` and must carry a stable new-item semantic identity plus complete payload.
+- A consolidated `flush` must supply or resolve an explicit operation for each mutation: a new-item identity may resolve to create, while any intended existing-item amend/update still requires its exact `knowledgeId`.
+- Only a legacy one-item request with no explicit operation may infer AMEND from an exact `knowledgeId` plus targeted delta, UPDATE from an exact `knowledgeId` plus full replacement, or CREATE from an unambiguous new-item identity plus complete payload. Ambiguity returns `MISSING_MUTATION_OPERATION`.
 
 Then, if the intended mode is AMEND or UPDATE, call `get_knowledge_item(id=knowledgeId)` to verify the target still exists:
-- **Exists** → proceed to Step 4 in the intended mode.
+- **Exists** → compare the exact target with the requested delta/replacement. If it is already applied, reconcile against that same `KnowledgeId`; otherwise proceed to Step 4 in the intended mode.
 - **Not found** (404, item deleted, or similar):
-  - If intended mode was **UPDATE** → it is safe to fall through to **CREATE** mode (a full replacement payload is a complete new item). Emit `REMOVED_KNOWLEDGE_ID: {knowledgeId} (source: {source_file_path})` so the dispatcher can clean up local tracking.
-  - If intended mode was **AMEND** → **do NOT** fall through to CREATE. An amend delta is not a full item body — silently recreating would publish a partial item under the wrong assumptions. Skip the write for this item and emit `MISSING_AMEND_TARGET: {knowledgeId} (source: {source_file_path})` so the dispatcher can decide whether to re-save as a fresh CREATE with a full payload.
+  - For **AMEND or UPDATE**, do **not** fall through to CREATE. The classified mutation targets an existing stable identity; silently creating would duplicate or misroute knowledge. Skip the write and emit `MISSING_{AMEND|UPDATE}_TARGET: {knowledgeId} (source: {source_file_path})`. A new create requires a separate lead-classified action with a new idempotency key and complete payload.
 - **Transient error** (timeout, 500, MCP unavailable) → fall through to MCP Graceful Degradation (queue the operation with its intended `Operation` so `/knowz flush` can replay it).
+
+### Step 3.5: Create Dedup Check
+
+For **CREATE** only, call `search_knowledge(title, vaultId, 3)` on the target vault. If exactly one result has the same semantic identity and materially equivalent content, reconcile the operation as already applied and note the dedup catch. Similar titles, conflicting content, or multiple plausible matches are ambiguous and MUST stop without writing. Never use title search to skip, retarget, or downgrade an AMEND/UPDATE; those modes are bound to their exact `KnowledgeId`.
 
 ### Step 4: Write
 
-**CREATE mode** (no knowledgeId, or cloud item was deleted):
+**CREATE mode** (the classified operation is create and supplies no `KnowledgeId`):
 Call `create_knowledge` with the formatted payload for the target vault. Include the returned item ID in your output: `CREATED_KNOWLEDGE_ID: {returned_id} (source: {source_file_path})`
 
 **AMEND mode** (knowledgeId verified to exist + dispatch prompt describes a targeted delta):
@@ -75,14 +82,19 @@ Call `update_knowledge(id=knowledgeId, ...)` with the formatted payload. Include
 
 If MCP calls fail or MCP is unavailable:
 
-1. **Queue locally**: Append each operation to `knowz-pending.md` in the project root using the canonical format. Every block MUST be wrapped in `---` delimiters — the flush parser splits on them. The `Operation` field carries the intended mode so `/knowz flush` can replay it correctly.
+1. **Queue locally exactly once per mutation**: You are the sole queue owner after an MCP mutation attempt starts. Read `knowz-pending.md` first. For each failed mutation, use its distinct mutation key. If that key is already present with the same operation, canonical target vault, `KnowledgeId` or semantic identity, normalized title/intent/source, and exact payload, do not append a duplicate. If the key exists with any different mutation content, stop with `IDEMPOTENCY_KEY_COLLISION` and preserve both facts for the caller. Otherwise append one operation block to `knowz-pending.md` in the project root using the canonical format. Every block MUST be wrapped in `---` delimiters — the flush parser splits on them. Never queue amend/update without its exact `KnowledgeId`.
 
    ```markdown
    ---
 
    ### {timestamp} -- {title}
    - **Operation**: create | amend | update
+   - **Idempotency Key**: {stable per-mutation retry key resolved before the MCP attempt}
+   - **Parent Idempotency Key**: {content-bound parent key when expanded from a multi-item request}
+   - **Queue Status**: pending
    - **KnowledgeId**: {knowledgeId}    # required for amend/update, omit for create
+   - **Semantic Key**: {stable semantic identity when available}
+   - **Intent**: {stable phase/capture intent}
    - **Category**: {category}
    - **Target Vault**: {vault ID or name}
    - **Source**: {source description from dispatch prompt}
@@ -93,7 +105,8 @@ If MCP calls fail or MCP is unavailable:
    ```
 
 2. Report the MCP failure in your output.
-3. Note which items were queued so the caller knows operations are pending.
+3. For every queued or already-present retry, emit `QUEUED_IDEMPOTENCY_KEY: {key} (source: {source_file_path})`. This confirms that the caller MUST NOT queue the same logical mutation again.
+4. Note which items were newly queued versus already present.
 
 Never drop knowledge. If MCP is down, queue it with its intended `Operation`. The pending file can be flushed later via `/knowz flush`.
 

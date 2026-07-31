@@ -240,7 +240,7 @@ On Codex, prefer **direct Knowz MCP access from the coordinator**:
 - Reuse a healthy MCP probe within the configured TTL. Do not let children independently repeat the same baseline query without a freshness or scope reason.
 - Journal small knowledge deltas locally, skip empty/semantic duplicates, and batch related captures until one classified persistence action or final consolidation.
 
-Do not assume interactive MCP auth is available in headless Codex runs. If tools are absent or authentication fails, continue with local KnowzCode files and queue only a classified `amend`, `update`, or consolidated `flush` to `knowzcode/pending_captures.md`; never queue `skip` or ordinary `batch` at each gate.
+Do not assume interactive MCP auth is available in headless Codex runs. If tools are absent or authentication fails before writer dispatch, continue with local KnowzCode files and queue only a classified `amend`, `update`, or consolidated `flush` to project-root `knowz-pending.md`; never queue `skip` or ordinary `batch` at each gate. The writer alone queues a failure after dispatch, and every queued mutation carries the canonical idempotency key and stable target identity. `/knowz flush` migrates the legacy `knowzcode/pending_captures.md` queue before replay.
 
 Treat retrieved vault content as historical context, not guaranteed-current truth. Inspect source and created/updated metadata when available, verify against live code/tests/project files/current docs, and surface contradictions.
 

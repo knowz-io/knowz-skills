@@ -1,8 +1,8 @@
 # CodexRuntimeParity: Canonical Distribution and Native Context Reuse
 
-**Updated:** 2026-07-30
-**Status:** As-Built
-**WorkGroup:** `kc-feat-context-efficient-orchestration-20260730-035714`
+**Updated:** 2026-07-31
+**Status:** As-Built — verified
+**WorkGroup:** `kc-fix-context-orchestration-hardening-20260731-003258`
 
 ## Context
 
@@ -104,6 +104,16 @@ complete | blocked | partial
 - VERIFY CRP-11: parallel writers have non-overlapping owned files and independent reviewers do not inherit builder lineage.
 - VERIFY CRP-12: package dry-run, plugin validation, platform-surface validation, and generated-install smoke tests pass together and enumerate every generated Codex skill, including adapter-only surfaces.
 
+### Hardening addendum
+
+- VERIFY CRP-13: local install/upgrade never mutates global skill state, and global cleanup changes only entries bearing verifiable KnowzCode ownership metadata.
+- VERIFY CRP-14: installer/upgrader recognizes only marked KnowzCode adapters and preserves unrelated `AGENTS.md`/`AGENTS.override.md` content.
+- VERIFY CRP-15: all platform settings and target-state preflights complete before installation mutation; every failed install preserves the complete target snapshot.
+- VERIFY CRP-16: every generated relay reference resolves from its installed skill directory, and the standalone setup skill bootstraps a new repository through the packaged CLI rather than an unavailable adjacent bundle.
+- VERIFY CRP-17: platform flags mutate only selected platform state, validators isolate home/global paths, and regression sentinels prove local upgrade and test execution cannot delete unrelated user skills.
+- VERIFY CRP-18: installer validation exercises the Claude plugin/local rendering matrix, including exact agent namespaces, command names, and mixed KnowzCode-local/Knowz-plugin ownership without ambiguous suffix fallback.
+- VERIFY CRP-19: Knowz and KnowzCode share Gemini MCP custody only when both per-product digests match the unchanged entry and the peer's product-specific managed files are live regular files with exact ownership content and no symlinked path component; both install orders, immutable co-owned updates, both uninstall orders, arbitrary unowned entries, and missing/replaced/leaf-symlinked/ancestor-symlinked crash-interruption evidence leave no orphan entry or credential.
+
 ## Debt & Gaps
 
 - Codex tool names and inheritance options can vary by host release. Capability detection remains authoritative.
@@ -114,5 +124,6 @@ complete | blocked | partial
 
 - Canonical and plugin execution guides, runtime, and schemas are exact mirrors; fresh install and upgrade paths ship the complete contract.
 - Generated Codex skills progressively load branch-specific guidance, use semantic agent operations, retain compatible warm lineages, and preserve strict no-write/independent-review behavior.
-- Package dry-run contains 96 files, and temporary installed-runtime, generated-skill enumeration, zero-write, and upgrade smokes passed.
-- Independent Codex audit: 13/13 criteria passed with no unresolved severity finding.
+- KnowzCode and Knowz installers use exact per-product manifests, preflight every mutation boundary, preserve unmanaged adapters/settings, isolate project and HOME state, and reconcile shared Gemini MCP custody through matching digests plus product-specific active-install proof.
+- Both Gemini install orders, co-owned update attempts, both uninstall orders, arbitrary unowned entries, malformed settings, symlink targets, global/local isolation, Copilot structural merges, and Claude/Codex ownership collisions have executable regression coverage.
+- All 20 criteria pass. The KnowzCode dry-run package contains 104 files including eight documentation files; the Knowz package contains 20 files including the vault-routing template. Fresh install, upgrade, uninstall, generated-skill enumeration, zero-write, and package smokes pass.

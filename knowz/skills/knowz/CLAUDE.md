@@ -17,11 +17,11 @@ Phase 0 and Phase 1 are mandatory gates. If Phase 1 fails, stop and report — d
 
 ## Agent Dispatch
 
-Agents (`knowledge-worker`, `reader`, `writer`) are dispatched as **`general-purpose` subagents that read the agent `.md` file at runtime**. They are NOT invoked via a `subagent_type` field.
+Agents (`knowledge-worker`, `reader`, `writer`) ship with Knowz. Invoke them through the current `Agent` tool using the exact registered `subagent_type` (for example, `knowz:knowledge-worker` in the marketplace; npx-local installs rewrite these exact Knowz-owned roles to bare local names).
 
 Dispatch pattern:
-1. Identify the agent file path relative to the plugin root (e.g. `agents/knowledge-worker.md`).
-2. Invoke a `general-purpose` subagent, passing the agent file content (or its path for the subagent to read) as the system/context prompt.
+1. Select the exact registered role for the active install mode (for example, `knowz:knowledge-worker` in the marketplace).
+2. Invoke `Agent(subagent_type="knowz:knowledge-worker", description="...", prompt="...")`.
 3. Include a self-contained task prompt so the agent can operate without additional context from the parent conversation.
 
 ### When to Dispatch Each Agent

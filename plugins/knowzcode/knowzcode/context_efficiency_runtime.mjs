@@ -1,6 +1,6 @@
-import { createHash } from 'node:crypto';
-import { readFileSync, realpathSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { createHash, verify as verifySignature } from 'node:crypto';
+import { existsSync, readFileSync, readSync, realpathSync } from 'node:fs';
+import { basename, dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 function readContract(name) {
@@ -70,31 +70,155 @@ function decision(mode, reasonCodes) {
   return { mode, reason_codes: sortedReasons(reasonCodes) };
 }
 
-function hasOverlappingWrites(scopes = []) {
-  const seen = new Set();
+function ownershipPathError(message) {
+  const error = new TypeError(message);
+  error.code = 'INVALID_OWNERSHIP_PATH';
+  return error;
+}
+
+function writerScopeRequiredError() {
+  const error = new TypeError('Every writer must declare at least one repository-relative owned path');
+  error.code = 'WRITER_SCOPE_REQUIRED';
+  return error;
+}
+
+/**
+ * Resolve lexical aliases and any existing symlinked ancestor before comparing
+ * writer scopes. Lower-casing is deliberately conservative: a false conflict
+ * serializes work, while a missed case-folding conflict can corrupt it.
+ */
+function canonicalOwnershipPath(value, workspaceRoot = process.cwd()) {
+  if (typeof value !== 'string' || value.trim() === '' || value.trim() !== value
+      || value.includes('\0') || value.includes(':')
+      || /[\u0000-\u001f\u007f]/.test(value)) {
+    throw ownershipPathError('Writer ownership paths must be non-empty strings');
+  }
+  if (typeof workspaceRoot !== 'string' || workspaceRoot.trim() === '') {
+    throw ownershipPathError('workspace_root must be a non-empty string');
+  }
+
+  const portableValue = value.trim().replace(/\\/g, '/');
+  const portableRoot = workspaceRoot.trim().replace(/\\/g, '/');
+  if (portableValue.startsWith('/') || /^[A-Za-z]:\//.test(portableValue)
+      || /^[A-Za-z][A-Za-z0-9+.-]*:/.test(portableValue)
+      || portableValue.split('/').includes('..')) {
+    throw ownershipPathError('Writer ownership paths must be repository-relative and non-traversing');
+  }
+  let canonicalRoot = resolve(portableRoot);
+  try {
+    canonicalRoot = realpathSync(canonicalRoot);
+  } catch {
+    // A not-yet-created workspace retains its normalized lexical root.
+  }
+  const absolute = resolve(canonicalRoot, portableValue);
+  let cursor = absolute;
+  const unresolved = [];
+  while (!existsSync(cursor)) {
+    const parent = dirname(cursor);
+    if (parent === cursor) break;
+    unresolved.unshift(basename(cursor));
+    cursor = parent;
+  }
+  let resolvedPath = absolute;
+  try {
+    resolvedPath = resolve(realpathSync(cursor), ...unresolved);
+  } catch {
+    // Nonexistent or inaccessible paths retain their normalized lexical form.
+  }
+  const portableResolved = resolvedPath.normalize('NFKC').replace(/\\/g, '/').replace(/\/+$/, '');
+  const portableCanonicalRoot = canonicalRoot
+    .normalize('NFKC')
+    .replace(/\\/g, '/')
+    .replace(/\/+$/, '');
+  if (portableResolved !== portableCanonicalRoot
+      && !portableResolved.startsWith(`${portableCanonicalRoot}/`)) {
+    throw ownershipPathError('Writer ownership path resolves outside workspace_root');
+  }
+  return portableResolved.toLocaleLowerCase('en-US');
+}
+
+function pathsOverlap(left, right) {
+  return left === right || left.startsWith(`${right}/`) || right.startsWith(`${left}/`);
+}
+
+function canonicalOwnedFiles(scope = {}, workspaceRoot = process.cwd()) {
+  if (!Array.isArray(scope.owned_files ?? []) || !Array.isArray(scope.resolved_owned_files ?? [])) {
+    throw ownershipPathError('owned_files and resolved_owned_files must be arrays');
+  }
+  const raw = [
+    ...(scope.owned_files ?? []),
+    ...(scope.resolved_owned_files ?? []),
+  ];
+  return [...new Set(raw.map((path) => canonicalOwnershipPath(path, workspaceRoot)))];
+}
+
+function hasOverlappingWrites(scopes = [], workspaceRoot = process.cwd()) {
+  if (!Array.isArray(scopes)) throw ownershipPathError('team.scopes must be an array');
+  const seen = [];
   for (const scope of scopes) {
-    for (const path of scope.owned_files ?? []) {
-      if (seen.has(path)) return true;
-      seen.add(path);
+    if (!scope || typeof scope !== 'object' || Array.isArray(scope)) {
+      throw ownershipPathError('writer scopes must be objects');
+    }
+    if (scope.is_writer === false) continue;
+    const ownedFiles = canonicalOwnedFiles(scope, workspaceRoot);
+    if (ownedFiles.length === 0) throw writerScopeRequiredError();
+    for (const path of ownedFiles) {
+      if (seen.some((candidate) => pathsOverlap(candidate, path))) return true;
+      seen.push(path);
     }
   }
   return false;
 }
 
+function scopeLooksLikeWriter(input, proposedPaths) {
+  const role = `${input.role ?? input.lineage?.role ?? ''}`.toLocaleLowerCase('en-US');
+  return input.is_writer === true
+    || proposedPaths.length > 0
+    || /(?:^|[-_])(builder|writer|implementer)(?:$|[-_])/.test(role)
+    || (input.team?.scopes ?? []).some((scope) => scope?.is_writer !== false
+      && canonicalOwnedFiles(scope, input.workspace_root).length > 0);
+}
+
 function hasActiveWriterConflict(input = {}) {
-  if (input.is_writer !== true && !(input.team?.scopes ?? []).some((scope) => scope?.is_writer !== false)) {
-    return false;
-  }
+  const workspaceRoot = input.workspace_root ?? process.cwd();
   const activeWriters = input.active_writers ?? input.active_writer_scopes ?? [];
-  const proposedLineageId = input.lineage_id ?? input.lineage?.lineage_id ?? null;
-  const proposed = new Set([
-    ...(input.owned_files ?? []),
-    ...(input.lineage?.owned_files ?? []),
-    ...(input.team?.scopes ?? []).flatMap((scope) => scope?.owned_files ?? []),
-  ]);
+  if (!Array.isArray(activeWriters)) throw ownershipPathError('active_writers must be an array');
+  const teamScopes = input.team?.scopes ?? [];
+  if (!Array.isArray(teamScopes)) throw ownershipPathError('team.scopes must be an array');
+  for (const paths of [
+    input.owned_files ?? [],
+    input.resolved_owned_files ?? [],
+    input.lineage?.owned_files ?? [],
+    input.lineage?.resolved_owned_files ?? [],
+  ]) {
+    if (!Array.isArray(paths)) throw ownershipPathError('writer ownership paths must be arrays');
+  }
+  const proposed = canonicalOwnedFiles({
+    owned_files: [
+      ...(input.owned_files ?? []),
+      ...(input.lineage?.owned_files ?? []),
+      ...teamScopes.flatMap((scope) => scope?.is_writer === false
+        ? []
+        : (scope?.owned_files ?? [])),
+    ],
+    resolved_owned_files: [
+      ...(input.resolved_owned_files ?? []),
+      ...(input.lineage?.resolved_owned_files ?? []),
+      ...teamScopes.flatMap((scope) => scope?.is_writer === false
+        ? []
+        : (scope?.resolved_owned_files ?? [])),
+    ],
+  }, workspaceRoot);
+  if (!scopeLooksLikeWriter(input, proposed)) return false;
+  if (proposed.length === 0) throw writerScopeRequiredError();
+
   return activeWriters.some((active) => {
-    if (proposedLineageId && active?.lineage_id === proposedLineageId) return false;
-    return (active?.owned_files ?? []).some((path) => proposed.has(path));
+    if (!active || typeof active !== 'object' || Array.isArray(active)) {
+      throw ownershipPathError('active writer scopes must be objects');
+    }
+    const activePaths = canonicalOwnedFiles(active, workspaceRoot);
+    if (activePaths.length === 0) throw writerScopeRequiredError();
+    return activePaths.some((activePath) => proposed.some((path) => pathsOverlap(activePath, path)));
   });
 }
 
@@ -141,8 +265,25 @@ export function routeTask(input = {}) {
   }
 
   const lineage = input.lineage ?? {};
-  const atInheritedWriterCap = input.is_writer === true
-    && (input.active_inherited_writers ?? 0) >= (input.max_active_inherited ?? 2);
+  const inferredWriter = input.is_writer === true
+    || (Array.isArray(input.owned_files) && input.owned_files.length > 0)
+    || (Array.isArray(input.resolved_owned_files) && input.resolved_owned_files.length > 0)
+    || (Array.isArray(lineage.owned_files) && lineage.owned_files.length > 0)
+    || (Array.isArray(lineage.resolved_owned_files) && lineage.resolved_owned_files.length > 0)
+    || (input.team?.scopes ?? []).some((scope) => scope?.is_writer !== false
+      && ((Array.isArray(scope?.owned_files) && scope.owned_files.length > 0)
+        || (Array.isArray(scope?.resolved_owned_files) && scope.resolved_owned_files.length > 0)))
+    || /(?:^|[-_])(builder|writer|implementer)(?:$|[-_])/.test(
+      `${input.role ?? lineage.role ?? ''}`.toLocaleLowerCase('en-US')
+    );
+  const activeInheritedWriters = input.active_inherited_writers ?? 0;
+  const maxActiveInherited = input.max_active_inherited ?? 2;
+  if (inferredWriter && (!Number.isInteger(activeInheritedWriters) || activeInheritedWriters < 0
+      || !Number.isInteger(maxActiveInherited) || maxActiveInherited < 1)) {
+    throw new TypeError('inherited writer counts must be non-negative/positive integers');
+  }
+  const atInheritedWriterCap = inferredWriter
+    && activeInheritedWriters >= maxActiveInherited;
   if (
     lineage.compatible === true
     && lineage.resumable === true
@@ -156,8 +297,8 @@ export function routeTask(input = {}) {
   const inheritance = input.inheritance ?? {};
   const wantsInheritance = inheritance.affinity === 'high';
   const inheritanceCompatible = wantsInheritance
-    && inheritance.safe !== false
-    && inheritance.within_budget !== false
+    && inheritance.safe === true
+    && inheritance.within_budget === true
     && !atInheritedWriterCap
     && nestingDepth < maxNestingDepth;
 
@@ -169,13 +310,19 @@ export function routeTask(input = {}) {
   }
 
   const team = input.team ?? {};
-  const teamRequested = team.coordination_required === true && (team.peers ?? 0) >= 2;
+  const teamRequested = team.coordination_required === true
+    && Number.isInteger(team.peers)
+    && team.peers >= 2;
   const teamCompatible = teamRequested
     && team.provider_supported === true
-    && team.within_budget !== false
-    && team.latency_ratio !== undefined
+    && team.safe === true
+    && team.sensitivity_approved === true
+    && input.sensitivity === 'normal'
+    && team.within_budget === true
+    && Number.isFinite(team.latency_ratio)
+    && team.latency_ratio >= 0
     && team.latency_ratio <= 0.75
-    && !hasOverlappingWrites(team.scopes);
+    && !hasOverlappingWrites(team.scopes, input.workspace_root);
 
   // Standalone fresh work is not sufficient when the task explicitly requires
   // real peer coordination. In all other cases fresh-capsule precedes a team.
@@ -233,8 +380,14 @@ function sealCapsule(value) {
 
 const FORBIDDEN_CAPSULE_KEYS = /(^|_)(raw_?)?(transcript|prompt|chat|conversation|log|logs|tool_output|ambient_output|session|session_id|thread_id|agent_id|run_id|platform_handle|provider_handle|credential|credentials|password|passwd|api_key|access_token|refresh_token|auth_token)($|_)/i;
 const MAX_CAPSULE_STRING_BYTES = 4096;
+const TRUSTED_CAPSULE_ARTIFACT_ROOTS = Object.freeze(['knowzcode/artifacts']);
 const SECRET_LIKE_VALUE = new RegExp([
   'Bearer\\s+[A-Za-z0-9._~+\\/-]+=*',
+  '\\bAuthorization\\s*:\\s*Basic\\s+[A-Za-z0-9+/]{2,}={0,2}',
+  '\\bAuthorization\\s*:\\s*(?:Token|ApiKey)\\s+[A-Za-z0-9=._~-]{8,}',
+  '\\bnpm_[A-Za-z0-9]{20,}',
+  '\\b(?:jdbc:)?[A-Za-z][A-Za-z0-9+.-]*:\\/\\/[^\\s:/@]+:[^\\s/@]+@[^\\s]+',
+  '\\bjdbc:[^\\s]*(?:password|passwd)=[^\\s;&]+',
   '\\b(?:sk|rk|pk)-(?:live|test)?_?[A-Za-z0-9_-]{8,}',
   '\\bgh[pousr]_[A-Za-z0-9]{12,}',
   '\\bglpat-[A-Za-z0-9_-]{12,}',
@@ -294,7 +447,11 @@ function assertCapsuleSchema(value) {
  * Bound a capsule by externalizing only optional evidence. Required context is
  * never truncated. If required context alone is too large, fail closed.
  */
-export function prepareCapsule(capsule, { max_bytes = 12_288, artifact_path = null } = {}) {
+export function prepareCapsule(capsule, {
+  max_bytes = 12_288,
+  artifact_path = null,
+  artifact_roots = [],
+} = {}) {
   if (!Number.isInteger(max_bytes) || max_bytes <= 0) {
     throw new TypeError('max_bytes must be a positive integer');
   }
@@ -304,6 +461,7 @@ export function prepareCapsule(capsule, { max_bytes = 12_288, artifact_path = nu
   // by a stable digest or hidden behind an artifact reference.
   assertCapsuleSchema(capsule);
   assertCapsulePrivateContentFree(capsule);
+  assertCapsuleFileRefs(capsule);
 
   let prepared = sealCapsule(capsule);
   if (Buffer.byteLength(canonicalJson(prepared), 'utf8') <= max_bytes) {
@@ -312,9 +470,14 @@ export function prepareCapsule(capsule, { max_bytes = 12_288, artifact_path = nu
   }
 
   if (Array.isArray(prepared.evidence) && prepared.evidence.length > 0 && artifact_path) {
+    assertAuthorizedArtifactPath(artifact_path, artifact_roots);
     prepared.evidence = [];
     prepared.artifact_refs = [...new Set([...(prepared.artifact_refs ?? []), artifact_path])];
     prepared = sealCapsule(prepared);
+    // The artifact reference is caller-supplied and therefore requires the same
+    // final privacy pass as every field present in the original capsule.
+    assertCapsulePrivateContentFree(prepared);
+    assertCapsuleFileRefs(prepared);
   }
 
   if (Buffer.byteLength(canonicalJson(prepared), 'utf8') <= max_bytes) {
@@ -327,6 +490,75 @@ export function prepareCapsule(capsule, { max_bytes = 12_288, artifact_path = nu
   );
   error.code = 'CAPSULE_MANDATORY_OVERFLOW';
   throw error;
+}
+
+function assertSafeCapsulePath(value) {
+  if (typeof value !== 'string' || value.trim() !== value || value.length === 0
+      || value.includes('\\') || value.includes('\0') || value.includes(':')
+      || /[\u0000-\u001f\u007f]/.test(value)
+      || value.startsWith('/') || value.includes('://')) {
+    const error = new TypeError('Capsule file references must be portable repository-relative paths');
+    error.code = 'CAPSULE_ARTIFACT_REF_INVALID';
+    throw error;
+  }
+  const segments = value.split('/');
+  if (segments.some((segment) => segment === '' || segment === '.' || segment === '..')) {
+    const error = new TypeError('Capsule file references cannot contain empty or traversal segments');
+    error.code = 'CAPSULE_ARTIFACT_REF_INVALID';
+    throw error;
+  }
+}
+
+function assertAuthorizedArtifactPath(value, roots) {
+  assertSafeCapsulePath(value);
+  if (!Array.isArray(roots) || roots.length === 0) {
+    const error = new TypeError('Capsule externalization requires an explicit authorized artifact root');
+    error.code = 'CAPSULE_ARTIFACT_REF_UNAUTHORIZED';
+    throw error;
+  }
+  for (const root of roots) assertSafeCapsulePath(root);
+  const trustedRequestedRoots = roots.filter((root) => TRUSTED_CAPSULE_ARTIFACT_ROOTS.some(
+    (trustedRoot) => root === trustedRoot || root.startsWith(`${trustedRoot}/`)
+  ));
+  if (!trustedRequestedRoots.some((root) => value === root || value.startsWith(`${root}/`))) {
+    const error = new TypeError('Capsule artifact path is outside the authorized artifact roots');
+    error.code = 'CAPSULE_ARTIFACT_REF_UNAUTHORIZED';
+    throw error;
+  }
+}
+
+function assertCapsuleFileRefs(capsule) {
+  const fileReferences = [
+    ...(capsule.owned_files ?? []),
+    ...(capsule.read_files ?? []),
+    ...(capsule.specs ?? []).map((spec) => spec?.path).filter((value) => value !== null
+      && value !== undefined),
+  ];
+  const artifactReferences = [
+    ...(capsule.artifact_refs ?? []),
+    ...(capsule.failures ?? []).map((failure) => failure?.artifact).filter((value) => value !== null
+      && value !== undefined),
+    ...(capsule.evidence ?? []).map((evidence) => evidence?.artifact).filter((value) => value !== null
+      && value !== undefined),
+  ];
+  for (const reference of fileReferences) assertSafeCapsulePath(reference);
+  for (const reference of artifactReferences) {
+    assertAuthorizedArtifactPath(reference, TRUSTED_CAPSULE_ARTIFACT_ROOTS);
+  }
+}
+
+const RFC3339_DATE_TIME = /^(\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])T([01]\d|2[0-3]):([0-5]\d):([0-5]\d)(?:\.(\d{1,9}))?(?:Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)$/;
+
+function isStrictRfc3339(value) {
+  if (typeof value !== 'string') return false;
+  const match = RFC3339_DATE_TIME.exec(value);
+  if (!match) return false;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const leap = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+  const monthDays = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  return day <= monthDays[month - 1] && Number.isFinite(Date.parse(value));
 }
 
 function jsonType(value) {
@@ -378,7 +610,7 @@ export function validateAgainstSchema(value, schema, path = '$') {
     if (schema.pattern && !(new RegExp(schema.pattern).test(value))) {
       errors.push(`${path}: does not match pattern ${schema.pattern}`);
     }
-    if (schema.format === 'date-time' && Number.isNaN(Date.parse(value))) {
+    if (schema.format === 'date-time' && !isStrictRfc3339(value)) {
       errors.push(`${path}: invalid date-time`);
     }
   }
@@ -421,6 +653,11 @@ export function validateAgainstSchema(value, schema, path = '$') {
 }
 
 export function evaluateLineage(lineage, current = {}, { now = new Date().toISOString() } = {}) {
+  if (!isStrictRfc3339(now)) {
+    const error = new TypeError('now must be a strict RFC 3339 date-time');
+    error.code = 'INVALID_DATE_TIME';
+    throw error;
+  }
   if (!lineage || validateAgainstSchema(lineage, AGENT_LINEAGE_SCHEMA).length > 0) {
     return { state: 'INVALID', invalidations: ['UNKNOWN_PROVENANCE'] };
   }
@@ -479,7 +716,10 @@ export function evaluateLineage(lineage, current = {}, { now = new Date().toISOS
     return { state: 'RECONCILE_REQUIRED', invalidations: ['RECONCILIATION_REQUIRED'] };
   }
 
-  if (lineage.lease_expires_at && Date.parse(now) >= Date.parse(lineage.lease_expires_at)) {
+  // A resumable lease must always be bounded. A null lease can preserve valid
+  // provenance for reconciliation, but it can never authorize a hot resume.
+  if (lineage.lease_expires_at === null
+      || Date.parse(now) >= Date.parse(lineage.lease_expires_at)) {
     return { state: 'COLD_VALID', invalidations: [] };
   }
 
@@ -623,8 +863,10 @@ export function normalizeEfficiencyEvent(event) {
     billedInput.amount,
     billedInput.units,
   ].every((value) => value === undefined || value === null);
-  if (!allBillingUnknown && billedInput.accounting_source === undefined) {
-    const error = new TypeError('Billed values require an explicit accounting_source');
+  if (!allBillingUnknown && !['authoritative', 'provider-reported'].includes(billedInput.accounting_source)) {
+    const error = new TypeError(
+      'Billed values require an explicit authoritative or provider-reported accounting_source'
+    );
     error.code = 'ACCOUNTING_SOURCE_REQUIRED';
     throw error;
   }
@@ -708,12 +950,15 @@ function semanticDelta(delta) {
     .replace(/[^\p{L}\p{N}]+/gu, ' ')
     .trim()
     .replace(/\s+/g, ' ');
+  const normalizeIdentity = (value) => (typeof value === 'string'
+    ? value.normalize('NFKC').trim()
+    : '') || null;
   return {
     category: normalizeText(delta?.category) || null,
     title: normalizeText(delta?.title),
     content: normalizeText(delta?.content),
     semantic_key: normalizeText(delta?.semantic_key) || null,
-    supersedes: normalizeText(delta?.supersedes) || null,
+    supersedes: normalizeIdentity(delta?.supersedes),
     source_hash: delta?.source_hash ?? null,
   };
 }
@@ -738,6 +983,20 @@ export function shouldDeepQuery(question) {
 }
 
 export function evaluateVaultDelta(input = {}) {
+  let severity = null;
+  if (input.severity !== undefined && input.severity !== null) {
+    if (typeof input.severity !== 'string') {
+      const error = new TypeError('severity must be LOW, MEDIUM, HIGH, or CRITICAL');
+      error.code = 'INVALID_SEVERITY';
+      throw error;
+    }
+    severity = input.severity.trim().toLocaleUpperCase('en-US');
+    if (!['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'].includes(severity)) {
+      const error = new TypeError('severity must be LOW, MEDIUM, HIGH, or CRITICAL');
+      error.code = 'INVALID_SEVERITY';
+      throw error;
+    }
+  }
   const delta = input.delta;
   if (isEmptyDelta(delta)) return { action: 'skip', reason: 'EMPTY_DELTA' };
 
@@ -755,27 +1014,69 @@ export function evaluateVaultDelta(input = {}) {
     return { action: 'skip', reason: 'SEMANTIC_DUPLICATE' };
   }
 
-  const semanticIdentityChanged = prior.some((candidate) => {
+  const semanticIdentityMatches = prior.filter((candidate) => {
     const previous = semanticDelta(candidate);
     return Boolean(semantic.semantic_key) && semantic.semantic_key === previous.semantic_key;
   });
-  if (semanticIdentityChanged) return { action: 'amend', reason: 'SEMANTIC_IDENTITY_CHANGED' };
+  if (semanticIdentityMatches.length > 0) {
+    return mutationDecision(
+      'amend',
+      'SEMANTIC_IDENTITY_CHANGED',
+      semanticIdentityMatches
+    );
+  }
 
-  const supersessionChanged = prior.some((candidate) => {
+  const supersessionMatches = prior.filter((candidate) => {
     const previous = semanticDelta(candidate);
     return Boolean(semantic.supersedes)
-      && semantic.supersedes === previous.supersedes
-      && semantic.category === previous.category;
+      && (
+        semantic.supersedes === stableKnowledgeId(candidate)
+        || (semantic.supersedes === previous.supersedes
+          && semantic.category === previous.category)
+      );
   });
-  if (supersessionChanged) return { action: 'update', reason: 'SUPERSESSION_CHANGED' };
+  if (supersessionMatches.length > 0) {
+    return mutationDecision(
+      'update',
+      'SUPERSESSION_CHANGED',
+      supersessionMatches
+    );
+  }
 
   if (input.explicit_save) return { action: 'flush', reason: 'EXPLICIT_SAVE' };
   if (input.interruption_sensitive) return { action: 'flush', reason: 'INTERRUPTION_SENSITIVE' };
-  if (['HIGH', 'CRITICAL'].includes(input.severity)) return { action: 'flush', reason: 'HIGH_RISK' };
+  if (['HIGH', 'CRITICAL'].includes(severity)) return { action: 'flush', reason: 'HIGH_RISK' };
   if (['correction', 'deprecation'].includes(semantic.category)) {
     return { action: 'flush', reason: 'DURABILITY_REQUIRED' };
   }
   return { action: 'batch', reason: 'NORMAL_DELTA' };
+}
+
+function stableKnowledgeId(delta) {
+  const candidates = [delta?.KnowledgeId, delta?.knowledgeId, delta?.knowledge_id];
+  const identities = candidates.filter((value) => typeof value === 'string')
+    .map((value) => value.trim()).filter(Boolean);
+  if (identities.length > 1) {
+    const error = new TypeError('Prior delta contains multiple KnowledgeId values');
+    error.code = 'VAULT_TARGET_AMBIGUOUS';
+    throw error;
+  }
+  return identities[0] ?? null;
+}
+
+function mutationDecision(action, reason, matches) {
+  const identities = [...new Set(matches.map(stableKnowledgeId).filter(Boolean))];
+  if (identities.length === 0) {
+    const error = new TypeError(`${action} requires a stable KnowledgeId target`);
+    error.code = 'VAULT_TARGET_REQUIRED';
+    throw error;
+  }
+  if (identities.length !== 1 || matches.length !== 1) {
+    const error = new TypeError(`${action} target is ambiguous`);
+    error.code = 'VAULT_TARGET_AMBIGUOUS';
+    throw error;
+  }
+  return { action, reason, KnowledgeId: identities[0] };
 }
 
 export const ROLLOUT_STATES = Object.freeze(['off', 'observe', 'shadow', 'canary', 'on']);
@@ -795,6 +1096,11 @@ export function selectRollout(input = {}) {
   if (actualMode !== null && !MODES.includes(actualMode)) throw new TypeError(`Unknown actual mode: ${actualMode}`);
   if (recommendedMode !== null && !MODES.includes(recommendedMode)) {
     throw new TypeError(`Unknown recommended mode: ${recommendedMode}`);
+  }
+  if (['canary', 'on'].includes(rollout) && recommendedMode === null) {
+    const error = new TypeError(`${rollout} rollout requires a recommendation`);
+    error.code = 'ROLLOUT_RECOMMENDATION_REQUIRED';
+    throw error;
   }
 
   let executeRecommendation = false;
@@ -843,21 +1149,41 @@ export const PROMOTION_THRESHOLDS = Object.freeze({
   provider_reconciliation_tolerance: 0.02,
 });
 
+const PROMOTION_ENVELOPE_SCHEMA = 'knowzcode.measurement-envelope/v2';
+const MEASUREMENT_RUN_ID = /^measurement-[a-f0-9]{16,64}$/;
+const MEASUREMENT_KEY_ID = /^measurement-key-[a-z0-9._-]{1,64}$/;
+const SHA256_DIGEST = /^sha256:[a-f0-9]{64}$/;
+const VERSION_ID = /^[A-Za-z0-9][A-Za-z0-9._+-]{0,127}$/;
+const MAX_MEASUREMENT_AGE_MS = 30 * 24 * 60 * 60 * 1000;
+const MAX_MEASUREMENT_FUTURE_SKEW_MS = 5 * 60 * 1000;
+
 export const RESULT_MODES = Object.freeze(['ephemeral', 'durable', 'artifact']);
 
 /** Resolve output persistence without allowing a write-prohibited scope to leak state. */
 export function resolveResultPolicy(input = {}) {
   const writeProhibited = input.write_prohibited === true;
+  const durableHandoffRequired = input.material === true || input.writer === true
+    || input.partial === true || input.resumable === true || input.crosses_phase === true
+    || input.requested_mode === 'durable';
   let mode = input.requested_mode ?? null;
   if (mode !== null && !RESULT_MODES.includes(mode)) {
     throw new TypeError(`Unknown result mode: ${mode}`);
   }
   if (writeProhibited) mode = 'ephemeral';
-  if (mode === null) {
+  if (!writeProhibited) {
     if (input.large_raw_output === true) mode = 'artifact';
-    else if (input.material === true || input.writer === true || input.partial === true
-      || input.resumable === true || input.crosses_phase === true) mode = 'durable';
-    else mode = 'ephemeral';
+    else if (durableHandoffRequired && (mode === null || mode === 'ephemeral')) mode = 'durable';
+    else if (mode === null) mode = 'ephemeral';
+    if ((durableHandoffRequired || mode === 'durable') && input.authorize_handoff === false) {
+      const error = new TypeError('Durable results require authorized handoff persistence');
+      error.code = 'RESULT_HANDOFF_NOT_AUTHORIZED';
+      throw error;
+    }
+    if (mode === 'artifact' && input.authorize_artifact === false) {
+      const error = new TypeError('Artifact results require authorized artifact persistence');
+      error.code = 'RESULT_ARTIFACT_NOT_AUTHORIZED';
+      throw error;
+    }
   }
 
   const writes = {
@@ -868,7 +1194,8 @@ export function resolveResultPolicy(input = {}) {
     workgroup: false,
   };
   if (!writeProhibited) {
-    writes.handoff = mode === 'durable' && input.authorize_handoff !== false;
+    writes.handoff = (mode === 'durable' || durableHandoffRequired)
+      && input.authorize_handoff !== false;
     writes.artifact = mode === 'artifact' && input.authorize_artifact !== false;
     writes.vault = input.authorize_vault_write === true;
     writes.settings = input.authorize_settings_write === true;
@@ -887,16 +1214,129 @@ function quantile(values, probability) {
   return sorted[lower] + (sorted[upper] - sorted[lower]) * (position - lower);
 }
 
-function finiteMetric(value, label, { positive = false } = {}) {
-  if (!Number.isFinite(value) || (positive ? value <= 0 : value < 0)) {
-    throw new TypeError(`${label} must be a finite ${positive ? 'positive' : 'non-negative'} number`);
+function finiteMetric(value, label, {
+  positive = false,
+  integer = false,
+  maximum = Number.MAX_SAFE_INTEGER,
+} = {}) {
+  if (!Number.isFinite(value) || (positive ? value <= 0 : value < 0)
+      || value > maximum || (integer && !Number.isSafeInteger(value))) {
+    throw new TypeError(
+      `${label} must be a bounded ${integer ? 'integer' : 'number'} `
+      + `between ${positive ? 'greater than zero' : 'zero'} and ${maximum}`
+    );
   }
   return value;
 }
 
+function promotionCorpusDigest(pairs) {
+  return `sha256:${createHash('sha256').update(canonicalJson(pairs)).digest('hex')}`;
+}
+
+function trustedMeasurementPublicKey(keyId) {
+  const source = process.env.KNOWZCODE_TRUSTED_MEASUREMENT_KEYS;
+  if (typeof source !== 'string' || source.length === 0 || source.length > 65_536) return null;
+  try {
+    const keys = JSON.parse(source);
+    if (!keys || typeof keys !== 'object' || Array.isArray(keys)) return null;
+    const key = keys[keyId];
+    if (typeof key !== 'string'
+        || !/^-----BEGIN PUBLIC KEY-----\r?\n[A-Za-z0-9+/=\r\n]+-----END PUBLIC KEY-----\r?\n?$/.test(key)) {
+      return null;
+    }
+    return key;
+  } catch {
+    return null;
+  }
+}
+
+function trustedMeasurementEnvelope(pairs, envelope, {
+  now,
+  consumedMeasurementRunIds,
+  expectedCandidateVersion,
+  expectedCorpusVersion,
+  expectedRuntimeDigest,
+} = {}) {
+  if (!envelope || typeof envelope !== 'object' || Array.isArray(envelope)) return false;
+  const exactKeys = [
+    'accounting_source',
+    'candidate_version',
+    'corpus_digest',
+    'corpus_version',
+    'measured_at',
+    'measurement_run_id',
+    'pair_count',
+    'promotion_authorized',
+    'runtime_digest',
+    'schema',
+    'signature',
+    'signer_key_id',
+  ];
+  if (canonicalJson(Object.keys(envelope).sort()) !== canonicalJson(exactKeys)) return false;
+  if (!isStrictRfc3339(now)
+      || !Array.isArray(consumedMeasurementRunIds)
+      || consumedMeasurementRunIds.some((value) => !MEASUREMENT_RUN_ID.test(value))
+      || !VERSION_ID.test(expectedCandidateVersion ?? '')
+      || !VERSION_ID.test(expectedCorpusVersion ?? '')
+      || !SHA256_DIGEST.test(expectedRuntimeDigest ?? '')) return false;
+  const measuredAt = Date.parse(envelope.measured_at);
+  const evaluatedAt = Date.parse(now);
+  if (envelope.schema !== PROMOTION_ENVELOPE_SCHEMA
+      || !MEASUREMENT_RUN_ID.test(envelope.measurement_run_id ?? '')
+      || !MEASUREMENT_KEY_ID.test(envelope.signer_key_id ?? '')
+      || !VERSION_ID.test(envelope.candidate_version ?? '')
+      || !VERSION_ID.test(envelope.corpus_version ?? '')
+      || !SHA256_DIGEST.test(envelope.runtime_digest ?? '')
+      || envelope.candidate_version !== expectedCandidateVersion
+      || envelope.corpus_version !== expectedCorpusVersion
+      || envelope.runtime_digest !== expectedRuntimeDigest
+      || envelope.accounting_source !== 'authoritative'
+      || envelope.promotion_authorized !== true
+      || envelope.pair_count !== pairs.length
+      || !isStrictRfc3339(envelope.measured_at)
+      || measuredAt > evaluatedAt + MAX_MEASUREMENT_FUTURE_SKEW_MS
+      || evaluatedAt - measuredAt > MAX_MEASUREMENT_AGE_MS
+      || consumedMeasurementRunIds.includes(envelope.measurement_run_id)
+      || !SHA256_DIGEST.test(envelope.corpus_digest ?? '')
+      || envelope.corpus_digest !== promotionCorpusDigest(pairs)
+      || typeof envelope.signature !== 'string'
+      || !/^[A-Za-z0-9+/]+={0,2}$/.test(envelope.signature)) return false;
+  const publicKey = trustedMeasurementPublicKey(envelope.signer_key_id);
+  if (publicKey === null) return false;
+  try {
+    const signed = canonicalJson(envelope, { omit: ['signature'] });
+    return verifySignature(
+      null,
+      Buffer.from(signed, 'utf8'),
+      publicKey,
+      Buffer.from(envelope.signature, 'base64')
+    );
+  } catch {
+    return false;
+  }
+}
+
 /** Evaluate fixed, paired baseline/candidate results against every promotion gate. */
-export function evaluatePromotion(pairs, thresholds = PROMOTION_THRESHOLDS) {
+export function evaluatePromotion(
+  pairs,
+  thresholds = PROMOTION_THRESHOLDS,
+  {
+    measurement_envelope: measurementEnvelope = null,
+    now = new Date().toISOString(),
+    consumed_measurement_run_ids: consumedMeasurementRunIds = null,
+    expected_candidate_version: expectedCandidateVersion = null,
+    expected_corpus_version: expectedCorpusVersion = null,
+    expected_runtime_digest: expectedRuntimeDigest = null,
+  } = {}
+) {
   if (!Array.isArray(pairs) || pairs.length === 0) throw new TypeError('pairs must be a non-empty array');
+  if (!thresholds || typeof thresholds !== 'object' || Array.isArray(thresholds)) {
+    throw new TypeError('thresholds must be an object');
+  }
+  for (const [name, value] of Object.entries(thresholds)) {
+    if (name === 'required_strata') continue;
+    if (!Number.isFinite(value)) throw new TypeError(`${name} must be finite`);
+  }
   const requestedStrata = Array.isArray(thresholds.required_strata) ? thresholds.required_strata : [];
   const effectiveThresholds = {
     minimum_sample_size: Math.max(
@@ -948,11 +1388,12 @@ export function evaluatePromotion(pairs, thresholds = PROMOTION_THRESHOLDS) {
   const reconciliationErrors = [];
   const stratumCounts = new Map();
   let newHighCriticalEscape = false;
-  let promotionEvidenceAuthorized = true;
+  let measuredPairProvenance = true;
+  let providerAccountingComplete = true;
 
   for (const pair of pairs) {
-    if (typeof pair?.id !== 'string' || pair.id.length === 0 || ids.has(pair.id)) {
-      throw new TypeError('paired results require unique non-empty ids');
+    if (typeof pair?.id !== 'string' || !ANONYMOUS_CORPUS_ID.test(pair.id) || ids.has(pair.id)) {
+      throw new TypeError('paired results require unique anonymous corpus ids');
     }
     ids.add(pair.id);
     const provenance = pair.provenance ?? {};
@@ -960,32 +1401,56 @@ export function evaluatePromotion(pairs, thresholds = PROMOTION_THRESHOLDS) {
       || provenance.empirical !== true
       || provenance.promotion_authorized !== true
     ) {
-      promotionEvidenceAuthorized = false;
+      measuredPairProvenance = false;
     }
-    if (typeof pair.stratum === 'string') {
-      stratumCounts.set(pair.stratum, (stratumCounts.get(pair.stratum) ?? 0) + 1);
+    if (!PROMOTION_STRATA.includes(pair.stratum)) {
+      throw new TypeError(`${pair.id}.stratum must be a recognized promotion stratum`);
     }
+    stratumCounts.set(pair.stratum, (stratumCounts.get(pair.stratum) ?? 0) + 1);
     const baseline = pair.baseline ?? {};
     const candidate = pair.candidate ?? {};
-    const baseCost = finiteMetric(baseline.billed_cost, `${pair.id}.baseline.billed_cost`, { positive: true });
-    const nextCost = finiteMetric(candidate.billed_cost, `${pair.id}.candidate.billed_cost`);
-    const baseTime = finiteMetric(baseline.wall_time_ms, `${pair.id}.baseline.wall_time_ms`, { positive: true });
-    const nextTime = finiteMetric(candidate.wall_time_ms, `${pair.id}.candidate.wall_time_ms`);
+    const baseCost = finiteMetric(baseline.billed_cost, `${pair.id}.baseline.billed_cost`, {
+      positive: true, maximum: 1_000_000_000,
+    });
+    const nextCost = finiteMetric(candidate.billed_cost, `${pair.id}.candidate.billed_cost`, {
+      maximum: 1_000_000_000,
+    });
+    const baseTime = finiteMetric(baseline.wall_time_ms, `${pair.id}.baseline.wall_time_ms`, {
+      positive: true, maximum: 2_678_400_000,
+    });
+    const nextTime = finiteMetric(candidate.wall_time_ms, `${pair.id}.candidate.wall_time_ms`, {
+      maximum: 2_678_400_000,
+    });
     costReductions.push((baseCost - nextCost) / baseCost);
     costRegressions.push((nextCost - baseCost) / baseCost);
     latencyReductions.push((baseTime - nextTime) / baseTime);
-    baselineQuality.push(finiteMetric(baseline.quality_score, `${pair.id}.baseline.quality_score`));
-    candidateQuality.push(finiteMetric(candidate.quality_score, `${pair.id}.candidate.quality_score`));
-    baselineRework.push(finiteMetric(baseline.rework_rounds, `${pair.id}.baseline.rework_rounds`));
-    candidateRework.push(finiteMetric(candidate.rework_rounds, `${pair.id}.candidate.rework_rounds`));
-    const baseEscapes = finiteMetric(baseline.escaped_high_critical, `${pair.id}.baseline.escaped_high_critical`);
-    const nextEscapes = finiteMetric(candidate.escaped_high_critical, `${pair.id}.candidate.escaped_high_critical`);
+    baselineQuality.push(finiteMetric(baseline.quality_score, `${pair.id}.baseline.quality_score`, { maximum: 100 }));
+    candidateQuality.push(finiteMetric(candidate.quality_score, `${pair.id}.candidate.quality_score`, { maximum: 100 }));
+    baselineRework.push(finiteMetric(baseline.rework_rounds, `${pair.id}.baseline.rework_rounds`, {
+      integer: true, maximum: 1_000_000,
+    }));
+    candidateRework.push(finiteMetric(candidate.rework_rounds, `${pair.id}.candidate.rework_rounds`, {
+      integer: true, maximum: 1_000_000,
+    }));
+    const baseEscapes = finiteMetric(baseline.escaped_high_critical, `${pair.id}.baseline.escaped_high_critical`, {
+      integer: true, maximum: 1_000_000,
+    });
+    const nextEscapes = finiteMetric(candidate.escaped_high_critical, `${pair.id}.candidate.escaped_high_critical`, {
+      integer: true, maximum: 1_000_000,
+    });
     if (nextEscapes > baseEscapes) newHighCriticalEscape = true;
 
-    if (candidate.provider_reported_total !== null && candidate.provider_reported_total !== undefined) {
-      const providerTotal = finiteMetric(candidate.provider_reported_total, `${pair.id}.candidate.provider_reported_total`, { positive: true });
-      const accountedTotal = finiteMetric(candidate.event_accounted_total, `${pair.id}.candidate.event_accounted_total`);
+    if (candidate.provider_reported_total !== null && candidate.provider_reported_total !== undefined
+        && candidate.event_accounted_total !== null && candidate.event_accounted_total !== undefined) {
+      const providerTotal = finiteMetric(candidate.provider_reported_total, `${pair.id}.candidate.provider_reported_total`, {
+        positive: true, integer: true, maximum: Number.MAX_SAFE_INTEGER,
+      });
+      const accountedTotal = finiteMetric(candidate.event_accounted_total, `${pair.id}.candidate.event_accounted_total`, {
+        integer: true, maximum: Number.MAX_SAFE_INTEGER,
+      });
       reconciliationErrors.push(Math.abs(accountedTotal - providerTotal) / providerTotal);
+    } else {
+      providerAccountingComplete = false;
     }
   }
 
@@ -1007,13 +1472,22 @@ export function evaluatePromotion(pairs, thresholds = PROMOTION_THRESHOLDS) {
     max_provider_reconciliation_error: reconciliationErrors.length
       ? Math.max(...reconciliationErrors)
       : null,
-    promotion_evidence_authorized: promotionEvidenceAuthorized,
+    measured_pair_provenance: measuredPairProvenance,
+    provider_accounting_complete: providerAccountingComplete,
+    trusted_measurement_envelope: trustedMeasurementEnvelope(pairs, measurementEnvelope, {
+      now,
+      consumedMeasurementRunIds,
+      expectedCandidateVersion,
+      expectedCorpusVersion,
+      expectedRuntimeDigest,
+    }),
   };
   const requiredStrata = effectiveThresholds.required_strata;
   const minimumSampleSize = effectiveThresholds.minimum_sample_size;
   const minimumPerStratum = effectiveThresholds.minimum_per_stratum;
   const gates = {
-    provenance: metrics.promotion_evidence_authorized === true,
+    provenance: metrics.measured_pair_provenance === true
+      && metrics.trusted_measurement_envelope === true,
     sample_size: metrics.sample_size >= minimumSampleSize,
     strata: requiredStrata.every((stratum) => (stratumCounts.get(stratum) ?? 0) >= minimumPerStratum),
     median_cost: metrics.median_cost_reduction >= effectiveThresholds.median_cost_reduction,
@@ -1023,8 +1497,9 @@ export function evaluatePromotion(pairs, thresholds = PROMOTION_THRESHOLDS) {
     quality: metrics.quality_drop_points <= effectiveThresholds.max_quality_drop_points,
     rework: metrics.rework_relative_regression <= effectiveThresholds.max_rework_relative_regression,
     security: metrics.new_high_critical_escape === false,
-    reconciliation: metrics.max_provider_reconciliation_error === null
-      || metrics.max_provider_reconciliation_error <= effectiveThresholds.provider_reconciliation_tolerance,
+    reconciliation: metrics.provider_accounting_complete === true
+      && metrics.max_provider_reconciliation_error !== null
+      && metrics.max_provider_reconciliation_error <= effectiveThresholds.provider_reconciliation_tolerance,
   };
   return { promote: Object.values(gates).every(Boolean), metrics, gates };
 }
@@ -1051,6 +1526,7 @@ export function executeRuntimeOperation(operation, payload) {
       return prepareCapsule(request.capsule, {
         max_bytes: request.max_bytes,
         artifact_path: request.artifact_path ?? null,
+        artifact_roots: request.artifact_roots ?? [],
       });
     case 'telemetry':
       return normalizeEfficiencyEvent(request.event);
@@ -1062,19 +1538,50 @@ export function executeRuntimeOperation(operation, payload) {
       return evaluateVaultDelta(requireObject(request.input, 'input'));
     case 'dispatch': {
       const routingInput = requireObject(request.routing?.input ?? request.routing, 'routing');
-      const routing = routeTask(routingInput);
-      const rolloutInput = requireObject(request.rollout?.input ?? request.rollout, 'rollout');
-      const rollout = selectRollout({
-        actual_mode: routing.mode,
-        recommended_mode: routing.mode,
-        ...rolloutInput,
-      });
       const lineageRequest = request.lineage ?? null;
+      const lineageCurrent = lineageRequest === null
+        ? null
+        : requireObject(lineageRequest.current, 'lineage.current');
+      for (const field of ['role', 'sensitivity']) {
+        if (lineageCurrent !== null
+            && routingInput[field] !== undefined
+            && lineageCurrent[field] !== undefined
+            && routingInput[field] !== lineageCurrent[field]) {
+          const error = new TypeError(`routing.${field} conflicts with lineage.current.${field}`);
+          error.code = 'DISPATCH_FACT_MISMATCH';
+          throw error;
+        }
+      }
       const lineage = lineageRequest === null ? null : evaluateLineage(
         lineageRequest.lineage,
-        requireObject(lineageRequest.current, 'lineage.current'),
+        lineageCurrent,
         lineageRequest.now === undefined ? {} : { now: lineageRequest.now }
       );
+      // A combined dispatch never trusts a caller's cached compatibility booleans
+      // over the evaluated lineage supplied in the same request.
+      const reconciledRoutingInput = lineage === null ? routingInput : {
+        ...routingInput,
+        role: lineageCurrent.role ?? routingInput.role,
+        sensitivity: lineageCurrent.sensitivity ?? routingInput.sensitivity,
+        independent_reviewer: routingInput.independent_reviewer === true
+          || lineageCurrent.independent_reviewer === true,
+        lineage: {
+          ...(routingInput.lineage ?? {}),
+          lineage_id: lineageRequest.lineage?.lineage_id ?? null,
+          role: lineageRequest.lineage?.role ?? null,
+          compatible: lineage.state === 'HOT',
+          resumable: lineage.state === 'HOT',
+        },
+      };
+      const routing = routeTask(reconciledRoutingInput);
+      const rolloutInput = requireObject(request.rollout?.input ?? request.rollout, 'rollout');
+      // Bind the recommendation after spreading caller-owned observation fields;
+      // canary/on may execute only the safe router result.
+      const rollout = selectRollout({
+        ...rolloutInput,
+        actual_mode: routing.mode,
+        recommended_mode: routing.mode,
+      });
       const policyInput = request.result_policy?.input ?? request.result_policy ?? null;
       const result_policy = policyInput === null ? null : resolveResultPolicy(requireObject(policyInput, 'result_policy'));
       return { routing, rollout, lineage, result_policy };
@@ -1093,15 +1600,27 @@ function safeFailure(error) {
     : 'INVALID_REQUEST';
   const messages = {
     ACCOUNTING_SOURCE_REQUIRED: 'Billed telemetry requires an accounting source.',
+    CAPSULE_ARTIFACT_REF_INVALID: 'Capsule rejected an unsafe file reference.',
+    CAPSULE_ARTIFACT_REF_UNAUTHORIZED: 'Capsule artifact path is not authorized.',
     CAPSULE_MANDATORY_OVERFLOW: 'Mandatory capsule content exceeds the configured limit.',
     CAPSULE_PRIVATE_CONTENT: 'Capsule rejected private or unbounded content.',
     CAPSULE_SCHEMA_INVALID: 'Capsule does not satisfy its schema.',
     CAPSULE_STRING_TOO_LONG: 'Capsule contains an overlong string.',
+    DISPATCH_FACT_MISMATCH: 'Dispatch routing facts conflict with evaluated lineage facts.',
     EFFICIENCY_EVENT_INVALID: 'Efficiency event does not satisfy its schema or allowlists.',
+    INVALID_DATE_TIME: 'Date-time must use strict RFC 3339 syntax.',
+    INVALID_OWNERSHIP_PATH: 'Writer ownership paths are malformed.',
     INVALID_REQUEST: 'Request must be one valid JSON object for the selected operation.',
+    INVALID_SEVERITY: 'Severity must use an allowed level.',
     PRIVATE_TELEMETRY: 'Efficiency event rejected private or repository-identifying content.',
     REQUEST_TOO_LARGE: 'Request exceeds the one-megabyte stdin limit.',
+    RESULT_HANDOFF_NOT_AUTHORIZED: 'Durable result handoff is not authorized.',
+    RESULT_ARTIFACT_NOT_AUTHORIZED: 'Artifact result persistence is not authorized.',
+    ROLLOUT_RECOMMENDATION_REQUIRED: 'Executable rollout requires a recommendation.',
     UNSUPPORTED_OPERATION: 'Unsupported context-efficiency operation.',
+    VAULT_TARGET_AMBIGUOUS: 'Vault mutation target is ambiguous.',
+    VAULT_TARGET_REQUIRED: 'Vault mutation requires a stable KnowledgeId.',
+    WRITER_SCOPE_REQUIRED: 'Writer routing requires an explicit owned path.',
   };
   return { ok: false, code, message: messages[code] ?? 'Context-efficiency request rejected.' };
 }
@@ -1115,6 +1634,25 @@ function isDirectExecution() {
   }
 }
 
+function readBoundedStdin(maxBytes = 1_048_576) {
+  const chunks = [];
+  let total = 0;
+  while (true) {
+    const remaining = maxBytes + 1 - total;
+    const chunk = Buffer.allocUnsafe(Math.min(65_536, remaining));
+    const count = readSync(0, chunk, 0, chunk.length, null);
+    if (count === 0) break;
+    total += count;
+    if (total > maxBytes) {
+      const error = new RangeError('Request exceeds the stdin limit');
+      error.code = 'REQUEST_TOO_LARGE';
+      throw error;
+    }
+    chunks.push(chunk.subarray(0, count));
+  }
+  return Buffer.concat(chunks, total).toString('utf8');
+}
+
 if (isDirectExecution()) {
   try {
     const operation = process.argv[2];
@@ -1123,12 +1661,7 @@ if (isDirectExecution()) {
       error.code = 'UNSUPPORTED_OPERATION';
       throw error;
     }
-    const source = readFileSync(0, 'utf8');
-    if (Buffer.byteLength(source, 'utf8') > 1_048_576) {
-      const error = new RangeError('Request exceeds the stdin limit');
-      error.code = 'REQUEST_TOO_LARGE';
-      throw error;
-    }
+    const source = readBoundedStdin();
     const payload = JSON.parse(source);
     const result = executeRuntimeOperation(operation, payload);
     process.stdout.write(`${JSON.stringify({ ok: true, operation, result })}\n`);

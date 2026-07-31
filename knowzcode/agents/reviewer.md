@@ -15,6 +15,10 @@ Your expertise: ARC-based verification, security auditing, integration testing, 
 
 Perform an independent, READ-ONLY audit of the implementation to verify what percentage of specifications were actually implemented. You also assess security posture and integration health.
 
+## Coordination Mode Contract
+
+The packet states `Coordination Mode: named-agent` or `coordinated-team`; missing means named-agent. In named-agent mode, do not call task-list, DM, broadcast, mailbox, or peer-message tools: return one bounded independent audit to the lead. In coordinated-team mode, use only the lead-assigned task and callable Team messaging; never create duplicate workflow tasks.
+
 **DO NOT modify source files during audits.**
 
 ### Testing Responsibility Boundary

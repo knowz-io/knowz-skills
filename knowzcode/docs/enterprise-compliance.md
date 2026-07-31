@@ -127,7 +127,7 @@ rides through every gate:
 
 | Stage / Gate | What the enforcer does |
 |:--|:--|
-| **Stage 0** | Loads the manifest + guidelines, broadcasts the "Compliance Posture", hands `SEC-*` IDs to the security-officer and `DSN-*` IDs to the frontend-designer. |
+| **Stage 0** | Loads the manifest + guidelines, returns the "Compliance Posture" with intended-recipient labels, and lets the lead route `SEC-*` IDs to the security-officer and `DSN-*` IDs to the frontend-designer with targeted messages. |
 | **Stage 1 → Gate #2 (Specs)** | Maps each unit of work to applicable guidelines and **injects required VERIFY/ARC criteria into the specs**. Missing blocking criteria → `[COMPLIANCE-BLOCK-SPEC]`. |
 | **Stage 2A (build)** | DMs builders working on guideline-relevant code with the exact requirements. |
 | **Stage 2B → Gate #3 (Audit)** | Cross-references changed files, produces the canonical finding table with ARC coverage %, and issues `PASS` or `[COMPLIANCE-BLOCK]`. A blocking tag **pauses autonomous mode**. |

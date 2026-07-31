@@ -87,7 +87,12 @@
           "summary": { "type": "string", "minLength": 1, "maxLength": 2048 },
           "artifact": {
             "anyOf": [
-              { "type": "string", "minLength": 1, "maxLength": 512 },
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 512,
+                "pattern": "^(?!/)(?![A-Za-z]:)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\)(?!.*://)[^/]+(?:/[^/]+)*$"
+              },
               { "type": "null" }
             ]
           }
@@ -117,7 +122,12 @@
           "summary": { "type": "string", "minLength": 1, "maxLength": 2048 },
           "artifact": {
             "anyOf": [
-              { "type": "string", "minLength": 1, "maxLength": 512 },
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 512,
+                "pattern": "^(?!/)(?![A-Za-z]:)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\)(?!.*://)[^/]+(?:/[^/]+)*$"
+              },
               { "type": "null" }
             ]
           }
@@ -126,7 +136,12 @@
     },
     "artifact_refs": {
       "type": "array",
-      "items": { "type": "string", "minLength": 1, "maxLength": 512 },
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 512,
+        "pattern": "^(?!/)(?![A-Za-z]:)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\)(?!.*://)[^/]+(?:/[^/]+)*$"
+      },
       "maxItems": 128,
       "uniqueItems": true
     },

@@ -43,13 +43,19 @@ Defaults:
 
 A named Agent subagent receives its agent definition and task prompt, not the complete lead conversation. Claude automatically loads the referenced definition as the agent's system instructions. Do not ask it to reread its own definition or this entire guide.
 
-Persist its provider handle and lineage when the runtime exposes one. Resume the same worker for a compatible follow-up or audit/fix loop. Start fresh when the transcript is unavailable or any compatibility input changes: role, scope, approved spec, checkpoint, model/effort, tools, permissions, sensitivity, or reviewer independence.
+Every named packet states `Coordination Mode: named-agent`. Named agents do not own shared task state and do not call `TaskCreate`, `TaskUpdate`, `TaskList`, `TaskGet`, `SendMessage`, DM, mailbox, broadcast, or peer-message operations. They return one bounded result, checkpoint, or unresolved question to the lead, and the lead routes all dependencies and peer inputs. A role definition's later Team-oriented prose is conditional on `Coordination Mode: coordinated-team`, never an implicit capability grant.
+
+On Claude Code v2.1.198+, named subagents default to background execution. Background permission requests surface in the main session on current releases, but background agents have a narrower built-in tool pool. Preflight required tools. When the current Agent schema exposes the switch, foreground subagent execution uses per-call `Agent(..., run_in_background: false)`; if `CLAUDE_CODE_FORK_SUBAGENT=1` has forced all subagents into the legacy background fork path, that parameter is removed, so use lead-owned execution or a runtime configured for foreground work (for example, background tasks disabled) instead. Do not assume the older auto-deny behavior, silently omit a required operation, or treat omitted/false agent frontmatter as a foreground override.
+
+Claude Code v2.1.219+ permits nested ordinary subagents up to the runtime-configured depth (three by default in v2.1.220; `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH=1` disables nesting). A nested dispatch still requires the `Agent` tool, but current type lists such as `Agent(type-a,type-b)` are not enforced inside a subagent definition. KnowzCode therefore keeps privileged reader/writer dispatch lead-owned instead of claiming a child allowlist; other nested work requires explicit runtime policy, stays within the portable depth-two cap, and falls back to lead-owned chaining. Nested agents do not gain Team task/mailbox capabilities.
+
+Persist its provider handle and lineage when the runtime exposes one. On current Claude Code, a completed custom/general-purpose Agent returns an ID; the lead sends a bounded delta with `SendMessage` to that ID/name, which auto-resumes it in the background without forming an Agent Team. Do not use the removed Agent `resume` input. Start fresh when the transcript/ID is unavailable or any compatibility input changes: role, scope, approved spec, checkpoint, model/effort, tools, permissions, sensitivity, or reviewer independence.
 
 Explore and Plan built-in agents are one-shot. Do not advertise them as resumable.
 
 ### Conversation fork
 
-A real Claude conversation fork copies the parent conversation state and preserves the parent model, tools, permissions, and history. On Claude Code v2.1.212+, `/subtask` starts that forked subagent when Agent view is enabled; when Agent view is disabled, `/subtask` is unavailable and `/fork` starts the forked subagent instead. Before v2.1.212, `/fork` was the forked-subagent command and availability depended on the runtime version/rollout or `CLAUDE_CODE_FORK_SUBAGENT`. Detect the currently callable behavior and otherwise use a fresh capsule. A fork may reuse the parent prompt cache on its first request, but inherited tokens still occupy context.
+A real Claude conversation fork copies the parent conversation state and preserves the parent model, tools, permissions, and history. On Claude Code v2.1.212+, the user-facing `/subtask` starts that forked subagent when Agent view is enabled; `/fork` creates a background session in normal Agent view. When Agent view is disabled, `/subtask` is unavailable and `/fork` starts the forked subagent instead. For Claude-initiated routing on a supported rollout, call `Agent(subagent_type="fork", description="<short task>", prompt="<bounded objective>")`; gate it on current capability/version and `CLAUDE_CODE_FORK_SUBAGENT` (`0` disables it, while `1` forces the legacy all-background fork mode and removes `run_in_background`), and otherwise use a fresh capsule. Before v2.1.212, user-facing `/fork` was the forked-subagent command and availability depended on the runtime version/rollout. An Agent-spawned fork counts against session/concurrency caps, while a user-created `/fork` background session is outside the subagent cap. A fork may reuse the parent prompt cache on its first request, but inherited tokens still occupy context.
 
 Fork only when the current reasoning path is relevant, safe, and cheaper than a capsule. Do not fork:
 
@@ -59,7 +65,7 @@ Fork only when the current reasoning path is relevant, safe, and cheaper than a 
 - stale or unfocused parent context;
 - when the active inherited-worker cap is reached.
 
-A skill declared with `context: fork` is different: Claude runs that skill body in an isolated subagent context. It does **not** copy the invoking conversation history and must not be used as the implementation of `inherit-full`.
+A skill declared with `context: fork` is different: Claude runs that skill body in an isolated subagent context. It does **not** copy the invoking conversation history and must not be used as the implementation of `inherit-full`. On Claude Code v2.1.218+, these skills run in the background by default unless the skill sets `background: false`; apply the same background-tool preflight. Their edits are outside the main session's checkpoint rewind, so a writing forked skill needs explicit ownership and normal git verification.
 
 ### Cache behavior
 
@@ -85,21 +91,24 @@ Retain a warm worker through a likely same-phase fix/re-audit continuation. Rele
 
 ## Agent Teams
 
-Agent Teams is experimental and requires `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`. Configuration establishes availability, but the current teammate capability must still be callable.
+Agent Teams is experimental and requires `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`. Configuration establishes availability, but the current teammate capability must still be callable. Before the first teammate spawn in a run, the user must have explicitly requested teammates/Team mode for the current task or confirm the proposed teammates; persisted environment configuration alone is not approval.
 
 ### Current lifecycle
 
 - The first teammate spawn forms the session-derived team. Treat its runtime identity as opaque.
 - Teammates load project context plus their scoped prompt; they do not inherit the lead conversation.
 - A referenced agent type contributes its definition body, tool allowlist, and model automatically.
-- The lead requests graceful teammate shutdown/release when useful. Runtime-managed cleanup occurs when the session ends; there is no separate team-delete step.
+- The lead requests graceful teammate shutdown/release when useful. Runtime-managed cleanup removes the team configuration when the session ends; task-list history is retained for resume/retention and ages under Claude's `cleanupPeriodDays`. There is no separate team-delete step and cleanup must not be described as erasing task history immediately.
 - In-process teammates are not restored by lead `/resume` or `/rewind`. A continuation reconstructs them as fresh workers from durable capsules only if team coordination is still justified.
+- A teammate cannot spawn another teammate or nested Team. It may spawn an ordinary subagent only synchronously (`run_in_background: false`); a background child from an in-process teammate is denied. KnowzCode's shipped Team roles omit the `Agent` tool and keep child dispatch lead-owned, so this restriction is enforced structurally.
 
 Team mode is materially more expensive because each teammate has a separate model context. Start with the smallest viable roster, shut down peers after their deliverable, and do not keep agents idle merely for a possible cache hit.
 
 ### Team-only coordination
 
 The shared task list and mailbox belong only to Team mode. Ordinary named subagents do not receive those capabilities.
+
+Every teammate packet states `Coordination Mode: coordinated-team`. The lead verifies the task/message capability is callable before rendering task IDs or peer-message clauses. If it is not callable, fall back to named-agent packets and coordinator-owned dependency state rather than leaving Team instructions in the child prompt.
 
 Team tasks follow `pending -> in_progress -> completed` and may declare dependencies. The lead creates and assigns a task before dispatch, includes its task ID in the scoped prompt, and owns workflow progress. A teammate claims its assigned ID, reports a bounded result, and does not create a duplicate task.
 
@@ -116,7 +125,7 @@ Use direct messages only for decision-relevant peer coordination:
 
 If plan review is useful, instruct the teammate at spawn to present a plan before edits and use the runtime's supported plan-approval handshake. In autonomous mode, auto-approval may proceed except for established safety exceptions such as scope expansion or disabling controls.
 
-Teammates inherit the lead's effective permission policy. Do not claim a per-teammate plugin frontmatter field changes it. Plugin-distributed agents may use supported fields such as `name`, `description`, `tools`/`disallowedTools`, `model`, `effort`, `maxTurns`, `background`, `memory`, and `isolation`. Claude ignores plugin-agent `permissionMode`, `hooks`, and `mcpServers`; safety must not depend on those fields.
+Teammates inherit the lead's effective permission policy. Do not claim a per-teammate plugin frontmatter field changes it. Plugin-distributed agents may use supported fields such as `name`, `description`, `tools`/`disallowedTools`, `model`, `effort`, `maxTurns`, `background`, `memory`, and `isolation`. Claude ignores `permissionMode`, `hooks`, and `mcpServers` on plugin-shipped agent definitions, even though current local/user/CLI custom-agent definitions support those fields. The teammate path also does not apply an agent definition's `skills` or `mcpServers`; safety must not depend on either distinction being overlooked.
 
 Effective access is the intersection of the lead/session permission policy, Claude's permission checks, and the agent tool allow/deny list. Read-only roles omit direct write tools and constrain Bash behavior, but unrestricted Bash is not a hard sandbox. KnowzCode never dispatches a child by bypassing permission checks.
 
