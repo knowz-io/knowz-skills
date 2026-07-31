@@ -2,7 +2,7 @@
 name: work
 description: "Execute a full KnowzCode development workflow — TDD, quality gates, agent coordination, and structured implementation phases. Use when the user wants to BUILD, IMPLEMENT, or CREATE code, not just research or audit."
 user-invocable: true
-allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Task
+allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Agent
 # Note: Also uses MCP tools (create_knowledge, search_knowledge) when MCP is configured
 argument-hint: "[feature_description]"
 ---
@@ -78,11 +78,11 @@ Runs BEFORE Step 2 so profile-related flag conflicts halt without side effects (
      - If autonomous intent is present (the `--autonomous`/`--auto` flags or the natural-language signals from Step 2.5, checked against `$ARGUMENTS` and the user's preceding message): do NOT prompt. `PROFILE_PREFLIGHT = "frontier"`, log `[AUTO-DEFAULT] profile: frontier — set profile: in knowzcode_orchestration.md to change`, and do not write the config (the user hasn't chosen).
      - Otherwise, ask once via AskUserQuestion: **"Execution profile for this project?"** — **Frontier (Recommended)**: Fable plans/specs/reviews, Opus executes; most capable planning, premium cost, auto-falls back to Opus if Fable is unavailable. **Teams**: all agents on standard models (mostly Opus); standard cost, no Fable dependency.
      - Set `PROFILE_PREFLIGHT` to the answer and **persist it** so no future run asks: update the `profile:` line in `knowzcode/knowzcode_orchestration.md` (or append an `## Execution Profile` block with the line if the file exists without one; create the file with a minimal header + the line if absent).
-     - This prompt is `/work`-only — `/audit`, `/explore`, and `/fix` never ask; they read the persisted value or use the `frontier` default silently.
+     - This prompt is `/knowzcode:work`-only — `/knowzcode:audit`, `/knowzcode:explore`, and `/knowzcode:fix` never ask; they read the persisted value or use the `frontier` default silently.
 3. Profile selection controls model/advisor behavior, not coordination mode. `--sequential` and `--subagent` remain valid with every profile; a profile never forces Agent Teams.
 4. Parse `EXECUTE_ON_FABLE` (affects only `frontier`): `true` if `$ARGUMENTS` contains `--fable-execution`; else read `knowzcode/knowzcode_orchestration.md` with a targeted grep for `^execute_on_fable:\s*(\S+)` (`true`/`false`, default `false`). Pure metadata like the profile parse above — resolving it here (not in Step 2.4) makes it available to the Step 2.3 announcement and downstream-use directive, both of which run before the Step 2.4 config load.
 
-This step is a pure-metadata parse (no spawns or writes). The full orchestration-config load happens later in Step 2.4 and supersedes `PROFILE_PREFLIGHT` by setting `PROFILE` through the same logic. Step 2.3 then runs advisor-specific env detection and final announcement. See `knowzcode/skills/work/references/profile-models.md` for profile semantics.
+This step is a pure-metadata parse (no spawns or writes). The full orchestration-config load happens later in Step 2.4 and supersedes `PROFILE_PREFLIGHT` by setting `PROFILE` through the same logic. Step 2.3 then runs advisor-specific env detection and final announcement. See `${CLAUDE_PLUGIN_ROOT}/skills/work/references/profile-models.md` for profile semantics.
 
 ## Step 1.6: Cross-Agent Relay Pre-flight Parse
 
@@ -98,7 +98,7 @@ Routing precedence is `local -> compatible resume -> compatible inheritance -> f
 
 1. `local` for trivial, tightly coupled, or blocking work where delegation costs more.
 2. `resume` when role, scope, spec, checkpoint, model/effort, tools, permissions, sensitivity, and transcript lineage remain compatible. Send only a bounded delta.
-3. `inherit-full` only through a real callable Claude conversation fork when the worker needs the current reasoning path and must keep the same model/tools/permissions. `context: fork` on a skill is isolated execution and is not conversation inheritance.
+3. `inherit-full` only through a real callable Claude conversation fork when the worker needs the current reasoning path and must keep the same model/tools/permissions. On supported Claude rollouts, invoke `Agent(subagent_type="fork", description="<short task>", prompt="<bounded objective>")` only after the capability is present and `CLAUDE_CODE_FORK_SUBAGENT` has not disabled it; otherwise record `CAPABILITY_FALLBACK` and use `fresh-capsule`. `context: fork` on a skill is isolated execution and is not conversation inheritance.
 4. `inherit-recent` only when the runtime exposes bounded inheritance; otherwise record `CAPABILITY_FALLBACK` and use `fresh-capsule`.
 5. `fresh-capsule` for independent/noisy work, narrower access, changed runtime keys, or any independent reviewer.
 6. `coordinated-team` only when at least two active peers need a shared task graph or direct peer messaging. Parallel independent work remains named-agent delegation.
@@ -109,7 +109,7 @@ User preferences:
 - `--sequential` disables Team mode and parallel fan-out; retain compatible named agents through fix loops.
 - `PROFILE_PREFLIGHT == "classic"` disables Team mode and conversation inheritance but may still resume a compatible named worker.
 
-Team eligibility additionally requires explicit Agent Teams opt-in, the current teammate capability, and peer coordination that named agents cannot provide. A profile, tier, parallel work, or knowledge capture never supplies opt-in. Do not probe availability by invoking a removed lifecycle API. When eligible, the first teammate spawn forms a session-derived team; treat its identity as opaque. If that spawn is unavailable, record `CAPABILITY_FALLBACK` and dispatch equivalent named agents with no reduction in TDD, gates, vault capture, security, or compliance.
+Team eligibility additionally requires explicit Agent Teams opt-in, the current teammate capability, and peer coordination that named agents cannot provide. Before the first teammate spawn in a run, require that the user explicitly requested teammates/Team mode in the current task or obtain the documented user confirmation; persisted environment availability alone is not approval. A profile, tier, parallel work, or knowledge capture never supplies opt-in. Do not probe availability by invoking a removed lifecycle API. When eligible, the first teammate spawn forms a session-derived team; treat its identity as opaque. If that spawn is unavailable, record `CAPABILITY_FALLBACK` and dispatch equivalent named agents with no reduction in TDD, gates, vault capture, security, or compliance.
 
 Announce one workflow mode before phase work:
 
@@ -154,7 +154,7 @@ Send exactly one JSON object on stdin with `{routing, rollout, lineage?, result_
 
 Direct safety calls are also mandatory at the point of use:
 
-- Before sealing or sending a fresh capsule, call operation `capsule` with `{capsule,max_bytes?,artifact_path?}`. Use only the validated canonical capsule/hash returned by the runtime.
+- Before sealing or sending a fresh capsule, call operation `capsule` with `{capsule,max_bytes?,artifact_path?,artifact_roots?}`. Any evidence externalization MUST pass `artifact_roots:["knowzcode/artifacts"]`; use only the validated canonical capsule/hash returned by the runtime.
 - Before any resume or inheritance, call `lineage` with `{lineage,current,now?}`. Resume/inherit only a returned compatible state; `RECONCILE_REQUIRED` must reconcile before reuse.
 - Before selecting ephemeral/durable/artifact output, call `result-policy` with `{input}` and enforce both its result and the current write authorization.
 - Before each gate or final vault capture, call `vault-delta` with `{input:{delta,previous_deltas?,previous_hashes?,explicit_save?,interruption_sensitive?,severity?}}`. Honor `skip`, target the existing identity for `amend`/`update`, retain normal `batch` deltas in the coordinator-owned journal, and persist only on `flush` or final consolidation.
@@ -300,9 +300,9 @@ Read [references/light-workflow.md](references/light-workflow.md) for complete p
 **Phase summary**:
 - **Dispatch**: Resume a compatible knowledge-liaison or dispatch one bounded named agent only when the baseline needs deeper research. Team mode is not required.
 - **Light Phase 1** (inline): Impact scan → draft lightweight spec → present combined Change Set + Spec gate → on approval, update tracker and pre-implementation commit.
-- **Light Phase 2A**: Resume a compatible builder or dispatch `Task(subagent_type="builder")` with a compact capsule. Builder self-verifies against VERIFY criteria — no separate audit.
+- **Light Phase 2A**: Resume a compatible builder or dispatch `Agent(subagent_type="knowzcode:builder", description="Light Phase 2A implementation", prompt=<compact capsule>)`. Builder self-verifies against VERIFY criteria — no separate audit.
 - **Light Phase 2B** (opt-in): Spawn smoke-tester if user requested `--smoke-test`. 3-iteration cap. Skip if not requested.
-- **Light Phase 3** (inline): Update spec to As-Built, update tracker `[WIP]` → `[VERIFIED]`, write log entry, final commit, knowledge-liaison capture, vault write checklist (MUST).
+- **Light Phase 3** (inline): Update spec to As-Built, update tracker `[WIP]` → `[VERIFIED]`, write log entry, dispatch one classified writer persistence, verify explicit staged paths, and create the final commit.
 
 **DONE** — Lightweight workflow: bounded knowledge context + one builder lineage. Skipped: analyst, architect, reviewer, closer.
 
@@ -343,7 +343,7 @@ Scan `knowzcode/knowzcode_tracker.md` for outstanding `REFACTOR_` tasks that ove
 - **Stage 0**: Use deterministic local indexing and the MCP/vault baseline, start one analyst, then add architect/scanner/specialist agents only for independently useful scopes
 - **Stage 1**: Analyst completes Change Set → Gate #1 → Architect drafts specs → Gate #2
 - **Stage 2**: Dependency-wave builders (default 1 NodeID/microtask per builder) + paired reviewers + gap loop
-- **Stage 3**: Closer finalizes, dispatches writer for captures, shutdown
+- **Stage 3**: Closer returns the finalization delta; the lead classifies it, dispatches the bounded writer, applies explicit file updates, and shuts down workers
 
 ---
 
@@ -354,7 +354,7 @@ When `RELAY_ACTIVE = true` (Step 1.6), Phase 2A and the builder gap loop are rep
 Summary (authoritative detail lives in the reference):
 1. **Live preflight + branch**: run the full target-specific `RELAY_DETECT` now (Step 1.6 only checked executable existence). Refuse the default branch — create/reuse `kc-relay/{wgid}`; require a clean tree; record checkpoint C0. Create `knowzcode/workgroups/{wgid}-relay/` with schema-2 `state.md` (`Host`, `Target`, role-based state, `Session ID`) and add the `## Relay` snapshot to the WorkGroup file.
 2. **Brief**: after Gate #2 approval, write `brief-r0.md` from the Change Set + spec *path* references — the target reads every spec in-repo; do not inline spec bodies unless a spec file is missing.
-3. **Target leg**: delegate to **relay-runner** (teammate only when coordinated Team mode is already justified; otherwise a named `Task()` agent; the lead runs the identical protocol only if agent dispatch is unavailable). Codex supports synchronous MCP or `codex exec`; Claude supports exec/stream-json only. Every exec path uses an exit marker and **in-turn polling — never end a turn to await a background notification**. Persist the target session ID immediately (`thread.started.thread_id`, MCP `structuredContent.threadId`, or Claude `system/init.session_id`). Artifacts are target-qualified (`{target}-log-rN.jsonl`, `{target}-last-rN.md`, `{target}-err-rN.log`). No builders spawn; `max_builders` does not apply.
+3. **Target leg**: the lead runs the in-turn polling protocol directly in adaptive, sequential, and named-agent modes. Delegate one leg to **relay-runner** only as a teammate when coordinated Team mode was already independently justified, explicitly approved, and its live messaging capability is callable; never dispatch relay-runner as an ordinary named `Agent()` because it cannot exchange session-ID/progress/time decisions mid-turn. Codex supports synchronous MCP or `codex exec`; Claude supports exec/stream-json only. Every exec path uses an exit marker and **in-turn polling — never end a turn to await a background notification**. Persist the target session ID immediately (`thread.started.thread_id`, MCP `structuredContent.threadId`, or Claude `system/init.session_id`). Artifacts are target-qualified (`{target}-log-rN.jsonl`, `{target}-last-rN.md`, `{target}-err-rN.log`). No builders spawn; `max_builders` does not apply.
 4. **Checkpoint + review**: on a successful target result, the lead commits `KnowzCode relay: {Target} round {N} for {wgid}`; Phase 2B reviews exactly that checkpoint diff; Gate #3 runs normally.
 5. **Fix rounds**: gaps → `feedback-r{N}.md` plus a bounded `delta-prompt-r{N}.md` for a valid warm resume and a self-contained `fix-prompt-r{N}.md` cold-recovery brief. Resume the persisted Session ID at `RELAY_FIX_EFFORT`, up to `RELAY_MAX_FIX_ROUNDS`. Codex uses `codex-reply`/`codex exec resume`; Claude starts from the same cwd with `claude -p --resume {session_id}`, stream JSON, and the configured per-leg budget. Use the cold brief only when resume is invalid/unavailable.
 6. **Host takeover**: cap reached, a gap repeats two rounds, or the target fails twice → `HOST_TAKEOVER`; remaining gaps enter the native builder gap loop (existing 3-iteration cap and pauses apply). This is the designed final leg, not an error.
@@ -374,12 +374,12 @@ Summary (authoritative detail lives in the reference):
 |-------|-------|------|------------|
 | 1A | analyst | #1: Change Set | NodeIDs, dependency map, risk assessment |
 | 1B | architect | #2: Specifications | Specs with VERIFY criteria |
-| 2A | builder(s) — or the resolved external target via relay-runner when `RELAY_ACTIVE` | — | Implementation + tests |
+| 2A | builder(s) — or, when `RELAY_ACTIVE`, the resolved external target polled by the lead (relay-runner teammate only in an already-justified approved Team) | — | Implementation + tests |
 | 2B | reviewer(s) | #3: Audit Results | ARC completion, gap reports |
 | 2B | smoke-tester | #3: Audit Results | Runtime verification, smoke pass/fail |
 | 0–3 | frontend-designer | All gates | Design Questions Bundle, Design Impact Report, Design Audit Report (conditional, UI projects) |
 | 0–3 | enterprise-enforcer | All gates | Compliance posture, ARC coverage, [COMPLIANCE-BLOCK] tagging (conditional, compliance_enabled) |
-| 3 | closer | — | Final specs, tracker updates, log entry, commit |
+| 3 | closer | — | Delegated finalization edits plus `FinalCaptureDelta`, explicit changed paths, verification summary, and suggested commit message for the lead |
 
 When `frontend-designer` is active alongside `smoke-tester`: smoke-tester owns app boot and basic happy path; frontend-designer waits for app readiness and performs spec-driven E2E. Smoke-tester does not tear down the app until frontend-designer reports complete.
 
@@ -397,13 +397,13 @@ When `frontend-designer` is active alongside `smoke-tester`: smoke-tester owns a
 
 Follow the abandonment protocol from `knowzcode_loop.md` Section 12:
 
-1. **Revert uncommitted changes** — if implementation was in progress, revert source code changes (keep knowzcode files)
+1. **Preserve user state and unwind only proven workflow-owned changes** — inspect the pre-WorkGroup checkpoint, `git status --short`, and explicit owned paths. Never run a blanket revert, reset, checkout, clean, or stash. Restore a path only when the workflow created its current delta, the preexisting state is known, and doing so cannot overwrite unrelated user work; otherwise preserve the delta, record it in the abandonment report, and ask the user how to handle it.
 2. **Update tracker** — set all affected NodeIDs back to their pre-WorkGroup status
 3. **Log abandonment** — create a log entry with type `WorkGroup-Abandoned` including the reason and phase at abandonment
 4. **Close WorkGroup file** — mark the WorkGroup as `Abandoned` with timestamp and reason
 5. **Preserve learnings** — if any useful patterns were discovered, capture them before closing
 6. **Worker teardown** — gracefully release active teammates or named workers after checkpoint/capture; runtime-managed team cleanup requires no delete step
-7. **Parallel mode**: If cancelled mid-Stage-2, revert uncommitted code changes and mark WorkGroup abandoned
+7. **Parallel mode**: If cancelled mid-Stage-2, stop writers, preserve their explicit path/checkpoint evidence, unwind only safely attributable workflow-owned changes under step 1, and mark the WorkGroup abandoned
 
 The WorkGroup file remains in `knowzcode/workgroups/` for reference. It can be resumed later with `/knowzcode:work` referencing the same goal.
 

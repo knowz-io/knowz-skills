@@ -2,7 +2,7 @@
 name: continue
 description: "Detect continuation intent and resume active WorkGroup workflow or latest KnowzCode handoff. Triggers when user says continue, keep going, resume, resume handoff, or similar continuation intent"
 user-invocable: false
-allowed-tools: Read, Glob, Grep, Task
+allowed-tools: Read, Glob, Grep, Agent
 ---
 
 # Continue Skill
@@ -84,7 +84,7 @@ Use the handoff as the freshest local state. Do not run `cmd:` references automa
 If the WorkGroup file contains a `## Relay` section, read both:
 
 - `knowzcode/workgroups/{wgid}-relay/state.md` — authoritative state
-- `knowzcode/skills/work/references/relay-execution.md` — provider-neutral state machine and target adapters
+- `${CLAUDE_PLUGIN_ROOT}/skills/work/references/relay-execution.md` — provider-neutral state machine and target adapters
 
 Resume the recorded relay instead of entering native Phase 2A. Do not infer a new target from the current prompt or current project configuration: the state file's host/target pair is fixed for the WorkGroup.
 
@@ -176,7 +176,7 @@ If the WorkGroup file contains `Current Phase:` (standard format):
 
 **Set up execution mode** — use the same `local -> resume -> inherited -> fresh capsule -> coordinated team` router as `/knowzcode:work`. Sequential continuation normally resumes compatible named agents one phase at a time. A skill with `context: fork` is not conversation inheritance.
 
-Reconstruct a coordinated team only when the remaining work still has at least two active peers that require a shared task graph or direct messaging and Agent Teams is configured/callable. The first teammate spawn forms a new session-derived team; prior in-process teammates and their team identity are not resumable. If teammate spawning is unavailable, record `CAPABILITY_FALLBACK` and use named agents without reducing TDD, quality gates, capture, security, or compliance. Request graceful teammate shutdown when done; runtime cleanup is automatic.
+Reconstruct a coordinated team only when the remaining work still has at least two active peers that require a shared task graph or direct messaging and Agent Teams is configured/callable. Before the first teammate spawn, require that the user requested teammates/Team mode for this continuation or obtain current-run confirmation; a prior Team and environment configuration are not approval for a new session. The first teammate spawn forms a new session-derived team; prior in-process teammates and their team identity are not resumable. If teammate spawning is unavailable, record `CAPABILITY_FALLBACK` and use named agents without reducing TDD, quality gates, capture, security, or compliance. Request graceful teammate shutdown when done; runtime cleanup is automatic.
 
 Follow the same phase delegation patterns (spawn prompts, quality gates, gap loop) as `/knowzcode:work`.
 

@@ -39,18 +39,21 @@ If `enterprise.json` exists in the project root, use its `brand` value instead o
    - **Skip** — don't save
    - **Amend existing item** — apply a targeted delta (add a line, fix a phrase, change a tag). Preferred for partial changes.
    - **Replace existing item** — full rewrite with a complete new body
-9. Execute the chosen path:
+9. Resolve one stable `Idempotency Key` before the mutation. Derive it from the chosen operation, resolved target vault, matched `KnowledgeId` or semantic identity when present, normalized title, and a digest of the exact payload. It MUST NOT contain a timestamp, retry count, agent/session ID, or attempt number. Reuse the same key if the response is lost or the operation is retried.
+10. Execute the chosen path:
    - **Create (default, no dedupe match, or "Create anyway"):** call `mcp__knowz__create_knowledge` with `knowledgeType: "Note"`, the chosen `vaultId`, and tags.
    - **Amend:** call `mcp__knowz__amend_knowledge` with `id` = the matched item's ID and the delta payload. Send only the change, not a synthesized full body.
    - **Replace:** call `mcp__knowz__update_knowledge` with `id` = the matched item's ID and the complete new payload.
    - **Skip:** report that nothing was saved and stop.
-10. If MCP write fails, append a capture block to `knowz-pending.md` in the project root using the canonical format. Wrap the block in `---` delimiters — the flush parser splits on them.
+11. If MCP write fails, read `knowz-pending.md` first, then append a capture block using the canonical format only when the same key/content is absent. The same key with different mutation content is a collision and MUST fail closed. Wrap the block in `---` delimiters — the flush parser splits on them.
 
     ```markdown
     ---
 
     ### {timestamp} -- {title}
     - **Operation**: create | amend | update
+    - **Idempotency Key**: {stable key resolved before the MCP mutation}
+    - **Queue Status**: pending
     - **KnowledgeId**: {id}    # required for amend/update, omit for create
     - **Category**: {category}
     - **Target Vault**: {vault}
@@ -61,4 +64,4 @@ If `enterprise.json` exists in the project root, use its `brand` value instead o
     ---
     ```
 
-    Report that it was queued for `/knowz-flush`.
+    Report the queued key and that `/knowz-flush` can replay it. Never downgrade a failed amend/update to create.

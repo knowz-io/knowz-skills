@@ -2,7 +2,7 @@
 name: explore
 description: "Explore a topic, investigate the codebase, or produce a structured implementation plan using vault knowledge, impact analysis, architecture assessment, and project context. Use when the user wants to EXPLORE, RESEARCH, or PLAN before deciding whether to build."
 user-invocable: true
-allowed-tools: Read, Write, Bash, Glob, Grep, Task
+allowed-tools: Read, Write, Bash, Glob, Grep, Agent
 # Note: Also uses MCP tools (search_knowledge, ask_question) when MCP is configured
 argument-hint: "[topic, question, or feature to plan]"
 ---
@@ -77,7 +77,7 @@ Before the MCP probe or any spawn, derive the minimum evidence slices from the t
 
 For each slice, route in order: local, compatible named-agent resume, a real callable conversation fork for high relevant/safe context affinity, then fresh capsule. A skill declared with `context: fork` is isolated and does not inherit this conversation.
 
-Select `coordinated-team` only when at least two active researchers must share a task graph or directly message/challenge peers and Agent Teams is configured/callable. The first teammate spawn forms the session-derived team. If unavailable, record `CAPABILITY_FALLBACK` and use named agents with the same research criteria.
+Select `coordinated-team` only when at least two active researchers must share a task graph or directly message/challenge peers and Agent Teams is configured/callable. Before the first teammate spawn, require that the user requested teammates/Team mode for this task or obtain current-run confirmation; environment configuration alone is not approval. The first teammate spawn forms the session-derived team. If unavailable, record `CAPABILITY_FALLBACK` and use named agents with the same research criteria.
 
 Announce `**Execution Mode: Adaptive Research**`, or `**Execution Mode: Coordinated Research Team** — peer coordination required`. Runtime Team cleanup is automatic after graceful release.
 
@@ -109,7 +109,7 @@ When `context_efficiency.enabled = true`, every non-trivial local/resume/fork/ca
 
 `node knowzcode/context_efficiency_runtime.mjs dispatch`
 
-Send one JSON object on stdin with `{routing, rollout, lineage?, result_policy?}` and require one `{ok:true,operation:"dispatch",result}` object on stdout. Before a fresh capsule, call operation `capsule` with `{capsule,max_bytes?,artifact_path?}`; before resume/inheritance call `lineage` with `{lineage,current,now?}`; before choosing ephemeral/durable/artifact output call `result-policy` with `{input}`. Each call is read-only.
+Send one JSON object on stdin with `{routing, rollout, lineage?, result_policy?}` and require one `{ok:true,operation:"dispatch",result}` object on stdout. Before a fresh capsule, call operation `capsule` with `{capsule,max_bytes?,artifact_path?,artifact_roots?}` and pass `artifact_roots:["knowzcode/artifacts"]` for evidence externalization; before resume/inheritance call `lineage` with `{lineage,current,now?}`; before choosing ephemeral/durable/artifact output call `result-policy` with `{input}`. Each call is read-only.
 
 Privacy/schema or lineage rejection is fail-closed: do not dispatch or reuse that context. Rebuild and revalidate a private/invalid capsule; replace invalid lineage with a newly validated fresh capsule. Never relabel a safety rejection as `CAPABILITY_FALLBACK`. Rollout controls only recommendation application and redacted telemetry—not validation. If only a non-safety recommendation/telemetry operation is unavailable while direct safety checks still pass, record `CAPABILITY_FALLBACK` and use the validated local/fresh baseline. If safety validation itself is unavailable, keep the work local and report `CONTEXT_RUNTIME_UNAVAILABLE`.
 
@@ -320,7 +320,7 @@ When detected:
 1. Ask the user what content to save (or confirm if they specified)
 2. Resolve target vault from `knowz-vaults.md` (project root)
 3. Invoke `vault-delta` with `explicit_save: true`, prior identities/hashes, and the selected content. For `skip`, report no-op; for `batch`, retain locally; only `amend`, `update`, or `flush` continues.
-4. Dispatch `knowz:writer` via Task() with a self-contained prompt containing the exact classified action and stable identity:
+4. Dispatch `knowz:writer` via `Agent(subagent_type="knowz:writer", description="Persist exploration delta", prompt=<classified action + stable identity + payload>)` with a self-contained prompt containing:
    - Content to save (from exploration findings or user-specified content)
    - Target vault ID
    - Title and tags derived from the content

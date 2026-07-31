@@ -16,7 +16,7 @@ Detailed phase instructions for Tier 2 (Light) execution. The lead reads this fi
 
 ## Dispatch Setup
 
-Tier 2 does not form a team. Use the lead's `VAULT_BASELINE`; only when a material component-specific knowledge gap remains, resume a compatible knowledge-liaison or dispatch one bounded `Task(subagent_type="knowledge-liaison")`. Pass the baseline and targeted question, and require a concise Context Briefing. Skip duplicate broad vault queries.
+Tier 2 does not form a team. Use the lead's `VAULT_BASELINE`; only when a material component-specific knowledge gap remains, resume a compatible knowledge-liaison or dispatch one bounded `Agent(subagent_type="knowzcode:knowledge-liaison", description="Prepare targeted context", prompt=<baseline + targeted question>)`. Require a concise Context Briefing and skip duplicate broad vault queries.
 
 ---
 
@@ -49,13 +49,13 @@ Approve Change Set and spec to proceed to implementation?
 6. **Autonomous Mode**: If `AUTONOMOUS_MODE = true`, log `[AUTO-APPROVED] Light mode gate` and proceed directly to implementation.
    If `AUTONOMOUS_MODE = false`: If rejected — adjust based on feedback and re-present. If approved:
    - Update `knowzcode_tracker.md` with NodeID status `[WIP]`
-   - Pre-implementation commit: `git add knowzcode/ && git commit -m "KnowzCode: Light spec approved for {wgid}"`
+   - Pre-implementation commit: inspect `git status --short` and scoped diffs, then run `git add -- knowzcode/workgroups/{wgid}.md knowzcode/knowzcode_tracker.md {approved-spec-paths}`. Verify `git diff --cached --check` and `git diff --cached --name-only`; abort on any unapproved path before `git commit -m "KnowzCode: Light spec approved for {wgid}"`.
 
 ---
 
 ## Light Phase 2A: Implementation
 
-Resume a compatible builder lineage when one owns this exact spec/scope/checkpoint. Otherwise dispatch `Task(subagent_type="builder")` with the standard Phase 2A task packet from `references/spawn-prompts.md`. Include only the lightweight spec, assigned VERIFY IDs, owned files, checkpoint, constraints, and a bounded result contract.
+Resume a compatible builder lineage when one owns this exact spec/scope/checkpoint. Otherwise dispatch `Agent(subagent_type="knowzcode:builder", description="Light Phase 2A implementation", prompt=<standard bounded Phase 2A packet>)` using `${CLAUDE_PLUGIN_ROOT}/skills/work/references/spawn-prompts.md`. Include only the lightweight spec, assigned VERIFY IDs, owned files, checkpoint, constraints, and a bounded result contract.
 
 The builder self-verifies against spec VERIFY criteria — no separate audit phase.
 
@@ -65,9 +65,9 @@ The builder self-verifies against spec VERIFY criteria — no separate audit pha
 
 Only if user explicitly requested smoke testing (e.g., `--smoke-test` in `$ARGUMENTS` or natural language: "smoke test", "test it running", "verify it works"):
 
-Dispatch a fresh independent smoke-tester via `Task(subagent_type="smoke-tester", description="Smoke test", prompt=<bounded task packet>)`. Do not fork or resume the builder lineage.
+Dispatch a fresh independent smoke-tester via `Agent(subagent_type="knowzcode:smoke-tester", description="Smoke test", prompt=<bounded task packet>)`. Do not fork or resume the builder lineage.
 
-If smoke test fails: create fix tasks for builder, re-run smoke-tester. 3-iteration cap, then escalate. App lifecycle managed by smoke-tester (see `agents/smoke-tester.md`).
+If smoke test fails: create fix tasks for builder, re-run smoke-tester. 3-iteration cap, then escalate. App lifecycle managed by smoke-tester (see `${CLAUDE_PLUGIN_ROOT}/agents/smoke-tester.md`).
 
 If user did not request smoke testing, skip to Light Phase 3.
 
@@ -89,24 +89,24 @@ After builder completes successfully:
    **Details:** Light mode (Tier 2). {brief summary of implementation}.
    ---
    ```
-4. Final commit: `git add knowzcode/ <changed files> && git commit -m "feat: {goal} (WorkGroup {wgid})"`
-5. Report completion.
-6. **Knowledge capture**:
+4. **Knowledge capture**:
    - Classify the consolidated delta with `vault-delta` and `explicit_save: true`; store `FINAL_CAPTURE_ACTION` and its stable identity/reason.
-   - For `skip`, make no MCP or pending-queue write. For `batch` (defensive fallback), retain it and reclassify at the explicit final boundary. For `amend`, `update`, or `flush`, send that exact classified action to a compatible knowledge-liaison and wait for confirmation (max 2 minutes), or perform one matching direct MCP mutation. Release the lineage after capture.
-7. **Vault Write Checklist (MUST — do not skip, do not defer)**:
+   - For `skip`, make no MCP or pending-queue write. For `batch` (defensive fallback), retain it and reclassify at the explicit final boundary. For `amend`, `update`, or `flush`, send the exact classified action, content-bound parent identity/key, explicit mutation plan, and known `KnowledgeId` values to a compatible knowledge-liaison or dispatch one writer directly. Each logical mutation receives a distinct deterministic child key. Missing amend/update identity returns `MISSING_AMEND_IDENTITY` or `MISSING_UPDATE_IDENTITY` and never falls through to create. Wait for the bounded result (max 2 minutes), then release the lineage.
+5. **Vault Write Checklist (MUST — do not skip, do not defer)**:
    You MUST attempt every item. Check each off or report failure to the user.
    - [ ] WorkGroup file exists in `knowzcode/workgroups/{wgid}.md`
    - [ ] `knowzcode_tracker.md` updated with NodeID status
    - [ ] `knowzcode_log.md` entry written
    - [ ] Classified persistence handled exactly once when `FINAL_CAPTURE_ACTION` is `amend`, `update`, or `flush`:
      - Read `knowz-vaults.md`, resolve vault IDs. Read the WorkGroup file for the `**KnowledgeId:**` value.
-     - **For `amend`/`update`**: resolve the returned stable identity and perform that targeted mutation; never create a duplicate.
-     - **For `flush`**: consolidate the journal and perform one create/update transaction, using KnowledgeId or one targeted title lookup when available.
+     - **For `amend`/`update`**: give the writer the exact `KnowledgeId`, operation, and stable mutation key for the targeted mutation. A missing ID is an explicit error; never create a duplicate or replacement implicitly.
+     - **For `flush`**: give one writer the consolidated journal, complete ordered mutation plan, content-bound parent key, and distinct child key for every exact create/amend/update identity.
      - **After create**: write the returned ID back as `**KnowledgeId:**` in the WorkGroup file.
-   - [ ] If MCP is unavailable for a required persistence action: queue the classified consolidated delta once to `knowzcode/pending_captures.md` (same format as closer — see `agents/closer.md` MCP Graceful Degradation) AND announce to user: `**Vault capture skipped — MCP unavailable. Consolidated delta queued to pending_captures.md. Run /knowz flush when MCP is available.**`
+   - [ ] If MCP is unavailable for a required persistence action before writer dispatch: have the knowledge-liaison queue each eligible logical mutation exactly once in project-root `knowz-pending.md` using its distinct stable child key; never queue an amend/update missing its exact `KnowledgeId`. If a writer already started, require confirmation for every expected mutation key and do not append again. Announce: `**Vault capture skipped — MCP unavailable. Consolidated delta queue status: {confirmed mutation keys | confirmation required}. Run /knowz flush when confirmed.**`
 
    Do NOT silently skip. "Light mode" means fewer agents — not fewer artifacts.
+6. Final commit: inspect `git status --short` and `git diff -- {explicit-approved-paths}`; stage only the resolved active WorkGroup, tracker, approved specs, and approved implementation files with `git add -- {explicit-approved-paths}`. Verify `git diff --cached --check` and the exact `git diff --cached --name-only` list before `git commit -m "feat: {goal} (WorkGroup {wgid})"`. Never stage a directory wholesale.
+7. Report completion.
 
 **DONE** — Lightweight workflow: bounded knowledge context + one builder lineage. Skipped: analyst, architect, reviewer, closer, scanners, and default specialist fan-out.
 

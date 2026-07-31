@@ -19,6 +19,8 @@ Unsupported modes fall back to `fresh-capsule`; never simulate a provider featur
 
 Before delegation, record task/NodeID, phase, role, owned files, dependency readiness, coupling, sensitivity, reviewer-independence requirement, expected context reuse, compatible lineage, mode, and reason.
 
+Every declared or inferred writer must provide at least one repository-relative owned path before routing; missing scope fails with `WRITER_SCOPE_REQUIRED`. Team routing additionally requires affirmative `safe`, `sensitivity_approved`, and `within_budget` facts, a closed `normal` sensitivity classification, non-overlapping scopes, and provider support.
+
 ## 2. Context capsule
 
 Use a canonical serialization and hash it as `capsule_hash`:
@@ -46,7 +48,7 @@ constraints: [string]
 next_action: string
 ```
 
-Capsules contain bounded summaries and artifact paths. Do not include a raw/full/verbatim chat, prompt, transcript, log, tool output, credentials, secrets, provider/session/thread/agent/run identifiers, or ambient tool output. The shipped pipeline validates length and schema, rejects private markers and values before sealing, preserves mandatory fields on overflow, and hashes canonical JSON.
+Capsules contain bounded summaries and artifact paths. Do not include a raw/full/verbatim chat, prompt, transcript, log, tool output, credentials, secrets, provider/session/thread/agent/run identifiers, or ambient tool output. The shipped pipeline validates length and schema, rejects private markers and values before sealing, preserves mandatory fields on overflow, and hashes canonical JSON. Evidence externalization requires both `artifact_path` and an explicit `artifact_roots` authorization rooted beneath the runtime-owned `knowzcode/artifacts` boundary; a request cannot self-authorize arbitrary repository paths.
 
 ## 3. Agent lineage and leases
 
@@ -81,7 +83,7 @@ lease_expires_at: RFC3339|null
 
 Reject blind resume or inheritance when WorkGroup, role, phase/fix loop, scope, spec, checkpoint, model/runtime-prefix/cache requirements, baseline, tools, permissions, or sensitivity differ. A capsule hash change within an otherwise compatible stable lineage requires reconciliation rather than automatic invalidation. Reconcile unexpected repository changes before reuse. An independent reviewer MUST start fresh from approved specs and diff evidence; it must not inherit the builder's reasoning. The same reviewer may resume its own bounded re-audit.
 
-Defaults: at most two active inherited writers, nesting depth at most two, and zero overlapping writer ownership. A completed first dispatch may remain warm for a likely same-phase fix/re-audit. Evict at lease expiry, final gate, incompatibility, sensitivity transition, capacity pressure, or when no likely continuation remains.
+Defaults: at most two active inherited writers, nesting depth at most two, and zero overlapping writer ownership. A completed first dispatch may remain warm for a likely same-phase fix/re-audit. A null lease is valid cold provenance but never authorizes a hot resume. Evict at lease expiry, final gate, incompatibility, sensitivity transition, capacity pressure, or when no likely continuation remains.
 
 ## 4. Output policy
 
@@ -129,7 +131,7 @@ Record finite allowlisted provider/runtime/model/profile/mode/reason labels or a
 
 Roll out as `off -> observe -> shadow -> 10% -> 25% -> 50% -> on`. Use the executable selector and promotion evaluator in `knowzcode/context_efficiency_runtime.mjs`. A configured stage is not active unless the adapter calls the selector and records the required redacted event. Use a paired corpus of at least 40 tasks with at least eight each for small/Tier-2, backend, UI/integration, security-sensitive, and recovery/invalidation work. The repository corpus and paired records are explicitly fixture-only contract tests: they are not empirical savings evidence and cannot authorize promotion. Production promotion requires measured paired records from the target environment. Change one intervention family at a time.
 
-Promotion requires at least 40 paired records, at least eight explicitly labeled records in each required stratum, and exact measured provenance (`kind: measured`, `empirical: true`, `promotion_authorized: true`) on every pair. Sample-size, stratum-balance, and provenance gates are evaluated independently of numeric gates, so undersized, unbalanced, synthetic, relabeled-fixture, or mixed evidence cannot promote even when its metrics pass. Numeric thresholds are median billed cost -25% (target -30%), p75 -15%, p95 no more than +10%, median wall time -15%, quality no worse than two percentage points, rework no worse than 5% relative, no new high/critical security escape, and provider-counter reconciliation within 2% where available. Evaluator callers may request stricter gates but cannot weaken any published floor, ceiling, mandatory stratum, or sample minimum.
+Promotion requires at least 40 paired records, at least eight explicitly labeled records in each required stratum, and exact measured provenance (`kind: measured`, `empirical: true`, `promotion_authorized: true`) on every pair. A trusted signed v2 measurement envelope must match the expected candidate version, corpus version, runtime digest, and exact pair digest, be no older than 30 days or more than five minutes in the future, and have a run ID absent from the coordinator's consumed-run ledger. Every pair must include provider-reported and event-accounted totals, reconciled within 2%. Sample-size, stratum-balance, provenance, freshness/replay, and reconciliation gates are independent, so undersized, unbalanced, synthetic, stale, replayed, incompletely accounted, relabeled-fixture, or mixed evidence cannot promote even when its metrics pass. Numeric thresholds are median billed cost -25% (target -30%), p75 -15%, p95 no more than +10%, median wall time -15%, quality no worse than two percentage points, rework no worse than 5% relative, and no new high/critical security escape. Evaluator callers may request stricter gates but cannot weaken any published floor, ceiling, mandatory stratum, or sample minimum.
 
 Report lower billed cost, rediscovery, and latency. Cached input may cost less while still occupying logical context; never claim blanket token removal.
 
@@ -141,4 +143,4 @@ Installed skills can invoke the production runtime without writing files:
 node knowzcode/context_efficiency_runtime.mjs <operation>
 ```
 
-Send exactly one JSON object, capped at one MiB, on stdin. Operations are `route`, `lineage`, `capsule`, `telemetry`, `rollout`, `result-policy`, `vault-delta`, and `dispatch`. `vault-delta` accepts `{input:{delta,previous_deltas?,previous_hashes?,explicit_save?,interruption_sensitive?,severity?}}` and returns `skip`, `amend`, `update`, `batch`, or `flush`; the coordinator performs any authorized persistence after that no-write decision. Success emits one `{ "ok": true, "operation": ..., "result": ... }` object. Validation or privacy failure exits nonzero and emits one redacted `{ "ok": false, "code": ..., "message": ... }` object. The adapter reads stdin and writes stdout only; it never persists state.
+Send exactly one JSON object, capped while reading at one MiB, on stdin. Operations are `route`, `lineage`, `capsule`, `telemetry`, `rollout`, `result-policy`, `vault-delta`, and `dispatch`. The capsule operation accepts `{capsule,max_bytes?,artifact_path?,artifact_roots?}`. `vault-delta` accepts `{input:{delta,previous_deltas?,previous_hashes?,explicit_save?,interruption_sensitive?,severity?}}` and returns `skip`, `amend`, `update`, `batch`, or `flush`; the coordinator performs any authorized persistence after that no-write decision. Success emits one `{ "ok": true, "operation": ..., "result": ... }` object. Validation or privacy failure exits nonzero and emits one redacted `{ "ok": false, "code": ..., "message": ... }` object. The adapter reads stdin and writes stdout only; it never persists state.

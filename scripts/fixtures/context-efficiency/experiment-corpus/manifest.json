@@ -473,6 +473,9 @@
           "task_id": "b1",
           "role": "builder",
           "is_writer": true,
+          "owned_files": [
+            "src/backend-refactor-01.mjs"
+          ],
           "active_inherited_writers": 0,
           "lineage": {
             "compatible": true,
@@ -591,6 +594,9 @@
           "task_id": "b3",
           "role": "builder",
           "is_writer": true,
+          "owned_files": [
+            "src/backend-refactor-03.mjs"
+          ],
           "active_inherited_writers": 2,
           "max_active_inherited": 2,
           "lineage": {
@@ -1070,11 +1076,14 @@
       "input": {
         "input": {
           "task_id": "u1",
+          "sensitivity": "normal",
           "capsule_sufficient": false,
           "team": {
             "coordination_required": true,
             "peers": 2,
             "provider_supported": true,
+            "safe": true,
+            "sensitivity_approved": true,
             "within_budget": true,
             "latency_ratio": 0.5,
             "scopes": [
@@ -2666,7 +2675,10 @@
           ]
         },
         "max_bytes": 1450,
-        "artifact_path": "knowzcode/artifacts/recovery-06.json"
+    "artifact_path": "knowzcode/artifacts/recovery-06.json",
+    "artifact_roots": [
+      "knowzcode/artifacts"
+    ]
       },
       "oracle": {
         "status": "success",
@@ -2811,7 +2823,7 @@
           },
           "rollout": {
             "rollout": "shadow",
-            "selected_mode": "local",
+            "selected_mode": "fresh-capsule",
             "record_recommendation": true
           },
           "result_policy": {

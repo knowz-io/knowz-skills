@@ -2,6 +2,10 @@
 
 Use these four stages for adaptive parallel delegation and for the optional coordinated-team mode. The same bounded task packets in [spawn-prompts.md](spawn-prompts.md) apply. Classify every unit before dispatch; parallelism alone never justifies Team mode.
 
+All `TaskCreate`/`TaskUpdate`/`TaskGet`, task-ID, DM, mailbox, and peer-message examples below are **coordinated-team-only renderings**. In named-agent/adaptive mode, the lead records dependencies locally, dispatches or resumes each worker with a bounded capsule, waits for its result, and routes any necessary delta itself. A named agent never claims/creates shared tasks or messages peers. The dedicated named-agent section remains authoritative when modes differ.
+
+In every task example, the variable to the left of `:=` captures the task ID returned by `TaskCreate`. `TaskCreate` receives only `subject`, `description`, optional `activeForm`, and optional `metadata`. Set dependencies, ownership, and status only in a subsequent `TaskUpdate({taskId: task_id, ...})`; never pass `addBlockedBy`, `addBlocks`, or `owner` to `TaskCreate`.
+
 ## Contents
 
 - [Model Overrides](#model-overrides-applies-to-every-spawn-below)
@@ -64,34 +68,34 @@ The analyst starts immediately and does not wait for optional workers. It may se
 
 ## Stage 1: Analysis + Specification
 
-1. Analyst completes Change Set (includes dependency map — see `agents/analyst.md`)
+1. Analyst completes Change Set (includes dependency map — see `${CLAUDE_PLUGIN_ROOT}/agents/analyst.md`)
 2. Lead reads analyst's task summary
 3. Shut down scanners (scanner-direct, scanner-tests) if they were spawned — no longer needed after analysis
 4. **Specialist Change Set reviews** (if `SPECIALISTS_ENABLED` non-empty): Create review tasks blocked on analysis:
-   - If `security-officer` active: `TaskCreate("Security officer: Change Set review", addBlockedBy: [analysis-task-id])` → `TaskUpdate(owner: "security-officer")`. DM security-officer: `"**New Task**: #{task-id} — Review Change Set for security risk. Rate each NodeID."`
-   - If `test-advisor` active: `TaskCreate("Test advisor: Change Set test strategy", addBlockedBy: [analysis-task-id])` → `TaskUpdate(owner: "test-advisor")`. DM test-advisor: `"**New Task**: #{task-id} — Recommend test types per NodeID."`
+   - If `security-officer` active: `security_change_task_id := TaskCreate({subject: "Security officer: Change Set review", description: "Review the approved Change Set for security risk and rate each NodeID."})`; then `TaskUpdate({taskId: security_change_task_id, addBlockedBy: [analysis_task_id], owner: "security-officer"})`. DM the returned ID to security-officer.
+   - If `test-advisor` active: `test_strategy_task_id := TaskCreate({subject: "Test advisor: Change Set test strategy", description: "Recommend test types and coverage needs for each Change Set NodeID."})`; then `TaskUpdate({taskId: test_strategy_task_id, addBlockedBy: [analysis_task_id], owner: "test-advisor"})`. DM the returned ID to test-advisor.
 4b. **Group D Change Set reviews** (if Group D officers active):
-   - If `FRONTEND_DESIGNER_ENABLED`: `TaskCreate("Frontend designer: Change Set design review", addBlockedBy: [analysis-task-id])` → `TaskUpdate(owner: "frontend-designer")`. DM frontend-designer: `"**New Task**: #{task-id} — Rate each NodeID's UI impact. DM architect with design VERIFY needs for Significant/New-surface NodeIDs."`
-   - If `ENTERPRISE_ENFORCER_ENABLED`: `TaskCreate("Enterprise enforcer: Change Set guideline map", addBlockedBy: [analysis-task-id])` → `TaskUpdate(owner: "enterprise-enforcer")`. DM enforcer: `"**New Task**: #{task-id} — Map active guidelines to NodeIDs. DM architect with required VERIFY criteria citing ARC IDs."`
+   - If `FRONTEND_DESIGNER_ENABLED`: `design_change_task_id := TaskCreate({subject: "Frontend designer: Change Set design review", description: "Rate each NodeID's UI impact and identify design VERIFY needs."})`; then `TaskUpdate({taskId: design_change_task_id, addBlockedBy: [analysis_task_id], owner: "frontend-designer"})`. DM the returned ID to frontend-designer.
+   - If `ENTERPRISE_ENFORCER_ENABLED`: `compliance_map_task_id := TaskCreate({subject: "Enterprise enforcer: Change Set guideline map", description: "Map active guidelines and required ARC criteria to Change Set NodeIDs."})`; then `TaskUpdate({taskId: compliance_map_task_id, addBlockedBy: [analysis_task_id], owner: "enterprise-enforcer"})`. DM the returned ID to enterprise-enforcer.
 4. Lead presents **Quality Gate #1** to user (see [quality-gates.md](quality-gates.md))
 5. User approves (or rejects → re-run analyst with feedback)
 6. Lead sends DM to architect with the approved Change Set
 7. **Spec Drafting** — choose path based on NodeID count and `PARALLEL_SPEC_THRESHOLD`:
 
    **Path A: Standard (fewer than PARALLEL_SPEC_THRESHOLD NodeIDs)**
-   - Lead creates spec-drafting tasks for architect (1 task per NodeID, `addBlockedBy: [analysis-task-id]`):
-     - `TaskCreate("Spec: NodeID-X")` → `TaskUpdate(taskId, owner: "architect")`
+   - Lead creates one spec-drafting task per NodeID:
+     - `spec_task_id := TaskCreate({subject: "Spec: NodeID-X", description: "Draft the approved specification and VERIFY criteria for NodeID-X."})`; then `TaskUpdate({taskId: spec_task_id, addBlockedBy: [analysis_task_id], owner: "architect"})`.
      - DM architect with task IDs: `"**New Tasks**: #{id-1} Spec: NodeID-A, #{id-2} Spec: NodeID-B. Approved Change Set: {summary}"`
    - Resume a compatible architect only when it was started for a real ambiguity; otherwise dispatch a fresh architect now with the approved Change Set capsule.
    - If Gate #1 is rejected, resume the analyst with the bounded decision delta when compatible. Invalidate and restart only when scope/spec/checkpoint or runtime policy changed.
 
    **Path B: Parallel Spec Drafting (PARALLEL_SPEC_THRESHOLD or more NodeIDs)**
-   - Lead DMs architect the full approved Change Set and asks for a partition plan (see `agents/architect.md` — Parallel Spec Coordination)
+   - Lead DMs architect the full approved Change Set and asks for a partition plan (see `${CLAUDE_PLUGIN_ROOT}/agents/architect.md` — Parallel Spec Coordination)
    - Architect proposes NodeID partitions (1-2 NodeIDs each, max 3 partitions, respecting same-spec and interface constraints)
    - Lead spawns spec-drafter agents — one per partition:
      - Spec-drafters use the `architect` agent definition with a scoped spawn prompt
      - Each drafter gets: its NodeID partition, architect's research findings, cross-NodeID interface constraints, consolidation instructions
-     - `TaskCreate("Spec draft: NodeID-A, NodeID-B")` → `TaskUpdate(owner: "spec-drafter-1")`
+     - `spec_partition_task_id := TaskCreate({subject: "Spec draft: NodeID-A, NodeID-B", description: "Draft the assigned disjoint NodeID specification partition under the approved cross-spec constraints."})`; then `TaskUpdate({taskId: spec_partition_task_id, addBlockedBy: [analysis_task_id], owner: "spec-drafter-1"})`.
      - Max 3 spec-drafters: `ceil(NodeID_count / 2)`, capped at 3
    - Spec-drafters draft specs in parallel
    - After all spec-drafters complete: architect runs consistency review (cross-spec alignment, naming, VERIFY coverage)
@@ -100,14 +104,14 @@ The analyst starts immediately and does not wait for optional workers. It may se
 
 8. Architect completes specs (Path A) or architect completes consistency review (Path B)
 9. **Test-advisor spec review** (if `test-advisor` in `SPECIALISTS_ENABLED`): After specs drafted, create spec testability review task:
-   - `TaskCreate("Test advisor: spec testability review", addBlockedBy: [spec-task-id])` → `TaskUpdate(owner: "test-advisor")`
+   - `testability_task_id := TaskCreate({subject: "Test advisor: spec testability review", description: "Review drafted VERIFY criteria for automation and testability."})`; then `TaskUpdate({taskId: testability_task_id, addBlockedBy: [spec_task_id], owner: "test-advisor"})`.
    - DM test-advisor: `"**New Task**: #{task-id} — Review specs for testability. Check VERIFY criteria are automatable."`
 9b. **Group D spec reviews** (after specs drafted):
-   - If `FRONTEND_DESIGNER_ENABLED`: `TaskCreate("Frontend designer: spec design review", addBlockedBy: [spec-task-id])` → `TaskUpdate(owner: "frontend-designer")`. DM frontend-designer: `"**New Task**: #{task-id} — Verify UI-touching specs include design VERIFY criteria (a11y, responsive, empty/loading/error). DM architect with proposed additions."`
-   - If `ENTERPRISE_ENFORCER_ENABLED`: `TaskCreate("Enterprise enforcer: spec compliance audit", addBlockedBy: [spec-task-id])` → `TaskUpdate(owner: "enterprise-enforcer")`. DM enforcer: `"**New Task**: #{task-id} — Audit specs for required VERIFY-criteria injection. Tag [COMPLIANCE-BLOCK-SPEC] if blocking-tier guideline criteria are missing after re-DM round."`
+   - If `FRONTEND_DESIGNER_ENABLED`: `design_spec_task_id := TaskCreate({subject: "Frontend designer: spec design review", description: "Verify UI-touching specs cover accessibility, responsive, and state-design criteria."})`; then `TaskUpdate({taskId: design_spec_task_id, addBlockedBy: [spec_task_id], owner: "frontend-designer"})`. DM the returned ID to frontend-designer.
+   - If `ENTERPRISE_ENFORCER_ENABLED`: `compliance_spec_task_id := TaskCreate({subject: "Enterprise enforcer: spec compliance audit", description: "Audit specs for required guideline-derived VERIFY criteria and blocking omissions."})`; then `TaskUpdate({taskId: compliance_spec_task_id, addBlockedBy: [spec_task_id], owner: "enterprise-enforcer"})`. DM the returned ID to enterprise-enforcer.
 10. Lead presents **Quality Gate #2** to user (see [quality-gates.md](quality-gates.md))
 11. User approves (or rejects → architect revises)
-12. Pre-implementation commit: `git add knowzcode/ && git commit -m "KnowzCode: Specs approved for {wgid}"`
+12. Pre-implementation commit: inspect `git status --short` and scoped diffs; stage only `knowzcode/workgroups/{wgid}.md`, `knowzcode/knowzcode_tracker.md`, and the explicit approved spec paths with `git add -- ...`. Run `git diff --cached --check` and verify the exact `git diff --cached --name-only` list before committing. Abort if any unrelated path is staged; never stage `knowzcode/` wholesale.
 13. Release the analyst after approval unless a concrete early-implementation question is already pending.
 14. Retain the architect through Stage 2 only when active cross-scope clarification is likely; otherwise release it and resume from lineage if a compatible question arises.
 
@@ -143,9 +147,9 @@ The analyst starts immediately and does not wait for optional workers. It may se
    - Default `BUILDER_NODE_LIMIT` is 1. A builder receives at most one NodeID unless `builder_node_limit: 2` or `--builder-node-limit=2` is set and both NodeIDs share one bounded owned-file set.
 
 4. Create builder tasks for the current ready wave and spawn:
-   - `TaskCreate("Implement N5a: service interface + registration", addBlockedBy: [spec-task-id])` → `TaskUpdate(owner: "builder-1")`
-   - `TaskCreate("Implement N7: independent cache invalidation", addBlockedBy: [spec-task-id])` → `TaskUpdate(owner: "builder-2")`
-   Each `TaskCreate` above is a **separate builder dispatch** (one NodeID or microtask per prompt) from the ready wave only. Do not create downstream implementation tasks until their dependency audit task IDs exist. After `N5a` audits clean, create the next dependent task, for example `TaskCreate("Implement N6: PreExtractionRequestedConsumer", addBlockedBy: [audit-N5a-task-id])`.
+   - `implement_n5a_task_id := TaskCreate({subject: "Implement N5a: service interface + registration", description: "Implement and verify the bounded N5a service-interface and registration microtask."})`; then `TaskUpdate({taskId: implement_n5a_task_id, addBlockedBy: [spec_task_id], owner: "builder-1"})`.
+   - `implement_n7_task_id := TaskCreate({subject: "Implement N7: independent cache invalidation", description: "Implement and verify the bounded N7 cache-invalidation scope."})`; then `TaskUpdate({taskId: implement_n7_task_id, addBlockedBy: [spec_task_id], owner: "builder-2"})`.
+   Each `TaskCreate` above is a **separate builder dispatch** (one NodeID or microtask per prompt) from the ready wave only. Do not create downstream implementation tasks until their dependency audit task IDs exist. After `N5a` audits clean, create the next dependent task: `implement_n6_task_id := TaskCreate({subject: "Implement N6: PreExtractionRequestedConsumer", description: "Implement and verify N6 after the N5a dependency audit passes."})`; then `TaskUpdate({taskId: implement_n6_task_id, addBlockedBy: [audit_n5a_task_id], owner: "builder-1"})`.
    The same builder slot can be reused for the next ready scope once its prior scope is audited clean — that is how a builder works through a dependency chain without exceeding `BUILDER_NODE_LIMIT` per dispatch.
    Spawn each builder with its `{task-id}` in the spawn prompt.
    Each builder gets only: assigned NodeID/microtask, spec path(s), assigned acceptance criteria, owned file list, and relevant prior handoff/checkpoint. Do not pass the full Change Set unless the builder needs it for a stated interface reason.
@@ -153,7 +157,7 @@ The analyst starts immediately and does not wait for optional workers. It may se
 
 5. Notify architect of builder spawn:
    - Lead DMs architect: `"Builders spawned for Stage 2. Introduce yourself to: {builder-1, builder-2, ...}"`
-   - Architect sends brief availability message to each builder (see `agents/architect.md` — Proactive Availability)
+   - Architect sends brief availability message to each builder (see `${CLAUDE_PLUGIN_ROOT}/agents/architect.md` — Proactive Availability)
 
 6. Each builder creates subtasks per NodeID/microtask in the task list:
    - `"TDD: NodeID-A tests"` → `"TDD: NodeID-A implementation"` → `"TDD: NodeID-A verify"` for one NodeID
@@ -161,60 +165,60 @@ The analyst starts immediately and does not wait for optional workers. It may se
    - Builder works through subtasks, marks each complete with summary
 
 7. After each implementation scope completes, dispatch one fresh independent reviewer for that scope:
-   - `TaskCreate("Audit N5a: service interface + registration", addBlockedBy: [implement-N5a-task-id])` → `TaskUpdate(owner: "reviewer-1")`
-   - `TaskCreate("Audit N7: independent cache invalidation", addBlockedBy: [implement-N7-task-id])` → `TaskUpdate(owner: "reviewer-2")`
+   - `audit_n5a_task_id := TaskCreate({subject: "Audit N5a: service interface + registration", description: "Independently audit the N5a implementation against its assigned criteria."})`; then `TaskUpdate({taskId: audit_n5a_task_id, addBlockedBy: [implement_n5a_task_id], owner: "reviewer-1"})`.
+   - `audit_n7_task_id := TaskCreate({subject: "Audit N7: independent cache invalidation", description: "Independently audit the N7 implementation against its assigned criteria."})`; then `TaskUpdate({taskId: audit_n7_task_id, addBlockedBy: [implement_n7_task_id], owner: "reviewer-2"})`.
    Spawn each reviewer with its `{task-id}` + assigned spec(s), assigned acceptance criteria, and owned file list.
    Each reviewer audits incrementally within its assigned microtask or one-NodeID scope.
    For a later dependent wave, create the reviewer task only after creating that wave's implementation task.
 
 8. Create smoke-tester task and spawn (one per WorkGroup, not per builder scope):
-   - `TaskCreate("Smoke test: {wgid}", addBlockedBy: [all-implement-task-ids])` → `TaskUpdate(owner: "smoke-tester")`
+   - `smoke_task_id := TaskCreate({subject: "Smoke test: {wgid}", description: "Run the WorkGroup runtime smoke checks after every implementation scope completes."})`; then `TaskUpdate({taskId: smoke_task_id, addBlockedBy: [all_implement_task_ids], owner: "smoke-tester"})`.
    Spawn smoke-tester with its `{task-id}` in the spawn prompt. The smoke-tester waits until at least one builder marks implementation complete, then launches the full app for runtime verification.
    **Note:** Unlike reviewers, only one smoke-tester runs per WorkGroup — it needs the full app running, not individual builder scopes.
 
 9. **Specialist implementation reviews** (if `SPECIALISTS_ENABLED` non-empty): Create specialist review tasks alongside reviewer audit tasks, same `addBlockedBy`:
    - If `security-officer` active — one task per active builder scope (runs parallel to reviewer):
-     `TaskCreate("Security officer: review scope {N}", addBlockedBy: [implement-X-task-id])` → `TaskUpdate(owner: "security-officer")`
+     `security_scope_task_id := TaskCreate({subject: "Security officer: review scope {N}", description: "Run the bounded vulnerability and data-flow review for implementation scope {N}."})`; then `TaskUpdate({taskId: security_scope_task_id, addBlockedBy: [implement_x_task_id], owner: "security-officer"})`.
      DM security-officer: `"**New Task**: #{task-id} — Vulnerability scan for scope {N}. NodeIDs/microtasks: {list}."`
    - If `test-advisor` active — one task per active builder scope:
-     `TaskCreate("Test advisor: review scope {N} tests", addBlockedBy: [implement-X-task-id])` → `TaskUpdate(owner: "test-advisor")`
+     `test_scope_task_id := TaskCreate({subject: "Test advisor: review scope {N} tests", description: "Review test quality and TDD evidence for implementation scope {N}."})`; then `TaskUpdate({taskId: test_scope_task_id, addBlockedBy: [implement_x_task_id], owner: "test-advisor"})`.
      DM test-advisor: `"**New Task**: #{task-id} — Test quality review for scope {N}. NodeIDs/microtasks: {list}."`
    - If `project-advisor` active — one observation task (not per-scope):
-     `TaskCreate("Project advisor: observe implementation")` → `TaskUpdate(owner: "project-advisor")`
+     `project_observation_task_id := TaskCreate({subject: "Project advisor: observe implementation", description: "Observe bounded implementation summaries and return backlog proposals before the gap loop."})`; then `TaskUpdate({taskId: project_observation_task_id, owner: "project-advisor"})`.
      DM project-advisor: `"**New Task**: #{task-id} — Observe builder progress, note patterns and ideas. Deliver backlog proposals before gap loop."`
-   **Gate #3 is NOT blocked by Group C specialists.** If a Group C specialist hasn't finished, gate shows `[Pending: {specialist}]`. Lead proceeds.
+   **Gate #3 MUST await the selected security-officer's final report.** Its CRITICAL/HIGH findings retain `[SECURITY-BLOCK]` authority. Test-advisor and project-advisor are informational and may be shown as pending; the lead may proceed without those advisory results.
    **Project-advisor early shutdown**: After project-advisor delivers backlog proposals, shut it down (before the gap loop begins).
 
 9b. **Group D implementation reviews** (if Group D officers active):
    - If `ENTERPRISE_ENFORCER_ENABLED` — one task per active builder scope (parallel to reviewer):
-     `TaskCreate("Enterprise enforcer: compliance audit scope {N}", addBlockedBy: [implement-X-task-id])` → `TaskUpdate(owner: "enterprise-enforcer")`
+     `compliance_scope_task_id := TaskCreate({subject: "Enterprise enforcer: compliance audit scope {N}", description: "Audit implementation scope {N} against the active guideline ARC criteria."})`; then `TaskUpdate({taskId: compliance_scope_task_id, addBlockedBy: [implement_x_task_id], owner: "enterprise-enforcer"})`.
      DM enforcer: `"**New Task**: #{task-id} — Compliance audit for scope {N}. NodeIDs/microtasks: {list}. Guideline IDs in scope: {from Stage 0 map}."`
    - If `FRONTEND_DESIGNER_ENABLED` — one E2E task per WorkGroup (not per scope, like smoke-tester):
-     `TaskCreate("Frontend designer: E2E UI audit", addBlockedBy: [all-implement-task-ids, smoke-task-id])` → `TaskUpdate(owner: "frontend-designer")`
+     `design_e2e_task_id := TaskCreate({subject: "Frontend designer: E2E UI audit", description: "Run the spec-driven E2E design audit after implementation and smoke readiness."})`; then `TaskUpdate({taskId: design_e2e_task_id, addBlockedBy: [all_implement_task_ids, smoke_task_id], owner: "frontend-designer"})`.
      DM frontend-designer: `"**New Task**: #{task-id} — Wait for smoke-tester app-ready signal, then run spec-driven E2E design audit on the running app."`
    **Gate #3 IS blocked by enterprise-enforcer's blocking-tier findings** (officer authority — analogous to security-officer). frontend-designer is advisor by default; gate is blocked only if `FRONTEND_DESIGNER_BLOCKING_CONFIG = true` (officer mode).
 
 10. Gap flow (per-scope, parallel where dependencies allow — persistent agents, DM messaging):
    a. Each reviewer marks audit task complete with structured gap report in summary
    b. Lead creates fix task and pre-assigns:
-      `TaskCreate("Fix gaps: NodeID-A", addBlockedBy: [audit-task-id])` → `TaskUpdate(owner: "builder-N")`
+      `gap_fix_task_id := TaskCreate({subject: "Fix gaps: NodeID-A", description: "Fix the bounded reviewer gaps for NodeID-A and rerun affected checks."})`; then `TaskUpdate({taskId: gap_fix_task_id, addBlockedBy: [audit_task_id], owner: "builder-N"})`.
    c. Lead sends DM to builder with task ID and gap details:
       > **New Task**: #{fix-task-id} — Fix gaps: NodeID-A
       > **Gaps**: {file path, assigned acceptance criterion not met, expected vs actual}
       > Fix each gap, re-run affected tests, report completion.
    d. Builder claims fix task, fixes gaps, re-runs tests, marks fix task complete
    e. Lead creates re-audit task and pre-assigns:
-      `TaskCreate("Re-audit: NodeID-A", addBlockedBy: [gap-fix-task-id])` → `TaskUpdate(owner: "reviewer-N")`
+      `reaudit_task_id := TaskCreate({subject: "Re-audit: NodeID-A", description: "Re-audit only the bounded NodeID-A gap-fix delta."})`; then `TaskUpdate({taskId: reaudit_task_id, addBlockedBy: [gap_fix_task_id], owner: "reviewer-N"})`.
    f. Lead sends DM to reviewer: `"**New Task**: #{reaudit-task-id} — Re-audit: NodeID-A. {gap list}"`
    g. Each builder-reviewer pair repeats independently until clean — no cross-scope blocking unless the dependency graph requires it
    — All builders and reviewers stay alive through the entire gap loop (no respawning)
 
    **Smoke test gap flow** (parallel with per-scope reviewer gaps):
    h. Smoke-tester marks task complete with structured failure report
-   i. Lead creates smoke fix tasks: `TaskCreate("Fix smoke gap: {description}", addBlockedBy: [smoke-task-id])` → `TaskUpdate(owner: "builder-N")` (assigned to the builder whose owned scope contains the failing code)
+   i. Lead creates the smoke fix task: `smoke_fix_task_id := TaskCreate({subject: "Fix smoke gap: {description}", description: "Fix the bounded smoke failure and rerun the affected unit checks."})`; then `TaskUpdate({taskId: smoke_fix_task_id, addBlockedBy: [smoke_task_id], owner: "builder-N"})` (assign to the builder whose owned scope contains the failing code).
    j. Lead DMs builder: `"**New Task**: #{fix-task-id} — Fix smoke gap: {description}. {expected vs observed}"`
    k. Builder fixes, re-runs unit tests, marks fix task complete
-   l. Lead creates re-smoke task: `TaskCreate("Re-smoke: {wgid}", addBlockedBy: [smoke-fix-task-id])` → `TaskUpdate(owner: "smoke-tester")`
+   l. Lead creates the re-smoke task: `resmoke_task_id := TaskCreate({subject: "Re-smoke: {wgid}", description: "Re-run the WorkGroup smoke checks against the bounded smoke-fix delta."})`; then `TaskUpdate({taskId: resmoke_task_id, addBlockedBy: [smoke_fix_task_id], owner: "smoke-tester"})`.
    m. Lead DMs smoke-tester: `"**New Task**: #{resmoke-task-id} — Re-smoke: {wgid}. Previous failures: {list}"`
    n. 3-iteration cap — if exceeded, pause autonomous mode: `> **Autonomous Mode Paused** — Smoke test failed 3 iterations. Manual review required.`
 
@@ -252,7 +256,7 @@ The analyst starts immediately and does not wait for optional workers. It may se
     - If coverage is incomplete, create the next missing microtask or roll-up audit task before Gate #3. Do not present Gate #3 as clean while criteria remain unassigned.
     - Lead consolidates audit results from all reviewers
     - Lead consolidates smoke test results (if smoke-tester was spawned)
-    - Lead consolidates specialist reports (if `SPECIALISTS_ENABLED` non-empty — include even if some specialist tasks are still pending, noting `[Pending: {specialist}]`)
+    - Lead consolidates specialist reports. If security-officer was selected, its report MUST be complete and any `[SECURITY-BLOCK]` resolved before Gate #3. Only informational test/project advisor results may remain `[Pending]`.
     - Lead presents **Quality Gate #3** (see [quality-gates.md](quality-gates.md))
     - User decides: proceed / fix gaps / modify specs / cancel
 
@@ -270,8 +274,10 @@ The analyst starts immediately and does not wait for optional workers. It may se
 > 5. Closer returns one consolidated `FinalCaptureDelta`; lead classifies it with `vault-delta` using `explicit_save: true` and sends one Phase 3 flush to the knowledge-liaison
 > 6. Release `knowledge-liaison` after capture; runtime-managed Team cleanup occurs at session end
 
+The direct officer-to-closer handoff above is coordinated-team-only. In named-agent mode, the lead waits for every required officer result (including security), places those bounded reports in the closer capsule, and receives the closer's `FinalCaptureDelta` and explicit file list directly. No named worker uses mailbox/task APIs.
+
 1. (Project-advisor was shut down mid-Stage 2.)
-2. `TaskCreate("Phase 3: Finalize {wgid}", addBlockedBy: [last-audit-task-id])` → `TaskUpdate(owner: "closer")`
+2. `finalize_task_id := TaskCreate({subject: "Phase 3: Finalize {wgid}", description: "Apply the delegated finalization-file updates and return FinalCaptureDelta plus explicit changed paths."})`; then `TaskUpdate({taskId: finalize_task_id, addBlockedBy: [last_audit_task_id], owner: "closer"})`.
    Spawn `closer` with `{task-id}` in spawn prompt. **Spawn closer before shutting down Group C/D officers** so they can DM final artifacts.
 2b. **Enterprise-enforcer handoff** (if `ENTERPRISE_ENFORCER_ENABLED`): once closer is alive and has claimed its task, DM enterprise-enforcer: `"Closer ready at task #{closer-task-id}. Send ComplianceSummary."` Enforcer DMs closer with `"ComplianceSummary: {payload — Compliance Report, ARC coverage, finding table}"`. Closer ACKs and queues the writeback to `compliance_status.md` for inclusion in its final commit.
 2c. **Shut down Group C/D officers**: security-officer, test-advisor, frontend-designer (if active), enterprise-enforcer (if active). Any order — they're all read-only and have delivered their final reports.
@@ -281,13 +287,14 @@ The analyst starts immediately and does not wait for optional workers. It may se
    - Write ARC-Completion log entry
    - Review architecture docs for discrepancies
    - Schedule REFACTOR tasks for tech debt
-   - **If enterprise-enforcer was active**: append the compliance audit summary (received via DM at Stage 3 step 1b) to `knowzcode/enterprise/compliance_status.md` review history
-   - Return the consolidated `FinalCaptureDelta` to the lead; the lead invokes `vault-delta` and, if vaults are configured, DMs the knowledge-liaison: `"Capture Delta flush: Phase 3: {wgid}. Your task: #{task-id}"` — knowledge-liaison dispatches one writer
+   - **If enterprise-enforcer was active**: append the compliance audit summary received by Team DM or supplied in the named-agent capsule to `knowzcode/enterprise/compliance_status.md` review history
+   - Return the consolidated `FinalCaptureDelta` to the lead; the lead invokes `vault-delta` and, if vaults are configured, supplies the knowledge-liaison one classified Phase 3 flush with a content-bound parent identity/key, an explicit mutation plan, and every known `KnowledgeId`. The liaison derives one distinct deterministic child key per logical mutation and returns a self-contained `WriterRequest`; amend/update without an exact `KnowledgeId` fail explicitly and never become create. The lead dispatches exactly one writer and owns its task state.
    - Return the explicit final file list and suggested commit message; the lead creates the atomic commit
 4. Lead presents completion summary
-5. **Wait for writer Phase 3 capture** (if knowledge-liaison dispatched a writer):
-   - Check writer task via `TaskGet(task-id)` — wait until status is `completed`
-   - **Timeout**: If >2 minutes after closer completes and writer task still not complete → proceed with shutdown and log `WARNING: Writer Phase 3 capture did not complete for {wgid}. Vault writes may be incomplete.`
+5. **Wait for writer Phase 3 capture** (if the lead dispatched a writer from the liaison's `WriterRequest`):
+   - Coordinated-team: check the writer task via `TaskGet({taskId: writer_task_id})` and wait until status is `completed`.
+   - Named-agent: wait for the direct writer result. If it attempted MCP and failed, require `QUEUED_IDEMPOTENCY_KEY`; never append a second queue block.
+   - **Timeout**: If >2 minutes after closer completes and the writer operation still has no bounded result → proceed with shutdown and log `WARNING: Writer Phase 3 capture did not complete for {wgid}. Vault writes may be incomplete; queue confirmation is unknown.`
 6. Release closer after final evidence, then release the knowledge-liaison after capture. In coordinated mode, request graceful teammate shutdown; no separate Team deletion is performed.
 
 ---
@@ -322,7 +329,7 @@ When creating tasks, model the dependency chain with `addBlockedBy` and pre-assi
 | Knowledge liaison: targeted context/vault gap | (only when baseline is insufficient) | knowledge-liaison |
 | Scanner: direct codebase scan | (none) | scanner-direct |
 | Scanner: test coverage scan | (none) | scanner-tests |
-| Phase 1A analysis | (none — knowledge-liaison pushes context via DM, scanners enrich via broadcast) | analyst |
+| Phase 1A analysis | (none — knowledge-liaison returns context to the lead; the lead routes scanner findings with one targeted `SendMessage` per recipient) | analyst |
 | Architect pre-load + speculative research | (none — receives [PRELIMINARY] DMs from analyst) | architect |
 | Security officer: initial threat scan | (none — Group C) | security-officer |
 | Test advisor: coverage baseline | (none — Group C) | test-advisor |
@@ -350,9 +357,9 @@ When creating tasks, model the dependency chain with `addBlockedBy` and pre-assi
 | Smoke test: {wgid} | All implement tasks complete | smoke-tester |
 | Re-smoke: {wgid} round N | Smoke gap fix round N | smoke-tester |
 | Phase 3 finalization | All audits approved | closer |
-| Reader: vault queries | (none — dispatched by knowledge-liaison) | knowz:reader |
-| Writer: Capture Delta amend/update/flush | `vault-delta` returns a persistence action (dispatched by knowledge-liaison) | knowz:writer |
-| Writer: Consolidated Phase 3 flush | Phase 3 `explicit_save` classification (dispatched once by knowledge-liaison) | knowz:writer |
+| Reader: vault queries | Liaison returned a self-contained `ReaderRequest`; lead dispatches and owns task state | knowz:reader |
+| Writer: Capture Delta amend/update/flush | `vault-delta` returns a persistence action and liaison returns `WriterRequest`; lead dispatches once | knowz:writer |
+| Writer: Consolidated Phase 3 flush | Phase 3 `explicit_save` classification and liaison `WriterRequest`; lead dispatches once | knowz:writer |
 
 ---
 
@@ -364,14 +371,16 @@ When using `--sequential`, process one ready scope at a time. A profile does not
 
 Use `MCP_ACTIVE`, `VAULTS_CONFIGURED`, and `VAULT_BASELINE` from Step 3.6 in `work/SKILL.md`. The lead has already completed the MCP probe, vault creation, and baseline vault queries before reaching this point. Do NOT re-run the MCP probe or baseline queries here.
 
-Pass the lead's timestamped MCP health result to the closer. The closer probes only when that result is absent, expired, or explicitly invalidated (see `agents/closer.md`).
+Pass the lead's timestamped MCP health result to the closer. The closer probes only when that result is absent, expired, or explicitly invalidated (see `${CLAUDE_PLUGIN_ROOT}/agents/closer.md`).
 
 ### Pre-Phase: Targeted Context and Knowledge
 
 Before dispatching the analyst, use `VAULT_BASELINE`. If a material targeted gap remains:
 
-1. Resume a compatible knowledge-liaison or dispatch `Task(subagent_type="knowledge-liaison", description="Targeted context research", prompt=<bounded question + VAULT_BASELINE>)`.
-2. Collect findings from the knowledge-liaison's task summary.
-3. Inject into the analyst spawn prompt as: `> **Context Briefing**: {liaison findings}`.
+1. Resume a compatible knowledge-liaison or dispatch `Agent(subagent_type="knowzcode:knowledge-liaison", description="Prepare targeted context request", prompt=<bounded question + VAULT_BASELINE>)`. The liaison returns a self-contained `ReaderRequest`; the lead dispatches the reader and returns the bounded result to the liaison or directly to the next consumer.
+2. Wait for the reader result. Return it to the liaison for a bounded `Context Briefing`, or synthesize that briefing locally when no further liaison judgment is needed.
+3. Inject the resulting briefing into the analyst spawn prompt as: `> **Context Briefing**: {bounded findings}`.
 
 For Gate rejection and Stage 2 gap loops, send only the changed decision, failing VERIFY IDs, checkpoint, and artifact path to the compatible analyst, architect, builder, or reviewer. Start a fresh agent only after a recorded lineage invalidation. Preserve the same TDD, gate, compliance, and capture behavior as parallel execution.
+
+Before Gate #3, wait for every required reviewer and for the selected security-officer. Test/project advisory roles may remain pending, but security may not. Before Phase 3, collect all required officer results into the closer capsule. The closer returns `FinalCaptureDelta`, explicit changed paths, verification summary, and a suggested commit message; the lead performs persistence, scoped staging, and the commit.

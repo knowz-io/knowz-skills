@@ -11,10 +11,21 @@ relay host is Codex; the supported external implementation target is Claude.
 
 ## Instructions
 
-1. Check whether `knowzcode/` already exists in the project root.
+1. Resolve the repository root as an absolute path and check whether
+   `knowzcode/` already exists there.
    - If it does, ask whether to merge, refresh, or stop.
-2. Copy the bundled framework files from this plugin's `knowzcode/` directory into the project root `knowzcode/` directory, including `knowzcode/codex_execution.md` for Codex-native delegation guidance.
-3. Preserve user-authored project files when merging; do not overwrite without confirmation.
+2. Bootstrap through the packaged CLI rather than assuming this skill can find
+   a plugin-relative framework directory. This is required for a globally
+   installed skill used from a different repository:
+   - Fresh repository: `npx --yes knowzcode install --target "{absolute-repository-root}" --platforms codex --force`
+   - Approved refresh: `npx --yes knowzcode upgrade --target "{absolute-repository-root}" --force`
+   - Adapter-only merge: `npx --yes knowzcode add-platforms --target "{absolute-repository-root}" --platforms codex --force`
+   Never substitute the current home/global skill directory for the repository
+   target. Verify the CLI exits successfully and that
+   `knowzcode/knowzcode_loop.md` exists before personalization.
+3. Preserve user-authored project files and an unmanaged project `AGENTS.md`;
+   the CLI's ownership marker and manifest control which Codex surfaces it may
+   update.
 4. Detect the project stack and write the Stack table in `knowzcode/knowzcode_project.md` with the concrete language, framework, test runner, and build details. Probe for `package.json` (Node/TS), `pyproject.toml` / `requirements.txt` (Python), `*.csproj` / `*.sln` (.NET), `go.mod` (Go), `Cargo.toml` (Rust), `Gemfile` (Ruby). Leave table cells empty if detection fails — do not write `[Detected]` placeholders.
 5. Run three personalization gates. Each is skippable; when declined, write `Not configured during init — edit this file or re-run /knowzcode:setup to fill.` into the relevant section instead of leaving the template's bracketed placeholders.
    - **Gate A (`knowzcode_project.md`):** Ask for (1) project name + one-sentence goal, (2) core problem, (3) architecture style. Rewrite the `## Goal` and `## Architecture` sections with the answers. Leave the Stack table alone — step 4 handles it.

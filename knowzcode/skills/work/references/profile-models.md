@@ -66,7 +66,7 @@ MODEL_FOR(agent_name, profile, execute_on_fable=false):
   RETURN null               # teams / classic → agent frontmatter default
 ```
 
-`execute_on_fable` defaults to `false`; callers that don't pass it (e.g. `/audit`, `/fix`) get the default, and it only affects the `frontier` profile.
+`execute_on_fable` defaults to `false`; callers that don't pass it (e.g. `/knowzcode:audit`, `/knowzcode:fix`) get the default, and it only affects the `frontier` profile.
 
 When `MODEL_FOR` returns non-null, include `model: <value>` in the current agent or teammate spawn call. When it returns `null`, omit the parameter so the agent's frontmatter value is used. Keep model and effort stable while resuming one lineage; a change invalidates warmth and requires an explicit fresh dispatch.
 
@@ -112,8 +112,8 @@ Model identifiers use the bare aliases `fable` and `opus` (never pinned versions
 
 ## Related
 
-- `knowzcode/skills/work/SKILL.md` — Steps 1.5 / 2.3 / 2.4 (profile + `--fable-execution` resolution, detection/fallback) and flag handling
-- `knowzcode/skills/work/references/spawn-prompts.md` — `{advisor_guidance}` and `{spec_depth_guidance}` placeholder rules
-- `knowzcode/skills/work/references/parallel-orchestration.md` — spawn-time model-override application
-- `knowzcode/skills/audit/SKILL.md` — audit-side profile handling
+- `${CLAUDE_PLUGIN_ROOT}/skills/work/SKILL.md` — Steps 1.5 / 2.3 / 2.4 (profile + `--fable-execution` resolution, detection/fallback) and flag handling
+- `${CLAUDE_PLUGIN_ROOT}/skills/work/references/spawn-prompts.md` — `{advisor_guidance}` and `{spec_depth_guidance}` placeholder rules
+- `${CLAUDE_PLUGIN_ROOT}/skills/work/references/parallel-orchestration.md` — spawn-time model-override application
+- `${CLAUDE_PLUGIN_ROOT}/skills/audit/SKILL.md` — audit-side profile handling
 - `knowzcode/knowzcode/knowzcode_orchestration.md` — `profile:` and `execute_on_fable:` config

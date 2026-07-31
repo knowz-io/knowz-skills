@@ -65,7 +65,7 @@ Before proceeding, confirm the following:
         *   Find the row for `TargetNodeID`, change its `Status` back to `[VERIFIED]`, and clear its `WorkGroupID`.
         *   If a `REFACTOR_[TargetNodeID]` task exists, **delete that entire row** from the tracker.
 4.  **Final Commit:**
-    *   Commit all changes (code, spec updates, log, tracker) with a descriptive `refactor:` message (e.g., `refactor(API_UserSearch): Optimize query performance`).
+    *   Inspect status and scoped diffs; stage only the explicit approved code, spec, log, and tracker paths, verify the cached name list and diff, then commit with a descriptive `refactor:` message (e.g., `refactor(API_UserSearch): Optimize query performance`). Preserve unrelated user state.
 
 ### Final Report
 *   Once all steps are complete, provide a concise confirmation report.

@@ -56,7 +56,7 @@ Check KnowzCode project status and report findings to the user.
 2. **Check Claude Agent and Context Capabilities**
 
    Check for agent definition files:
-   - Glob for `agents/*.md`
+   - Glob for `${CLAUDE_PLUGIN_ROOT}/agents/*.md`
    - List found agents with their names
 
    Check project/user settings for Agent Teams configuration without invoking a lifecycle API. If `claude --version` is safely available, report the version and whether it meets the documented conversation-fork minimum; treat plugin-authored fork callability as separately `available|unavailable|unknown`. Never claim a cache hit from version or mode.
@@ -92,20 +92,22 @@ Check KnowzCode project status and report findings to the user.
 
 4. **Check Pending Captures**
 
-   Check if `knowzcode/pending_captures.md` exists and contains pending capture blocks.
+   Count pending `---`-delimited blocks in canonical project-root `knowz-pending.md`. Report blocks with `Queue Status: superseded` separately; they are preserved audit context and `/knowz flush` must not write them. Also check legacy `knowzcode/pending_captures.md`; report its blocks separately as migration-required rather than adding counts blindly, because duplicate idempotency keys may represent the same logical mutation.
 
    Report:
    ```
    ## Pending Captures
 
-   Pending: {count} capture(s) waiting to be flushed
+   Canonical Pending: {count} capture(s) waiting to be flushed
+   Superseded/Quarantined: {count} capture(s) preserved but not replayable
+   Legacy Pending: {count} capture(s) awaiting safe migration
    ```
 
-   If pending captures exist: suggest `/knowz flush` to write them to vaults.
+   If either queue has captures, suggest `/knowz flush`; it migrates legacy blocks into `knowz-pending.md`, deduplicates by `Idempotency Key`, and removes only confirmed successes.
 
 5. **Check Cross-Agent Relay**
 
-   Read the provider-neutral procedures in `knowzcode/skills/work/references/relay-execution.md` and the `relay*` keys in `knowzcode/knowzcode_orchestration.md` if present.
+   Read the provider-neutral procedures in `${CLAUDE_PLUGIN_ROOT}/skills/work/references/relay-execution.md` and the `relay*` keys in `knowzcode/knowzcode_orchestration.md` if present.
 
    **Determine host from the active platform package, not installed binaries:**
 

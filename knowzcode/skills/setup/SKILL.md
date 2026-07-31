@@ -11,7 +11,7 @@ You are the **KnowzCode Initialization Agent**. Set up the KnowzCode framework i
 
 ## Enterprise Configuration
 
-> **Note:** This section is about **white-label** config (brand + endpoints) only. The separate **enterprise compliance** feature (custom guidelines enforced at quality gates) is set up in step 10 and documented in `knowzcode/docs/enterprise-compliance.md`.
+> **Note:** This section is about **white-label** config (brand + endpoints) only. The separate **enterprise compliance** feature (custom guidelines enforced at quality gates) is set up in step 10 and documented in `${CLAUDE_PLUGIN_ROOT}/docs/enterprise-compliance.md`.
 
 Before using any endpoints or brand names in this skill, check for an `enterprise.json` file in the plugin root directory (the directory containing `.claude-plugin/plugin.json`). Read it once at the start of initialization.
 
@@ -132,7 +132,7 @@ Write the answer as the `profile:` value in the generated `knowzcode_orchestrati
 - Codex skill/plugin → `RELAY_HOST=codex`, candidate target `claude`
 - Gemini or any other host → relay unsupported for this version; keep native Phase 2A, set `relay: none`, report `[RELAY-DETECT] host={host} target=none status=native-only`, and skip the rest of this step
 
-For Claude or Codex, run the candidate target's readiness probe from `knowzcode/skills/work/references/relay-execution.md`:
+For Claude or Codex, run the candidate target's readiness probe from `${CLAUDE_PLUGIN_ROOT}/skills/work/references/relay-execution.md`:
 
 - Codex target: `command -v codex` → `codex --version` → `codex login status`
 - Claude target: `command -v claude` → `claude --version` → `claude auth status --json`; parse the exit code and only `.loggedIn` plus non-identifying method/provider fields. Never print or persist the raw JSON, email, organization ID, or organization name.
@@ -414,7 +414,7 @@ This works correctly — no action needed.
   - `templates/guideline-template.md`
 - Then tell the user how to turn it on: author or edit a guideline, register it in the manifest's **Active Guidelines** table with `Active: true`, set `compliance_enabled: true`, and run `/knowzcode:audit compliance` to verify. Guidelines are **blocking** (stop the workflow) or **advisory** (reported only).
 - Compliance is **disabled by default** (`compliance_enabled: false`) — nothing runs until the user opts in.
-- Point the user at `knowzcode/docs/enterprise-compliance.md` for the full guide.
+- Point the user at `${CLAUDE_PLUGIN_ROOT}/docs/enterprise-compliance.md` for the full guide.
 
 ### 11. Optional: Configure MCP
 

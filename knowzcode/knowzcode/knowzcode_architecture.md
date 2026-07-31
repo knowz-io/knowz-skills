@@ -45,3 +45,5 @@ flowchart TD
 - Provider sessions, agent IDs, and caches are ephemeral optimizations. Durable recovery depends only on repository state, approved specs, checkpoints, WorkGroup state, and a valid capsule.
 - The lead-owned no-write runtime classifies vault deltas before any persistence; `skip`/`batch` stay local, while `amend`/`update`/`flush` route through one authorized writer or direct mutation.
 - Rollout promotion requires exact measured provenance, 40 balanced pairs across five mandatory strata, and non-weakenable economic, quality, security, and reconciliation gates.
+- Generated Claude, Codex, Gemini, and Copilot surfaces are owned by exact product manifests and content digests. Lifecycle operations preflight containment, file type, symlinks, settings shape, and collisions before mutation; unowned state is preserved.
+- Knowz and KnowzCode share Gemini's `mcpServers.knowz` entry only through independent digest claims backed by product-specific active-install evidence. Co-owned entries are immutable until one owner leaves, and only the final matching owner removes the entry.

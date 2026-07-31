@@ -41,9 +41,10 @@
     },
     {
       "id": "resume-compatible",
-      "input": {
-        "role": "builder",
-        "lineage": {
+    "input": {
+      "role": "builder",
+      "owned_files": ["src/resume-compatible.mjs"],
+      "lineage": {
           "compatible": true,
           "resumable": true,
           "role": "builder"
@@ -264,9 +265,10 @@
     },
     {
       "id": "incompatible-lineage-fresh",
-      "input": {
-        "role": "builder",
-        "lineage": {
+    "input": {
+      "role": "builder",
+      "owned_files": ["src/incompatible-lineage.mjs"],
+      "lineage": {
           "compatible": false,
           "resumable": true,
           "role": "builder"
@@ -302,9 +304,10 @@
     {
       "id": "resume-writer-cap-fallback",
       "input": {
-        "role": "builder",
-        "is_writer": true,
-        "active_inherited_writers": 2,
+      "role": "builder",
+      "is_writer": true,
+      "owned_files": ["src/writer-cap.mjs"],
+      "active_inherited_writers": 2,
         "max_active_inherited": 2,
         "lineage": {
           "compatible": true,

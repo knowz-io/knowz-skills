@@ -1,8 +1,8 @@
 # ContextEfficientOrchestration: Portable Context-Affinity Routing
 
-**Updated:** 2026-07-30
-**Status:** As-Built
-**WorkGroup:** `kc-feat-context-efficient-orchestration-20260730-035714`
+**Updated:** 2026-07-31
+**Status:** As-Built — verified
+**WorkGroup:** `kc-fix-context-orchestration-hardening-20260731-003258`
 
 ## Context
 
@@ -204,6 +204,16 @@ The shipped `knowzcode/context_efficiency_runtime.mjs` also exposes a bounded st
 - VERIFY CEO-13: the executable 40+ task paired evaluation includes distinct self-contained recovery/invalidation cases and unique paired records, synthetic fixtures cannot authorize promotion, rollout selection is deterministic, and promotion gates enforce the specified cost, latency, quality, rework, security, and reconciliation thresholds.
 - VERIFY CEO-14: documentation makes no blanket token-removal claim and describes cache reads as billing/context-reuse behavior.
 
+### Hardening addendum
+
+- VERIFY CEO-15: combined dispatch derives executable rollout selection only from the router result, evaluates lineage before permitting resume, and rejects missing recommendations for executing rollout stages.
+- VERIFY CEO-16: inheritance and team fan-out require explicit safety, closed sensitivity, and budget approval; every declared/inferred writer and team writer scope provides at least one canonical repository-relative owned path, and alias/containment overlap is serialized.
+- VERIFY CEO-17: capsule artifact references stay beneath the runtime-owned artifact boundary, evidence externalization additionally requires an explicit authorized root, and the complete transformed capsule is privacy-checked immediately before sealing; all time inputs use strict RFC3339 validation.
+- VERIFY CEO-18: material or writer work cannot request away its recoverable handoff, while large raw output independently requires authorized artifact persistence.
+- VERIFY CEO-19: billed telemetry requires an authoritative accounting source, and promotion accepts only bounded, uniquely identified pairs with complete provider accounting bound to a fresh, replay-checked signed v2 envelope matching the expected candidate version, corpus version, runtime digest, and exact corpus digest.
+- VERIFY CEO-20: severity is normalized against a closed vocabulary, and amend/update fails closed unless exactly one prior record has a stable mutation identifier—including a directly superseded `KnowledgeId`—that is returned to the caller.
+- VERIFY CEO-21: every capsule file/spec/artifact reference is a portable repository-relative path, resolved writer paths count toward inheritance caps, and combined dispatch rejects conflicting role/sensitivity facts instead of weakening isolation.
+
 ## Debt & Gaps
 
 - Provider billing fields and cache TTLs vary; adapters report capability and accounting source rather than forcing false parity.
@@ -213,7 +223,7 @@ The shipped `knowzcode/context_efficiency_runtime.mjs` also exposes a bounded st
 
 ## As-Built Verification
 
-- Shipped the canonical no-write runtime, three versioned schemas, exact plugin mirrors, and executable route/lineage/capsule/telemetry/rollout/result-policy/vault-delta/dispatch operations.
-- Promotion is fail closed: exact measured provenance, at least 40 pairs, at least eight in every mandatory stratum, and non-weakenable cost/latency/quality/rework/security/reconciliation gates.
-- Contract suite: 20/20 tests passed, including fixture relabeling, mixed evidence, undersized and unbalanced corpora, weakened caller thresholds, zero-write output policy, and all 40 scenario oracles.
-- Independent shared audit: 14/14 criteria passed with no unresolved severity finding. Repository fixtures remain explicitly non-empirical; rollout defaults to `off` until real paired measurements authorize promotion.
+- Shipped the canonical no-write runtime, three versioned schemas, exact plugin mirrors, and executable route, lineage, capsule, telemetry, rollout, result-policy, vault-delta, and combined-dispatch operations.
+- Routing and inheritance fail closed on ambiguous ownership, missing safety/budget facts, incompatible lineage, private capsule content, invalid timestamps, unauthorized artifacts, and conflicting isolation facts. Material/writer results cannot discard their recoverable handoff.
+- Promotion is fail closed: exact measured provenance, at least 40 unique pairs with eight in every mandatory stratum, complete provider accounting, a version/digest-bound signed envelope, replay protection, fixed freshness bounds, and non-weakenable cost, latency, quality, rework, security, and reconciliation gates.
+- All 21 criteria are covered by the 32-test executable contract suite and integrated platform validator; canonical/plugin runtime and schema mirrors are byte-identical after synchronization.
