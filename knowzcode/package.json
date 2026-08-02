@@ -1,10 +1,10 @@
 {
   "name": "knowzcode",
-  "version": "0.20.1",
+  "version": "0.21.0",
   "description": "Platform-agnostic AI development methodology with TDD, quality gates, and structured workflows",
   "type": "module",
   "bin": {
-    "knowzcode": "./bin/knowzcode.mjs"
+    "knowzcode": "bin/knowzcode.mjs"
   },
   "files": [
     "bin/",
