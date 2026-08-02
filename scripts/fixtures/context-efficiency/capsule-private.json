@@ -1,0 +1,41 @@
+{
+  "schema": "knowzcode.context-capsule/v1",
+  "task_id": "task-auth-1",
+  "workgroup_id": "kc-feat-auth-20260730-080000",
+  "phase": "2A",
+  "objective": "Continue from raw transcript with ghp_FAKEEXAMPLE1234567890",
+  "node_ids": [
+    "Authentication"
+  ],
+  "owned_files": [
+    "src/auth/token.js",
+    "test/auth/token.test.js"
+  ],
+  "read_files": [
+    "knowzcode/specs/Authentication.md"
+  ],
+  "specs": [
+    {
+      "path": "knowzcode/specs/Authentication.md",
+      "verify_ids": [
+        "AUTH-01",
+        "AUTH-02"
+      ]
+    }
+  ],
+  "approved_decisions": [
+    "Use the existing clock abstraction."
+  ],
+  "checkpoint_sha": "abcdef1234567",
+  "failures": [],
+  "risks": [
+    "Do not expose token values in logs."
+  ],
+  "constraints": [
+    "Follow TDD and preserve backward compatibility."
+  ],
+  "next_action": "Write the failing expiry test.",
+  "evidence": [],
+  "artifact_refs": [],
+  "capsule_hash": "sha256:a1cd69eef6f9f3bb135f4231000123629a532aefaa5bc6a49a413a0696b7d8fa"
+}

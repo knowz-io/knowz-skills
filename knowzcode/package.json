@@ -1,20 +1,25 @@
 {
   "name": "knowzcode",
-  "version": "0.20.1",
+  "version": "0.21.0",
   "description": "Platform-agnostic AI development methodology with TDD, quality gates, and structured workflows",
   "type": "module",
   "bin": {
-    "knowzcode": "./bin/knowzcode.mjs"
+    "knowzcode": "bin/knowzcode.mjs"
   },
   "files": [
     "bin/",
     "knowzcode/",
+    "docs/",
     "agents/",
     "skills/",
     ".claude-plugin/"
   ],
   "scripts": {
-    "prepublishOnly": "node bin/knowzcode.mjs --version"
+    "context-efficiency": "node knowzcode/context_efficiency_runtime.mjs",
+    "test:contracts": "node --test ../scripts/context-efficiency-contract.test.mjs",
+    "test:surfaces": "node ../scripts/validate-platform-surfaces.mjs",
+    "test": "npm run test:contracts && npm run test:surfaces",
+    "prepublishOnly": "npm test && node bin/knowzcode.mjs --version"
   },
   "keywords": [
     "ai",

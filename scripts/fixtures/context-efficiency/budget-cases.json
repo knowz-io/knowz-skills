@@ -1,0 +1,71 @@
+{
+  "schema": "knowzcode.budget-cases/v1",
+  "cases": [
+    {
+      "id": "unbounded",
+      "used": 5,
+      "limit": null,
+      "expected": {
+        "state": "UNBOUNDED",
+        "ratio": null,
+        "actions": [],
+        "mandatory_gates_preserved": true
+      }
+    },
+    {
+      "id": "normal",
+      "used": 69,
+      "limit": 100,
+      "expected": {
+        "state": "NORMAL",
+        "ratio": 0.69,
+        "actions": [],
+        "mandatory_gates_preserved": true
+      }
+    },
+    {
+      "id": "soft",
+      "used": 70,
+      "limit": 100,
+      "expected": {
+        "state": "SOFT",
+        "ratio": 0.7,
+        "actions": [
+          "STOP_SPECULATIVE_FANOUT",
+          "PREFER_SMALLER_MODE"
+        ],
+        "mandatory_gates_preserved": true
+      }
+    },
+    {
+      "id": "checkpoint",
+      "used": 90,
+      "limit": 100,
+      "expected": {
+        "state": "CHECKPOINT",
+        "ratio": 0.9,
+        "actions": [
+          "STOP_DISCRETIONARY_FANOUT",
+          "PERSIST_CAPSULE"
+        ],
+        "mandatory_gates_preserved": true
+      }
+    },
+    {
+      "id": "hard",
+      "used": 100,
+      "limit": 100,
+      "expected": {
+        "state": "HARD",
+        "ratio": 1,
+        "actions": [
+          "STOP_DISCRETIONARY_WORK",
+          "FINISH_ATOMIC_SAFE_STEP",
+          "PERSIST_CAPSULE",
+          "PAUSE_IF_MANDATORY_WORK_REMAINS"
+        ],
+        "mandatory_gates_preserved": true
+      }
+    }
+  ]
+}

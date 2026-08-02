@@ -1,0 +1,125 @@
+{
+  "schema": "knowzcode.vault-delta-cases/v1",
+  "cases": [
+    {
+      "id": "empty",
+      "input": {
+        "delta": {}
+      },
+      "expected": {
+        "action": "skip",
+        "reason": "EMPTY_DELTA"
+      }
+    },
+    {
+      "id": "duplicate",
+      "input": {
+        "delta": {
+          "category": "Decision",
+          "title": "Use capsule",
+          "content": "Use v1."
+        },
+        "previous_deltas": [
+          {
+            "category": "Decision",
+            "title": "Use capsule",
+            "content": "Use v1."
+          }
+        ]
+      },
+      "expected": {
+        "action": "skip",
+        "reason": "SEMANTIC_DUPLICATE"
+      }
+    },
+    {
+      "id": "batch",
+      "input": {
+        "delta": {
+          "category": "Pattern",
+          "title": "Bound logs",
+          "content": "Keep raw logs on disk."
+        }
+      },
+      "expected": {
+        "action": "batch",
+        "reason": "NORMAL_DELTA"
+      }
+    },
+    {
+      "id": "high",
+      "input": {
+        "delta": {
+          "category": "Security",
+          "title": "Leak",
+          "content": "Provider ID leaked."
+        },
+        "severity": "HIGH"
+      },
+      "expected": {
+        "action": "flush",
+        "reason": "HIGH_RISK"
+      }
+    },
+    {
+      "id": "critical",
+      "input": {
+        "delta": {
+          "category": "Security",
+          "title": "Secret",
+          "content": "Credential exposure."
+        },
+        "severity": "CRITICAL"
+      },
+      "expected": {
+        "action": "flush",
+        "reason": "HIGH_RISK"
+      }
+    },
+    {
+      "id": "explicit",
+      "input": {
+        "delta": {
+          "category": "Decision",
+          "title": "Save",
+          "content": "User requested."
+        },
+        "explicit_save": true
+      },
+      "expected": {
+        "action": "flush",
+        "reason": "EXPLICIT_SAVE"
+      }
+    },
+    {
+      "id": "interrupt",
+      "input": {
+        "delta": {
+          "category": "Decision",
+          "title": "Checkpoint",
+          "content": "Session ending."
+        },
+        "interruption_sensitive": true
+      },
+      "expected": {
+        "action": "flush",
+        "reason": "INTERRUPTION_SENSITIVE"
+      }
+    },
+    {
+      "id": "correction",
+      "input": {
+        "delta": {
+          "category": "Correction",
+          "title": "Old guidance",
+          "content": "Superseded.",
+          "supersedes": "K-1"
+        }
+      },
+      "expected": {
+        "action": "flush",
+        "reason": "DURABILITY_REQUIRED"
+      }
+    }
+  ]
+}

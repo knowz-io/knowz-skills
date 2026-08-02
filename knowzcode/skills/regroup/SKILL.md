@@ -14,8 +14,8 @@ argument-hint: "[next-step hint]"
 
 This source skill is canonical for the regroup workflow. Keep these surfaces behaviorally aligned when editing regroup:
 
-- `knowzcode/skills/regroup/SKILL.md`
-- `plugins/knowzcode/skills/regroup/SKILL.md`
+- `${CLAUDE_PLUGIN_ROOT}/skills/regroup/SKILL.md`
+- Codex plugin mirror: the regroup skill under the repository's `plugins/knowzcode` package
 - `knowzcode/knowzcode/platform_adapters.md`
 - `plugins/knowzcode/knowzcode/platform_adapters.md`
 

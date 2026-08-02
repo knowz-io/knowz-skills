@@ -3,7 +3,6 @@ name: update-coordinator
 description: "KnowzCode: Coordinates intelligent merging of KnowzCode framework updates into the active project"
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: opus
-permissionMode: acceptEdits
 maxTurns: 25
 ---
 
@@ -105,7 +104,8 @@ For each command file:
 - `knowzcode_project.md` (project-specific content)
 - `environment_context.md` (project-specific config)
 - `workgroups/*.md` (active WorkGroup state)
-- `pending_captures.md` (queued MCP vault captures awaiting flush)
+- Project-root `knowz-pending.md` (canonical queued MCP operations awaiting flush)
+- Legacy `pending_captures.md` when present (preserve until `/knowz flush` safely migrates every block)
 
 **Safe to update (templates/documentation):**
 - `knowzcode_loop.md` (operational protocol)
@@ -373,7 +373,7 @@ After successful update:
 
 ## How to Invoke
 
-This agent is invoked manually by name (e.g., spawned as a teammate or via `Task()` with `subagent_type: "update-coordinator"`). There is no dedicated slash command yet — a `/knowzcode:update` command may be added in a future release.
+This agent is invoked manually by name (e.g., spawned as a teammate or via `Agent()` with `subagent_type: "knowzcode:update-coordinator"`; `Task` is the older compatibility alias). There is no dedicated slash command yet — a `/knowzcode:update` command may be added in a future release.
 
 **Provide the source path in the spawn prompt:**
 > Update KnowzCode from `/path/to/newer/knowzcode`. Use conflict strategy: preserve-custom.

@@ -1,82 +1,38 @@
-# work — Operational Rules
+# work — Claude Operational Rules
 
-Full KnowzCode development workflow with TDD, quality gates, and multi-agent coordination. Supports Tier 2 (Light, 2-phase) and Tier 3 (Full, 5-phase) complexity paths.
+Full TDD workflow with Tier 2 Light and Tier 3 Full paths. Claude automatically loads a referenced named-agent definition; task prompts must not ask agents to reread their definition or the complete Claude execution guide.
 
-## Dispatch Pattern
+## Dispatch
 
-Agents are invoked as `general-purpose` subagents that read their agent `.md` file at runtime. The `subagent_type` field in `Task()` calls is set to the agent name; each agent reads `agents/<name>.md` for its role. Agent Teams mode (`TeamCreate` + teammate spawning) is the preferred path; `Task()` subagent delegation is the fallback.
+Classify request, spec reuse, and tier before WorkGroup writes, broad vault queries, or agent side effects. Parse and apply the `context_efficiency` rollout/profile/caps/lease/TTL/result/telemetry/canary settings before final dispatch. When enabled, call the read-only `context_efficiency_runtime.mjs` stdin CLI for every non-trivial dispatch, direct capsule/privacy and lineage checks, and result-policy selection. Rollout controls only recommendation application and redacted telemetry; safety validation is fail-closed and cannot degrade through `CAPABILITY_FALLBACK`. For each unit select one mode in order: local, compatible named-agent resume, compatible real conversation fork, fresh capsule, then coordinated team only when peers require a shared task list or direct messaging. Skill `context: fork` is isolated execution, not inherited conversation history.
 
-## Agents Used
+Parallel independent work uses named agents. Agent Teams is optional, experimental, explicitly opt-in, and coordination-only; no model profile or tier enables it. The first teammate spawn forms the session-derived team. Teammates do not inherit lead history, inherit lead permissions, and are not restored by lead resume/rewind. Runtime cleanup is automatic after graceful teammate release.
 
-| Agent | Phase | Role |
-|-------|-------|------|
-| `knowledge-liaison` | Persistent (Stage 0+) | Context, vault research, knowledge capture |
-| `analyst` | Phase 1A | Impact analysis, Change Set, dependency map |
-| `architect` | Phase 1B | Spec drafting, VERIFY criteria |
-| `builder` | Phase 2A | TDD implementation (dependency-wave scopes, default 1 NodeID/microtask each) |
-| `reviewer` | Phase 2B | ARC audit, gap report |
-| `smoke-tester` | Phase 2B (opt-in) | Runtime smoke testing |
-| `closer` | Phase 3 | Finalization, tracker update, log entry, commit |
-| `security-officer` | Phase 1 (opt-in) | Threat model, OWASP scan |
-| `test-advisor` | Phase 1 (opt-in) | TDD enforcement, test quality |
-| `project-advisor` | Phase 1 (opt-in) | Backlog curation |
-| `frontend-designer` | Persistent 0–3 (conditional, auto on UI surface) | Design questioning, ASCII mockups, design VERIFY criteria, E2E UI audit |
-| `enterprise-enforcer` | Persistent 0–3 (auto when compliance_enabled) | Compliance posture, guideline-to-ARC mapping, gate-blocking on blocking-tier violations |
-| `relay-runner` | Phase 2A (only when `RELAY_ACTIVE`) | Runs one headless external-target leg (Codex MCP/exec or Claude exec/stream-json) with in-turn polling, captures the provider session ID, enforces target-specific timeouts |
+## Critical Workflow
 
-## Workflow Phases (Tier 3)
-
-1. **Pre-flight** — prerequisite check, WorkGroup ID generation, profile + cross-agent relay parse (Step 0–1.6)
-2. **Execution mode selection** — `TeamCreate` → Parallel/Sequential/Lightweight Teams; fallback → Subagent Delegation (Step 2)
-3. **Profile resolution** — advisor env detection, `MODEL_FOR()` per agent, Advisor Guidance block injection (Step 2.3)
-4. **Orchestration config** — parse `knowzcode_orchestration.md` for `max_builders`, `default_specialists`, `mcp_agents_enabled`, etc. (Step 2.4)
-5. **Autonomous mode + specialist detection** (Steps 2.5–2.6)
-6. **Context load** — read loop, tracker, project, architecture files ONCE (Step 3)
-7. **MCP probe + baseline vault query** (Step 3.6 — non-skippable when MCP available)
-8. **Create WorkGroup file** — `knowzcode/workgroups/{wgid}.md` (Step 4)
-9. **Classify complexity** — Tier 1 (→ `/knowzcode:fix`), Tier 2 (Light), Tier 3 (Full) (Steps 5–5.5)
-10. **Execute phases** — per tier path (Tier 2: Light; Tier 3: Parallel/Sequential/Subagent)
-11. **Quality gates** — Gate #1 (Change Set), Gate #2 (Specs), Gate #3 (Audit); auto-approved in Autonomous Mode except safety exceptions
-12. **Cleanup** — shut down all teammates, delete team (Agent Teams); no cleanup needed for Subagent
-
-## Parallelism
-
-- **Parallel Teams (Tier 3 default)**: Stage 0 spawns knowledge-liaison + analyst + architect + scanners/specialists simultaneously; Stage 2 spawns dependency-wave builders for ready independent NodeIDs/microtasks plus paired reviewers
-- **Sequential Teams**: one agent per phase, spawned and shut down sequentially
-- **Lightweight Teams (Tier 2)**: knowledge-liaison (persistent) + builder; skips analyst, architect, reviewer, closer
+1. Read-only classification, targeted spec reuse, tier selection, profile/relay parse.
+2. Announce Adaptive Delegation, Sequential Delegation, or Coordinated Team.
+3. Load only the references required by the selected path.
+4. Reuse the MCP baseline; target deeper vault queries and skip duplicates.
+5. Tier 2: lightweight spec gate, one builder lineage, optional fresh smoke test, finalization/capture.
+6. Tier 3: Change Set Gate #1, spec Gate #2, TDD implementation, fresh independent review Gate #3, finalization.
+7. Resume compatible architect/builder/reviewer/liaison lineages with bounded deltas. Record invalidation and cold-start from a capsule when spec, scope, checkpoint, model/effort, tools, permissions, sensitivity, or transcript availability changes.
 
 ## Constraints
 
-- Lead NEVER writes code, specs, or project files in Agent Teams mode — all work done by teammates
-- Every WorkGroup task item MUST start with `KnowzCode:` prefix
-- `AUTONOMOUS_MODE` auto-approves gates but NEVER skips vault writes, WorkGroup updates, tracker updates, or log entries
-- `--profile advisor` requires Parallel Teams; incompatible with `--sequential` or `--subagent`
-- `--profile frontier` runs Fable for planning/analysis/spec/review and Opus for execution (any orchestration mode); `--fable-execution` also routes execution to Fable for high-value jobs; falls back to Opus if Fable is unavailable
-- Profile choice is ask-once: when no `--profile` flag and no `profile:` line in `knowzcode_orchestration.md`, Step 1.5 asks one question (Frontier recommended / Teams) and persists the answer to the config; autonomous runs skip the prompt (`[AUTO-DEFAULT]` frontier, config untouched); no run ever re-asks
-- Builder dispatch is intentionally narrow: effective default `max_builders: 2`, `builder_node_limit: 1`; split dependency-heavy work into microtasks with assigned acceptance criteria rather than spawning broad builders
-- Gap loop cap: >3 failures on the same phase → pause and ask user (safety exception, applies even in Autonomous Mode)
-- Announce execution mode, profile, autonomous mode, and active specialists before any phase work begins
-- Tier 1 (micro, <50 LOC) → redirect immediately to `/knowzcode:fix`; do not proceed
-- Cross-agent relay supports selectors `none|auto|other|claude|codex`. Resolution precedence is explicit flag > unambiguous natural-language implementation delegation > project config; `/relay` supplies default `other`, while plain `/work` otherwise remains native. `RELAY_HOST` is fixed by the platform and `auto|other` select the opposite provider. An explicit same-host target is an error and is never reversed; stale same-host config warns and falls back to native Phase 2A.
-- Relay replaces Phase 2A + the builder gap loop only: Tier 3, incompatible with `advisor`, never on the default branch (`kc-relay/{wgid}`), target never commits, host commits checkpoints/reviews/finalizes, bounded target fix rounds then `HOST_TAKEOVER`. Missing/broken automatic or configured targets may visibly fall back; named unavailable targets stop; every authentication failure pauses even autonomous mode.
-- New relay state is schema 2 with `Host`, `Target`, role-based states (`TARGET_IMPLEMENTING` through `HOST_TAKEOVER`), `Session ID`, and target-qualified artifacts. Legacy `Mode: codex` / `CODEX_*` / `CLAUDE_TAKEOVER` remains resumable as Claude-host/Codex-target schema 1.
-- Claude targets are exec-only: authenticated `claude -p --verbose --output-format stream-json`, same-cwd `--resume`, `dontAsk`, bounded implementation tools, strict Bash sandbox (`failIfUnavailable: true`, `allowUnsandboxedCommands: false`), strict empty MCP config, and no Chrome. Claude MCP is not an agent relay. Codex retains MCP/exec behavior.
+- An independent reviewer never forks or resumes builder lineage.
+- Default active inherited/resumed writers: two; no overlapping file ownership; nesting depth two.
+- Named plugin agents rely on session permissions plus supported tool allowlists; never bypass permission checks.
+- Agent results are bounded summaries with file/line or test evidence and artifact paths. Raw logs stay in artifacts.
+- TDD, gates, security/compliance blockers, vault capture, tracker/log updates, and consolidated pre-Gate-3 verification survive every capability fallback.
+- Strict relay remains exec/MCP transport as documented in `references/relay-execution.md`; do not add Agent, fork, Team, ambient MCP, browser, or wider permissions.
 
-## Output Paths
+## References
 
-- WorkGroup file: `knowzcode/workgroups/{wgid}.md`
-- Specs: `knowzcode/specs/*.md`
-- Log entry: `knowzcode/knowzcode_log.md`
-- Tracker: `knowzcode/knowzcode_tracker.md`
-- Vault captures: via `knowz:writer` (ecosystem-type vault, on completion)
-- Planning context (from `/knowzcode:explore`): `knowzcode/planning/{slug}.md` (read-only input)
-
-## Key Reference Files
-
-- `knowzcode/skills/work/references/parallel-orchestration.md` — Stage 0–3 orchestration details
-- `knowzcode/skills/work/references/spawn-prompts.md` — all agent spawn/dispatch prompts
-- `knowzcode/skills/work/references/quality-gates.md` — gate templates, gap loop mechanics
-- `knowzcode/skills/work/references/profile-models.md` — profile → agent-model mappings, `MODEL_FOR()` rules
-- `knowzcode/skills/work/references/light-workflow.md` — Tier 2 Light phase details
-- `knowzcode/skills/work/references/relay-execution.md` — provider-neutral host/target resolution, target adapters, schema-2 state/legacy mapping, command templates, and failure matrix
-- `knowzcode/claude_code_execution.md` — Agent Teams conventions (read by all teammates on spawn)
+- `references/parallel-orchestration.md` — adaptive parallel stages and lineage use
+- `references/spawn-prompts.md` — bounded task packets
+- `references/quality-gates.md` — gates and resume-first gap loop
+- `references/profile-models.md` — model selection, orthogonal to execution mode
+- `references/light-workflow.md` — Tier 2
+- `references/relay-execution.md` — strict external relay
+- `knowzcode/claude_code_execution.md` — Claude capability mapping

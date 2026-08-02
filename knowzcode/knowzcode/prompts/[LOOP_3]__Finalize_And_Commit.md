@@ -41,7 +41,7 @@ The implementation and verification for the specified `WorkGroupID` is complete.
         - New libraries/tools → Update "Technology Stack" table
         - Architecture changes → Update "Architecture Decisions"
         - Scope expansion → Update "Scope & Key Features"
-    *   **Final Commit:** Stage ALL changes using `git add -A` (this includes source code from implementation AND knowzcode/ files), then commit with a descriptive `feat:` message.
+    *   **Final Commit:** Inspect `git status --short` and scoped diffs, resolve the explicit approved final file list, stage only those paths with `git add -- {explicit-paths}`, verify `git diff --cached --check` and the exact cached name list, then commit with a descriptive `feat:` message. Never stage unrelated or ambiguous user state.
 
 ### Final Report
 

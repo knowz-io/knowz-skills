@@ -191,10 +191,11 @@ relay_claude_permission_mode: dontAsk
 # range: 1-3). Per-invocation flag: --relay-max-fix-rounds=N.
 relay_max_fix_rounds: 2
 
-# Minutes without target output before a leg is treated as stalled (default:
-# 45). Clamp to at least 7 for Codex and 12 for Claude; Claude API requests may
-# legitimately run for 10 minutes before their own timeout. No flag override.
-relay_timeout_minutes: 45
+# Minutes before a running leg reaches its time-budget decision checkpoint
+# (default: 90). At 15 minutes remaining the runner recommends continue-live,
+# interrupt-and-resume, or stop; reaching the checkpoint is not an automatic
+# kill. Clamp to at least 7 for Codex and 12 for Claude. No flag override.
+relay_timeout_minutes: 90
 ```
 
 See `knowzcode/relay_execution.md` for target resolution, detection, state, recovery, and fallback rules.

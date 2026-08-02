@@ -2,7 +2,7 @@
 name: explore
 description: "Explore a topic, investigate the codebase, or produce a structured implementation plan using vault knowledge, impact analysis, architecture assessment, and project context. Use when the user wants to EXPLORE, RESEARCH, or PLAN before deciding whether to build."
 user-invocable: true
-allowed-tools: Read, Write, Bash, Glob, Grep, Task
+allowed-tools: Read, Write, Bash, Glob, Grep, Agent
 # Note: Also uses MCP tools (search_knowledge, ask_question) when MCP is configured
 argument-hint: "[topic, question, or feature to plan]"
 ---
@@ -54,16 +54,16 @@ Triggers on: questions ("how does X work?", "is X correct?", "analyze X"), "what
 
 - Keep 10-tool-call-per-agent behavior
 - Output: inline findings report (no file saved)
-- Agents: knowledge-liaison + analyst + architect + reviewer (standard behavior)
+- Start local or with one analyst; add another role only for a named unresolved evidence question.
 
 ### Planning Mode (deep)
 Triggers on: "plan X", "explore adding X", "design X", "prepare for X", action verbs + feature nouns, "evaluate options for X", any phrasing that implies building or changing something.
 
-- Remove tool call limits (agents get full research depth)
+- Give each selected evidence slice a bounded research budget; extend only when the first result identifies a material unresolved question.
 - Add project management research angle
-- Add structured vault queries
+- Add targeted vault queries only when prior decisions or policies are relevant
 - Output: plan document saved to `knowzcode/planning/{slug}.md`
-- Agents: knowledge-liaison + analyst + architect + reviewer + lead project analysis
+- Start one analyst; add architect, reviewer, liaison, or lead project analysis only when its distinct deliverable is needed.
 
 Announce the detected mode: `**Mode: Exploration** (lightweight research)` or `**Mode: Planning** (deep research with plan output)`
 
@@ -73,15 +73,13 @@ If `knowzcode/` doesn't exist, inform user to run `/knowzcode:setup` first. STOP
 
 ## Step 3: Set Up Execution Mode
 
-Attempt `TeamCreate(team_name="kc-explore-{slug}")` (2-4 word kebab-case from topic):
+Before the MCP probe or any spawn, derive the minimum evidence slices from the topic and detected depth. Start with deterministic local search and one analyst. Add architect, reviewer, knowledge-liaison, or scanner only for a material independent question.
 
-- **If TeamCreate succeeds** -> Agent Teams mode:
-  1. Announce: `**Execution Mode: Agent Teams** — created team kc-explore-{slug}`
-  2. Read `knowzcode/claude_code_execution.md` for team conventions.
-  3. You are the **team lead** — coordinate research, synthesize findings.
+For each slice, route in order: local, compatible named-agent resume, a real callable conversation fork for high relevant/safe context affinity, then fresh capsule. A skill declared with `context: fork` is isolated and does not inherit this conversation.
 
-- **If TeamCreate fails** (error, unrecognized tool, timeout) -> Subagent Delegation:
-  - Announce: `**Execution Mode: Subagent Delegation** — Agent Teams not available, using Task() fallback`
+Select `coordinated-team` only when at least two active researchers must share a task graph or directly message/challenge peers and Agent Teams is configured/callable. Before the first teammate spawn, require that the user requested teammates/Team mode for this task or obtain current-run confirmation; environment configuration alone is not approval. The first teammate spawn forms the session-derived team. If unavailable, record `CAPABILITY_FALLBACK` and use named agents with the same research criteria.
+
+Announce `**Execution Mode: Adaptive Research**`, or `**Execution Mode: Coordinated Research Team** — peer coordination required`. Runtime Team cleanup is automatic after graceful release.
 
 The user MUST see the execution mode announcement before investigation begins.
 
@@ -90,6 +88,7 @@ The user MUST see the execution mode announcement before investigation begins.
 If `knowzcode/knowzcode_orchestration.md` exists, parse:
 1. `MCP_AGENTS_ENABLED` = `mcp_agents_enabled` value (default: true)
 2. `PROFILE` = `--profile=<value>` flag if present (valid: `advisor`, `teams`, `classic`, `frontier`), else the `^profile:\s*(\S+)` line in config, else `frontier` (the default profile). Invalid value → warn + `frontier`.
+3. Parse `context_efficiency.enabled` (default true), `rollout` (default off), `profile`, caps, lease, result-policy threshold, telemetry, and canary percentage for the route below.
 
 Flag overrides: `--no-mcp` -> `MCP_AGENTS_ENABLED = false`
 
@@ -104,33 +103,44 @@ If file doesn't exist, use defaults. Other config settings (`max_builders`, `def
 
 When `PROFILE == "frontier"` and not downgraded, announce: `**Execution Profile: FRONTIER** — analyst, architect, and reviewer research on Fable.`
 
+### Context Runtime Boundary
+
+When `context_efficiency.enabled = true`, every non-trivial local/resume/fork/capsule/team decision MUST call the installed read-only CLI:
+
+`node knowzcode/context_efficiency_runtime.mjs dispatch`
+
+Send one JSON object on stdin with `{routing, rollout, lineage?, result_policy?}` and require one `{ok:true,operation:"dispatch",result}` object on stdout. Before a fresh capsule, call operation `capsule` with `{capsule,max_bytes?,artifact_path?,artifact_roots?}` and pass `artifact_roots:["knowzcode/artifacts"]` for evidence externalization; before resume/inheritance call `lineage` with `{lineage,current,now?}`; before choosing ephemeral/durable/artifact output call `result-policy` with `{input}`. Each call is read-only.
+
+Privacy/schema or lineage rejection is fail-closed: do not dispatch or reuse that context. Rebuild and revalidate a private/invalid capsule; replace invalid lineage with a newly validated fresh capsule. Never relabel a safety rejection as `CAPABILITY_FALLBACK`. Rollout controls only recommendation application and redacted telemetry—not validation. If only a non-safety recommendation/telemetry operation is unavailable while direct safety checks still pass, record `CAPABILITY_FALLBACK` and use the validated local/fresh baseline. If safety validation itself is unavailable, keep the work local and report `CONTEXT_RUNTIME_UNAVAILABLE`.
+
 ## Step 4: Launch Parallel Investigation
 
-Use task lists to plan and track your research throughout. Add new tasks as discoveries expand the scope.
+Track slices locally by default. Use runtime task state only after coordinated-team mode is selected.
 
-### MCP Probe
+### MCP Probe (Conditional)
 
 If `MCP_AGENTS_ENABLED = false` (from Step 3.5, e.g. `--no-mcp`), skip the MCP Probe and Step 4.1 entirely. Set `MCP_ACTIVE = false`, `VAULTS_CONFIGURED = false`, `VAULT_BASELINE = null`.
 
-Before spawning agents, determine vault availability:
-1. Read `knowz-vaults.md` from project root — parse vault IDs. If file not found, call `list_vaults(includeStats=true)` to discover vaults.
+Probe only when the topic asks for prior decisions/conventions, active enterprise policy names a vault source, a relevant configured vault is already known, or the user requests a vault save. Otherwise set `MCP_ACTIVE = false`, `VAULT_BASELINE = null`, and continue without a connectivity warning.
+
+When needed, determine vault availability:
+0. Reuse a timestamped health result/baseline inside `mcp_health_ttl_minutes` (default 15). Skip repeated probes and broad queries unless the result expired or vault/connectivity configuration changed.
+1. Otherwise read `knowz-vaults.md` from project root — parse vault IDs. If file not found, call `list_vaults(includeStats=true)` to discover vaults.
 2. If `list_vaults()` fails AND no `knowz-vaults.md` exists -> `MCP_ACTIVE = false`, `VAULTS_CONFIGURED = false`. Announce: `**MCP Status: Not connected**`
-3. If `list_vaults()` fails BUT `knowz-vaults.md` has vault IDs -> `MCP_ACTIVE = true`, `VAULTS_CONFIGURED = true`. Announce: `**MCP Status: Lead probe failed — vault agents will verify independently**`
+3. If `list_vaults()` fails BUT `knowz-vaults.md` has vault IDs -> `MCP_ACTIVE = false`, `VAULTS_CONFIGURED = true`. Announce: `**MCP Status: Probe failed — configured vaults retained; captures will queue**`. Children reuse the failed result inside the TTL.
 4. If vaults discovered but no `knowz-vaults.md` exists -> suggest `"Run /knowz setup to configure vault routing."` Set `VAULTS_CONFIGURED = true` (use discovered IDs for baseline).
 5. Set `MCP_ACTIVE` and `VAULTS_CONFIGURED` based on results. Announce: `**MCP Status: Connected — N vault(s) available**` or `**MCP Status: Connected — no vaults configured (knowledge capture disabled)**`
 
 If no vaults are configured, suggest `/knowz setup`.
 
-> **Vault research is mandatory when available.** The lead performs baseline vault queries directly (Step 4.1) whenever `VAULTS_CONFIGURED = true` and `MCP_ACTIVE = true` — this is the guaranteed minimum. When agents are available, the knowledge-liaison performs deeper targeted queries beyond the baseline. Only skip all vault queries when MCP is genuinely unavailable (`MCP_ACTIVE = false`).
+Vault research is question-gated, not connection-gated. State the unresolved question and query only vaults whose routing description can answer it. Local code and current project files remain authoritative.
 
 ### Step 4.1: Baseline Vault Query (Lead-Direct)
 
-If `VAULTS_CONFIGURED = true` AND `MCP_ACTIVE = true`, the lead performs baseline vault queries directly BEFORE spawning any agents. This ensures vault context is available regardless of agent availability.
+If no fresh relevant baseline was reused and `VAULTS_CONFIGURED = true` and `MCP_ACTIVE = true`, the lead performs a targeted baseline before agent dispatch.
 
 1. Using vault configuration from the MCP Probe above (already loaded), resolve configured vault IDs and types.
-2. For each configured vault, call `search_knowledge({vault_id}, "past decisions, conventions, patterns related to {topic}")`.
-   - For `finalizations`-type vaults: `search_knowledge({vault_id}, "past work related to {topic}")`.
-   - One broad query per vault — the goal is baseline coverage, not exhaustive research.
+2. Select only vaults relevant by configured type/description and call one topic-specific query per selected vault. Do not query every configured vault for generic coverage.
 3. Store all results as `VAULT_BASELINE`:
    ```
    VAULT_BASELINE:
@@ -141,152 +151,25 @@ If `VAULTS_CONFIGURED = true` AND `MCP_ACTIVE = true`, the lead performs baselin
 
 If `VAULTS_CONFIGURED = false` OR `MCP_ACTIVE = false`, set `VAULT_BASELINE = null` and skip this step.
 
-> **This step is non-skippable when MCP is available.** It runs before agent spawning and does not depend on agent availability.
+> Reuse a fresh baseline inside the configured TTL. Agents may make only documented targeted follow-ups.
 
-### Agent Teams Mode
+### Conditional Dispatch Details
 
-Create tasks first, pre-assign, then spawn with task IDs:
+Named-agent mode is the default. Dispatch one analyst first; add a liaison, architect, or reviewer only for the evidence decisions recorded in Step 3. At most three independently useful read-only workers run concurrently by default.
 
-1. `TaskCreate("Knowledge liaison: context & vault research for {topic}")` -> `TaskUpdate(owner: "knowledge-liaison")`
-2. `TaskCreate("Research: code exploration")` -> `TaskUpdate(owner: "analyst")`
-3. `TaskCreate("Research: architecture")` -> `TaskUpdate(owner: "architect")`
-4. `TaskCreate("Research: security + quality")` -> `TaskUpdate(owner: "reviewer")`
+Read [references/research-dispatch.md](references/research-dispatch.md) only immediately before a named-agent or coordinated-team dispatch, and load only the selected route and role packet. Do not load it for local research. The reference defines bounded exploration/planning prompts, optional liaison behavior, task ownership in Team mode, and result contracts; it cannot broaden file-write, artifact, MCP, Team-eligibility, or runtime-validation rules in this skill.
 
-Spawn teammates with their task IDs:
+### Local Mode
 
-1. Spawn `knowledge-liaison` teammate:
-   > **Your Task**: #{task-id} — claim immediately (`TaskUpdate(status: "in_progress")`). Mark completed with summary when done.
-   > Read `agents/knowledge-liaison.md` for your full role definition.
-   > Read `knowzcode/claude_code_execution.md` for team conventions.
-   > **Goal**: Research "{topic}" — gather local context and vault knowledge.
-   > **Vault config**: `knowz-vaults.md` (project root)
-   > **Lead Vault Baseline**: {VAULT_BASELINE or "No baseline — MCP not available or no vaults configured"}
-   > **Context gathering**: Read local context directly (specs, workgroups, tracker, architecture) using Read/Glob tools. If baseline results are provided above, skip broad vault queries and dispatch deeper targeted research instead. If no baseline, perform full vault queries per your startup sequence.
-   > **Deliverable**: Push Context Briefing to analyst and architect with local + vault findings.
+If local work is cheaper or named-agent dispatch is unavailable, the lead performs the research directly:
 
-2. Spawn `analyst` teammate:
-
-   **Exploration mode** prompt:
-   > **Your Task**: #{task-id} — claim immediately (`TaskUpdate(status: "in_progress")`). Mark completed with summary when done.
-   > You are researching "{topic}" from a **code exploration** angle.
-   > Read `agents/analyst.md` for your role definition.
-   > Read `knowzcode/claude_code_execution.md` for team conventions.
-   > Investigate: affected files, dependencies, existing patterns.
-   > Max 10 tool calls. Write findings to a concise summary.
-
-   **Planning mode** prompt:
-   > **Your Task**: #{task-id} — claim immediately (`TaskUpdate(status: "in_progress")`). Mark completed with summary when done.
-   > You are researching "{topic}" from an **impact analysis** angle.
-   > Read `agents/analyst.md` for your full role definition.
-   > Read `knowzcode/claude_code_execution.md` for team conventions.
-   > Investigate: affected files, dependencies, existing patterns.
-   > Produce a preliminary Change Set estimate:
-   > - Potential NodeIDs with descriptions
-   > - Affected files list with change types (new/modify)
-   > - Dependency map (which NodeIDs share files)
-   > - Risk assessment with rationale
-   > Write findings to a detailed summary.
-
-3. Spawn `architect` teammate:
-
-   **Exploration mode** prompt:
-   > **Your Task**: #{task-id} — claim immediately (`TaskUpdate(status: "in_progress")`). Mark completed with summary when done.
-   > You are researching "{topic}" from an **architecture** angle.
-   > Read `agents/architect.md` for your role definition.
-   > Read `knowzcode/claude_code_execution.md` for team conventions.
-   > Investigate: layer analysis, design implications, pattern fit.
-   > Max 10 tool calls. Write findings to a concise summary.
-
-   **Planning mode** prompt:
-   > **Your Task**: #{task-id} — claim immediately (`TaskUpdate(status: "in_progress")`). Mark completed with summary when done.
-   > You are researching "{topic}" from an **architecture and design** angle.
-   > Read `agents/architect.md` for your full role definition.
-   > Read `knowzcode/claude_code_execution.md` for team conventions.
-   > Investigate: layer analysis, design implications, pattern fit.
-   > Propose an implementation approach:
-   > - Recommended design with rationale
-   > - Alternatives considered and why rejected
-   > - Constraints from architecture docs
-   > - Spec consolidation opportunities (check existing specs for overlap)
-   > Write findings to a detailed summary.
-
-4. Spawn `reviewer` teammate:
-
-   **Exploration mode** prompt:
-   > **Your Task**: #{task-id} — claim immediately (`TaskUpdate(status: "in_progress")`). Mark completed with summary when done.
-   > You are researching "{topic}" from a **security and quality** angle.
-   > Read `agents/reviewer.md` for your role definition.
-   > Read `knowzcode/claude_code_execution.md` for team conventions.
-   > Investigate: risks, performance concerns, quality gaps.
-   > Max 10 tool calls. Write findings to a concise summary.
-
-   **Planning mode** prompt:
-   > **Your Task**: #{task-id} — claim immediately (`TaskUpdate(status: "in_progress")`). Mark completed with summary when done.
-   > You are researching "{topic}" from a **security and quality** angle.
-   > Read `agents/reviewer.md` for your full role definition.
-   > Read `knowzcode/claude_code_execution.md` for team conventions.
-   > Investigate: risks, performance concerns, quality gaps.
-   > Write findings to a detailed summary.
-
-Knowledge-liaison pushes Context Briefings to analyst and architect; all core researchers consume them.
-Wait for all to complete, then synthesize in Step 5.
-
-### Subagent Mode
-
-Delegate to up to four agents in parallel via `Task()`:
-
-1. **knowledge-liaison** — Local context + vault knowledge:
-   - `Task(subagent_type="knowzcode:knowledge-liaison", description="Context & vault research for {topic}", prompt="Read agents/knowledge-liaison.md for your full role definition. Goal: Research \"{topic}\" — gather local context and vault knowledge. Vault config: knowz-vaults.md (project root). Lead Vault Baseline: {VAULT_BASELINE or 'No baseline — MCP not available or no vaults configured'}. Read local context files directly (specs, workgroups, tracker, architecture) using Read and Glob tools. If baseline results are provided, skip broad vault queries and dispatch deeper targeted research instead. If no baseline, perform full vault queries per your startup sequence. Return consolidated Context Briefing with local + vault findings.")`
-
-2. **analyst** — Code exploration / Impact analysis:
-   - `subagent_type`: `"analyst"`
-
-   **Exploration mode**:
-   - `prompt`: Research "{topic}" from a **code exploration** angle. Investigate: affected files, dependencies, existing patterns. Max 10 tool calls. Write findings to a concise summary.
-   - `description`: `"Explore research: code exploration"`
-
-   **Planning mode**:
-   - `prompt`: Research "{topic}" from an **impact analysis** angle. Read `agents/analyst.md` for your full role definition. Investigate: affected files, dependencies, existing patterns. Produce a preliminary Change Set estimate: Potential NodeIDs with descriptions, Affected files list with change types (new/modify), Dependency map (which NodeIDs share files), Risk assessment with rationale. Write findings to a detailed summary.
-   - `description`: `"Explore research: impact analysis"`
-
-3. **architect** — Architecture assessment / Design:
-   - `subagent_type`: `"architect"`
-
-   **Exploration mode**:
-   - `prompt`: Research "{topic}" from an **architecture** angle. Investigate: layer analysis, design implications, pattern fit. Max 10 tool calls. Write findings to a concise summary.
-   - `description`: `"Explore research: architecture"`
-
-   **Planning mode**:
-   - `prompt`: Research "{topic}" from an **architecture and design** angle. Read `agents/architect.md` for your full role definition. Investigate: layer analysis, design implications, pattern fit. Propose an implementation approach: Recommended design with rationale, Alternatives considered and why rejected, Constraints from architecture docs, Spec consolidation opportunities (check existing specs for overlap). Write findings to a detailed summary.
-   - `description`: `"Explore research: architecture and design"`
-
-4. **reviewer** — Security and quality:
-   - `subagent_type`: `"reviewer"`
-
-   **Exploration mode**:
-   - `prompt`: Research "{topic}" from a **security and quality** angle. Investigate: risks, performance concerns, quality gaps. Max 10 tool calls. Write findings to a concise summary.
-   - `description`: `"Explore research: security and quality"`
-
-   **Planning mode**:
-   - `prompt`: Research "{topic}" from a **security and quality** angle. Read `agents/reviewer.md` for your full role definition. Investigate: risks, performance concerns, quality gaps. Write findings to a detailed summary.
-   - `description`: `"Explore research: security and quality"`
-
-### Solo Mode (No Agents Available)
-
-If BOTH TeamCreate fails AND Task() is unavailable or fails, the lead performs all research directly:
-
-1. Announce: `**Execution Mode: Solo** — Agent Teams and Subagent Delegation not available, lead performing research directly`
+1. Announce: `**Execution Mode: Local Research** — bounded direct investigation`
 
 2. **Vault knowledge**: Already available from Step 4.1 (`VAULT_BASELINE`). If deeper vault queries are needed for specific aspects:
    - Call `search_knowledge({vault_id}, "{specific_aspect_of_topic}")` for targeted follow-ups.
    - Call `ask_question({vault_id}, "{question_about_topic}")` for synthesized answers.
 
-3. **Local context** (lead reads directly):
-   - `Glob("knowzcode/specs/*.md")` — scan for related specs
-   - `Read("knowzcode/knowzcode_architecture.md")` — architecture context
-   - `Read("knowzcode/knowzcode_project.md")` — project standards
-   - `Glob("knowzcode/workgroups/*.md")` — prior WorkGroups
-   - `Read("knowzcode/knowzcode_tracker.md")` — active WIP, REFACTOR tasks
+3. **Local context**: Start with topic grep/file inventory. Read matching specs first; load architecture only for a boundary/design question, project standards only for a convention decision, tracker only for active-scope conflict, and prior WorkGroups only when historical implementation evidence is needed.
 
 4. **Codebase exploration** (lead reads directly):
    - Grep for topic-related keywords across source files
@@ -297,12 +180,11 @@ If BOTH TeamCreate fails AND Task() is unavailable or fails, the lead performs a
 
 ### Project Management Analysis (Planning Mode Only)
 
-**After** spawning agents (or completing Solo Mode research) and **before** synthesizing findings, the lead performs project management research directly:
+**After** any agent dispatches (or local research) and **before** synthesizing findings, the lead performs project management research directly:
 
-1. Read `knowzcode/knowzcode_tracker.md` for WIP conflicts (overlapping NodeIDs/files)
-2. Read `knowzcode/knowzcode_tracker.md` for related REFACTOR tasks to bundle
-3. Read `knowzcode/knowzcode_log.md` for recent similar completions
-4. Check `knowzcode/knowzcode_architecture.md` for constraint violations
+1. Read targeted tracker rows for WIP conflicts and related refactors.
+2. Read recent log entries only when the plan depends on prior similar completion evidence.
+3. Read relevant architecture sections only when the proposed design crosses a documented boundary.
 
 Store findings for inclusion in the plan output.
 
@@ -417,9 +299,11 @@ If `VAULTS_CONFIGURED = true` AND `MCP_ACTIVE = true`, present after findings:
 ```
 
 **Handling**:
-- **A**: Dispatch `knowz:writer` with a self-contained prompt summarizing all findings, tagged with the topic. Read `knowz-vaults.md` (project root) to resolve the target vault (use ecosystem-type vault). Check for duplicates via `search_knowledge` before writing.
-- **B**: Ask user which sections to save, then dispatch `knowz:writer` with selected content.
+- **A**: Build one delta summarizing all findings and invoke `node knowzcode/context_efficiency_runtime.mjs vault-delta` with `explicit_save: true` and available prior identities/hashes.
+- **B**: Ask which sections to save, then classify only the selected delta the same way.
 - **C**: Proceed to Step 6.
+
+For A/B, `skip` makes no write, `batch` remains local pending the explicit boundary, `amend`/`update` targets the returned stable identity, and `flush` dispatches one consolidated writer/direct mutation. Pass the exact classified action and identity to `knowz:writer`; never dispatch a raw candidate.
 
 If `VAULTS_CONFIGURED = false` or `MCP_ACTIVE = false`, skip this step silently.
 
@@ -435,12 +319,13 @@ After Step 5.5 resolves (including if the user chose C/Skip), remain responsive 
 When detected:
 1. Ask the user what content to save (or confirm if they specified)
 2. Resolve target vault from `knowz-vaults.md` (project root)
-3. Dispatch `knowz:writer` via Task() with a self-contained prompt:
+3. Invoke `vault-delta` with `explicit_save: true`, prior identities/hashes, and the selected content. For `skip`, report no-op; for `batch`, retain locally; only `amend`, `update`, or `flush` continues.
+4. Dispatch `knowz:writer` via `Agent(subagent_type="knowz:writer", description="Persist exploration delta", prompt=<classified action + stable identity + payload>)` with a self-contained prompt containing:
    - Content to save (from exploration findings or user-specified content)
    - Target vault ID
    - Title and tags derived from the content
    - Category hint if the user specified one (e.g., "Guidelines")
-4. Report success/failure to the user
+5. Report success/failure to the user
 
 This ensures vault writes work even after the structured A/B/C window closes.
 
@@ -468,12 +353,9 @@ This context gives work's analyst a head start and ensures correct tier classifi
 
 After synthesis is complete (or if the user cancels):
 
-**Agent Teams Mode**:
-1. Shut down all active teammates. Wait for each to confirm shutdown.
-2. Once all teammates have shut down, clean up the team.
-   No teammates or team resources should remain after the research ends.
+**Coordinated Team Mode**: Request graceful shutdown from active teammates and wait for their bounded results. Runtime cleanup occurs automatically; do not invoke a separate delete action.
 
-**Subagent Mode**: No cleanup needed — `Task()` calls are self-contained.
+**Named-agent mode**: Release completed lineages. Retain a handle only for a compatible bounded follow-up lease; planning artifacts provide cold recovery.
 
 ---
 
@@ -487,7 +369,7 @@ After synthesis is complete (or if the user cancels):
 ## Notes
 
 - Exploration mode agents use focused, efficient scoping (max 10 tool calls each)
-- Planning mode agents get full research depth (no tool call limits)
+- Planning mode uses bounded evidence slices and extends only for a material unresolved question
 - Investigation context is preserved when transitioning to `/knowzcode:work`
 - Planning mode saves structured plan documents to `knowzcode/planning/`
 - This replaces the old planning types (strategy, ideas, pre-flight, etc.)

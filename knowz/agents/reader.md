@@ -1,9 +1,8 @@
 ---
 name: reader
 description: "Knowz: Generic vault query agent — researches knowledge across vaults from self-contained dispatch prompts"
-tools: Read, Glob, Grep, mcp__knowz__search_knowledge, mcp__knowz__ask_question, mcp__knowz__list_vaults, mcp__knowz__list_vault_contents, mcp__knowz__get_knowledge_item, mcp__knowz__list_topics, mcp__knowz__get_topic_details
+tools: Read, Glob, Grep, ToolSearch, mcp__knowz__search_knowledge, mcp__knowz__ask_question, mcp__knowz__list_vaults, mcp__knowz__list_vault_contents, mcp__knowz__get_knowledge_item, mcp__knowz__list_topics, mcp__knowz__get_topic_details
 model: sonnet
-permissionMode: default
 maxTurns: 15
 ---
 
