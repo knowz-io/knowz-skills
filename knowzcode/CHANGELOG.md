@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.21.0] - 2026-08-02
+
 ### Added
 - **Context-efficient orchestration contract for Claude and Codex.** New portable `local` / compatible `resume` / real inherited context / `fresh-capsule` / genuine coordinated-team routing, versioned capsule-lineage-telemetry schemas, deterministic fixture tests, bounded result modes, warm leases, and a 40+ scenario observe/shadow/canary evaluation plan. Logical context, provider-billed usage, and accepted outcomes are reported separately.
 - **Canonical Codex execution distribution.** `codex_execution.md` and the portable schema contracts now have canonical npm sources, byte-identical Codex-plugin mirrors, and fresh-install/upgrade parity checks.
@@ -18,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Claude relay efficiency without widened authority.** Optional positive per-leg `--max-budget-usd`, warm delta prompts, cold recovery briefs, and redacted aggregate usage were added while preserving the six-tool allowlist, `dontAsk`, strict Bash/MCP settings, no Chrome, and no Agent/fork access.
 - **Relay time budget raised to 90 minutes with an explicit decision checkpoint.** The Sonnet relay runner now warns 15 minutes before the default horizon and asks the lead/user to choose `continue-live`, `interrupt-and-resume`, or `stop`; recent live output earns one automatic 30-minute extension when nobody responds. Reaching the clock is no longer an unconditional kill, and the runner turn budget is expanded to cover frontier-model legs plus the decision grace.
 - **README overhaul.** The repo, Knowz, and KnowzCode READMEs are restructured around quick start and a mermaid workflow diagram; the deep execution-profiles and cross-agent-relay reference material moved to `docs/execution-profiles.md` and `docs/cross-agent-relay.md`, and all `docs/` guides are now linked from a Documentation index in the README.
+- **Canonical npm binary paths.** Both published package manifests use npm's canonical package-relative `bin` paths, avoiding publish-time manifest rewriting while preserving the same CLI entry points.
 
 ### Fixed
 - **Fail-closed runtime and measurement hardening.** Combined dispatch is bound to the evaluated router/lineage result; writer paths, inheritance safety, capsules, artifacts, timestamps, telemetry accounting, severity, vault mutation identity, result durability, and signed promotion evidence now reject missing, ambiguous, conflicting, or untrusted inputs. The executable suite now covers 32 contracts over a 40-case balanced corpus.

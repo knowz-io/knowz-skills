@@ -1,13 +1,14 @@
 {
   "name": "knowz-mcp",
-  "version": "0.8.1",
+  "version": "0.9.0",
   "description": "Frictionless knowledge management via the Knowz MCP server -- search, save, and query knowledge across vaults",
   "type": "module",
   "bin": {
-    "knowz-mcp": "./bin/knowz-mcp.mjs"
+    "knowz-mcp": "bin/knowz-mcp.mjs"
   },
   "files": [
     "bin/",
+    "CHANGELOG.md",
     "agents/",
     "skills/",
     ".claude-plugin/",
