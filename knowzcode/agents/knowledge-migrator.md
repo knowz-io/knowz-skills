@@ -3,7 +3,6 @@ name: knowledge-migrator
 description: "KnowzCode: Migrates external knowledge into specs"
 tools: Read, Write, Edit, Glob, Grep, Bash
 model: opus
-permissionMode: acceptEdits
 maxTurns: 20
 ---
 

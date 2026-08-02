@@ -1,0 +1,153 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://knowz.io/schemas/context-capsule.schema.json",
+  "title": "KnowzCode Context Capsule v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "task_id",
+    "workgroup_id",
+    "phase",
+    "objective",
+    "node_ids",
+    "owned_files",
+    "read_files",
+    "specs",
+    "approved_decisions",
+    "checkpoint_sha",
+    "failures",
+    "risks",
+    "constraints",
+    "next_action",
+    "capsule_hash"
+  ],
+  "properties": {
+    "schema": { "const": "knowzcode.context-capsule/v1" },
+    "task_id": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "workgroup_id": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "phase": { "enum": ["1A", "1B", "2A", "2B", "3"] },
+    "objective": { "type": "string", "minLength": 1, "maxLength": 4096 },
+    "node_ids": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1, "maxLength": 128 },
+      "maxItems": 64,
+      "uniqueItems": true
+    },
+    "owned_files": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1, "maxLength": 512 },
+      "maxItems": 64,
+      "uniqueItems": true
+    },
+    "read_files": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1, "maxLength": 512 },
+      "maxItems": 128,
+      "uniqueItems": true
+    },
+    "specs": {
+      "type": "array",
+      "maxItems": 64,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "verify_ids"],
+        "properties": {
+          "path": { "type": "string", "minLength": 1, "maxLength": 512 },
+          "verify_ids": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1, "maxLength": 128 },
+            "maxItems": 128,
+            "uniqueItems": true
+          }
+        }
+      }
+    },
+    "approved_decisions": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1, "maxLength": 2048 },
+      "maxItems": 128
+    },
+    "checkpoint_sha": {
+      "anyOf": [
+        { "type": "string", "minLength": 7 },
+        { "type": "null" }
+      ]
+    },
+    "failures": {
+      "type": "array",
+      "maxItems": 64,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["command", "summary", "artifact"],
+        "properties": {
+          "command": { "type": "string", "minLength": 1, "maxLength": 1024 },
+          "summary": { "type": "string", "minLength": 1, "maxLength": 2048 },
+          "artifact": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 512,
+                "pattern": "^(?!/)(?![A-Za-z]:)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\)(?!.*://)[^/]+(?:/[^/]+)*$"
+              },
+              { "type": "null" }
+            ]
+          }
+        }
+      }
+    },
+    "risks": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1, "maxLength": 2048 },
+      "maxItems": 128
+    },
+    "constraints": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1, "maxLength": 2048 },
+      "maxItems": 128
+    },
+    "next_action": { "type": "string", "minLength": 1, "maxLength": 2048 },
+    "evidence": {
+      "type": "array",
+      "maxItems": 128,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kind", "summary"],
+        "properties": {
+          "kind": { "enum": ["file", "test", "log", "vault", "user"] },
+          "summary": { "type": "string", "minLength": 1, "maxLength": 2048 },
+          "artifact": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 512,
+                "pattern": "^(?!/)(?![A-Za-z]:)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\)(?!.*://)[^/]+(?:/[^/]+)*$"
+              },
+              { "type": "null" }
+            ]
+          }
+        }
+      }
+    },
+    "artifact_refs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 512,
+        "pattern": "^(?!/)(?![A-Za-z]:)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\)(?!.*://)[^/]+(?:/[^/]+)*$"
+      },
+      "maxItems": 128,
+      "uniqueItems": true
+    },
+    "capsule_hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    }
+  }
+}

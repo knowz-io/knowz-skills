@@ -174,9 +174,11 @@ START LOOP (for WorkGroupID)
 
 ## Phase Agent Delegation Patterns
 
+The labeled blocks below are conceptual prompt-body shorthand. Every actual call supplies the exact installation-mode `subagent_type`, a short `description`, and the entire shown block as `prompt`.
+
 ### Phase 1A - Impact Analysis
 ```
-Task(analyst):
+Agent(subagent_type="analyst"):
   Perform Loop 1A impact analysis.
 
   Context:
@@ -198,7 +200,7 @@ Task(analyst):
 
 ### Phase 1B - Specification
 ```
-Task(architect):
+Agent(subagent_type="architect"):
   Draft specifications for all Change Set nodes.
 
   Context:
@@ -221,7 +223,7 @@ Task(architect):
 
 ### Phase 2A - Implementation (With Inner Verification Loop)
 ```
-Task(builder):
+Agent(subagent_type="builder"):
   Implement the Change Set using strict TDD.
 
   Context:
@@ -249,7 +251,7 @@ Task(builder):
 
 ### Phase 2B - Completeness Audit (READ-ONLY)
 ```
-Task(reviewer):
+Agent(subagent_type="reviewer"):
   Perform independent completeness audit (READ-ONLY).
 
   Context:
@@ -273,7 +275,7 @@ Task(reviewer):
 
 ### Phase 3 - Atomic Finalization
 ```
-Task(closer):
+Agent(subagent_type="closer"):
   Execute atomic finalization for verified WorkGroup.
 
   Context:
@@ -365,17 +367,18 @@ The KnowzCode workflow is orchestrated by **commands** (not a spawnable agent) t
 
 ## Agent Teams (Experimental)
 
-When the environment variable `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` is set, commands use **teammate spawning** instead of `Task()` subagent calls. This gives you:
+When the environment variable `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` is set, KnowzCode may use **teammate spawning** when multiple workers genuinely need peer messages or shared task state. Independent work normally uses local execution, a compatible resumed worker, a real conversation fork when eligible, or a fresh context capsule. Teams are not the Tier 2+ default.
 
 - A **team lead** that coordinates workflow and delegates to specialized teammates
 - **Shared task lists** with dependencies between phases
 - **Mailbox messaging** for inter-agent coordination (e.g., reviewer sending gap details directly to builder)
 
-The same phases, quality gates, and approval points apply regardless of execution model. Agent Teams is the richer experience; subagent delegation is the reliable fallback.
+The same phases, quality gates, and approval points apply regardless of execution mode. Team availability changes coordination mechanics, not workflow quality. Teammates do not inherit the lead conversation and each adds a separate model context, so the smallest viable team is used.
+
+Current Claude Code forms the team when the first teammate is spawned and manages cleanup automatically. KnowzCode does not call removed `TeamCreate` or `TeamDelete` APIs. Referenced teammate definitions apply their body/tools/model automatically.
 
 **Enabling Agent Teams:**
-- `/knowzcode:setup` offers to enable it during project setup
-- `npx knowzcode install --agent-teams` enables it via the CLI installer
+- `npx knowzcode install --agent-teams` explicitly opts in via the CLI installer
 - Or manually set it in `.claude/settings.local.json`:
   ```json
   { "env": { "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1" } }

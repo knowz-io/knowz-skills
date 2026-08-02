@@ -1,9 +1,8 @@
 ---
 name: knowledge-worker
 description: "Knowz: Knowledge research and capture — searches vaults, saves insights, synthesizes findings"
-tools: Read, Glob, Grep
+tools: Read, Write, Edit, Glob, Grep, ToolSearch, mcp__knowz__search_knowledge, mcp__knowz__ask_question, mcp__knowz__find_entities, mcp__knowz__list_topics, mcp__knowz__get_knowledge_item, mcp__knowz__create_knowledge
 model: sonnet
-permissionMode: default
 maxTurns: 15
 ---
 
@@ -62,35 +61,62 @@ After gathering results, synthesize into a concise report:
 For batch capture tasks:
 
 1. Parse each insight from the source material
-2. For each insight:
+2. Before any mutation, build the complete create plan. For each insight:
    a. Detect category (Pattern, Decision, Workaround, Performance, Security, Convention, Note)
    b. Match against vault "when to save" rules → determine target vault
    c. Format content using the vault's content template
    d. Generate title: `{Category}: {descriptive summary}`
-   e. Dedup check: `mcp__knowz__search_knowledge(title, vaultId, 3)`
-   f. If no duplicate → `mcp__knowz__create_knowledge(content, title, "Note", vaultId, tags, "knowz-skill")`
-   g. If duplicate found → skip and note the duplicate
+   e. Record the canonical vault, stable semantic identity, normalized title, exact payload, category, source, and intent.
+   f. Sort the complete plan by `canonical vault | semantic identity | normalized title`, reject duplicate identities with different payloads as `AMBIGUOUS_MUTATION_IDENTITY`, and resolve one stable idempotency key per item from `create`, the canonical vault, semantic identity, normalized title, and exact payload. Keys MUST NOT include a timestamp, retry count, agent/session ID, or attempt number.
+3. Execute the sorted plan one item at a time:
+   a. Preflight with `mcp__knowz__search_knowledge(title, vaultId, 3)` in the exact target vault. Exactly one materially equivalent semantic/content match reconciles the create as already applied. No match permits one create. A similar-title conflict or multiple plausible matches is ambiguous and MUST stop that item without writing.
+   b. If no match → call `mcp__knowz__create_knowledge(content, title, "Note", vaultId, tags, "knowz-skill")` exactly once and retain the returned `KnowledgeId` in the result.
+   c. If an exact match exists → count it as idempotently reconciled, not merely a title duplicate.
 
-3. Report results:
+4. Report results:
    ```
    Captured {N} items:
 
      - {title 1} → {vault name}
      - {title 2} → {vault name}
 
-   Skipped {M} duplicates:
+   Idempotently reconciled {M} items:
      - {title} (already exists as "{existing title}")
    ```
 
-4. **If any MCP writes fail** during batch capture, queue failed items to `knowz-pending.md`:
-   - Append each failed capture as a `---`-delimited block (see `knowz-pending.example.md` for format)
+5. **If any MCP writes fail** during batch capture, queue failed items to canonical project-root `knowz-pending.md` exactly once:
+   - Read the queue first. If the same per-item key has identical operation, vault, identity, and payload, treat it as already queued. If that key has different mutation content, fail closed with `IDEMPOTENCY_KEY_COLLISION` and mutate neither fact.
+   - Append one `---`-delimited canonical block per failed item. Never reuse a key across items:
+     ```markdown
+     ---
+
+     ### {timestamp} -- {title}
+     - **Operation**: create
+     - **Idempotency Key**: {stable per-item key resolved before the MCP attempt}
+     - **Queue Status**: pending
+     - **Semantic Key**: {stable semantic identity}
+     - **Intent**: {stable capture intent}
+     - **Category**: {category}
+     - **Target Vault**: {exact vault ID or unambiguous configured name}
+     - **Source**: knowledge-worker / {source description}
+     - **Payload**:
+     {complete formatted body}
+
+     ---
+     ```
    - Report which items were queued:
      ```
      Queued {N} items to knowz-pending.md (MCP write failed):
-       - {title} — {error reason}
+       - {title} — {error reason} — QUEUED_IDEMPOTENCY_KEY: {key}
 
      Run /knowz flush when MCP is available to sync these.
      ```
+
+## Mutation Safety
+
+- This generic batch path creates only new items. It MUST NOT amend or update an existing item, and an ambiguous existing match is not permission to create anyway.
+- Every retry reuses the original per-item key and performs the exact-vault preflight before mutation.
+- Never remove a queue block until `/knowz flush` confirms success or idempotent reconciliation.
 
 ## Content Detail Principle
 

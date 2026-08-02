@@ -9,6 +9,49 @@
 ---
 **[NEWEST ENTRIES APPEAR HERE - DO NOT REMOVE THIS MARKER]**
 ---
+**Type:** ARC-Completion-Correction
+**Timestamp:** 2026-07-30 22:45:21 EDT
+**WorkGroupID:** kc-fix-context-orchestration-hardening-20260731-003258
+**NodeID(s):** ContextEfficientOrchestration, ClaudeRuntimeCompatibility, CodexRuntimeParity
+**Logged By:** AI-Agent (Codex lead, autonomous multi-agent hardening workflow)
+**Details:**
+- Supersedes the release-readiness conclusion recorded for `kc-feat-context-efficient-orchestration-20260730-035714`. Fresh adversarial review reopened the three nodes and produced runtime, workflow, installer, ownership, package, and crash-recovery fixes; the obsolete pending completion remains quarantined as `superseded`.
+- Final formal verification is 66/66 criteria: CEO 21/21, CRC 25/25, and CRP 20/20. The executable runtime suite passes 32/32 contracts over a balanced 40-case corpus, with default rollout still `off` and synthetic evidence prohibited from live promotion.
+- Lifecycle validation now covers exact Knowz/KnowzCode ownership, atomic preflight, project/HOME isolation, Claude plugin/local resource and namespace matrices, Copilot structural merges, both Gemini shared-custody orders, immutable co-owned updates, both uninstall orders, arbitrary unowned non-claim, malformed settings, and symmetric missing/replaced/leaf-/ancestor-symlinked interrupted-peer evidence.
+- Final gates: platform validator PASS; mirror sync PASS (13 Codex skills + one generated reference, seven framework mirrors, three contracts); syntax/JSON/diff checks PASS; KnowzCode dry-run package 104 files and Knowz package 20 files PASS.
+- Independent final audits scored 98/100 for workflow/resource/traceability and 100/100 for runtime/security/actual-packed behavior. Weighted release readiness is **98/100**, with no unresolved critical/high/medium/low finding.
+- The final durable completion delta is queued once in project-root `knowz-pending.md` because no live Knowz MCP writer is callable in this environment.
+---
+**Type:** ARC-Completion
+**Timestamp:** 2026-07-30 05:34:06 EDT
+**WorkGroupID:** kc-feat-context-efficient-orchestration-20260730-035714
+**NodeID(s):** ContextEfficientOrchestration, ClaudeRuntimeCompatibility, CodexRuntimeParity
+**Logged By:** AI-Agent (Codex lead, autonomous multi-agent workflow)
+**Details:**
+- Formalized and shipped context-efficient orchestration for Claude and Codex: deterministic local/resume/inheritance/capsule/team routing, versioned capsules and lineage, progressive skill loading, bounded results, current Claude lifecycle semantics, canonical Codex distribution, redacted telemetry, lead-owned vault batching, and fail-closed rollout promotion.
+- Independent audits iterated through all reported gaps. Final verification was 41/41 criteria (100%), with no unresolved critical/high/medium finding.
+- Evidence: 20/20 contract tests, 40/40 executable corpus oracles across five balanced strata, platform/install/upgrade validator PASS, mirror sync PASS, 96-file package dry-run PASS, and `git diff --check` PASS.
+- Repository fixtures remain non-empirical and cannot promote rollout. Default rollout is `off`; real paired provider measurements are required before observe/shadow/canary promotion.
+- Knowz MCP was unavailable under the cached failed health probe; the consolidated Phase 3 completion delta was classified `flush / EXPLICIT_SAVE` and queued once in `knowzcode/pending_captures.md`.
+---
+**Type:** MicroFix
+**Timestamp:** 2026-07-19 16:05:32 EDT
+**NodeID(s)/File:** CrossAgentRelay / timeout and continuation protocol
+**Logged By:** AI-Agent
+**Details:**
+- **User Request:** Raise the relay-agent default from 45 to 90 minutes and allow a useful continue-versus-resume conversation at the time boundary.
+- **Action Taken:** Made 90 minutes the default decision horizon, expanded the Sonnet runner turn budget, and added a pre-deadline `continue-live` / `interrupt-and-resume` / `stop` dialogue with one evidence-based automatic extension.
+- **Verification:** Default/mirror assertions, generated adapter synchronization, package dry-run, and platform-surface validation run after the update.
+---
+**Type:** MicroFix
+**Timestamp:** 2026-07-19 15:59:35 EDT
+**NodeID(s)/File:** CrossAgentRelay / relay-runner and relay execution guidance
+**Logged By:** AI-Agent
+**Details:**
+- **User Request:** Give relay subagents filtered live Codex output or periodic progress updates.
+- **Action Taken:** Added a one-minute, bounded `PROGRESS_COMMAND` bridge, a Codex JSONL summary selector, lead-only progress delivery, and untrusted-telemetry safeguards.
+- **Verification:** Relay mirror synchronization and platform-surface validation run after the update.
+---
 **Type:** Exploration-Deferred
 **Timestamp:** 2026-04-19 12:35:00
 **Topic:** Tree-sitter / code-graph fit for knowz vs knowzcode

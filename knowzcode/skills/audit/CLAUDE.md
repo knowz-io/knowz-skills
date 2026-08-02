@@ -1,47 +1,11 @@
-# audit — Operational Rules
+# audit — Claude Operational Rules
 
-Read-only quality audit workflow for spec completeness, architecture health, OWASP security scanning, and integration consistency.
+Strictly zero-write spec, architecture, security, integration, and compliance audit.
 
-## Dispatch Pattern
+Classify the requested audit and evidence slices before any vault query. Default to local sequential `Read`/`Glob`/`Grep` only: no Bash, tests, agents, Team/task state, or filesystem persistence. Runtime-write authorization and persistence authorization are separate; neither implies the other.
 
-Agents are invoked as `general-purpose` subagents that read their agent `.md` file at runtime. The `subagent_type` field in `Task()` calls is set to the agent name (e.g. `"reviewer"`, `"security-officer"`, `"test-advisor"`); the agent reads `agents/<name>.md` for its full role definition. Agent Teams mode uses `TeamCreate` + teammate spawning instead of `Task()`.
+Only after explicit runtime-write authorization may the audit resume a compatible reviewer lineage, dispatch fresh independent named reviewers with scoped capsules, run a write-capable test, or form a coordinated team when reviewers must challenge/message peers. Those tools remain normally permission-gated. A single reviewer never forms a team; the first eligible teammate spawn forms it and runtime cleanup is automatic.
 
-## Agents Used
+Claude automatically loads each referenced reviewer/officer definition. Spawn prompts contain only audit scope, read paths, applicable specifications/guidelines, checkpoint, evidence budget, and bounded result contract. Default output is a bounded chat result; artifacts, logs, WorkGroup updates, and vault writes require explicit persistence authorization.
 
-| Agent | Role | When |
-|-------|------|------|
-| `reviewer` | Spec, architecture, security, integration audit | Every audit invocation |
-| `security-officer` | Deep OWASP/threat scan | `--specialists` or `--specialists=security` |
-| `test-advisor` | Test coverage and TDD compliance | `--specialists` or `--specialists=test` |
-| `knowledge-liaison` | Local context + vault knowledge (subagent mode) | Subagent delegation path only |
-
-## Workflow Phases
-
-1. **Load context** — read `knowzcode_tracker.md`, `knowzcode_architecture.md`, `knowzcode_project.md`, `knowzcode_orchestration.md`
-2. **Set execution mode** — attempt `TeamCreate`; fall back to `Task()` subagent delegation on failure; `--profile classic` forces subagent delegation
-3. **MCP probe** — check vault availability via `knowz-vaults.md` or `list_vaults()`
-4. **Execute audit** — specific type (single reviewer) or full audit (parallel reviewers, optional specialists)
-5. **Present results** — health scores, critical issues, recommendations
-6. **Vault capture prompt** — offer to save findings to Knowz (if vaults configured)
-7. **Log** — append to `knowzcode/knowzcode_log.md`
-
-## Parallelism
-
-- Full audit (no argument): up to 3 reviewers run in parallel (spec+arch, security+integration, compliance)
-- Specialists (`security-officer`, `test-advisor`) run in parallel with reviewers when enabled
-- Knowledge-liaison runs in parallel with reviewers in subagent mode
-
-## Constraints
-
-- **Read-only** — audit never modifies source code or specs; only writes to `knowzcode_log.md` and vault (on user approval)
-- Never trigger when user wants to **build** (→ `/knowzcode:work`) or **fix** (→ `/knowzcode:fix`)
-- Announce execution mode before any audit work begins
-- `--no-specialists` overrides `default_specialists` from `knowzcode_orchestration.md`
-- Profile `advisor` routes `reviewer` through Sonnet with advisor-tool guidance; strategic agents stay on Opus
-- Profile `frontier` routes the reviewer and specialists through Fable (audit is review reasoning); falls back to Opus if Fable is unavailable
-
-## Output Paths
-
-- Log entry: `knowzcode/knowzcode_log.md`
-- Vault capture: ecosystem-type vault (user-approved, via `knowz:writer`)
-- No files written to source tree or `knowzcode/specs/`
+After runtime-write authorization, full audit slices may run in parallel when independently useful: spec+architecture, security+integration, and compliance. Specialists are evidence-driven. A single reviewer never forms a team. Preserve zero-write behavior, HIGH/CRITICAL security blocks, blocking compliance rules, profile model routing, and explicitly authorized persistence in every mode.

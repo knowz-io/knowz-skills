@@ -97,18 +97,24 @@ If `enterprise.json` exists in the project root, use its `brand` value instead o
    - Skip (don't save)
    - Amend existing item (targeted delta — add a line, fix a phrase, change a tag; preferred for partial changes)
    - Replace existing item (full rewrite with a complete new body)
-8. Execute the chosen path:
+8. Resolve one explicit mutation and derive its stable, content-bound idempotency key before writing:
+   - Bind the key to `Operation | canonical target vault | KnowledgeId-or-new-item-semantic-key | normalized title | normalized payload hash`.
+   - Amend/update require the exact non-empty `KnowledgeId`; if it is absent, return `MISSING_AMEND_IDENTITY` or `MISSING_UPDATE_IDENTITY` and stop. Never downgrade the mutation to create.
+   - A retry of the same logical mutation reuses the same key. Do not use timestamps, session IDs, attempt numbers, or other retry-varying values in the key.
+9. Execute the chosen path:
    - **Create** -> `mcp__knowz__create_knowledge` with `knowledgeType: "Note"`, the chosen `vaultId`, and tags.
    - **Amend** -> `mcp__knowz__amend_knowledge` with `id` = matched item and the delta only. If the server reports the target is missing, report the conflict and offer to save as a new item — do NOT fall through to create.
    - **Replace** -> `mcp__knowz__update_knowledge` with `id` = matched item and the complete new body.
    - **Skip** -> report nothing was saved and stop.
-9. If MCP write fails, append a canonical block to `knowz-pending.md`. Wrap the block in `---` delimiters — the flush parser splits on them.
+10. If MCP write fails, read `knowz-pending.md` first. An existing block with the same key and byte-equivalent normalized mutation content is already queued; do not append it again. The same key with different mutation content is `IDEMPOTENCY_KEY_COLLISION`; fail closed and append nothing. Otherwise append one canonical block. Wrap the block in `---` delimiters — the flush parser splits on them.
 
    ```
    ---
 
    ### {timestamp} -- {title}
    - **Operation**: create | amend | update
+   - **Idempotency Key**: {stable content-bound mutation key}
+   - **Queue Status**: pending
    - **KnowledgeId**: {id}    # required for amend/update, omit for create
    - **Category**: {category}
    - **Target Vault**: {vault}
@@ -327,27 +333,18 @@ description: "Flush queued knowledge operations (create, amend, update) from kno
 
 # /knowz-flush - Process Pending Captures
 
-Drain `knowz-pending.md` into Knowz vaults. Each queued block declares an `Operation` field (`create`, `amend`, or `update`) that decides which MCP tool to call.
+Drain the canonical project-root `knowz-pending.md` queue into Knowz vaults, including safe migration from legacy `knowzcode/pending_captures.md`. Replay is bound to `Operation`, a stable `Idempotency Key`, the exact vault, and (for amend/update) the exact `KnowledgeId`; never downgrade a mutation to create.
 
 If `enterprise.json` exists in the project root, use its `brand` value instead of "Knowz" in user-facing text.
 
 ## Instructions
 
-1. Read `knowz-pending.md` from the project root.
-   - If it is missing or empty, report that there is nothing to flush and stop.
-2. Verify that `mcp__knowz__create_knowledge` is available. If the queue contains amend/update blocks, also verify `mcp__knowz__amend_knowledge` / `mcp__knowz__update_knowledge` are available before processing those blocks.
-3. Read `knowz-vaults.md` to resolve vault IDs.
-4. Parse each queued block. Recognized fields:
-   - `Operation` — `create` | `amend` | `update`. Missing -> treat as `create` (legacy block).
-   - `KnowledgeId` — required for `amend` and `update`.
-   - `Category`, `Target Vault`, `Source`.
-   - `Payload` — the body. Legacy fallback: if `Payload` is absent but `Content:` is present, read `Content` as the payload.
-5. Branch by `Operation`:
-   - **create** (or missing): call `mcp__knowz__create_knowledge` with the payload as `content`, `knowledgeType: "Note"`, resolved `vaultId`, tags, and source.
-   - **amend**: call `mcp__knowz__amend_knowledge` with `id = KnowledgeId` and the payload as a delta. If the server reports the item is missing, leave the block in place and flag it as a missing-target failure — do NOT fall through to create.
-   - **update**: call `mcp__knowz__update_knowledge` with `id = KnowledgeId` and the payload as a full replacement body.
-6. Remove only successfully flushed blocks from `knowz-pending.md`.
-7. Report flushed operations grouped by type (created / amended / updated) and any failures that remain queued. Distinguish missing-target amend failures from generic MCP failures so the user can decide whether to re-save as a new item.
+1. Read both queue locations. Normalize keyless canonical blocks and migrate legacy blocks losslessly: map `Target Vault Type` to `Target Vault`, `Content` to `Payload`, preserve identity/metadata, and derive a deterministic key from operation, target identity, vault, source, intent, and title. Append a converted legacy block before removing its source. A reused key with different mutation content is `IDEMPOTENCY_KEY_COLLISION`; mutate none of that group.
+2. Parse canonical blocks. Require `Operation`, `Idempotency Key`, `Target Vault`, and `Payload`; require `KnowledgeId` for amend/update. A missing legacy operation may become create only when no existing-item identity/action is present and the create payload is complete. Preserve but never write `Queue Status: superseded` blocks.
+3. Resolve one unambiguous vault and verify all operation-specific MCP/search/get tools before mutation. Missing tools, malformed blocks, and ambiguous targets stay queued.
+4. Preflight each idempotency group. For create, one exact semantic/content match reconciles success, no match permits create, and conflicts/multiple matches stay queued. For amend/update, fetch the exact `KnowledgeId`; already-applied content reconciles success, a missing target stays queued, and no path falls through to create.
+5. Execute each eligible logical mutation at most once. Remove byte-equivalent blocks from both queues only after confirmed success or reconciliation. If cleanup cannot be confirmed, stop and report the key so retry repeats preflight safely.
+6. Report created/amended/updated and reconciled counts, migrated and superseded counts, plus every remaining key grouped by collision, malformed block, ambiguous/missing target, unavailable tool, or MCP failure.
 ```
 
 #### .agents/skills/knowz-amend/SKILL.md
@@ -373,15 +370,18 @@ If `enterprise.json` exists in the project root, use its `brand` value instead o
    - If `--id` was provided -> call `mcp__knowz__get_knowledge_item(id)` to confirm it exists and fetch title + vault.
    - If no `--id` -> extract the subject and call `mcp__knowz__search_knowledge` scoped to the matching vault with `limit: 5`. One clear match -> use it. Multiple plausible matches -> show top 3 and ask. Zero matches -> suggest `/knowz-save` and stop.
 4. Confirm the change with the user before writing. Proceed only on explicit yes.
-5. Call `mcp__knowz__amend_knowledge` with `id` and the delta payload. Send only the change, not a synthesized full body.
-6. If the server reports the target is missing, do NOT fall through to create a new item. Report the missing-target conflict and suggest `/knowz-save` as the next step.
-7. If MCP write fails, append a canonical block to `knowz-pending.md`. Wrap the block in `---` delimiters — the flush parser splits on them.
+5. Before writing, require the exact non-empty target `KnowledgeId` and derive a stable, content-bound idempotency key from `amend | canonical target vault | KnowledgeId | normalized title | normalized delta hash`. If the ID is absent, return `MISSING_AMEND_IDENTITY` and stop. Reuse the same key on retry; do not include timestamps, session IDs, or attempt numbers.
+6. Call `mcp__knowz__amend_knowledge` with `id` and the delta payload. Send only the change, not a synthesized full body.
+7. If the server reports the target is missing, do NOT fall through to create a new item. Report the missing-target conflict and suggest `/knowz-save` as the next step.
+8. If MCP write fails, read `knowz-pending.md` first. Treat an existing block with the same key and byte-equivalent normalized mutation content as already queued. If the same key identifies different content, report `IDEMPOTENCY_KEY_COLLISION`, append nothing, and fail closed. Otherwise append one canonical block. Wrap the block in `---` delimiters — the flush parser splits on them.
 
    ```
    ---
 
    ### {timestamp} -- Amend: {existing title}
    - **Operation**: amend
+   - **Idempotency Key**: {stable content-bound mutation key}
+   - **Queue Status**: pending
    - **KnowledgeId**: {id}
    - **Category**: {category}
    - **Target Vault**: {vault}
@@ -393,7 +393,7 @@ If `enterprise.json` exists in the project root, use its `brand` value instead o
    ```
 
    Report: "Queued to knowz-pending.md — run /knowz-flush when MCP is available."
-8. Report success with title, vault, and a short summary of what was patched.
+9. Report success with title, vault, and a short summary of what was patched.
 
 If Knowz MCP tools are unavailable, report: "{brand} MCP not connected. Run /knowz-setup and restart Codex."
 ```
@@ -429,14 +429,18 @@ Treat this as a lightweight helper skill for Codex. Codex may surface it when a 
    - call `mcp__knowz__search_knowledge` scoped to the matched vault (`limit: 5`) to locate the target item
    - one match -> proceed; multiple -> ask the user which; zero -> suggest `/knowz-save`
    - confirm the target title and the proposed delta with the user — never auto-amend
+   - require the exact non-empty target `KnowledgeId`; if it is absent, return `MISSING_AMEND_IDENTITY` and stop without queuing or creating
+   - derive a stable, content-bound idempotency key from `amend | canonical target vault | KnowledgeId | normalized title | normalized delta hash`; retries reuse it, and the key must not contain a timestamp, session ID, or attempt number
    - on agreement, call `mcp__knowz__amend_knowledge` with the resolved `id` and the delta (send only the change)
    - if the server reports the target is missing, report the conflict and suggest `/knowz-save` — do NOT silently recreate
-   - if the MCP call fails transiently (server unreachable, auth expired), queue the amend to `knowz-pending.md` using the canonical format so `/knowz-flush` can replay it. Wrap the block in `---` delimiters.
+   - if the MCP call fails transiently (server unreachable, auth expired), read `knowz-pending.md` first. An identical key plus byte-equivalent normalized mutation is already queued; the same key with different content is `IDEMPOTENCY_KEY_COLLISION` and must fail closed without appending. Otherwise queue the amend once using the canonical format so `/knowz-flush` can replay it. Wrap the block in `---` delimiters.
      ```
      ---
 
      ### {ISO timestamp} -- Amend: {existing title}
      - **Operation**: amend
+     - **Idempotency Key**: {stable content-bound mutation key}
+     - **Queue Status**: pending
      - **KnowledgeId**: {id}
      - **Category**: {category}
      - **Target Vault**: {vault name}
@@ -542,11 +546,8 @@ description = "Process pending knowledge operations queue (create, amend, update
 prompt = """Read .agents/skills/knowz-flush/SKILL.md for full instructions.
 Process knowz-pending.md queue. Branch on each block's Operation field:
 create -> create_knowledge, amend -> amend_knowledge, update -> update_knowledge.
-Missing Operation -> treat as create (legacy). Payload missing -> fall back to Content.
-Amend targets that are missing on the server must NOT be silently recreated —
-flag them as missing-target failures for the user to re-save.
+Require a stable Idempotency Key, exact vault, Payload (legacy Content may be normalized), and exact KnowledgeId for amend/update. A legacy block missing Operation may become create only when it has no KnowledgeId or amend/update action evidence and has a complete create payload; otherwise leave it queued as malformed. Group by key, fail closed on key/content collisions, skip superseded blocks, and preflight before every mutation. Already-applied content reconciles success. Missing amend/update targets remain queued and must NOT be silently recreated. Remove byte-equivalent queue blocks only after confirmed success or reconciliation.
 <ARGS/>"""
 ```
 
 Gemini skills are shared via `.agents/skills/` — Gemini CLI reads that directory as an alias. No separate `.gemini/skills/` needed. The TOML commands above reference `.agents/skills/knowz-*/SKILL.md` directly.
-

@@ -55,7 +55,7 @@ Parse the first word of `$ARGUMENTS` to determine the action:
 | `setup` / `configure` / `config` | Configure MCP + vault file | `mcp__knowz__list_vaults` |
 | `status` / `health` / `check` | Check connection and vault health | `mcp__knowz__list_vaults` |
 | `register` / `signup` | Create account + configure | HTTP API |
-| `flush` / `sync` | Process pending captures | `mcp__knowz__create_knowledge` |
+| `flush` / `sync` | Replay idempotent create/amend/update queue operations | operation-specific search/get/create/amend/update tools |
 | (bare question — contains `?`) | Auto-detect → ask | `mcp__knowz__ask_question` |
 | (bare statement — no `?`, no prefix) | Auto-detect → save | `mcp__knowz__create_knowledge` |
 
@@ -258,53 +258,18 @@ Check MCP connection health and vault configuration.
 
 ## Action: `flush`
 
-Process the pending captures queue — drain `knowz-pending.md` to vaults.
+Drain the canonical project-root `knowz-pending.md` queue, including safe migration from legacy `knowzcode/pending_captures.md`. Every replay is bound to its `Operation`, stable `Idempotency Key`, exact vault, and (for amend/update) exact `KnowledgeId`; never downgrade a mutation to create.
 
 ### Steps
 
-1. **Read pending captures file:**
-   - Read `knowz-pending.md` from the project root
-   - If the file doesn't exist or contains no `---`-delimited capture blocks → report "0 pending captures — nothing to flush." STOP.
-
-2. **Verify MCP connectivity:**
-   - Check that `mcp__knowz__create_knowledge` is available (plus `amend_knowledge` / `update_knowledge` if the queue contains those operation types).
-   - If none are available → report "Cannot flush — MCP not connected. Run /knowz setup first." STOP.
-   - Read `knowz-vaults.md` to resolve vault IDs.
-
-3. **Parse capture blocks:**
-   - Split file content by `---` delimiters
-   - Each block fields: `Operation` (create/amend/update; missing → `create`), `KnowledgeId` (required for amend/update), `Category`, `Target Vault`, `Source`, `Payload` (legacy fallback: `Content` field)
-
-4. **Flush each capture — dispatch by Operation:**
-
-   **`create` (or no Operation — legacy):** Call `mcp__knowz__create_knowledge` with title (from `###` header), content (Payload), knowledgeType `"Note"`, vaultId, tags (from `[TAGS]` or Category), source.
-
-   **`amend`:** If `KnowledgeId` missing → log malformed error, leave block, continue. Call `mcp__knowz__amend_knowledge(id, delta)`. If item missing on server → leave block, mark as missing-target failure, surface in report.
-
-   **`update`:** If `KnowledgeId` missing → log malformed error, leave block, continue. Call `mcp__knowz__update_knowledge(id, full-payload)`.
-
-   On success: mark block for removal. On failure: leave block in place, log error.
-
-5. **Update the pending captures file:**
-   - Remove all successfully flushed blocks; keep file header
-   - If all blocks flushed: file contains only the header
-
-6. **Report results:**
-   ```
-   Flushed {success}/{total} pending operations to vault.
-
-   Created: {titles}
-   Amended: {titles with ids}
-   Updated: {titles with ids}
-
-   {If any failed:}
-   Failed:
-     - {title} — {error reason}
-     Run /knowz flush again when MCP is available.
-
-   {If all succeeded:}
-   All operations synced. Pending file cleared.
-   ```
+1. Read both queue locations. Normalize keyless canonical blocks and migrate legacy blocks losslessly: map `Target Vault Type` to `Target Vault`, `Content` to `Payload`, preserve all identity/metadata, and derive a deterministic key from operation, target identity, vault, source, intent, and title. Append a converted legacy block before removing its source. A reused key with different mutation content is `IDEMPOTENCY_KEY_COLLISION`; mutate none of that group.
+2. Parse canonical blocks. Require `Operation`, `Idempotency Key`, `Target Vault`, and `Payload`; require `KnowledgeId` for amend/update. A missing legacy operation may become create only when no existing-item identity/action is present and the create payload is complete. `Queue Status: superseded` is preserved and never written.
+3. Resolve one unambiguous vault and verify every operation-specific MCP/search/get tool before mutation. Missing tools, malformed blocks, and ambiguous targets stay queued.
+4. Preflight each idempotency group:
+   - **create:** exact-title/semantic search; one materially identical item reconciles success, no match permits create, and conflicts/multiple matches remain queued.
+   - **amend/update:** fetch the exact `KnowledgeId`; already-applied content reconciles success, a missing target remains queued, and no path falls through to create.
+5. Execute each eligible logical mutation at most once. Remove byte-equivalent blocks from both queues only after confirmed success or reconciliation. If queue cleanup cannot be confirmed, stop and report the key so a retry repeats preflight safely.
+6. Report created/amended/updated and reconciled counts, migrated and superseded counts, plus every remaining key grouped by collision, malformed block, ambiguous/missing target, unavailable tool, or MCP failure.
 
 ---
 
@@ -484,7 +449,7 @@ For complex, multi-step research tasks, dispatch the `knowledge-worker` agent in
 - Task involves batch capture of multiple insights
 
 ```
-Use the Agent tool with subagent_type "knowledge-worker" — pass the user's query
+Use the Agent tool with subagent_type "knowz:knowledge-worker" — pass the user's query
 and let the agent handle multi-step vault operations.
 ```
 

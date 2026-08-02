@@ -107,14 +107,14 @@ REPEAT until all checks pass:
 
 | Flag | Effect |
 |------|--------|
-| `--profile={advisor\|teams\|classic\|frontier}` | Select execution profile — see `knowzcode/skills/work/references/profile-models.md` |
+| `--profile={advisor\|teams\|classic\|frontier}` | Select execution profile — see `${CLAUDE_PLUGIN_ROOT}/skills/work/references/profile-models.md` |
 | `--fable-execution` | (frontier only) Run the micro-fix on Fable for a high-value job |
 
 The `advisor` profile routes the micro-fix through Sonnet with advisor-tool guidance (per spec). `teams`, `classic`, and `frontier` use the agent's frontmatter default (Opus) with no guidance injection — the micro-fix is execution work, so `frontier` keeps it on Opus by default. Add `--fable-execution` under `frontier` to run a high-value micro-fix on Fable.
 
 ## Profile Resolution (pre-dispatch)
 
-Before the `Task()` dispatch, resolve `PROFILE`:
+Before the `Agent()` dispatch, resolve `PROFILE`:
 
 1. **Flag**: if `$ARGUMENTS` contains `--profile=<value>`, set `PROFILE = <value>`. Valid: `advisor`, `teams`, `classic`, `frontier`. Invalid → warn + fall back to `frontier`.
 2. **Config**: else read `knowzcode/knowzcode_orchestration.md` for the `^profile:\s*(\S+)` line. Use that value if valid; else `frontier`.
@@ -125,27 +125,28 @@ Before the `Task()` dispatch, resolve `PROFILE`:
    - Otherwise proceed with `advisor`.
 5. **Frontier execution**: default `EXECUTE_ON_FABLE = false` (so it is always bound for the `MODEL_FOR` call below). Only when `PROFILE == "frontier"`: set `EXECUTE_ON_FABLE = true` if `$ARGUMENTS` contains `--fable-execution`, else read `execute_on_fable:` from `knowzcode/knowzcode_orchestration.md` (default `false`). If `EXECUTE_ON_FABLE == true` AND `ANTHROPIC_BASE_URL` is set AND does NOT contain `"anthropic.com"` → downgrade `EXECUTE_ON_FABLE = false` (Fable unavailable) and announce.
 
-See `knowzcode/skills/work/references/profile-models.md` for `MODEL_FOR()` semantics. For `/fix`: `MODEL_FOR("microfix-specialist", "advisor") == "sonnet"`; under `frontier`, `MODEL_FOR("microfix-specialist", "frontier", EXECUTE_ON_FABLE)` returns `"opus"` by default or `"fable"` when `--fable-execution` is set; `teams`/`classic` return null.
+See `${CLAUDE_PLUGIN_ROOT}/skills/work/references/profile-models.md` for `MODEL_FOR()` semantics. For `/knowzcode:fix`: `MODEL_FOR("microfix-specialist", "advisor") == "sonnet"`; under `frontier`, `MODEL_FOR("microfix-specialist", "frontier", EXECUTE_ON_FABLE)` returns `"opus"` by default or `"fable"` when `--fable-execution` is set; `teams`/`classic` return null.
 
 ## Execution
 
-Delegate to the **microfix-specialist** agent via `Task()`.
+Delegate to the **knowzcode:microfix-specialist** agent via `Agent()` (`Task` is only a compatibility alias on older releases).
 
 Resolve two spawn-time values from `PROFILE`:
 
-- `MODEL_OVERRIDE` = `MODEL_FOR("microfix-specialist", PROFILE, EXECUTE_ON_FABLE)` — a model alias (`"sonnet"` under advisor; `"opus"` or `"fable"` under frontier) or null (teams/classic). Include `model: <MODEL_OVERRIDE>` in `Task()` parameters when non-null; omit entirely otherwise.
-- `ADVISOR_GUIDANCE` = the Advisor Guidance block from `knowzcode/skills/work/references/spawn-prompts.md` if `PROFILE == "advisor"` AND `MODEL_OVERRIDE == "sonnet"`; otherwise empty string.
+- `MODEL_OVERRIDE` = `MODEL_FOR("microfix-specialist", PROFILE, EXECUTE_ON_FABLE)` — a model alias (`"sonnet"` under advisor; `"opus"` or `"fable"` under frontier) or null (teams/classic). Include `model: <MODEL_OVERRIDE>` in `Agent()` parameters when non-null; omit entirely otherwise.
+- `ADVISOR_GUIDANCE` = the Advisor Guidance block from `${CLAUDE_PLUGIN_ROOT}/skills/work/references/spawn-prompts.md` if `PROFILE == "advisor"` AND `MODEL_OVERRIDE == "sonnet"`; otherwise empty string.
 
-`Task()` parameters:
-- `subagent_type`: `"microfix-specialist"`
+`Agent()` parameters:
+- `subagent_type`: `"knowzcode:microfix-specialist"`
 - `model`: `<MODEL_OVERRIDE>` (e.g. `"sonnet"` under advisor, `"opus"` or `"fable"` under frontier) — included ONLY when `MODEL_OVERRIDE` is non-null; OMIT the parameter otherwise (agent frontmatter default applies)
-- `prompt`: Task-specific context only (role definition is auto-loaded from `agents/microfix-specialist.md`):
+- `prompt`: Task-specific context only (role definition is auto-loaded from `${CLAUDE_PLUGIN_ROOT}/agents/microfix-specialist.md`):
   > **Target**: {target file or NodeID}
   > **Fix summary**: {summary}
   > Validate scope, implement the minimal fix, run the verification loop, log the outcome, and commit.
   > {advisor_guidance}   ← resolves to `ADVISOR_GUIDANCE` (the full block when advisor, else empty)
 - `description`: `"Micro-fix: {summary}"`
-- `mode`: `"bypassPermissions"`
+
+The child inherits the session's effective permission policy and its definition's tool restrictions. Do not pass a per-call permission `mode`, and never request `bypassPermissions` or `--dangerously-skip-permissions` for a micro-fix.
 
 > **Note:** Micro-fixes use subagent delegation only. Agent Teams overhead is not justified for single-file, <50 line fixes. The profile selection affects model choice and guidance injection, not execution mode.
 

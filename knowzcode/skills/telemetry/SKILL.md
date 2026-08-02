@@ -2,7 +2,7 @@
 name: telemetry
 description: "Investigate telemetry data from Sentry, App Insights, and other sources. Use when asked to debug production errors, trace exceptions, check error rates, or diagnose monitoring issues."
 user-invocable: true
-allowed-tools: Read, Glob, Grep, Bash, Task
+allowed-tools: Read, Glob, Grep, Bash, Agent
 argument-hint: "[natural language description]"
 ---
 
@@ -111,10 +111,13 @@ Run `/knowzcode:telemetry-setup` to verify authentication and configure sources.
 
 ### Step 3: Investigate Telemetry
 
-Spawn the **reviewer** agent to perform the telemetry investigation:
+Spawn the **knowzcode:reviewer** agent to perform the telemetry investigation:
 
 ```
-Task(reviewer):
+Agent(
+  subagent_type="knowzcode:reviewer",
+  description="Investigate telemetry",
+  prompt="""
   Investigate telemetry for the following issue.
 
   Natural Language Query: {user's full natural language description}
@@ -131,6 +134,8 @@ Task(reviewer):
   4. Synthesize into unified timeline
   5. Generate root cause hypothesis
   6. Return structured findings
+  """
+)
 ```
 
 ### Step 4: Present Findings

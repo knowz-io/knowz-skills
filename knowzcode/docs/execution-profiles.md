@@ -1,6 +1,6 @@
 # Execution Profiles
 
-KnowzCode on Claude Code supports four execution profiles that trade cost, quality, and parallelism. **`frontier` is the default** (Fable plans/specs/reviews, Opus builds).
+KnowzCode on Claude Code supports four explicit model profiles. **`frontier` is the existing default** (Fable plans/specs/reviews, Opus builds). Context-affinity routing is configured separately under `context_efficiency`, so topology/cache experiments never silently change a user's model profile.
 
 The choice is yours and asked exactly once: `/knowzcode:setup` asks during setup, and if no `profile:` is configured, the first `/knowzcode:work` asks and saves your answer to `knowzcode/knowzcode_orchestration.md` — no run ever re-asks. Set `profile: teams` (or `--profile=teams`) any time to opt out of frontier's Fable cost.
 
@@ -8,8 +8,8 @@ The choice is yours and asked exactly once: `/knowzcode:setup` asks during setup
 |---------|-------------|------|----------|
 | `frontier` (default) | Fable plans/specs/reviews every change; Opus executes. The most capable planning, at higher cost; auto-falls back to Opus if Fable is unavailable. | Parallel / Sequential / Subagent (your choice) | Direct Anthropic API (or Claude Platform on AWS) for Fable |
 | `teams` | Opt OUT of frontier's Fable cost — all agents use their frontmatter defaults (mostly Opus). No external dependencies. | Parallel / Sequential / Subagent (your choice) | Any Claude Code version, any provider |
-| `advisor` | Cost-sensitive work where Sonnet + advisor-tool is acceptable quality. ~12% cheaper on coding tasks (per Anthropic benchmarks). | Parallel Teams (forced) | Claude Code v2.1.100+, direct Anthropic API |
-| `classic` | Agent Teams unavailable, or you want deterministic single-threaded execution. | Subagent Delegation (forced) | — |
+| `advisor` | Cost-sensitive work where Sonnet + advisor-tool is acceptable quality. ~12% cheaper on coding tasks (per Anthropic benchmarks). | Adaptive / Sequential / Coordinated (your choice) | Claude Code v2.1.100+, direct Anthropic API |
+| `classic` | You want deterministic execution without conversation inheritance or teammate coordination. | Local / Resume / Fresh named agents | — |
 
 ## How the `frontier` profile works
 
@@ -46,6 +46,18 @@ In `knowzcode/knowzcode_orchestration.md`:
 profile: frontier    # default; or: teams, advisor, classic
 ```
 
+The portable efficiency objective is independent:
+
+```yaml
+context_efficiency:
+  rollout: observe       # off|observe|shadow|canary|on
+  profile: balanced      # quality|balanced|economy|latency
+```
+
+`observe` records actual routing without claiming savings. Promotion to an
+adaptive rollout requires paired cost, latency, quality, rework, and security
+evidence; cached tokens may be billed less while still occupying context.
+
 Or override per-invocation:
 
 ```bash
@@ -62,7 +74,7 @@ Similarly, `profile: frontier` requires Fable, which runs on the direct Anthropi
 
 ## Conflicts
 
-`--profile=advisor` with `--sequential` or `--subagent` is an error: the advisor profile requires Parallel Teams. Remove the conflicting flag, or choose `--profile=teams` if you want sequential/subagent execution.
+Profiles select model/tool policy, not coordination topology. `--profile=advisor` is valid with `--sequential` and `--subagent`; it never enables or requires Agent Teams. The historically named `teams` profile likewise does not enable Teams. Agent Teams requires separate explicit configuration and is selected at runtime only for genuine peer coordination.
 
 ## Roll back
 

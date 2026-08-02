@@ -2,6 +2,21 @@
 
 Gate templates, autonomous mode handling, gap loop mechanics, and progress capture instructions.
 
+## Context-Efficient Progress Capture Policy
+
+Before each gate, phase, or final vault capture, the coordinator MUST invoke the shipped no-write classifier:
+
+`node knowzcode/context_efficiency_runtime.mjs vault-delta`
+
+Send `{input:{delta,previous_deltas?,previous_hashes?,explicit_save?,interruption_sensitive?,severity?}}` on stdin. Apply its result as follows:
+
+- `skip`: do not write or queue the duplicate/empty delta.
+- `amend` or `update`: route one targeted mutation for the existing semantic or supersession identity.
+- `batch`: retain the delta in one coordinator-owned phase journal; do not make an MCP call or append a pending-capture entry yet.
+- `flush`: consolidate the journal and ask the knowledge-liaison for one self-contained `WriterRequest`; the lead dispatches exactly one writer and owns its task state. The request enumerates every logical mutation and binds each to a distinct stable child idempotency key derived from the content-bound parent classification key. If the writer cannot be dispatched at all, the liaison queues each exact mutation once in project-root `knowz-pending.md` with its mutation key. Once dispatch begins, the writer alone owns failure queuing. Announce the degradation and exact keys.
+
+Finalization sets `explicit_save: true` and flushes any remaining batch. HIGH/CRITICAL, correction, deprecation, interruption-sensitive, and explicit-save deltas flush early. This policy replaces unconditional per-gate writes while preserving the durability requirements below.
+
 ## Contents
 
 - [Quality Gate #1: Change Set](#quality-gate-1-change-set)
@@ -24,7 +39,7 @@ Present the Change Set for user approval:
 **Proposed Change Set** ({N} nodes):
 {NodeIDs with descriptions}
 
-**Dependency Map** (Parallel Teams):
+**Dependency Map** (parallel execution; Team mode not required):
 {NodeID parallelism groups}
 
 **Risk Assessment**: {Low/Medium/High}
@@ -46,14 +61,7 @@ If `AUTONOMOUS_MODE = false`: If rejected — re-run analyst with user feedback.
 
 ### Lead Responsibility: Progress Capture (Gate #1) — MUST
 
-After gate approval, the lead MUST trigger progress capture:
-- **If vaults configured + knowledge-liaison active**: DM knowledge-liaison: `"Capture Phase 1A: {wgid}. Your task: #{task-id}"`
-  Include the WorkGroup file's `**KnowledgeId:**` value (if present) so knowledge-liaison can pass it to knowz:writer for update mode.
-  The knowledge-liaison owns extraction, vault routing, and writer dispatch (see `agents/knowledge-liaison.md` — Phase Extraction Guide).
-- **If vaults configured + no knowledge-liaison**: call MCP directly (direct write fallback per `knowzcode_loop.md` Section 7).
-- **If MCP unavailable**: Queue capture to `knowzcode/pending_captures.md` AND announce to user: `**Vault capture skipped — MCP unavailable at Gate #1. Queued to pending_captures.md.**`
-
-Do NOT silently skip this step.
+Classify the Phase 1A delta with the Context-Efficient Progress Capture Policy. Batch normal change-set context; flush only when the classifier requires it. Do not silently discard a required flush.
 
 ---
 
@@ -85,20 +93,19 @@ If `AUTONOMOUS_MODE = false`: If rejected — re-run specs needing revision. If 
 
 **Pre-Implementation Commit:**
 ```bash
-git add knowzcode/
+git status --short
+git diff -- knowzcode/workgroups/{WorkGroupID}.md knowzcode/knowzcode_tracker.md {approved-spec-paths}
+git add -- knowzcode/workgroups/{WorkGroupID}.md knowzcode/knowzcode_tracker.md {approved-spec-paths}
+git diff --cached --check
+git diff --cached --name-only
 git commit -m "KnowzCode: Specs approved for {WorkGroupID}"
 ```
 
+Resolve `{approved-spec-paths}` to an explicit, reviewed list before running these commands. Abort if the staged name list contains anything outside the active WorkGroup, tracker, and approved specs. Never stage the `knowzcode/` directory wholesale.
+
 ### Lead Responsibility: Progress Capture (Gate #2) — MUST
 
-After gate approval, the lead MUST trigger progress capture for spec design decisions:
-- **If vaults configured + knowledge-liaison active**: DM knowledge-liaison: `"Capture Phase 1B: {wgid}. Your task: #{task-id}"`
-  Include the WorkGroup file's `**KnowledgeId:**` value (if present) so knowledge-liaison can pass it to knowz:writer for update mode.
-  The knowledge-liaison MUST capture approved specs, component/system boundaries, integration contracts, diagrams, spec decisions, and applicable enterprise guideline provenance (local file, vault, or KnowledgeId) when present.
-- **If vaults configured + no knowledge-liaison**: call MCP directly (direct write fallback per `knowzcode_loop.md` Section 7).
-- **If MCP unavailable**: Queue capture to `knowzcode/pending_captures.md` AND announce to user: `**Vault capture skipped — MCP unavailable at Gate #2. Queued to pending_captures.md.**`
-
-Do NOT silently skip this step.
+Classify the Phase 1B spec delta with the Context-Efficient Progress Capture Policy. Include approved boundaries, contracts, diagrams, design decisions, and enterprise provenance in the coordinator-owned batch; flush only when required.
 
 ---
 
@@ -108,14 +115,7 @@ When complete, present implementation summary including files changed, tests wri
 
 ### Lead Responsibility: Progress Capture (Phase 2A) — MUST
 
-After Phase 2A completion, the lead MUST trigger progress capture:
-- **If vaults configured + knowledge-liaison active**: DM knowledge-liaison: `"Capture Phase 2A: {wgid}. Your task: #{task-id}"`
-  Include the WorkGroup file's `**KnowledgeId:**` value (if present) so knowledge-liaison can pass it to knowz:writer for update mode.
-  The knowledge-liaison owns extraction, vault routing, and writer dispatch (see `agents/knowledge-liaison.md` — Phase Extraction Guide).
-- **If vaults configured + no knowledge-liaison**: call MCP directly (direct write fallback per `knowzcode_loop.md` Section 7).
-- **If MCP unavailable**: Queue capture to `knowzcode/pending_captures.md` AND announce to user: `**Vault capture skipped — MCP unavailable after Phase 2A. Queued to pending_captures.md.**`
-
-Do NOT silently skip this step.
+Classify the implementation delta with the Context-Efficient Progress Capture Policy. Batch normal file/test/results context and flush risk, corrections, interruptions, or explicit saves.
 
 ---
 
@@ -133,7 +133,7 @@ Present audit results:
 **Smoke Test**: {PASS / FAIL / SKIPPED — reason}
 
 ### Specialist Reports                    [only when SPECIALISTS_ENABLED non-empty]
-**Security Officer**: Findings: {N} | Critical: {N} | High: {N} | {details or [Pending]}
+**Security Officer**: Findings: {N} | Critical: {N} | High: {N} | {completed details, or NOT SELECTED}
 **Architect**: Drift: {Yes/No} | Pattern Violations: {N} | {details}
 **Test Advisor**: TDD Compliance: {%} | Missing Edge Cases: {N} | Quality: {Good/Adequate/Poor} | {details or [Pending]}
 **Project Advisor**: New REFACTOR tasks: {N} | Ideas captured to vault: {N}
@@ -157,6 +157,7 @@ How would you like to proceed?
 > **Advisory visibility**: When `COMPLIANCE_CONFIG.show_advisory_issues: false` (default true), the Enterprise Enforcer report shows blocking-tier violations and counts only — advisory-tier rows and the "Advisory violations" count are omitted across Gates #1–#3. Blocking-tier reporting and `[COMPLIANCE-BLOCK]` are never suppressed.
 
 **Autonomous Mode**: If `AUTONOMOUS_MODE = true`:
+- **Safety check**: If security-officer was selected but its final report is missing or pending → **PAUSE** autonomous mode for this gate. Announce: `> **Autonomous Mode Paused** — selected security review has not completed.`
 - **Safety check**: If any security finding rated HIGH or CRITICAL (from reviewer OR security-officer `[SECURITY-BLOCK]`) → **PAUSE** autonomous mode for this gate. Announce: `> **Autonomous Mode Paused** — HIGH/CRITICAL security finding requires manual review.`
 - **Safety check**: If any `[COMPLIANCE-BLOCK]` tag is present (from enterprise-enforcer) → **PAUSE** autonomous mode for this gate. Announce: `> **Autonomous Mode Paused** — blocking-tier compliance violation requires manual review.`
 - **Safety check**: If `FRONTEND_DESIGNER_BLOCKING_CONFIG = true` AND any `[DESIGN-CONCERN-BLOCK]` tag is present (frontend-designer officer mode) → **PAUSE** autonomous mode for this gate. Announce: `> **Autonomous Mode Paused** — blocking design concern requires manual review.`
@@ -171,19 +172,19 @@ If `AUTONOMOUS_MODE = false`: User decides — proceed / fix gaps / modify specs
 
 ## Gap Loop
 
-### Parallel Teams mode (per-scope, persistent agents — no respawning):
+### Parallel or Coordinated Mode (per-scope, resume-first):
 
-1. Lead reads each reviewer's structured gap report from task summary
-2. Lead creates fix task and pre-assigns:
-   `TaskCreate("Fix gaps: NodeID-X", addBlockedBy: [audit-task-id])` → `TaskUpdate(owner: "builder-N")`
-3. Lead sends DM to builder with task ID and gap details:
+1. Lead reads each reviewer's structured gap report from its bounded result/task summary.
+2. In coordinated-team mode, the lead creates and assigns the fix task:
+   `gap_fix_task_id := TaskCreate({subject: "Fix gaps: NodeID-X", description: "Fix the bounded audit gaps for NodeID-X and rerun affected checks."})`; then `TaskUpdate({taskId: gap_fix_task_id, addBlockedBy: [audit_task_id], owner: "builder-N"})`.
+3. In coordinated-team mode, the lead sends one DM to the builder with task ID and gap details:
    `"**New Task**: #{fix-task-id} — Fix gaps: NodeID-X. {file path, VERIFY criterion, expected vs actual}"`
-4. Builder claims fix task, fixes gaps, re-runs tests, marks fix task complete
-5. Lead creates re-audit task and pre-assigns:
-   `TaskCreate("Re-audit: NodeID-X", addBlockedBy: [gap-fix-task-id])` → `TaskUpdate(owner: "reviewer-N")`
-6. Lead sends DM to reviewer: `"**New Task**: #{reaudit-task-id} — Re-audit: NodeID-X. {gap list}"`
+4. The builder fixes the bounded gaps and re-runs tests. In named-agent mode, the lead resumes the compatible builder with only the gap delta/checkpoint/artifact path and waits for its bounded result; no shared task or peer message is used.
+5. In coordinated-team mode, the lead creates and assigns the re-audit task:
+   `reaudit_task_id := TaskCreate({subject: "Re-audit: NodeID-X", description: "Re-audit only the bounded NodeID-X gap-fix delta."})`; then `TaskUpdate({taskId: reaudit_task_id, addBlockedBy: [gap_fix_task_id], owner: "reviewer-N"})`.
+6. In coordinated-team mode, the lead sends the reviewer the re-audit task. In named-agent mode, it resumes the same independent reviewer with only the audited delta and waits for the bounded result; no task-list or peer message is used.
 7. Each builder-reviewer pair repeats independently until clean — no cross-scope blocking unless dependencies require it
-8. All builders and reviewers stay alive throughout
+8. Keep builder/reviewer handles through the bounded gap-loop lease. Resume with a delta; do not replay full specs or raw logs.
 9. **3-iteration cap per scope**: If a scope exceeds 3 gap-fix iterations without resolution, **PAUSE** autonomous mode for that scope (even if `AUTONOMOUS_MODE = true`). Announce: `> **Autonomous Mode Paused** — Scope {N} failed 3 gap-fix iterations. Manual review required.`
 
 ### Microtask Coverage Rule
@@ -205,24 +206,13 @@ If the smoke-tester reports failures:
 
 Smoke gap loop runs parallel with per-scope reviewer gap loops. Gate #3 waits for both to pass.
 
-### Sequential Teams mode:
+### Sequential or Named-Agent Mode
 
-Spawn a NEW `builder` with the standard Phase 2A prompt plus gap fix context. Then re-run Phase 2B (spawn a new reviewer). Repeat until user approves at Gate #3.
-
-### Subagent mode:
-
-Launch parallel `Task()` calls — one for gap fix (builder), then one for re-audit (reviewer). Repeat as needed.
+Resume the compatible builder with the failing VERIFY IDs, concise evidence, artifact path, checkpoint, and next action. Then resume the same independent reviewer for re-audit of that bounded delta. Start a replacement only when role/scope/spec/checkpoint/model/effort/tools/permissions/sensitivity or transcript availability invalidates lineage; record the reason and use a fresh capsule. Repeat until Gate #3 is clean or the iteration cap pauses the workflow.
 
 ### Lead Responsibility: Progress Capture (Phase 2B) — MUST
 
-After gate approval, the lead MUST trigger progress capture:
-- **If vaults configured + knowledge-liaison active**: DM knowledge-liaison: `"Capture Phase 2B: {wgid}. Your task: #{task-id}"`
-  Include the WorkGroup file's `**KnowledgeId:**` value (if present) so knowledge-liaison can pass it to knowz:writer for update mode.
-  The knowledge-liaison owns extraction, vault routing, and writer dispatch (see `agents/knowledge-liaison.md` — Phase Extraction Guide).
-- **If vaults configured + no knowledge-liaison**: call MCP directly (direct write fallback per `knowzcode_loop.md` Section 7).
-- **If MCP unavailable**: Queue capture to `knowzcode/pending_captures.md` AND announce to user: `**Vault capture skipped — MCP unavailable after Phase 2B. Queued to pending_captures.md.**`
-
-Do NOT silently skip this step.
+Classify the audit/fix delta with the Context-Efficient Progress Capture Policy. Prefer amend/update for a previously recorded finding and batch ordinary clean-review evidence until final consolidation.
 
 ---
 
@@ -243,11 +233,7 @@ This gate is a safety exception: cases 2–3 pause even when `AUTONOMOUS_MODE = 
 
 ### Vault Write — MUST (before reporting completion)
 
-- **If vaults configured + knowledge-liaison active**: The closer DMs knowledge-liaison: `"Capture Phase 3: {wgid}. Your task: #{task-id}"`. Include the WorkGroup and spec files' `**KnowledgeId:**` values if present. The knowledge-liaison dispatches `knowz:writer` for Phase 3 capture. The lead waits for the writer task to complete before shutdown.
-- **If vaults configured + no knowledge-liaison**: The closer calls MCP directly (direct write fallback per `knowzcode_loop.md` Section 7).
-- **If MCP unavailable**: Queue capture to `knowzcode/pending_captures.md` (see `agents/closer.md` MCP Graceful Degradation) AND announce to user: `**Vault capture skipped — MCP unavailable at Phase 3. Queued to pending_captures.md. Run /knowz flush when MCP is available.**`
-
-Do NOT silently skip this step.
+Invoke `vault-delta` with `explicit_save: true`, consolidate all retained deltas, and flush once. With a knowledge liaison, send it one Phase 3 capture containing the consolidated batch, stable identities, content-bound parent idempotency key, and relevant KnowledgeIds; it returns one self-contained `WriterRequest` with an explicit operation and distinct stable child key for every logical mutation, and does not dispatch a child. A classified amend/update missing its exact `KnowledgeId` fails with `MISSING_AMEND_IDENTITY` or `MISSING_UPDATE_IDENTITY` and is never converted to create. The lead dispatches exactly one writer from that request and owns its task state. Without a liaison, the lead dispatches one writer directly with the same packet. Only if the writer could not be dispatched at all may the lead ask the liaison to queue the exact mutations once in project-root `knowz-pending.md`. Once a writer starts, require its `QUEUED_IDEMPOTENCY_KEY` confirmations for any failures and do not queue again. Announce: `**Vault capture skipped — MCP unavailable at Phase 3. Consolidated batch queue status: {confirmed mutation keys | confirmation required}. Run /knowz flush when confirmed.**` Do not silently skip a required final flush.
 
 ### Vault Write Checklist (Tier 3)
 
@@ -255,7 +241,7 @@ Before reporting "Workflow Complete", verify:
 - [ ] WorkGroup file created and updated to "Closed" in `knowzcode/workgroups/`
 - [ ] `knowzcode_tracker.md` updated — all NodeIDs at `[VERIFIED]`
 - [ ] `knowzcode_log.md` ARC-Completion entry written
-- [ ] MCP progress capture attempted (or failure queued to `pending_captures.md` and announced to user)
+- [ ] MCP progress capture attempted (or every failed logical mutation confirmed exactly once in `knowz-pending.md` with its distinct idempotency key and announced to the user)
 - [ ] Specs updated to As-Built / FINAL status
 - [ ] As-built specs, components, diagrams, integration contracts, corrections/deprecations, and enterprise guideline provenance captured or explicitly skipped with reason
 - [ ] Smoke test approach captured (if smoke testing ran): launch method, endpoints tested, test method, project-specific quirks

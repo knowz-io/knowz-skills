@@ -1,6 +1,6 @@
 # Execution Profiles — Model Mappings
 
-**Purpose:** Single source of truth for profile → agent-model mappings. Read by `/knowzcode:work` (Step 2.3, Stage 0-3 spawns) and `/knowzcode:audit` (Step 1.1) at startup.
+**Purpose:** Single source of truth for profile → agent-model mappings. Load only when a workflow will dispatch a profiled agent or must resolve a profile fallback.
 
 Profile resolution order: CLI flag `--profile={advisor|teams|classic|frontier}` wins over `profile:` in `knowzcode/knowzcode_orchestration.md`. If neither is set, default is `frontier`.
 
@@ -10,10 +10,10 @@ Profile resolution order: CLI flag `--profile={advisor|teams|classic|frontier}` 
 
 | Profile | Purpose | Execution Mode | Advisor Required |
 |---------|---------|----------------|------------------|
-| `advisor` | Cost-optimized via advisor tool; near-Opus quality at Sonnet prices | Parallel Teams (forced) | Yes |
-| `teams` | All agents use frontmatter model assignments (mostly Opus). Set this to opt OUT of frontier's Fable cost. | Any (Parallel/Sequential/Subagent) | No |
-| `classic` | Force Subagent Delegation mode; no teams, no advisor | Subagent Delegation (forced) | No |
-| `frontier` (default) | Frontier-grade planning: **Fable** for planning/analysis/spec/review, **Opus** for execution. Higher cost; auto-falls back to Opus if Fable is unavailable. | Any (Parallel/Sequential/Subagent) | No |
+| `advisor` | Cost-optimized via advisor tool; near-Opus quality at Sonnet prices | Any adaptive/sequential/coordinated mode | Yes |
+| `teams` | Use frontmatter model assignments (mostly Opus). The historical name selects model policy, not Team mode. | Any | No |
+| `classic` | Disable conversation inheritance and Team mode; allow compatible named-agent resume | Local/resume/fresh named agents | No |
+| `frontier` (default) | Frontier-grade planning: **Fable** for planning/analysis/spec/review, **Opus** for execution. Higher cost; auto-falls back to Opus if Fable is unavailable. | Any | No |
 
 ---
 
@@ -45,7 +45,7 @@ Profile resolution order: CLI flag `--profile={advisor|teams|classic|frontier}` 
 
 ## MODEL_FOR() Resolution
 
-Apply at every agent spawn site (Stage 0, 1, 2, 3 in Parallel Teams; each spawn in Sequential Teams; each `Task()` in Subagent Delegation):
+Apply at every agent spawn or resume decision in adaptive, sequential, and coordinated execution:
 
 ```
 MODEL_FOR(agent_name, profile, execute_on_fable=false):
@@ -66,9 +66,9 @@ MODEL_FOR(agent_name, profile, execute_on_fable=false):
   RETURN null               # teams / classic → agent frontmatter default
 ```
 
-`execute_on_fable` defaults to `false`; callers that don't pass it (e.g. `/audit`, `/fix`) get the default, and it only affects the `frontier` profile.
+`execute_on_fable` defaults to `false`; callers that don't pass it (e.g. `/knowzcode:audit`, `/knowzcode:fix`) get the default, and it only affects the `frontier` profile.
 
-When `MODEL_FOR` returns non-null, include `model: <value>` in the spawn call (Agent Teams `TeamSpawn` or subagent `Task()`). When it returns `null`, OMIT the `model` parameter entirely so the agent's frontmatter value is used.
+When `MODEL_FOR` returns non-null, include `model: <value>` in the current agent or teammate spawn call. When it returns `null`, omit the parameter so the agent's frontmatter value is used. Keep model and effort stable while resuming one lineage; a change invalidates warmth and requires an explicit fresh dispatch.
 
 > **Never hardcode model names at spawn sites.** Always route through `MODEL_FOR(agent_name, profile, execute_on_fable)` so profile changes affect every spawn consistently.
 
@@ -83,12 +83,18 @@ Two placeholder blocks are resolved at spawn time based on the active profile (s
 
 ---
 
-## Profile → Execution Mode Constraints
+## Profile -> Execution Mode Constraints
 
-- `advisor` → forces **Parallel Teams**. Reject `--sequential` or `--subagent` with an error (see `/knowzcode:work` Step 2.3).
-- `teams` → existing mode selection logic applies. `--sequential` → Sequential Teams; `--subagent` → Subagent Delegation; default → Parallel Teams.
-- `classic` → forces **Subagent Delegation**. Equivalent to `--subagent` today.
-- `frontier` → **no execution-mode constraint.** Works in Parallel / Sequential / Subagent — model routing is orthogonal to orchestration mode.
+- `advisor` -> no coordination constraint. Advisor availability affects model/tool guidance only.
+- `teams` -> no coordination constraint. Despite its legacy name, it does not force Agent Teams.
+- `classic` -> disables Team mode and conversation inheritance; local, compatible resume, and fresh named agents remain available.
+- `frontier` -> no coordination constraint. Model routing is orthogonal to orchestration mode.
+
+Agent Teams is a separate explicit runtime opt-in. No profile enables, recommends, or requires it. Even when configured, select coordinated-team mode only when at least two active peers need shared tasks or direct messaging.
+
+## Advisor Requirements & Graceful Fallback
+
+For `advisor`, fall back to `teams` model policy when `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1`, or when `ANTHROPIC_BASE_URL` is set and is not an Anthropic endpoint. Announce the exact reason. Do not probe by making a paid API call. This fallback changes model/tool policy only; it never changes the selected coordination mode.
 
 ---
 
@@ -106,8 +112,8 @@ Model identifiers use the bare aliases `fable` and `opus` (never pinned versions
 
 ## Related
 
-- `knowzcode/skills/work/SKILL.md` — Steps 1.5 / 2.3 / 2.4 (profile + `--fable-execution` resolution, detection/fallback) and flag handling
-- `knowzcode/skills/work/references/spawn-prompts.md` — `{advisor_guidance}` and `{spec_depth_guidance}` placeholder rules
-- `knowzcode/skills/work/references/parallel-orchestration.md` — spawn-time model-override application
-- `knowzcode/skills/audit/SKILL.md` — audit-side profile handling
+- `${CLAUDE_PLUGIN_ROOT}/skills/work/SKILL.md` — Steps 1.5 / 2.3 / 2.4 (profile + `--fable-execution` resolution, detection/fallback) and flag handling
+- `${CLAUDE_PLUGIN_ROOT}/skills/work/references/spawn-prompts.md` — `{advisor_guidance}` and `{spec_depth_guidance}` placeholder rules
+- `${CLAUDE_PLUGIN_ROOT}/skills/work/references/parallel-orchestration.md` — spawn-time model-override application
+- `${CLAUDE_PLUGIN_ROOT}/skills/audit/SKILL.md` — audit-side profile handling
 - `knowzcode/knowzcode/knowzcode_orchestration.md` — `profile:` and `execute_on_fable:` config

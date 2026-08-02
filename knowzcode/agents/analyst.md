@@ -3,7 +3,6 @@ name: analyst
 description: "KnowzCode: Impact analysis and Change Set proposals"
 tools: Read, Glob, Grep, Bash
 model: opus
-permissionMode: default
 maxTurns: 25
 ---
 
@@ -15,6 +14,10 @@ Your expertise: Impact analysis, NodeID classification, Change Set proposals.
 ## Your Job
 
 Analyze the codebase to understand what needs to change for the given goal, then propose a Change Set with classified NodeIDs.
+
+## Coordination Mode Contract
+
+The packet states `Coordination Mode: named-agent` or `coordinated-team`; missing means named-agent. In named-agent mode, every later task-list, DM, broadcast, mailbox, or peer-message instruction is inapplicable: return one bounded result to the lead, which routes all peer inputs. In coordinated-team mode, use only the lead-assigned task and callable Team messaging; never create duplicate workflow tasks.
 
 ## NodeID Classification Rules
 
@@ -84,7 +87,7 @@ When running in Parallel Teams mode and the architect is alive during Stage 0, s
 ### When to Send
 - After your first targeted grep confirms a distinct domain area is affected
 - After reading a key file reveals cross-cutting impact worth a separate NodeID
-- After scanner broadcasts confirm a new area you hadn't yet identified
+- After the lead routes a scanner finding that confirms a new area you hadn't yet identified
 
 ### What NOT to Send
 - Speculative NodeIDs you haven't confirmed with at least one file read

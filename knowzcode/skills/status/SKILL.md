@@ -53,18 +53,25 @@ Check KnowzCode project status and report findings to the user.
 
    If `knowzcode/` is missing: suggest `/knowzcode:setup` and STOP.
 
-2. **Check Agent Teams Status**
+2. **Check Claude Agent and Context Capabilities**
 
    Check for agent definition files:
-   - Glob for `agents/*.md`
+   - Glob for `${CLAUDE_PLUGIN_ROOT}/agents/*.md`
    - List found agents with their names
+
+   Check project/user settings for Agent Teams configuration without invoking a lifecycle API. If `claude --version` is safely available, report the version and whether it meets the documented conversation-fork minimum; treat plugin-authored fork callability as separately `available|unavailable|unknown`. Never claim a cache hit from version or mode.
+
+   For active WorkGroups, count lineage records by `resumable`, `invalidated`, and `unknown`; do not print provider handles. Flag plugin-agent frontmatter containing unsupported `permissionMode`, `hooks`, or `mcpServers`.
 
    Report:
    ```
-   ## Agent Teams
+   ## Claude Runtime Capabilities
 
    Agent Definitions: {count} found ({comma-separated names})
-   Agent Teams: Verified at runtime — commands attempt TeamCreate and fall back to Subagent Delegation if unavailable
+   Agent Teams: {configured | not configured | unknown}; runtime teammate capability {available | unavailable | unknown}
+   Conversation Fork: version {supported | unsupported | unknown}; agent-callable {available | unavailable | unknown}; fresh capsule fallback always available
+   Named-Agent Lineage: {resumable N | invalidated N | unknown N}
+   Plugin Frontmatter: {supported | unsupported fields found: paths}
    ```
 
 3. **Check Active WorkGroups and Tracker**
@@ -85,20 +92,22 @@ Check KnowzCode project status and report findings to the user.
 
 4. **Check Pending Captures**
 
-   Check if `knowzcode/pending_captures.md` exists and contains pending capture blocks.
+   Count pending `---`-delimited blocks in canonical project-root `knowz-pending.md`. Report blocks with `Queue Status: superseded` separately; they are preserved audit context and `/knowz flush` must not write them. Also check legacy `knowzcode/pending_captures.md`; report its blocks separately as migration-required rather than adding counts blindly, because duplicate idempotency keys may represent the same logical mutation.
 
    Report:
    ```
    ## Pending Captures
 
-   Pending: {count} capture(s) waiting to be flushed
+   Canonical Pending: {count} capture(s) waiting to be flushed
+   Superseded/Quarantined: {count} capture(s) preserved but not replayable
+   Legacy Pending: {count} capture(s) awaiting safe migration
    ```
 
-   If pending captures exist: suggest `/knowz flush` to write them to vaults.
+   If either queue has captures, suggest `/knowz flush`; it migrates legacy blocks into `knowz-pending.md`, deduplicates by `Idempotency Key`, and removes only confirmed successes.
 
 5. **Check Cross-Agent Relay**
 
-   Read the provider-neutral procedures in `knowzcode/skills/work/references/relay-execution.md` and the `relay*` keys in `knowzcode/knowzcode_orchestration.md` if present.
+   Read the provider-neutral procedures in `${CLAUDE_PLUGIN_ROOT}/skills/work/references/relay-execution.md` and the `relay*` keys in `knowzcode/knowzcode_orchestration.md` if present.
 
    **Determine host from the active platform package, not installed binaries:**
 
@@ -124,7 +133,7 @@ Check KnowzCode project status and report findings to the user.
 
    **Resolve target configuration:**
 
-   - Shared: `relay_transport` (default `auto`), `relay_max_fix_rounds` (default `2`), `relay_timeout_minutes` (default `45`)
+   - Shared: `relay_transport` (default `auto`), `relay_max_fix_rounds` (default `2`), `relay_timeout_minutes` (default `90`; interactive time-budget checkpoint, not an unconditional kill)
    - Codex target: `relay_codex_model`, `relay_codex_effort`, `relay_codex_fix_effort`, `relay_codex_sandbox`. For v0.20 compatibility only, fall back respectively to `relay_model`, `relay_effort`, `relay_fix_effort`, and `relay_sandbox` when a provider-qualified key is absent.
    - Claude target: `relay_claude_model`, `relay_claude_effort`, `relay_claude_fix_effort`, `relay_claude_permission_mode`. Never use Codex legacy values as Claude defaults. Flag `bypassPermissions` as unsafe configuration and report that `dontAsk` is the safe default with the protocol's bounded tool allowlist and strict Bash sandbox.
    - If target is Claude and transport is `mcp`, warn that Claude MCP is not an agent relay and `auto` or `exec` is required.

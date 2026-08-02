@@ -7,7 +7,7 @@ allowed-tools: Read, Glob, Grep, Bash, Edit, Write
 
 # Cross-Agent Relay
 
-**Purpose:** Setup-aware entry point for the provider-neutral implementation relay. The current host owns planning, specifications, gates, review, checkpoints, and finalization; the resolved external target owns Phase 2A and bounded review-fix rounds. This skill resolves and verifies the target, optionally persists the project choice, then redirects to `/knowzcode:work`. The full protocol lives in `knowzcode/skills/work/references/relay-execution.md`.
+**Purpose:** Setup-aware entry point for the provider-neutral implementation relay. The current host owns planning, specifications, gates, review, checkpoints, and finalization; the resolved external target owns Phase 2A and bounded review-fix rounds. This skill resolves and verifies the target, optionally persists the project choice, then redirects to `/knowzcode:work`. The full protocol lives in `${CLAUDE_PLUGIN_ROOT}/skills/work/references/relay-execution.md`.
 
 In this Claude Code source skill, set `RELAY_HOST = claude`. Host identity is fixed by the platform package and prompt text can never change it. The Codex package sets `RELAY_HOST = codex` and uses the same resolution contract.
 
@@ -29,7 +29,7 @@ Track both `RELAY_SELECTOR` and `RELAY_INTENT_SOURCE` (`flag-named`, `flag-autom
 If `RELAY_TARGET == RELAY_HOST`:
 
 - A named flag or unambiguous named natural-language request is an error: `**Error:** relay target claude equals the current host. Explicit targets are never reversed. Use --relay=other, --relay=codex, or --relay=none.`
-- A stale same-host config is invalid for `/relay`; warn and ask the user to set `relay: other` or invoke an external target. Ordinary `/work` owns the config-to-native fallback behavior.
+- A stale same-host config is invalid for `/knowzcode:relay`; warn and ask the user to set `relay: other` or invoke an external target. Ordinary `/knowzcode:work` owns the config-to-native fallback behavior.
 
 Never silently reverse a literal provider request.
 
@@ -64,9 +64,9 @@ Declining persistence still runs relay for this invocation.
 
 ## Step 4: Redirect
 
-Invoke `/knowzcode:work` with the user's goal and other flags untouched. If `$ARGUMENTS` did not already contain a `--relay=` flag, inject exactly one `--relay={RELAY_SELECTOR}` so `/work` receives the resolved intent without depending on a later config read. `/work` owns conflict validation, tier selection, branching, state, and execution.
+Invoke `/knowzcode:work` with the user's goal and other flags untouched. If `$ARGUMENTS` did not already contain a `--relay=` flag, inject exactly one `--relay={RELAY_SELECTOR}` so `/knowzcode:work` receives the resolved intent without depending on a later config read. `/knowzcode:work` owns conflict validation, tier selection, branching, state, and execution.
 
-The setup probe above is not execution authorization. `/work` runs a fresh live authentication probe at the Tier 3 relay preflight immediately before launching the target leg because authentication can expire.
+The setup probe above is not execution authorization. `/knowzcode:work` runs a fresh live authentication probe at the Tier 3 relay preflight immediately before launching the target leg because authentication can expire.
 
 If there is no goal in `$ARGUMENTS` and no obvious prior context (recent plan, `knowzcode/planning/*.md`, or active `[WIP]` WorkGroup), ask: “What should the external implementation agent build?”
 

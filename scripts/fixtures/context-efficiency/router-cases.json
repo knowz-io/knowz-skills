@@ -1,0 +1,327 @@
+{
+  "schema": "knowzcode.router-cases/v1",
+  "cases": [
+    {
+      "id": "local-trivial",
+      "input": {
+        "trivial": true
+      },
+      "expected": {
+        "mode": "local",
+        "reason_codes": [
+          "LOCAL_CHEAPER"
+        ]
+      }
+    },
+    {
+      "id": "local-blocking",
+      "input": {
+        "blocking": true
+      },
+      "expected": {
+        "mode": "local",
+        "reason_codes": [
+          "BLOCKING"
+        ]
+      }
+    },
+    {
+      "id": "local-tight-blocking",
+      "input": {
+        "coupling": "tight",
+        "blocking": true
+      },
+      "expected": {
+        "mode": "local",
+        "reason_codes": [
+          "LOCAL_CHEAPER",
+          "BLOCKING"
+        ]
+      }
+    },
+    {
+      "id": "resume-compatible",
+    "input": {
+      "role": "builder",
+      "owned_files": ["src/resume-compatible.mjs"],
+      "lineage": {
+          "compatible": true,
+          "resumable": true,
+          "role": "builder"
+        }
+      },
+      "expected": {
+        "mode": "resume",
+        "reason_codes": [
+          "RESUME_COMPATIBLE"
+        ]
+      }
+    },
+    {
+      "id": "inherit-full",
+      "input": {
+        "inheritance": {
+          "affinity": "high",
+          "safe": true,
+          "within_budget": true,
+          "full_supported": true,
+          "recent_supported": false
+        }
+      },
+      "expected": {
+        "mode": "inherit-full",
+        "reason_codes": [
+          "HIGH_CONTEXT_AFFINITY"
+        ]
+      }
+    },
+    {
+      "id": "inherit-recent",
+      "input": {
+        "inheritance": {
+          "affinity": "high",
+          "safe": true,
+          "within_budget": true,
+          "full_supported": true,
+          "recent_supported": true,
+          "recent_sufficient": true
+        }
+      },
+      "expected": {
+        "mode": "inherit-recent",
+        "reason_codes": [
+          "BOUNDED_RECENT_CONTEXT"
+        ]
+      }
+    },
+    {
+      "id": "fresh-independent",
+      "input": {
+        "capsule_sufficient": true
+      },
+      "expected": {
+        "mode": "fresh-capsule",
+        "reason_codes": [
+          "INDEPENDENT_CAPSULE"
+        ]
+      }
+    },
+    {
+      "id": "fresh-restricted",
+      "input": {
+        "sensitivity": "restricted",
+        "inheritance": {
+          "safe": true
+        }
+      },
+      "expected": {
+        "mode": "fresh-capsule",
+        "reason_codes": [
+          "INDEPENDENT_CAPSULE",
+          "SENSITIVITY_ISOLATION"
+        ]
+      }
+    },
+    {
+      "id": "fresh-reviewer",
+      "input": {
+        "role": "reviewer",
+        "independent_reviewer": true,
+        "lineage": {
+          "compatible": true,
+          "resumable": true,
+          "role": "builder"
+        }
+      },
+      "expected": {
+        "mode": "fresh-capsule",
+        "reason_codes": [
+          "INDEPENDENT_CAPSULE",
+          "REVIEW_INDEPENDENCE"
+        ]
+      }
+    },
+    {
+      "id": "team-required",
+      "input": {
+        "capsule_sufficient": false,
+        "team": {
+          "coordination_required": true,
+          "peers": 2,
+          "provider_supported": true,
+          "within_budget": true,
+          "latency_ratio": 0.7,
+          "scopes": [
+            {
+              "owned_files": [
+                "src/a.js"
+              ]
+            },
+            {
+              "owned_files": [
+                "src/b.js"
+              ]
+            }
+          ]
+        }
+      },
+      "expected": {
+        "mode": "coordinated-team",
+        "reason_codes": [
+          "TEAM_COORDINATION_REQUIRED"
+        ]
+      }
+    },
+    {
+      "id": "team-overlap-fallback",
+      "input": {
+        "capsule_sufficient": false,
+        "team": {
+          "coordination_required": true,
+          "peers": 2,
+          "provider_supported": true,
+          "within_budget": true,
+          "latency_ratio": 0.7,
+          "scopes": [
+            {
+              "owned_files": [
+                "src/a.js"
+              ]
+            },
+            {
+              "owned_files": [
+                "src/a.js"
+              ]
+            }
+          ]
+        }
+      },
+      "expected": {
+        "mode": "fresh-capsule",
+        "reason_codes": [
+          "INDEPENDENT_CAPSULE",
+          "CAPABILITY_FALLBACK"
+        ]
+      }
+    },
+    {
+      "id": "team-capability-fallback",
+      "input": {
+        "capsule_sufficient": false,
+        "team": {
+          "coordination_required": true,
+          "peers": 3,
+          "provider_supported": false,
+          "within_budget": true,
+          "latency_ratio": 0.6,
+          "scopes": []
+        }
+      },
+      "expected": {
+        "mode": "fresh-capsule",
+        "reason_codes": [
+          "INDEPENDENT_CAPSULE",
+          "CAPABILITY_FALLBACK"
+        ]
+      }
+    },
+    {
+      "id": "inherit-capability-fallback",
+      "input": {
+        "inheritance": {
+          "affinity": "high",
+          "safe": true,
+          "within_budget": true,
+          "full_supported": false,
+          "recent_supported": false
+        }
+      },
+      "expected": {
+        "mode": "fresh-capsule",
+        "reason_codes": [
+          "INDEPENDENT_CAPSULE",
+          "CAPABILITY_FALLBACK"
+        ]
+      }
+    },
+    {
+      "id": "recent-unavailable-full-fallback",
+      "input": {
+        "inheritance": {
+          "affinity": "high",
+          "safe": true,
+          "within_budget": true,
+          "full_supported": true,
+          "recent_supported": false,
+          "recent_sufficient": true
+        }
+      },
+      "expected": {
+        "mode": "inherit-full",
+        "reason_codes": [
+          "HIGH_CONTEXT_AFFINITY"
+        ]
+      }
+    },
+    {
+      "id": "incompatible-lineage-fresh",
+    "input": {
+      "role": "builder",
+      "owned_files": ["src/incompatible-lineage.mjs"],
+      "lineage": {
+          "compatible": false,
+          "resumable": true,
+          "role": "builder"
+        },
+        "capsule_sufficient": true
+      },
+      "expected": {
+        "mode": "fresh-capsule",
+        "reason_codes": [
+          "INDEPENDENT_CAPSULE"
+        ]
+      }
+    },
+    {
+      "id": "inherit-nesting-cap-fallback",
+      "input": {
+        "nesting_depth": 2,
+        "max_nesting_depth": 2,
+        "inheritance": {
+          "affinity": "high",
+          "safe": true,
+          "within_budget": true,
+          "full_supported": true
+        }
+      },
+      "expected": {
+        "mode": "local",
+        "reason_codes": [
+          "NESTING_LIMIT"
+        ]
+      }
+    },
+    {
+      "id": "resume-writer-cap-fallback",
+      "input": {
+      "role": "builder",
+      "is_writer": true,
+      "owned_files": ["src/writer-cap.mjs"],
+      "active_inherited_writers": 2,
+        "max_active_inherited": 2,
+        "lineage": {
+          "compatible": true,
+          "resumable": true,
+          "role": "builder"
+        }
+      },
+      "expected": {
+        "mode": "fresh-capsule",
+        "reason_codes": [
+          "INDEPENDENT_CAPSULE",
+          "CAPABILITY_FALLBACK"
+        ]
+      }
+    }
+  ]
+}

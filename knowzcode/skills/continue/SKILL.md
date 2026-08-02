@@ -2,7 +2,7 @@
 name: continue
 description: "Detect continuation intent and resume active WorkGroup workflow or latest KnowzCode handoff. Triggers when user says continue, keep going, resume, resume handoff, or similar continuation intent"
 user-invocable: false
-allowed-tools: Read, Glob, Grep, Task
+allowed-tools: Read, Glob, Grep, Agent
 ---
 
 # Continue Skill
@@ -42,7 +42,7 @@ When triggered:
 
 ### Step 0: Check Local Handoffs
 
-Check `knowzcode/handoffs/*.md` before choosing a resume target.
+List `knowzcode/handoffs/*.md` metadata before choosing a resume target; read only the explicitly selected or newest candidate.
 
 - If the user supplied a handoff path or slug, load that handoff.
 - If no explicit path was supplied, find the newest handoff by filename timestamp.
@@ -53,7 +53,7 @@ Handoffs are local operational state. Do not search Knowz vaults for workflow ha
 
 ### Step 1: Find Active WorkGroup
 
-Search `knowzcode/knowzcode_tracker.md` for `[WIP]` entries.
+Use a targeted search of `knowzcode/knowzcode_tracker.md` for `[WIP]` entries; do not load unrelated completed tracker history.
 
 - **One active WorkGroup**: Use it automatically
 - **Multiple active**: Present options to user
@@ -68,7 +68,7 @@ Read `knowzcode/workgroups/{WorkGroupID}.md` to determine:
 - Change Set
 - Outstanding todos
 - **Autonomous Mode**: If the WorkGroup file contains `**Autonomous Mode**: Active`, restore `AUTONOMOUS_MODE = true` and announce: `> **Autonomous Mode: RESTORED** — continuing with auto-approved gates.`
-- **Orchestration Config**: If `knowzcode/knowzcode_orchestration.md` exists, parse and restore `MAX_BUILDERS`, `BUILDER_NODE_LIMIT`, `MCP_AGENTS_ENABLED`, `DEFAULT_SPECIALISTS`, and all `relay*` values (same logic as work.md configuration parsing). Defaults apply if the file is absent. Relay state records the already-resolved host and target; configuration must not re-resolve or change them during continuation.
+- **Orchestration Config**: Search only keys needed by the remaining phase. Restore builder caps for unfinished implementation, MCP/TTL only for a pending context/capture action, specialists only when an outstanding task names them, and `context_efficiency` caps/lease/result settings when lineage is present. Read `relay*` values only when the WorkGroup has a `## Relay` section. Defaults apply when a needed key is absent. Relay state records the already-resolved host and target; configuration must not re-resolve or change them during continuation.
 
 If a handoff was selected in Step 0, also parse:
 - `## Goal`
@@ -84,7 +84,7 @@ Use the handoff as the freshest local state. Do not run `cmd:` references automa
 If the WorkGroup file contains a `## Relay` section, read both:
 
 - `knowzcode/workgroups/{wgid}-relay/state.md` — authoritative state
-- `knowzcode/skills/work/references/relay-execution.md` — provider-neutral state machine and target adapters
+- `${CLAUDE_PLUGIN_ROOT}/skills/work/references/relay-execution.md` — provider-neutral state machine and target adapters
 
 Resume the recorded relay instead of entering native Phase 2A. Do not infer a new target from the current prompt or current project configuration: the state file's host/target pair is fixed for the WorkGroup.
 
@@ -140,19 +140,21 @@ Use ` (legacy schema 1)` as the marker when the compatibility mapping is active.
 
 ### Step 3: Resume at Current Phase
 
-Read `knowzcode/knowzcode_loop.md` and resume the workflow at the detected phase.
+Read only Sections 1-2 plus the detected phase/gate subsection of `knowzcode/knowzcode_loop.md`; load failure, abandonment, or finalization sections only when that path is active. Then resume at the detected phase. Do not reload completed phase guidance.
 
 #### Parallel Mode Detection
 
 If the WorkGroup file contains a `## Current Stage` section (instead of `Current Phase`):
 - This is a **parallel-mode WorkGroup**
 - Read the per-NodeID phase table to determine what's in progress
-- Resume by recreating the team and spawning agents appropriate for the current stage:
-  - **Stage 0/1**: Spawn analyst + architect. If context is stale, spawn knowledge-liaison to refresh local + vault context.
-  - **Stage 2**: Spawn builder(s) per the dependency map + reviewer if any NodeIDs are past implementation
-  - **Stage 3**: Spawn closer
-- Builders and reviewer persist through gap loops (don't respawn per iteration)
-- Announce: `**Resuming Parallel Teams** — Stage {N}: {description}`
+- Restore any `knowzcode.agent-lineage/v1` records and validate role, scope, spec, checkpoint, model/effort, tools, permissions, sensitivity, lease, and transcript availability before dispatch.
+- Resume a compatible named agent by its recorded handle with a bounded delta. Record an invalidation reason and use the durable capsule when any field is incompatible or the transcript is unavailable.
+- Resume only agents appropriate for the current stage:
+  - **Stage 0/1**: analyst and architect only when their remaining scopes require them; knowledge-liaison only for a material stale context gap.
+  - **Stage 2**: builders for ready unfinished scopes; a reviewer only after its implementation checkpoint, always independent from builder lineage.
+  - **Stage 3**: closer only.
+- Builder and reviewer handles persist through compatible gap loops; do not respawn per iteration.
+- Announce: `**Resuming Parallel Work** — Stage {N}: {description}`
 
 If resuming mid-Stage-2 (e.g., builder was implementing, reviewer had started auditing):
 - Read the per-NodeID status table to determine which NodeIDs need builders and which need reviewer
@@ -172,9 +174,9 @@ If the WorkGroup file contains `Current Phase:` (standard format):
 | 2B | Audit + finalization |
 | 3 | Finalization only |
 
-**Set up execution mode** — check `~/.claude/settings.json` and `.claude/settings.json` for `"CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"` in the `env` block. If found, Agent Teams is available — create a team named `kc-{wgid}` and activate delegate mode (you coordinate only, never write code directly). Read `knowzcode/claude_code_execution.md` for team conventions. For each remaining phase, spawn one teammate with the spawn prompt from the corresponding phase section of `/knowzcode:work`, create a task, wait for completion, present quality gate, shut down teammate. Shut down all teammates when done or on cancel.
+**Set up execution mode** — use the same `local -> resume -> inherited -> fresh capsule -> coordinated team` router as `/knowzcode:work`. Sequential continuation normally resumes compatible named agents one phase at a time. A skill with `context: fork` is not conversation inheritance.
 
-If Agent Teams is not available, announce `**Execution Mode: Subagent Delegation** — Agent Teams not available (add "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1" to the env block in settings.json, then restart Claude Code)` and use `Task()` calls to delegate each remaining phase to the named agent.
+Reconstruct a coordinated team only when the remaining work still has at least two active peers that require a shared task graph or direct messaging and Agent Teams is configured/callable. Before the first teammate spawn, require that the user requested teammates/Team mode for this continuation or obtain current-run confirmation; a prior Team and environment configuration are not approval for a new session. The first teammate spawn forms a new session-derived team; prior in-process teammates and their team identity are not resumable. If teammate spawning is unavailable, record `CAPABILITY_FALLBACK` and use named agents without reducing TDD, quality gates, capture, security, or compliance. Request graceful teammate shutdown when done; runtime cleanup is automatic.
 
 Follow the same phase delegation patterns (spawn prompts, quality gates, gap loop) as `/knowzcode:work`.
 
