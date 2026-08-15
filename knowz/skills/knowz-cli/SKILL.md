@@ -1,6 +1,8 @@
 ---
 name: knowz-cli
 description: "Use the knowz CLI (not the MCP server) for knowledge operations — search, ask, create/list/get/amend knowledge, comments and versions, vaults, live chat, file attachment, local code indexing/chunking/graph, agent memory capture/recall, ingestion, sync, backup/restore, Model-3 CMEK, and the portable self-hosted platform. Use this whenever you'd otherwise reach for the knowz MCP tools (mcp__knowz__*), when the MCP server is unauthenticated/unavailable, or for any local-first (offline) knowledge work."
+user-invocable: true
+allowed-tools: Bash, Read, Glob, Grep
 ---
 
 # knowz CLI (MCP-free knowledge operations)
