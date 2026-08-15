@@ -13,7 +13,8 @@ knowz-skill/
 |  |  `- references/
 |  |     |- registration.md    # Registration API details
 |  |     `- mcp-setup.md       # MCP server config details
-|  `- knowz-auto/SKILL.md      # Trigger: auto-activates on vault-relevant conversations
+|  |- knowz-auto/SKILL.md      # Trigger: auto-activates on vault-relevant conversations
+|  `- knowz-cli/SKILL.md       # GENERATED — see "Regenerating knowz-cli" below; do not hand-edit
 |- agents/
 |  |- knowledge-worker.md      # Agent for user-dispatched multi-step research/capture
 |  |- writer.md                # Generic vault write executor (dispatched by other plugins)
@@ -48,6 +49,7 @@ knowz-skill/
 - **`skills/knowz/references/registration.md`** - Registration API endpoints, error codes, response format.
 - **`skills/knowz/references/mcp-setup.md`** - MCP server configuration: `claude mcp add` format, OAuth vs API key, scope options.
 - **`skills/knowz-auto/SKILL.md`** - The trigger skill. Lightweight - reads the vault file, matches rules, does a quick search, or offers to save.
+- **`skills/knowz-cli/SKILL.md`** - GENERATED. Routes knowledge work through the `knowz` CLI instead of MCP. See "Regenerating knowz-cli" below.
 - **`agents/knowledge-worker.md`** - Dispatched for complex user-initiated multi-step operations.
 - **`agents/writer.md`** - Generic vault write executor. Dispatched by other plugins (for example, KnowzCode at quality gates) with self-contained extraction prompts.
 - **`agents/reader.md`** - Generic vault query agent. Dispatched by other plugins for vault research with self-contained query prompts.
@@ -77,6 +79,25 @@ When the knowz plugin is used alongside the KnowzCode plugin (`knowzcode`):
 - The `description` field is critical - it determines when Claude auto-triggers the skill.
 - Keep `knowz-auto` lightweight - it should never do multi-step research.
 - Keep `knowz` comprehensive - it is the workhorse.
+- Do not hand-edit `skills/knowz-cli/SKILL.md` - it is generated and will be overwritten.
+
+## Regenerating knowz-cli
+
+`skills/knowz-cli/SKILL.md` is generated from the CLI's own oclif manifest in the `knowz-platform`
+repo, so its command inventory can never drift from the commands that actually ship. Prose lives in
+`cli/packages/cli/scripts/skill-template.md` there; only the inventory below the
+`BEGIN GENERATED COMMANDS` marker is injected.
+
+From a `knowz-platform` checkout:
+
+```bash
+cd cli
+pnpm build                                    # refreshes oclif.manifest.json
+node packages/cli/scripts/gen-skill.mjs --out <knowz-skills>/knowz/skills/knowz-cli/SKILL.md
+node packages/cli/scripts/gen-skill.mjs --check   # non-zero if the committed copy is stale
+```
+
+Edit the template, not the output. Adding a CLI command needs no edit here at all.
 
 ## MCP Tools Available
 
