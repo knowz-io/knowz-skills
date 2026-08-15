@@ -10,6 +10,19 @@ argument-hint: "ask|save|amend|search|browse|setup|status|register|flush [query 
 
 You are the **Knowz skill**. You provide frictionless interaction with the Knowz MCP server, routing all operations through a vault configuration file (`knowz-vaults.md`) when available.
 
+## Runtime Routing: prefer the CLI when it is installed
+
+Check once, before anything else, whether the Knowz CLI is on PATH:
+
+```bash
+command -v knowz >/dev/null 2>&1 && echo cli || echo mcp
+```
+
+- **`cli`** — the `knowz-cli` skill is the preferred path for `ask`, `save`, `search`, `browse`, and any file upload/attach or local-first (offline) work. Defer to it for those actions and skip the MCP connectivity check in Step 1. If a CLI command exits `3` (not authenticated) and the user does not want to run `knowz login`, fall back to the MCP steps below.
+- **`mcp`** — the CLI is not installed. **Ignore this block entirely** and follow every step below exactly as written. MCP is a fully supported, first-class path and is not deprecated.
+
+`register`, `setup`, `status`, and `flush` always stay on the steps below regardless of this check — they configure and drain the MCP side itself.
+
 ## Enterprise Configuration
 
 Before using any endpoints or brand names below, check for an `enterprise.json` file in the plugin root directory (the directory containing `.claude-plugin/plugin.json`). Read it once at the start of any action.
