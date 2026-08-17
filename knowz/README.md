@@ -89,6 +89,21 @@ The Knowz MCP server works with any AI model and any MCP-compatible agent. This 
 | `knowz` | `/knowz <action>` | Yes | Search, save, query, amend, and manage durable knowledge in Knowz vaults. Handles ask, save, amend, search, browse, setup, status, register, and flush. |
 | `knowz-auto` | Automatic | No | Auto-detects vault-relevant conversations — silently searches vaults on knowledge questions, and offers to save or amend insights without an explicit command. |
 | `knowz-cli` | Automatic | No | Drives the `knowz` CLI (`npm i -g @knowzai/cli`) instead of the MCP server — knowledge, vaults, search, chat, local code indexing, agent memory, sync, backup, and the portable platform. Generated from the CLI's own command manifest. |
+| `knowz-api` | Automatic or `$knowz-api` | Yes | Guided private-key setup plus guarded REST access for live OpenAPI discovery and advanced tenant-scoped workflows such as chunked uploads, file reprocessing, and single-item reindexing. |
+
+## Power-user API access
+
+Use `knowz-api` when a client operation is not available through MCP or the `knowz` CLI. It loads
+the current Swagger document on demand, resolves detailed request/response schemas, and exposes a
+reviewed tenant-scoped client surface. Destructive, administrative, authentication, billing,
+control-plane, public-upload, bulk rebuild, and other high-risk operations stay hidden and blocked.
+
+Start with `$knowz-api` or run its `setup --json-output` helper. Setup discovers Swagger, validates
+the key without printing it, and gives exact next steps. It can reuse `KNOWZ_API_KEY`, API keys
+already configured for supported MCP clients, and—on macOS—the active `knowz` CLI OS-keychain
+profile. MCP OAuth sessions and encrypted CLI fallback files are deliberately not exported or
+decrypted. The private key is never accepted as a command argument. Set `KNOWZ_API_URL` and
+`KNOWZ_OPENAPI_SPEC` for development, enterprise, or self-hosted environments.
 
 ---
 

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Knowz API"
+  short_description: "Guided setup and safe power-user Knowz API access"
+  default_prompt: "Use $knowz-api to verify guided private-key setup, then discover and run the safe Knowz API operation for this advanced task."

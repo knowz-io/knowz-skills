@@ -342,6 +342,17 @@ expect(
 validateSkillDirectory('plugins', 'knowz', 'skills');
 validateSkillDirectory('plugins', 'knowzcode', 'skills');
 
+const canonicalKnowzApiSkill = join(ROOT, 'knowz', 'skills', 'knowz-api');
+const pluginKnowzApiSkill = join(ROOT, 'plugins', 'knowz', 'skills', 'knowz-api');
+expect(existsSync(canonicalKnowzApiSkill), `Missing canonical Knowz API skill: ${canonicalKnowzApiSkill}`);
+expect(existsSync(pluginKnowzApiSkill), `Missing Codex Knowz API skill: ${pluginKnowzApiSkill}`);
+if (existsSync(canonicalKnowzApiSkill) && existsSync(pluginKnowzApiSkill)) {
+  expect(
+    stableJson(snapshotDirectory(canonicalKnowzApiSkill)) === stableJson(snapshotDirectory(pluginKnowzApiSkill)),
+    'Codex knowz-api skill drifted from the canonical packaged skill'
+  );
+}
+
 // A skill's slash-command id comes from its DIRECTORY name; the frontmatter `name:` is only the
 // picker label. A mismatch splits the two (autocomplete shows one command, Enter runs another) —
 // this happened when skills/setup/ was half-renamed to init/ while frontmatter kept `name: setup`.
@@ -2411,6 +2422,12 @@ const exactCollisionCases = [
     content: '# user-owned exact Knowz Codex skill\n',
   },
   {
+    label: 'Codex portable API skill',
+    platforms: 'codex',
+    relativePath: ['.agents', 'skills', 'knowz-api', 'SKILL.md'],
+    content: '# user-owned exact Knowz API skill\n',
+  },
+  {
     label: 'Gemini command',
     platforms: 'gemini',
     relativePath: ['.gemini', 'commands', 'knowz', 'ask.toml'],
@@ -2721,6 +2738,25 @@ try {
   expect(installedManifest.schema === 'knowz.codex-skill-ownership/v1', 'Knowz Codex ownership manifest must use the expected schema');
   expect(installedManifest.owner === 'knowz', 'Knowz Codex ownership manifest must identify Knowz as owner');
   expect(Array.isArray(installedManifest.entries) && installedManifest.entries.length > 0, 'Knowz Codex ownership manifest must enumerate owned skills');
+  expect(installedManifest.entries.includes('knowz-api'), 'Knowz Codex ownership manifest must include the portable knowz-api skill');
+  expect(
+    existsSync(join(skillRoot, 'knowz-api', 'scripts', 'knowz_api.py'))
+      && existsSync(join(skillRoot, 'knowz-api', 'references', 'common-operations.md'))
+      && existsSync(join(skillRoot, 'knowz-api', 'references', 'safety-policy.md')),
+    'Knowz Codex install must copy the complete portable knowz-api skill resources'
+  );
+  const installedApiClient = readFileSync(join(skillRoot, 'knowz-api', 'scripts', 'knowz_api.py'), 'utf8');
+  expect(
+    installedApiClient.includes('add_parser("setup"')
+      && installedApiClient.includes('add_parser("auth-check"')
+      && installedApiClient.includes('--credential-source')
+      && installedApiClient.includes('find-generic-password'),
+    'Knowz Codex install must preserve guided API setup and reviewed credential discovery'
+  );
+  expect(
+    !installedApiClient.includes('add_argument("--key"'),
+    'Knowz API setup must not accept a literal private key argument'
+  );
   expect(existsSync(geminiManifestPath), 'Knowz Gemini install must write command ownership metadata');
   const installedGeminiManifest = JSON.parse(readFileSync(geminiManifestPath, 'utf8'));
   expect(installedGeminiManifest.schema === 'knowz.gemini-command-ownership/v1', 'Knowz Gemini ownership manifest must use the expected schema');

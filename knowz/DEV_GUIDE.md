@@ -14,7 +14,8 @@ knowz-skill/
 |  |     |- registration.md    # Registration API details
 |  |     `- mcp-setup.md       # MCP server config details
 |  |- knowz-auto/SKILL.md      # Trigger: auto-activates on vault-relevant conversations
-|  `- knowz-cli/SKILL.md       # GENERATED — see "Regenerating knowz-cli" below; do not hand-edit
+|  |- knowz-cli/SKILL.md       # GENERATED — see "Regenerating knowz-cli" below; do not hand-edit
+|  `- knowz-api/               # Guarded REST/OpenAPI power-user skill + client script/references
 |- agents/
 |  |- knowledge-worker.md      # Agent for user-dispatched multi-step research/capture
 |  |- writer.md                # Generic vault write executor (dispatched by other plugins)
@@ -30,6 +31,9 @@ knowz-skill/
 
 1. The `/knowz` skill is the primary interface - handles ask, save, amend, search, browse, setup, status, register, and flush.
 2. The `knowz-auto` trigger skill auto-activates when users ask vault-relevant questions or share insights.
+2b. The `knowz-api` skill handles guided private-key setup, explicit REST requests, and advanced
+    client operations absent from MCP/CLI. It safely reuses reviewed MCP credential sources and the
+    supported CLI OS-keychain path, discovers the live contract on demand, and enforces a safe surface.
 3. The `knowledge-worker` agent handles complex user-dispatched multi-step research tasks.
 3b. The `writer` agent is a generic vault write executor dispatched by other plugins (for example, KnowzCode at quality gates).
 3c. The `reader` agent is a generic vault query agent dispatched by other plugins for vault research.
@@ -50,6 +54,9 @@ knowz-skill/
 - **`skills/knowz/references/mcp-setup.md`** - MCP server configuration: `claude mcp add` format, OAuth vs API key, scope options.
 - **`skills/knowz-auto/SKILL.md`** - The trigger skill. Lightweight - reads the vault file, matches rules, does a quick search, or offers to save.
 - **`skills/knowz-cli/SKILL.md`** - GENERATED. Routes knowledge work through the `knowz` CLI instead of MCP. See "Regenerating knowz-cli" below.
+- **`skills/knowz-api/`** - Canonical portable API skill. Its Python client, guided credential
+  discovery, common-operation reference, and safety policy are copied intact to Codex/Gemini
+  installs and mirrored in `plugins/knowz/skills/knowz-api/`.
 - **`agents/knowledge-worker.md`** - Dispatched for complex user-initiated multi-step operations.
 - **`agents/writer.md`** - Generic vault write executor. Dispatched by other plugins (for example, KnowzCode at quality gates) with self-contained extraction prompts.
 - **`agents/reader.md`** - Generic vault query agent. Dispatched by other plugins for vault research with self-contained query prompts.
@@ -80,6 +87,24 @@ When the knowz plugin is used alongside the KnowzCode plugin (`knowzcode`):
 - Keep `knowz-auto` lightweight - it should never do multi-step research.
 - Keep `knowz` comprehensive - it is the workhorse.
 - Do not hand-edit `skills/knowz-cli/SKILL.md` - it is generated and will be overwritten.
+- Keep `skills/knowz-api/` and `plugins/knowz/skills/knowz-api/` byte-identical. The platform
+  validator rejects drift. Update the canonical packaged copy first.
+- Keep API operations deny-by-default: add a tenant-scoped path family only after reviewing every
+  operation below it, and add explicit blocks for destructive, bulk, configuration, or cross-tenant
+  siblings before widening the allowlist.
+
+### Planned CLI-native API bridge
+
+The portable Python client is the current cross-agent implementation. When direct API support moves
+into `@knowzai/cli`, implement `knowz api setup|status|discover|describe|request|upload|reprocess|reindex`
+inside the CLI and reuse `createAuthState()` so OS-keychain and encrypted-file profiles work on every
+supported platform. Keep the same reviewed policy and `--execute` mutation gate, then make this skill
+prefer that command surface when `knowz api status --json` reports a compatible capability version.
+
+Do not add `knowz auth print`, a credential-export flag, or an arbitrary credential-producing command.
+The CLI should make the HTTP request while it owns the credential; only redacted results and source
+metadata cross the process boundary. Retain the Python fallback for installations without the newer
+CLI and for API-key MCP configurations.
 
 ## Regenerating knowz-cli
 

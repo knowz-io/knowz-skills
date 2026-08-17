@@ -40,6 +40,10 @@ const GEMINI_MCP_MANIFEST = '.knowz-mcp-managed.json';
 const GEMINI_MCP_MANIFEST_SCHEMA = 'knowz.gemini-mcp-ownership/v1';
 const KNOWZCODE_GEMINI_MCP_MANIFEST = '.knowzcode-mcp-managed.json';
 const KNOWZCODE_GEMINI_MCP_MANIFEST_SCHEMA = 'knowzcode.gemini-mcp-ownership/v1';
+// These skills contain scripts/references that cannot be represented by the single-file
+// platform_adapters.md format. Ship their complete package directories to the shared Codex/Gemini
+// skill root alongside the generated lightweight MCP skills.
+const PORTABLE_CODEX_SKILLS = Object.freeze(['knowz-api']);
 const LEGACY_CLAUDE_SKILL_HEADINGS = Object.freeze({
   knowz: '# Knowz — Frictionless Knowledge Management',
   'knowz-auto': '# Knowz Auto - Frictionless Vault Awareness',
@@ -211,6 +215,15 @@ function listRelativeFiles(root, prefix = '') {
     else if (entry.isFile()) files.push(relativePath);
   }
   return files;
+}
+
+function packagedCodexSkillEntries(codexTemplateSet) {
+  const generated = [...codexTemplateSet.files.keys()]
+    .map((relativePath) => relativePath.match(/^\.agents\/skills\/(knowz-[^/]+)\//)?.[1])
+    .filter(Boolean);
+  const portable = PORTABLE_CODEX_SKILLS.filter((entry) =>
+    existsSync(join(PKG_ROOT, 'skills', entry, 'SKILL.md')));
+  return [...new Set([...generated, ...portable])].sort();
 }
 
 function packagedClaudeComponents() {
@@ -529,9 +542,7 @@ function preflightInstallation(dir, selectedPlatforms, opts, templates) {
     assertSafeDestination(base, skillRoot, 'Codex/Gemini shared skill root', 'directory');
     const manifest = readCodexSkillManifest(skillRoot, { strict: true });
     assertSafeDestination(base, manifest.manifestPath, 'Codex skill ownership manifest', 'file');
-    const entries = [...new Set([...codexTemplateSet.files.keys()]
-      .map((path) => path.match(/^\.agents\/skills\/(knowz-[^/]+)\//)?.[1])
-      .filter(Boolean))];
+    const entries = packagedCodexSkillEntries(codexTemplateSet);
     for (const entry of entries) {
       const target = join(skillRoot, entry);
       assertSafeDestination(base, target, `Codex skill ${entry}`, 'directory');
@@ -543,6 +554,14 @@ function preflightInstallation(dir, selectedPlatforms, opts, templates) {
     for (const relativePath of codexTemplateSet.files.keys()) {
       assertSafeDestination(base, join(base, relativePath),
         `Codex generated file ${relativePath}`, 'file');
+    }
+    for (const entry of PORTABLE_CODEX_SKILLS) {
+      if (!entries.includes(entry)) continue;
+      const target = join(skillRoot, entry);
+      for (const relativePath of listRelativeFiles(join(PKG_ROOT, 'skills', entry))) {
+        assertSafeDestination(base, join(target, relativePath),
+          `Portable Codex skill ${entry} file ${relativePath}`, 'file');
+      }
     }
   }
 
@@ -1222,9 +1241,7 @@ function installCodexGemini(dir, selectedPlatforms, opts, templates) {
   // Skills always go to .agents/skills/ — shared by both Codex and Gemini
   const codexTemplateSet = templates.get('codex');
   if (codexTemplateSet) {
-    const currentEntries = [...new Set([...codexTemplateSet.files.keys()]
-      .map((relativePath) => relativePath.match(/^\.agents\/skills\/(knowz-[^/]+)\//)?.[1])
-      .filter(Boolean))].sort();
+    const currentEntries = packagedCodexSkillEntries(codexTemplateSet);
     // Replace only exact manifest-owned (or exact generated-legacy) skill
     // directories, keeping all unrelated shared .agents/skills entries intact.
     prepareManagedCodexSkillsForCopy(join(installBase, '.agents', 'skills'), currentEntries);
@@ -1235,8 +1252,19 @@ function installCodexGemini(dir, selectedPlatforms, opts, templates) {
       writeFileSync(filePath, injectVersion(content));
       installedFiles.push(filePath);
     }
+    let portableFileCount = 0;
+    for (const entry of PORTABLE_CODEX_SKILLS) {
+      if (!currentEntries.includes(entry)) continue;
+      const source = join(PKG_ROOT, 'skills', entry);
+      const target = join(installBase, '.agents', 'skills', entry);
+      copyDirContents(source, target);
+      for (const relativePath of listRelativeFiles(source)) {
+        installedFiles.push(join(target, relativePath));
+        portableFileCount++;
+      }
+    }
     reconcileManagedCodexSkills(join(installBase, '.agents', 'skills'), currentEntries);
-    log.ok(`Skills: ${codexTemplateSet.files.size} file(s) installed to .agents/skills/`);
+    log.ok(`Skills: ${codexTemplateSet.files.size + portableFileCount} file(s) installed to .agents/skills/`);
   }
 
   // Gemini TOML commands go to .gemini/commands/knowz/

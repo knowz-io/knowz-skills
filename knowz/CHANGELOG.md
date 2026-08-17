@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- A portable `knowz-api` power-user skill with on-demand OpenAPI discovery, recursively resolved
+  request/response schemas, guarded generic requests, server-sized chunked uploads, single-file
+  reprocessing, and single-item reindexing. Its default-deny policy withholds destructive,
+  administrative, authentication, billing, control-plane, public, streaming, and bulk operations.
+- Guided `knowz-api setup` and `auth-check` flows that verify access without revealing credentials,
+  reuse API keys already available through supported MCP configuration, and reuse the active Knowz
+  CLI macOS keychain profile when permitted by the OS. OAuth and encrypted-file credentials remain
+  non-exportable and produce explicit safe fallback guidance.
+
 ## [0.10.0] - 2026-08-14
 
 ### Added
