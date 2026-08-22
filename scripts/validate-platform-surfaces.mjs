@@ -489,10 +489,16 @@ const requiredClaudeResourceCoverage = [
 expect(claudePluginResourceReferences.size > 0, 'Claude package must declare its required plugin resources with ${CLAUDE_PLUGIN_ROOT}');
 let packedKnowzCodeFiles = new Set();
 try {
+  // On Windows `npm` is npm.cmd, which execFileSync cannot spawn without a
+  // shell. Prefer npm's JS entry point (exposed by npm run as npm_execpath).
+  const npmCli = process.env.npm_execpath;
+  const [npmCommand, npmArgs, npmShell] = npmCli && /\.(c|m)?js$/i.test(npmCli)
+    ? [process.execPath, [npmCli], false]
+    : ['npm', [], process.platform === 'win32'];
   const packResult = JSON.parse(execFileSync(
-    'npm',
-    ['pack', '--dry-run', '--json', '--ignore-scripts'],
-    { cwd: join(ROOT, 'knowzcode'), encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }
+    npmCommand,
+    [...npmArgs, 'pack', '--dry-run', '--json', '--ignore-scripts'],
+    { cwd: join(ROOT, 'knowzcode'), encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], shell: npmShell }
   ));
   packedKnowzCodeFiles = new Set(packResult?.[0]?.files?.map((entry) => entry.path) ?? []);
   expect(packedKnowzCodeFiles.size > 0, 'npm pack dry-run must enumerate the KnowzCode package payload');

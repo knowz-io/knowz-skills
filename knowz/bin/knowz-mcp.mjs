@@ -411,7 +411,8 @@ function isLegacyManagedCodexSkill(path) {
 }
 
 function isLegacyManagedGeminiCommand(path, entry) {
-  return safeText(path).startsWith(`# .gemini/commands/knowz/${entry}\n`);
+  // Tolerate CRLF: earlier releases installed commands with CRLF on Windows.
+  return safeText(path).replace(/\r\n/g, '\n').startsWith(`# .gemini/commands/knowz/${entry}\n`);
 }
 
 function readClaudeOwnershipForUninstall(claudeDir) {
@@ -669,7 +670,9 @@ function parseAdapterTemplates() {
     return new Map();
   }
 
-  const content = readFileSync(adaptersPath, 'utf8');
+  // Normalize CRLF so generated files are byte-identical across checkouts
+  // (core.autocrlf on Windows would otherwise ship CRLF via npm pack).
+  const content = readFileSync(adaptersPath, 'utf8').replace(/\r\n/g, '\n');
   const templates = new Map();
 
   for (const [id, platform] of Object.entries(PLATFORMS)) {

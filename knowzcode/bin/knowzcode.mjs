@@ -996,7 +996,9 @@ function parseAdapterTemplates() {
     return new Map();
   }
 
-  const content = readFileSync(adaptersPath, 'utf8');
+  // Normalize CRLF so generated files are byte-identical across checkouts
+  // (core.autocrlf on Windows would otherwise ship CRLF via npm pack).
+  const content = readFileSync(adaptersPath, 'utf8').replace(/\r\n/g, '\n');
   const templates = new Map();
 
   for (const [id, platform] of Object.entries(PLATFORMS)) {
@@ -1726,7 +1728,8 @@ function hasKnowzGeminiInstallation(settingsPath) {
       && manifest.owner === 'knowz'
       && Array.isArray(manifest.entries)
       && manifest.entries.includes('ask.toml')
-      && readFileSync(commandPath, 'utf8').startsWith('# .gemini/commands/knowz/ask.toml\n');
+      // Tolerate CRLF: earlier Knowz releases installed commands with CRLF on Windows.
+      && readFileSync(commandPath, 'utf8').replace(/\r\n/g, '\n').startsWith('# .gemini/commands/knowz/ask.toml\n');
   } catch {
     return false;
   }
