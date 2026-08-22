@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.1] - 2026-08-21
+
+### Fixed
+
+- Generated Gemini commands, skills, and adapters are now written with LF line endings regardless of how the package was built. Previous releases built on Windows shipped CRLF content, which stopped KnowzCode from recognizing a Knowz Gemini installation and claiming shared custody of the `mcpServers.knowz` entry.
+- Ownership checks on installed Gemini commands tolerate CRLF so installs from earlier releases are still recognized.
+
 ## [0.10.0] - 2026-08-14
 
 ### Added
