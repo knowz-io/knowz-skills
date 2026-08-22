@@ -88,6 +88,7 @@ The Knowz MCP server works with any AI model and any MCP-compatible agent. This 
 |-------|-----------|----------------|-------------|
 | `knowz` | `/knowz <action>` | Yes | Search, save, query, amend, and manage durable knowledge in Knowz vaults. Handles ask, save, amend, search, browse, setup, status, register, and flush. |
 | `knowz-auto` | Automatic | No | Auto-detects vault-relevant conversations — silently searches vaults on knowledge questions, and offers to save or amend insights without an explicit command. |
+| `knowz-cli` | Automatic | No | Drives the `knowz` CLI (`npm i -g @knowzai/cli`) instead of the MCP server — knowledge, vaults, search, chat, local code indexing, agent memory, sync, backup, and the portable platform. Generated from the CLI's own command manifest. |
 
 ---
 
