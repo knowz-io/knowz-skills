@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.21.1] - 2026-08-21
+
+### Fixed
+
+- Gemini co-ownership with Knowz works again. Knowz installs built on Windows wrote `ask.toml` with CRLF, so KnowzCode never recognized the Knowz installation and never recorded its shared claim on the `mcpServers.knowz` entry; the check now tolerates CRLF and KnowzCode's own generated surfaces are always written with LF.
+- The platform-surface validator runs on Windows: it invokes npm through its JS entry point instead of spawning `npm` directly, which failed with ENOENT and blocked publishing.
+
 ## [0.21.0] - 2026-08-02
 
 ### Added
