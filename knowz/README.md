@@ -5,7 +5,7 @@
 **Your knowledge base, inside your AI assistant.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
-[![knowz-mcp on npm](https://img.shields.io/npm/v/knowz-mcp?label=knowz-mcp)](https://www.npmjs.com/package/knowz-mcp)
+[![@knowzai/mcp on npm](https://img.shields.io/npm/v/@knowzai/mcp?label=@knowzai/mcp)](https://www.npmjs.com/package/@knowzai/mcp)
 
 [Quick Start](#quick-start) · [Commands](#commands) · [Auto-Detection](#auto-detection) · [Works With KnowzCode](#works-with-knowzcode)
 

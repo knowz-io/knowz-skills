@@ -92,7 +92,7 @@ MCP note: vault capture queued to `knowzcode/pending_captures.md` (MCP auth fail
 **NodeID(s):** Project-Wide
 **Logged By:** knowzcode-cli
 **Details:**
-KnowzCode framework installed via `npx knowzcode`.
+KnowzCode framework installed via `npx @knowzai/knowzcode`.
 - Framework files initialized
 - Ready for first feature
 ---

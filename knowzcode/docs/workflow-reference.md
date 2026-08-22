@@ -378,7 +378,7 @@ The same phases, quality gates, and approval points apply regardless of executio
 Current Claude Code forms the team when the first teammate is spawned and manages cleanup automatically. KnowzCode does not call removed `TeamCreate` or `TeamDelete` APIs. Referenced teammate definitions apply their body/tools/model automatically.
 
 **Enabling Agent Teams:**
-- `npx knowzcode install --agent-teams` explicitly opts in via the CLI installer
+- `npx @knowzai/knowzcode install --agent-teams` explicitly opts in via the CLI installer
 - Or manually set it in `.claude/settings.local.json`:
   ```json
   { "env": { "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1" } }

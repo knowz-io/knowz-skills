@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 // KnowzCode CLI — Zero-dependency Node.js installer
-// Usage: npx knowzcode [install|uninstall|upgrade|detect] [options]
+// Usage: npx @knowzai/knowzcode [install|uninstall|upgrade|detect] [options]
 
 import {
   accessSync,
@@ -1975,7 +1975,7 @@ function initLog(filePath) {
 **NodeID(s):** Project-Wide
 **Logged By:** knowzcode-cli
 **Details:**
-KnowzCode framework installed via \`npx knowzcode\`.
+KnowzCode framework installed via \`npx @knowzai/knowzcode\`.
 - Framework files initialized
 - Ready for first feature
 ---
@@ -2503,7 +2503,7 @@ function cmdDetect(opts) {
 
   console.log('');
   if (detected.length === 0) {
-    console.log(`  No platforms detected. Run ${c.cyan}npx knowzcode install${c.reset} to set up.`);
+    console.log(`  No platforms detected. Run ${c.cyan}npx @knowzai/knowzcode install${c.reset} to set up.`);
   } else {
     console.log(`  ${detected.length} platform(s) detected.`);
   }
@@ -2750,7 +2750,7 @@ async function cmdAddPlatforms(opts) {
   console.log('');
 
   if (!existsSync(kcDir)) {
-    log.err('No KnowzCode installation found. Run `npx knowzcode install` first.');
+    log.err('No KnowzCode installation found. Run `npx @knowzai/knowzcode install` first.');
     process.exit(1);
   }
 
@@ -3065,7 +3065,7 @@ async function cmdUpgrade(opts) {
   console.log('');
 
   if (!existsSync(kcDir)) {
-    log.err('No KnowzCode installation found. Run `npx knowzcode install` first.');
+    log.err('No KnowzCode installation found. Run `npx @knowzai/knowzcode install` first.');
     process.exit(1);
   }
 
@@ -3353,12 +3353,12 @@ ${c.bold}KnowzCode CLI${c.reset} v${VERSION}
 Platform-agnostic AI development methodology
 
 ${c.bold}Usage:${c.reset}
-  npx knowzcode                          Interactive mode
-  npx knowzcode install [options]        Install (preserves data on reinstall)
-  npx knowzcode add-platforms [options]  Add/change platform adapters only
-  npx knowzcode uninstall [options]      Remove KnowzCode
-  npx knowzcode upgrade [options]        Upgrade preserving user data
-  npx knowzcode detect                   Show detected platforms (dry run)
+  npx @knowzai/knowzcode                          Interactive mode
+  npx @knowzai/knowzcode install [options]        Install (preserves data on reinstall)
+  npx @knowzai/knowzcode add-platforms [options]  Add/change platform adapters only
+  npx @knowzai/knowzcode uninstall [options]      Remove KnowzCode
+  npx @knowzai/knowzcode upgrade [options]        Upgrade preserving user data
+  npx @knowzai/knowzcode detect                   Show detected platforms (dry run)
 
 ${c.bold}Options:${c.reset}
   --target <path>      Target directory (default: current directory)
@@ -3374,12 +3374,12 @@ ${c.bold}Options:${c.reset}
   -v, --version        Show version
 
 ${c.bold}Examples:${c.reset}
-  npx knowzcode install --platforms claude,cursor
-  npx knowzcode install --platforms all --force
-  npx knowzcode add-platforms --platforms cursor
-  npx knowzcode upgrade --target ./my-project
-  npx knowzcode uninstall --force
-  npx knowzcode detect
+  npx @knowzai/knowzcode install --platforms claude,cursor
+  npx @knowzai/knowzcode install --platforms all --force
+  npx @knowzai/knowzcode add-platforms --platforms cursor
+  npx @knowzai/knowzcode upgrade --target ./my-project
+  npx @knowzai/knowzcode uninstall --force
+  npx @knowzai/knowzcode detect
 `);
 }
 
