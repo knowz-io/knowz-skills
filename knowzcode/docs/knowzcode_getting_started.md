@@ -52,15 +52,15 @@ cd your-project/
 ### Script Install (Any Platform)
 
 ```bash
-npx knowzcode
+npx @knowzai/knowzcode
 ```
 
 This auto-detects your AI platforms and walks you through setup interactively. Commands available as `/work`, `/plan`, `/fix` (without `kc:` prefix). For the `/knowzcode:` prefix, also run: `/plugin install knowzcode@knowz-skills`.
 
 ```bash
-npx knowzcode install --platforms claude,cursor   # Specific platforms
-npx knowzcode install --platforms all             # All 6 platforms
-npx knowzcode detect                              # See what's detected
+npx @knowzai/knowzcode install --platforms claude,cursor   # Specific platforms
+npx @knowzai/knowzcode install --platforms all             # All 6 platforms
+npx @knowzai/knowzcode detect                              # See what's detected
 ```
 
 ### Alternative: Download ZIP
@@ -148,7 +148,7 @@ NOW install KnowzCode into your project:
 ```bash
 # Recommended: use npx
 cd your-project/
-npx knowzcode install
+npx @knowzai/knowzcode install
 
 # Or extract the ZIP if you downloaded it
 unzip knowzcode.starter.zip -d your-project/
@@ -438,7 +438,7 @@ When stuck, check these in order:
 
 1. Prepare your three foundational documents
 2. Build your initial prototype
-3. Install KnowzCode: `npx knowzcode` or `/knowzcode:setup` (Claude Code) or copy the `knowzcode/` directory
+3. Install KnowzCode: `npx @knowzai/knowzcode` or `/knowzcode:setup` (Claude Code) or copy the `knowzcode/` directory
 4. Start systematic development with `/knowzcode:work "your first goal"`!
 
 Remember: The first project might feel slow as you learn the workflow, but each subsequent project becomes faster and more natural. KnowzCode's value increases as projects grow in complexity.

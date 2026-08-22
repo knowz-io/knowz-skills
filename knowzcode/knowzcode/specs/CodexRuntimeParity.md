@@ -6,7 +6,7 @@
 
 ## Context
 
-The Codex plugin currently ships `knowzcode/codex_execution.md`, while the canonical npm framework source does not. As a result, a marketplace plugin checkout can contain execution guidance that `npx knowzcode install --platforms codex` cannot copy into a project. The validator does not mirror-check this file or assert its presence in a generated install. The guide and work skill also hard-code stale operation names and require disk handoffs for every child task.
+The Codex plugin currently ships `knowzcode/codex_execution.md`, while the canonical npm framework source does not. As a result, a marketplace plugin checkout can contain execution guidance that `npx @knowzai/knowzcode install --platforms codex` cannot copy into a project. The validator does not mirror-check this file or assert its presence in a generated install. The guide and work skill also hard-code stale operation names and require disk handoffs for every child task.
 
 This contract makes the npm framework source canonical, validates plugin and generated-install parity, and maps portable context modes to currently available Codex capabilities without pretending Codex has Claude Agent Teams.
 
@@ -91,7 +91,7 @@ complete | blocked | partial
 ## Verification Criteria
 
 - VERIFY CRP-01: canonical and plugin `codex_execution.md` files exist and are byte-identical.
-- VERIFY CRP-02: a fresh `npx knowzcode install --platforms codex` contains `knowzcode/codex_execution.md` and the generated work skill reads it conditionally.
+- VERIFY CRP-02: a fresh `npx @knowzai/knowzcode install --platforms codex` contains `knowzcode/codex_execution.md` and the generated work skill reads it conditionally.
 - VERIFY CRP-03: upgrade replaces the canonical execution guide while preserving documented user-owned framework files.
 - VERIFY CRP-04: validators fail when the canonical/plugin guide drifts or a generated install drops it.
 - VERIFY CRP-05: Codex durable guidance names semantic operations and does not require `send_input` or `close_agent`.

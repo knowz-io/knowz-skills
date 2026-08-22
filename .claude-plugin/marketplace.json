@@ -10,7 +10,7 @@
       "name": "knowzcode",
       "source": "./knowzcode",
       "description": "Platform-agnostic AI development methodology with TDD, quality gates, and optional enterprise compliance. Commands: /knowzcode:work, /knowzcode:explore, /knowzcode:fix, /knowzcode:audit, /knowzcode:setup, /knowzcode:regroup, /knowzcode:relay, /knowzcode:status, /knowzcode:telemetry, /knowzcode:telemetry-setup, and /knowzcode:continue, plus automatic regroup-trigger and start-work routing.",
-      "version": "0.21.1",
+      "version": "0.22.0",
       "author": { "name": "Alex Headscarf" },
       "homepage": "https://github.com/knowz-io/knowz-skills/tree/main/knowzcode",
       "repository": "https://github.com/knowz-io/knowz-skills"
@@ -19,7 +19,7 @@
       "name": "knowz",
       "source": "./knowz",
       "description": "Frictionless knowledge management across Knowz vaults — search, save, and query knowledge through the knowz CLI when it is installed, or the Knowz MCP server otherwise",
-      "version": "0.10.1",
+      "version": "0.11.0",
       "author": { "name": "Alex Headscarf" },
       "homepage": "https://github.com/knowz-io/knowz-skills/tree/main/knowz",
       "repository": "https://github.com/knowz-io/knowz-skills"

@@ -37,5 +37,5 @@ LOCAL_BIN="$SCRIPT_DIR/bin/knowzcode.mjs"
 if [[ -f "$LOCAL_BIN" ]]; then
   exec node "$LOCAL_BIN" "$@"
 else
-  exec npx knowzcode "$@"
+  exec npx @knowzai/knowzcode "$@"
 fi

@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-08-22
+
+### Changed
+
+- The npm package is now published as **`@knowzai/mcp`**, alongside `@knowzai/cli` in the `@knowzai` scope. Install with `npx @knowzai/mcp install`. The previous unscoped `knowz-mcp` package stops receiving updates at 0.10.1.
+- The executable is still named `knowz-mcp`, so the `knowz` command continues to belong to the Knowz CLI.
+
 ## [0.10.1] - 2026-08-21
 
 ### Fixed
