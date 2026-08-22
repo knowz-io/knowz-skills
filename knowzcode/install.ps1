@@ -35,5 +35,5 @@ $localBin = Join-Path $ScriptDir "bin\knowzcode.mjs"
 if (Test-Path $localBin) {
     & node $localBin @args
 } else {
-    & npx knowzcode @args
+    & npx @knowzai/knowzcode @args
 }

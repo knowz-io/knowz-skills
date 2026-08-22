@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 // Knowz MCP CLI — Zero-dependency Node.js installer
-// Usage: npx knowz-mcp [install|uninstall|upgrade|detect] [options]
+// Usage: npx @knowzai/mcp [install|uninstall|upgrade|detect] [options]
 
 import { accessSync, constants as fsConstants, existsSync, lstatSync, mkdirSync, readFileSync, writeFileSync, readdirSync, rmSync, statSync } from 'fs';
 import { createHash } from 'crypto';
@@ -1385,12 +1385,12 @@ async function configureMcp(dir, selectedPlatforms, opts) {
       log.info('Run /mcp auth knowz in Gemini CLI to complete authentication.');
       if (needsCodex) {
         log.warn('Codex shared config is API-key based in this installer; skipping Codex MCP config');
-        log.info('Run: npx knowz-mcp install --mcp-key <key> --platforms codex');
+        log.info('Run: npx @knowzai/mcp install --mcp-key <key> --platforms codex');
       }
     } else {
       log.info('Skipping MCP configuration. Configure later with:');
       log.info(`  codex mcp add knowz --url ${opts.mcpEndpoint || MCP_ENDPOINT} --bearer-token-env-var ${CODEX_BEARER_TOKEN_ENV_VAR}`);
-      log.info('  npx knowz-mcp install --mcp-key <key> --platforms gemini');
+      log.info('  npx @knowzai/mcp install --mcp-key <key> --platforms gemini');
     }
   }
 
@@ -1675,7 +1675,7 @@ async function cmdUpgrade(opts) {
   console.log('');
 
   if (!isInstalled(dir, opts)) {
-    log.err(`No ${BRAND} MCP installation found. Run \`npx knowz-mcp install\` first.`);
+    log.err(`No ${BRAND} MCP installation found. Run \`npx @knowzai/mcp install\` first.`);
     return;
   }
 
@@ -1745,7 +1745,7 @@ ${c.bold}${BRAND} MCP v${VERSION}${c.reset}
 Frictionless knowledge management via the ${BRAND} MCP server.
 
 ${c.bold}Usage:${c.reset}
-  npx knowz-mcp <command> [options]
+  npx @knowzai/mcp <command> [options]
 
 ${c.bold}Commands:${c.reset}
   install       Install skills plus shared/project MCP config for detected platforms
@@ -1764,12 +1764,12 @@ ${c.bold}Options:${c.reset}
   --help, -h           Show this help
 
 ${c.bold}Examples:${c.reset}
-  npx knowz-mcp install                              Auto-detect platforms and install
-  npx knowz-mcp install --platforms claude,codex      Install for specific platforms
-  npx knowz-mcp install --mcp-key ukz_abc123          Install with API key
-  npx knowz-mcp install --global                     Install to user-level directories
-  npx knowz-mcp upgrade                              Update to latest version
-  npx knowz-mcp uninstall --force                    Remove without prompting
+  npx @knowzai/mcp install                              Auto-detect platforms and install
+  npx @knowzai/mcp install --platforms claude,codex      Install for specific platforms
+  npx @knowzai/mcp install --mcp-key ukz_abc123          Install with API key
+  npx @knowzai/mcp install --global                     Install to user-level directories
+  npx @knowzai/mcp upgrade                              Update to latest version
+  npx @knowzai/mcp uninstall --force                    Remove without prompting
 
 ${c.bold}After installation:${c.reset}
   Claude Code:  /knowz register  or  /knowz setup <api-key>

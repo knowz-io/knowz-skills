@@ -5,7 +5,7 @@
 **Structured AI development — quality gates, tests first, and continuity across sessions.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![npm](https://img.shields.io/npm/v/knowzcode?label=npm)](https://www.npmjs.com/package/knowzcode)
+[![npm](https://img.shields.io/npm/v/@knowzai/knowzcode?label=npm)](https://www.npmjs.com/package/@knowzai/knowzcode)
 [![Platforms](https://img.shields.io/badge/platforms-6-blue)](#platform-support)
 
 [Quick Start](#quick-start) · [How It Works](#how-it-works) · [Commands](#commands) · [Profiles](#execution-profiles) · [Relay](#cross-agent-relay) · [Docs](#documentation)
@@ -30,8 +30,8 @@ cd your-project/
 
 ```bash
 # Any of the 6 supported platforms
-npx knowzcode                                     # interactive setup
-npx knowzcode install --platforms claude,gemini   # or pick platforms
+npx @knowzai/knowzcode                                     # interactive setup
+npx @knowzai/knowzcode install --platforms claude,gemini   # or pick platforms
 ```
 
 Then start working:
@@ -169,11 +169,11 @@ Full guide: **[docs/enterprise-compliance.md](./docs/enterprise-compliance.md)**
 | Platform | Install | Status |
 |----------|---------|--------|
 | Claude Code | `/plugin install knowzcode@knowz-skills` | Full |
-| OpenAI Codex | `npx knowzcode install --platforms codex` | Full |
-| Gemini CLI | `npx knowzcode install --platforms gemini` | Full |
-| GitHub Copilot | `npx knowzcode install --platforms copilot` | Experimental |
-| Cursor | `npx knowzcode install --platforms cursor` | Experimental |
-| Windsurf | `npx knowzcode install --platforms windsurf` | Experimental |
+| OpenAI Codex | `npx @knowzai/knowzcode install --platforms codex` | Full |
+| Gemini CLI | `npx @knowzai/knowzcode install --platforms gemini` | Full |
+| GitHub Copilot | `npx @knowzai/knowzcode install --platforms copilot` | Experimental |
+| Cursor | `npx @knowzai/knowzcode install --platforms cursor` | Experimental |
+| Windsurf | `npx @knowzai/knowzcode install --platforms windsurf` | Experimental |
 
 ## Connected to Knowz
 

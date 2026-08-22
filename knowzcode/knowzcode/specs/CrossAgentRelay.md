@@ -54,7 +54,7 @@
 - VERIFY: continuation maps legacy `Mode: codex`, `CODEX_*`, and `CLAUDE_TAKEOVER` state into Claude-host/Codex-target role semantics.
 - VERIFY: the Claude command contract uses authenticated headless execution, stream JSON, resumable session identity, safe non-interactive permissions, target-qualified logs, and in-turn polling.
 - VERIFY: Codex marketplace packaging ships relay entry/work/reference/status/continue/init support without Claude-only team APIs or a `plugins/knowzcode/agents` directory.
-- VERIFY: `npx knowzcode install --platforms codex` generates the relay skill and nested execution reference with the current version injected.
+- VERIFY: `npx @knowzai/knowzcode install --platforms codex` generates the relay skill and nested execution reference with the current version injected.
 - VERIFY: source and plugin orchestration/platform-adapter mirrors remain byte-identical where required.
 - VERIFY: Gemini continues to omit `knowzcode-relay`.
 - VERIFY: README, workflow reference, init, status, and configuration describe the same precedence, host/target roles, fallback rules, and supported directions.

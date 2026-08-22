@@ -78,7 +78,7 @@ Use the embedded templates below.
 
 ### 4. Detect project stack and populate environment context
 
-If `npx knowzcode install` ran first, the Stack table in `knowzcode/knowzcode_project.md` may already be populated. Check it — if rows are empty, detect and fill them yourself:
+If `npx @knowzai/knowzcode install` ran first, the Stack table in `knowzcode/knowzcode_project.md` may already be populated. Check it — if rows are empty, detect and fill them yourself:
 
 - Probe for `package.json` (Node/TS), `pyproject.toml` / `requirements.txt` / `Pipfile` (Python), `*.csproj` / `*.sln` / `*.slnx` / `*.fsproj` (.NET), `go.mod` (Go), `Cargo.toml` (Rust), `Gemfile` (Ruby).
 - Write the Stack table rows (Language, Backend Framework, Frontend Framework, ORM/ODM, Testing (Unit), Testing (E2E)) with detected values. Leave a row empty if detection fails — don't write `[Detected]` or similar placeholders.
@@ -407,7 +407,7 @@ This works correctly — no action needed.
 > This is the **compliance guidelines** feature — custom rules (security, API, code-quality, design) enforced at the quality gates. It is distinct from the white-label `enterprise.json` covered in the "Enterprise Configuration" section above.
 
 - Ask: "Would you like to set up enterprise compliance? It lets your org enforce its own guidelines at the quality gates. (optional)"
-- If yes, scaffold `knowzcode/enterprise/` by copying the enterprise skeleton that ships in the KnowzCode framework files (the `enterprise/` directory alongside the other `knowzcode/` templates in the installed plugin; the `npx knowzcode install` path copies it automatically). It includes:
+- If yes, scaffold `knowzcode/enterprise/` by copying the enterprise skeleton that ships in the KnowzCode framework files (the `enterprise/` directory alongside the other `knowzcode/` templates in the installed plugin; the `npx @knowzai/knowzcode install` path copies it automatically). It includes:
   - `compliance_manifest.md` — the control file (Active Guidelines table + config keys)
   - `compliance_status.md` — audit history
   - `guidelines/security.md` (real rules), `guidelines/code-quality.md` + `guidelines/design.md` (starter templates), and `guidelines/custom/`

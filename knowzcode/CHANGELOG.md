@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.22.0] - 2026-08-22
+
+### Changed
+
+- The npm package is now published as **`@knowzai/knowzcode`**, consolidating KnowzCode into the `@knowzai` scope. Install with `npx @knowzai/knowzcode`. The previous unscoped `knowzcode` package stops receiving updates at 0.21.1.
+
 ## [0.21.1] - 2026-08-21
 
 ### Fixed
