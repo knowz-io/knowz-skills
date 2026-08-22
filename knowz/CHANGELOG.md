@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-08-14
+
+### Added
+
+- A `knowz-cli` skill covering the full `@knowzai/cli` command surface — knowledge, vaults, search, chat, local indexing, agent memory, sync, backup, CMEK, and the portable platform. It is generated from the CLI's own oclif manifest, so the inventory cannot drift from the commands that actually ship.
+
+### Changed
+
+- The `knowz` skill now checks whether the `knowz` CLI is on PATH and prefers it for knowledge operations. With no CLI installed, every MCP step behaves exactly as before.
+
 ## [0.9.0] - 2026-08-02
 
 ### Added
