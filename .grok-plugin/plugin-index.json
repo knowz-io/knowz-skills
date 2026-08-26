@@ -14,7 +14,7 @@
           },
           {
             "name": "knowz-cli",
-            "description": "Use the knowz CLI for knowledge operations without the MCP server"
+            "description": "Preferred path: run the knowz CLI (@knowzai/cli) for search, ask, save, amend, attach, and local-first work instead of MCP"
           }
         ],
         "agents": [

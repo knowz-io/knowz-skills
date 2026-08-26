@@ -1,7 +1,7 @@
 {
   "name": "knowz",
   "version": "0.11.0",
-  "description": "Frictionless knowledge management across Knowz vaults — search, save, and query knowledge through the knowz CLI when it is installed, or the Knowz MCP server otherwise",
+  "description": "Knowz vaults in Grok — prefer the knowz CLI (/knowz-cli, npm i -g @knowzai/cli) for search/save/ask/amend; fall back to the Knowz MCP server. Includes /knowz, /knowz-auto, and /knowz-cli.",
   "author": {
     "name": "Alex Headscarf",
     "email": "alexheadscarf@gmail.com",

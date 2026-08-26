@@ -1,7 +1,7 @@
 {
   "name": "knowzcode",
   "version": "0.22.0",
-  "description": "KnowzCode - Platform-agnostic AI development methodology with TDD, quality gates, structured workflows, and enterprise compliance (custom guidelines enforced at quality gates)",
+  "description": "KnowzCode for Grok — TDD, spec-driven research, quality gates, and logging. Skills: /work, /explore, /fix, /audit, /continue, /setup, /status, /regroup, /relay, /telemetry.",
   "author": {
     "name": "Alex Headscarf",
     "url": "https://github.com/knowz-io"

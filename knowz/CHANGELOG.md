@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Native Grok Build plugin surface: `.grok-plugin/plugin.json`, plugin `.mcp.json` (HTTP Knowz MCP, OAuth on first tool call), and Grok host commands in `skills/knowz/references/mcp-setup.md`. Install with `grok plugin marketplace add knowz-io/knowz-skills` then `grok plugin install knowz --trust`.
+- The Grok catalog lists `/knowz-cli` as the preferred vault path (`npm i -g @knowzai/cli`) with MCP as fallback.
 
 ## [0.11.0] - 2026-08-22
 

@@ -8,7 +8,7 @@
   "plugins": [
     {
       "name": "knowz",
-      "description": "Frictionless knowledge management across Knowz vaults — search, save, and query knowledge through the knowz CLI when it is installed, or the Knowz MCP server otherwise",
+      "description": "Knowz vaults in Grok — /knowz-cli (knowz CLI, npm i -g @knowzai/cli) for search/save/ask/amend, plus /knowz and /knowz-auto. MCP is the fallback when the CLI is not installed.",
       "category": "productivity",
       "source": { "type": "local", "path": "./knowz" },
       "version": "0.11.0",

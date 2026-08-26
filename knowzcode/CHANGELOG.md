@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Native Grok Build plugin surface: `.grok-plugin/plugin.json` so `grok plugin marketplace add knowz-io/knowz-skills` then `grok plugin install knowzcode --trust` loads the KnowzCode skills and agents.
+- Native Grok Build plugin surface: `.grok-plugin/plugin.json` so `grok plugin marketplace add knowz-io/knowz-skills` then `grok plugin install knowzcode --trust` loads the KnowzCode TDD / spec / research / logging skills (`/work`, `/explore`, `/fix`, `/audit`, `/continue`, `/setup`).
 
 ## [0.22.0] - 2026-08-22
 
