@@ -3,13 +3,15 @@ name: explore
 description: "Explore a topic, investigate the codebase, or produce a structured implementation plan using vault knowledge, impact analysis, architecture assessment, and project context. Use when the user wants to EXPLORE, RESEARCH, or PLAN before deciding whether to build."
 user-invocable: true
 allowed-tools: Read, Write, Bash, Glob, Grep, Agent
-# Note: Also uses MCP tools (search_knowledge, ask_question) when MCP is configured
+# Note: Vault access is CLI-first then MCP — see ../work/references/vault-access.md
 argument-hint: "[topic, question, or feature to plan]"
 ---
 
 # KnowzCode Explore
 
 Explore a topic, investigate the codebase, or produce a structured implementation plan before committing to implementation.
+
+Vault reads/writes: follow [../work/references/vault-access.md](../work/references/vault-access.md) (CLI first, MCP fallback). Substitute `knowz search` / `knowz ask` for `search_knowledge` / `ask_question` when the CLI is installed.
 
 **Usage**: `/knowzcode:explore <topic, question, or feature to plan>`
 

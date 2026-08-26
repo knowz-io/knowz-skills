@@ -70,6 +70,8 @@ grok plugin install knowzcode --trust
 
 The same `knowz-io/knowz-skills` repo is the catalog for both hosts. Grok reads `.grok-plugin/marketplace.json`; Claude Code reads `.claude-plugin/marketplace.json`.
 
+Grok vault calls prefer the **knowz CLI** (`npm i -g @knowzai/cli`) and fall back to the plugin MCP server. Full Grok install (git URL, local clone, config.toml, xAI marketplace): **[docs/grok.md](./docs/grok.md)**. One-shot from a clone: `./scripts/install-grok.sh`.
+
 ## Knowz — Knowledge Management
 
 Search, save, and query your knowledge base without leaving your editor. Knowz auto-detects when a conversation is relevant and surfaces the right context — or offers to capture new insights — without being asked.
@@ -107,6 +109,7 @@ Turns chaotic AI coding into a disciplined loop — analyze impact, design specs
 
 - [Full feature overview](https://github.com/knowz-io/knowz-platform/blob/develop/FEATURES.md)
 - [Knowz plugin](./knowz/) · [KnowzCode plugin](./knowzcode/) · [KnowzCode guides](./knowzcode/docs/)
+- [Grok Build install](./docs/grok.md)
 - [knowz.io](https://knowz.io)
 
 ## Privacy & Support

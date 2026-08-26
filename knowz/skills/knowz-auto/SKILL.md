@@ -2,7 +2,7 @@
 name: knowz-auto
 description: "Auto-detect when the user is asking knowledge questions, sharing insights that match Knowz vault rules, or asking for a targeted edit to an existing vault item. Triggers when user asks about past decisions, conventions, patterns, or shares learnings worth capturing."
 user-invocable: false
-allowed-tools: Read, Glob, Grep
+allowed-tools: Read, Glob, Grep, Bash
 ---
 
 # Knowz Auto - Frictionless Vault Awareness
@@ -22,8 +22,8 @@ This skill activates automatically when the host agent detects the user's messag
 ## Prerequisites (ALL must be true)
 
 1. `knowz-vaults.md` exists in the project root
-2. MCP tools (`mcp__knowz__*`) are available
-3. This is NOT during an explicit `/knowz` command execution
+2. A vault backend is available: `knowz` CLI on PATH **or** Knowz MCP tools (`mcp__knowz__*`)
+3. This is NOT during an explicit `/knowz` or `/knowz-cli` command execution
 4. The user's message is NOT a clear code-related instruction (e.g., "fix this bug", "add a test")
 
 **If any prerequisite fails -> do nothing.** Do not interfere with normal conversation.
@@ -76,10 +76,8 @@ If no vault rules match the message, **do nothing**. This is not vault-relevant 
 
 **For query matches - perform a read-only vault lookup, include findings in response:**
 
-1. Call `mcp__knowz__search_knowledge` with:
-   - `query`: extract the core question from the user's message
-   - `vaultId`: the matched vault ID
-   - `limit`: 5
+1. If `knowz` is on PATH: `knowz search "<question>" --vault <id> --limit 5 --json` (see `/knowz-cli`).
+   Else: `mcp__knowz__search_knowledge` with `query`, `vaultId`, `limit: 5`.
 2. If results are found, weave them into your response naturally.
 3. If no results found, proceed normally. Do not mention the failed search.
 
@@ -91,20 +89,17 @@ If no vault rules match the message, **do nothing**. This is not vault-relevant 
    ```text
    This looks like it could be worth saving to {Vault Name}. Want me to capture it?
    ```
-4. If the user agrees, use the `/knowz` skill's save flow.
-5. If MCP write fails, queue to `knowz-pending.md` using the canonical pending-capture format and report: `"Queued to knowz-pending.md - run /knowz flush when MCP is available."`
+4. If the user agrees, use `/knowz-cli` (CLI installed) or the `/knowz` skill save flow (MCP).
+5. If the write fails, queue to `knowz-pending.md` using the canonical pending-capture format and report: `"Queued to knowz-pending.md — run /knowz flush or knowz once auth is restored."`
 6. If the user declines, continue normally.
 
 **For amend matches - locate the item, confirm, then patch server-side:**
 
-1. Call `mcp__knowz__search_knowledge` with:
-   - `query`: the subject of the change the user referenced
-   - `vaultId`: the matched vault ID
-   - `limit`: 5
+1. Search: CLI `knowz search "<subject>" --vault <id> --limit 5 --json` or MCP `mcp__knowz__search_knowledge`.
 2. If one clear match -> use it. If multiple plausible matches -> show the top 3 titles + snippets and ask the user which one. If zero matches -> say so and offer `/knowz save` instead.
 3. Confirm the change with the user. Never auto-amend.
-4. If the user agrees, call `mcp__knowz__amend_knowledge` with the resolved item ID and the delta. Do NOT send the full prior content.
-5. If MCP write fails transiently, queue the amend to `knowz-pending.md` using the canonical pending-capture format and report: `"Queued to knowz-pending.md - run /knowz flush when MCP is available."`
+4. If the user agrees, amend via CLI `knowz knowledge amend <id> "<delta>"` or MCP `mcp__knowz__amend_knowledge`. Do NOT send the full prior content.
+5. If the write fails transiently, queue the amend to `knowz-pending.md` and report: `"Queued to knowz-pending.md — run /knowz flush or knowz once auth is restored."`
 
 ## Key Constraints
 

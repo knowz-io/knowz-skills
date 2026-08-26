@@ -3,7 +3,7 @@ name: audit
 description: "Run read-only quality audits on the existing codebase — spec completeness, architecture health, OWASP security scanning, integration consistency, and enterprise compliance. Use when the user wants to AUDIT or SCAN existing code (including compliance reviews), not build new features."
 user-invocable: true
 allowed-tools: Read, Glob, Grep
-# Note: Also uses MCP tools (search_knowledge, ask_question) when MCP is configured
+# Note: Vault access is CLI-first then MCP — see ../work/references/vault-access.md
 argument-hint: "[audit_type]"
 ---
 

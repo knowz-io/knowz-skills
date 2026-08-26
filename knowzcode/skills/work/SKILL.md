@@ -3,13 +3,17 @@ name: work
 description: "Execute a full KnowzCode development workflow — TDD, quality gates, agent coordination, and structured implementation phases. Use when the user wants to BUILD, IMPLEMENT, or CREATE code, not just research or audit."
 user-invocable: true
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Agent
-# Note: Also uses MCP tools (create_knowledge, search_knowledge) when MCP is configured
+# Note: Vault access is CLI-first then MCP — see references/vault-access.md
 argument-hint: "[feature_description]"
 ---
 
 # Work on New Feature
 
 Start a new KnowzCode development workflow session.
+
+## Vault access
+
+Before any vault search/save/ask, read [references/vault-access.md](references/vault-access.md). Prefer the **knowz CLI** (`/knowz-cli`) when `knowz` is on PATH; otherwise use Knowz MCP tools. Do not skip the workflow if only one of the two backends is available.
 
 **Usage**: `/knowzcode:work "feature description"`
 **Example**: `/knowzcode:work "Build user authentication with JWT"`
