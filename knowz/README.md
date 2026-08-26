@@ -42,7 +42,7 @@ It's like having a team member with perfect memory sitting alongside you.
 
 ## Works With Any AI
 
-The Knowz MCP server works with any AI model and any MCP-compatible agent. This plugin is a convenience layer for Claude Code, but the knowledge base is accessible from Claude, ChatGPT, Gemini, Copilot, or any tool that supports MCP.
+The Knowz MCP server works with any AI model and any MCP-compatible agent. This plugin is a convenience layer for Claude Code and Grok Build, but the knowledge base is accessible from Claude, Grok, ChatGPT, Gemini, Copilot, or any tool that supports MCP.
 
 ---
 
@@ -51,7 +51,7 @@ The Knowz MCP server works with any AI model and any MCP-compatible agent. This 
 ```bash
 # New users
 /knowz register            # create account + configure MCP + set up vault
-# restart Claude Code
+# start a new session (Claude Code or Grok Build)
 /knowz status              # verify connection
 
 # Existing users
@@ -102,7 +102,7 @@ Works fully standalone too. No KnowzCode required.
 
 ## Privacy & Support
 
-The Knowz plugin is a local Claude Code plugin. It connects to the Knowz MCP server only after the user configures Knowz and invokes or enables vault workflows. It never writes to a vault without confirmation.
+The Knowz plugin is a local Claude Code / Grok Build plugin. It connects to the Knowz MCP server only after the user configures Knowz and invokes or enables vault workflows. It never writes to a vault without confirmation.
 
 - Privacy policy: [../PRIVACY.md](../PRIVACY.md) and https://knowz.io/privacy
 - Support contact: support@knowz.io

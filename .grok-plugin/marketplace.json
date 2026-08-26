@@ -1,0 +1,34 @@
+{
+  "name": "knowz-skills",
+  "description": "Official Knowz plugin marketplace — knowledge management and structured AI development for Grok Build",
+  "owner": {
+    "name": "Alex Headscarf",
+    "email": "alexheadscarf@gmail.com"
+  },
+  "plugins": [
+    {
+      "name": "knowz",
+      "description": "Frictionless knowledge management across Knowz vaults — search, save, and query knowledge through the knowz CLI when it is installed, or the Knowz MCP server otherwise",
+      "category": "productivity",
+      "source": { "type": "local", "path": "./knowz" },
+      "version": "0.11.0",
+      "author": { "name": "Alex Headscarf" },
+      "homepage": "https://github.com/knowz-io/knowz-skills/tree/main/knowz",
+      "repository": "https://github.com/knowz-io/knowz-skills",
+      "keywords": ["knowz", "knowz vaults", "knowz mcp", "knowz cli"],
+      "domains": ["knowz.io", "app.knowz.io", "mcp.knowz.io", "knowzai.com"]
+    },
+    {
+      "name": "knowzcode",
+      "description": "Platform-agnostic AI development methodology with TDD, quality gates, and optional enterprise compliance. Commands: /knowzcode:work, /knowzcode:explore, /knowzcode:fix, /knowzcode:audit, /knowzcode:setup, /knowzcode:regroup, /knowzcode:relay, /knowzcode:status, /knowzcode:telemetry, /knowzcode:telemetry-setup, and /knowzcode:continue, plus automatic regroup-trigger and start-work routing.",
+      "category": "development",
+      "source": { "type": "local", "path": "./knowzcode" },
+      "version": "0.22.0",
+      "author": { "name": "Alex Headscarf" },
+      "homepage": "https://github.com/knowz-io/knowz-skills/tree/main/knowzcode",
+      "repository": "https://github.com/knowz-io/knowz-skills",
+      "keywords": ["knowzcode", "knowz code", "knowz tdd"],
+      "domains": ["knowz.io", "knowzai.com"]
+    }
+  ]
+}

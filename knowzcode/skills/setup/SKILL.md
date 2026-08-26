@@ -13,7 +13,7 @@ You are the **KnowzCode Initialization Agent**. Set up the KnowzCode framework i
 
 > **Note:** This section is about **white-label** config (brand + endpoints) only. The separate **enterprise compliance** feature (custom guidelines enforced at quality gates) is set up in step 10 and documented in `${CLAUDE_PLUGIN_ROOT}/docs/enterprise-compliance.md`.
 
-Before using any endpoints or brand names in this skill, check for an `enterprise.json` file in the plugin root directory (the directory containing `.claude-plugin/plugin.json`). Read it once at the start of initialization.
+Before using any endpoints or brand names in this skill, check for an `enterprise.json` file in the plugin root directory (the directory containing `.claude-plugin/plugin.json` or `.grok-plugin/plugin.json`). Read it once at the start of initialization.
 
 If the file exists, use its values:
 - `brand` → replaces "Knowz" in all user-facing messages and generated config
@@ -33,7 +33,7 @@ KnowzCode is a structured development methodology that provides:
 - **Structured TDD workflow** with quality gates
 - **Specification-driven development** with living documentation
 - **Comprehensive tracking** of WorkGroups and specifications
-- **Platform-agnostic** — works with Claude Code, Codex, Gemini, Cursor, Copilot, and more
+- **Platform-agnostic** — works with Claude Code, Grok Build, Codex, Gemini, Cursor, Copilot, and more
 
 ## When NOT to Trigger
 
@@ -175,6 +175,7 @@ Check which AI platforms are present and offer to generate adapter files.
 ```
 CHECK for existing files:
   - CLAUDE.md → offer to append KnowzCode section
+  - `.grok/` → Grok Build already loads this plugin's skills; no extra adapter file
   - AGENTS.md or AGENTS.override.md → offer to generate Codex adapter
   - GEMINI.md or ~/.gemini/GEMINI.md → offer to generate Gemini adapter
   - .cursor/rules/ or .cursorrules (deprecated) → offer Cursor adapter (.cursor/rules/knowzcode.mdc)
@@ -420,7 +421,7 @@ This works correctly — no action needed.
 
 Inform user about enhanced features:
 ```
-Optional: For knowledge vault features: `claude plugin install knowz` then `/knowz setup`
+Optional: For knowledge vault features: install the `knowz` plugin from `knowz-io/knowz-skills`, then `/knowz setup`
 ```
 
 ### 12. Report success

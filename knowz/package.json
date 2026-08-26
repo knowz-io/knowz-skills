@@ -12,6 +12,8 @@
     "agents/",
     "skills/",
     ".claude-plugin/",
+    ".grok-plugin/",
+    ".mcp.json",
     "platform_adapters.md",
     "knowz-vaults.example.md",
     "knowz-pending.example.md",
@@ -29,6 +31,7 @@
     "claude",
     "codex",
     "gemini",
+    "grok",
     "knowledge-management",
     "semantic-search"
   ],

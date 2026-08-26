@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "plugins": {
+    "knowz": {
+      "components": {
+        "skills": [
+          {
+            "name": "knowz",
+            "description": "Search, save, query, amend, and manage durable knowledge in Knowz vaults"
+          },
+          {
+            "name": "knowz-auto",
+            "description": "Auto-detect vault-relevant questions and insights and offer to look up or save knowledge"
+          },
+          {
+            "name": "knowz-cli",
+            "description": "Use the knowz CLI for knowledge operations without the MCP server"
+          }
+        ],
+        "agents": [
+          { "name": "knowledge-worker" },
+          { "name": "reader" },
+          { "name": "writer" }
+        ],
+        "mcpServers": [
+          { "name": "knowz", "description": "http" }
+        ]
+      }
+    },
+    "knowzcode": {
+      "components": {
+        "skills": [
+          { "name": "work", "description": "Structured TDD workflow with quality gates" },
+          { "name": "explore", "description": "Research the codebase before implementing" },
+          { "name": "fix", "description": "Single-file micro-fix" },
+          { "name": "audit", "description": "Read-only quality and security scan" },
+          { "name": "setup", "description": "Initialize KnowzCode in the current project" },
+          { "name": "continue", "description": "Resume an interrupted KnowzCode workflow" },
+          { "name": "status", "description": "Check KnowzCode project health" },
+          { "name": "regroup", "description": "Create a local handoff before clearing context" },
+          { "name": "regroup-trigger", "description": "Offer a regroup handoff when the user is about to pause" },
+          { "name": "relay", "description": "Relay implementation to another coding agent" },
+          { "name": "start-work", "description": "Route implementation intent into KnowzCode workflow mode" },
+          { "name": "telemetry", "description": "Investigate telemetry from Sentry and App Insights" },
+          { "name": "telemetry-setup", "description": "Configure telemetry sources for KnowzCode investigations" }
+        ]
+      }
+    }
+  }
+}

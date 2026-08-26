@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "knowz": {
+      "type": "http",
+      "url": "https://mcp.knowz.io/mcp"
+    }
+  }
+}

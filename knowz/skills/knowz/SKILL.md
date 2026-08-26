@@ -25,7 +25,7 @@ command -v knowz >/dev/null 2>&1 && echo cli || echo mcp
 
 ## Enterprise Configuration
 
-Before using any endpoints or brand names below, check for an `enterprise.json` file in the plugin root directory (the directory containing `.claude-plugin/plugin.json`). Read it once at the start of any action.
+Before using any endpoints or brand names below, check for an `enterprise.json` file in the plugin root directory (the directory containing `.claude-plugin/plugin.json` or `.grok-plugin/plugin.json`). Read it once at the start of any action.
 
 If the file exists, use its values:
 - `brand` → replaces "Knowz" in all user-facing messages (e.g., "Welcome to {brand}", "{brand} MCP server")
@@ -97,20 +97,20 @@ Before any MCP operation, verify the Knowz MCP tools are available:
 
 1. Check that `mcp__knowz__list_vaults` exists in your available tools
 
-2. **If NOT available** → run `CLAUDECODE= claude mcp get knowz` to distinguish:
+2. **If NOT available** → run the host **List / get** command from [references/mcp-setup.md](references/mcp-setup.md) to distinguish:
 
    **a) Configured but not active** (command succeeds — MCP entry exists):
-   Report that the MCP server is configured but not yet active due to platform startup limitations. Tell the user to close and reopen Claude Code, then run `/knowz status`.
+   Report that the MCP server is configured but not yet active due to platform startup limitations. Tell the user to start a new session, then run `/knowz status`.
    STOP here — do not attempt any MCP operations.
 
    **b) Not configured** (command fails — no MCP entry found):
-   Report that the MCP server is not connected. Offer `/knowz register` (create account) or `/knowz setup` (configure existing key), and show the manual `claude mcp add` command for `https://mcp.knowz.io/mcp`.
+   Report that the MCP server is not connected. Offer `/knowz register` (create account) or `/knowz setup` (configure existing key), and show the host `mcp add` command from [references/mcp-setup.md](references/mcp-setup.md) for `https://mcp.knowz.io/mcp`.
    STOP here — do not attempt any MCP operations.
 
 3. **If available:** Call `mcp__knowz__list_vaults()` as a connectivity smoke test
    - If it succeeds → MCP is connected, proceed to the action
    - If it fails with **401/unauthorized or OAuth error** → report authentication failure. For OAuth: advise restart so browser login fires on next call, or switch to API key via `/knowz setup <api-key>`. For API key: advise getting a new key at `https://app.knowz.io/settings/api-keys` and reconfiguring.
-   - If it fails with **other error** → report the error message with troubleshooting: check network connectivity, run `claude mcp list`, consider switching to API key for more resilient connections.
+   - If it fails with **other error** → report the error message with troubleshooting: check network connectivity, run the host list command from [references/mcp-setup.md](references/mcp-setup.md), consider switching to API key for more resilient connections.
 
 ---
 
@@ -133,13 +133,13 @@ Create a new Knowz account and automatically configure MCP + vault.
 Before starting registration, check if user already has an API key:
 
 1. Check `KNOWZ_API_KEY` environment variable
-2. Check cross-platform configs: `.gemini/settings.json`, `.vscode/mcp.json`, `.mcp.json`
+2. Check cross-platform configs per [references/mcp-setup.md](references/mcp-setup.md) (Grok `config.toml`, `.gemini/settings.json`, `.vscode/mcp.json`, `.mcp.json`)
 
 If existing API key found: present options (use existing key → advise `/knowz setup`, register new account, or cancel). Use AskUserQuestion.
 
 #### Step R1: Check Existing MCP Configuration
 
-Run `CLAUDECODE= claude mcp get knowz`. If already configured: ask to keep existing (abort) or remove and register new account (run `CLAUDECODE= claude mcp remove knowz` first). Use AskUserQuestion.
+Run the host **List / get** command from [references/mcp-setup.md](references/mcp-setup.md). If already configured: ask to keep existing (abort) or remove and register new account (run the host **Remove** command first). Use AskUserQuestion.
 
 #### Step R2: Welcome + Collect Information
 
@@ -155,7 +155,7 @@ POST to `https://api.knowz.io/api/v1/users/register` (or dev endpoint). Handle r
 
 #### Step R5: Configure MCP Server
 
-Ask auth method (OAuth recommended vs API Key). Configure per [references/mcp-setup.md](references/mcp-setup.md). Verify with `CLAUDECODE= claude mcp get knowz`.
+Ask auth method (OAuth recommended vs API Key). Configure per [references/mcp-setup.md](references/mcp-setup.md). Verify with the host **List / get** command.
 
 #### Step R6: Vault Configuration (Deferred)
 
@@ -204,14 +204,14 @@ If no auth found: ask whether to use OAuth, API Key, or Register. If "Register" 
 
 #### Step S3: Configure MCP Server
 
-1. Check for existing config: `CLAUDECODE= claude mcp get knowz`
+1. Check for existing config with the host **List / get** command from [references/mcp-setup.md](references/mcp-setup.md)
    - If exists, ask to reconfigure or keep
-2. Parse scope (default: `local`); warn on `project` scope
+2. Parse scope (Claude default `local`; Grok default `user`); warn on `project` scope
 3. Determine endpoint (`https://mcp.knowz.io/mcp` or `--dev` / `--endpoint`)
-4. Run `claude mcp add` per [references/mcp-setup.md](references/mcp-setup.md)
-5. Verify: `CLAUDECODE= claude mcp get knowz`
+4. Run the host `mcp add` command per [references/mcp-setup.md](references/mcp-setup.md)
+5. Verify with the host **List / get** command
 6. **If Gemini CLI detected** (`.gemini/` directory exists): configure Gemini too
-7. Report MCP configured with scope/endpoint, display RESTART REQUIRED box telling user to reopen Claude Code and then run `/knowz setup` to create the vault config file.
+7. Report MCP configured with scope/endpoint, display RESTART REQUIRED box telling user to start a new session and then run `/knowz setup` to create the vault config file.
 8. STOP here — restart required before vault discovery.
 
 #### Step S4: Vault File Creation/Update (MCP available)

@@ -12,7 +12,8 @@
     "docs/",
     "agents/",
     "skills/",
-    ".claude-plugin/"
+    ".claude-plugin/",
+    ".grok-plugin/"
   ],
   "scripts": {
     "context-efficiency": "node knowzcode/context_efficiency_runtime.mjs",
@@ -31,6 +32,7 @@
     "claude",
     "codex",
     "gemini",
+    "grok",
     "cursor",
     "copilot",
     "windsurf",

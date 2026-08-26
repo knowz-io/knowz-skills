@@ -8,7 +8,7 @@ Please do not include sensitive credentials in reports. Mask API keys and tokens
 
 ## Scope
 
-This repository contains Claude Code plugins, platform adapter templates, local workflow files, and helper CLIs for Knowz and KnowzCode. The Knowz MCP server and hosted Knowz application are external services operated by Knowz.
+This repository contains Claude Code and Grok Build plugins, platform adapter templates, local workflow files, and helper CLIs for Knowz and KnowzCode. The Knowz MCP server and hosted Knowz application are external services operated by Knowz.
 
 ## Expected Handling
 

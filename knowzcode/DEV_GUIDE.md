@@ -12,7 +12,9 @@ For product overview, see [README.md](README.md). For detailed docs, see `docs/`
 
 ```
 ├── .claude-plugin/
-│   └── plugin.json              # Plugin manifest
+│   └── plugin.json              # Claude Code plugin manifest
+├── .grok-plugin/
+│   └── plugin.json              # Grok Build plugin manifest
 ├── skills/                      # Skills (13 — 10 user-invocable + 3 trigger)
 │   ├── work/SKILL.md
 │   ├── explore/SKILL.md

@@ -1,0 +1,13 @@
+{
+  "name": "knowzcode",
+  "version": "0.22.0",
+  "description": "KnowzCode - Platform-agnostic AI development methodology with TDD, quality gates, structured workflows, and enterprise compliance (custom guidelines enforced at quality gates)",
+  "author": {
+    "name": "Alex Headscarf",
+    "url": "https://github.com/knowz-io"
+  },
+  "homepage": "https://github.com/knowz-io/knowz-skills/tree/main/knowzcode",
+  "repository": "https://github.com/knowz-io/knowz-skills",
+  "license": "MIT",
+  "keywords": ["knowzcode", "tdd", "development-methodology", "quality-gates", "agents", "grok", "compliance", "governance", "enterprise"]
+}

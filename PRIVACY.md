@@ -2,11 +2,11 @@
 
 Last updated: June 24, 2026
 
-This policy covers the Knowz Claude Code plugins in this repository and the Knowz services they can connect to. The hosted Knowz product privacy page is available at https://knowz.io/privacy.
+This policy covers the Knowz Claude Code and Grok Build plugins in this repository and the Knowz services they can connect to. The hosted Knowz product privacy page is available at https://knowz.io/privacy.
 
 ## Data Collection
 
-The Claude Code plugins are local instruction files. They do not collect data on their own and they do not send conversation data anywhere unless a user explicitly configures or invokes a workflow that connects to an external service.
+The Claude Code and Grok Build plugins are local instruction files. They do not collect data on their own and they do not send conversation data anywhere unless a user explicitly configures or invokes a workflow that connects to an external service.
 
 When users configure or use the Knowz MCP server, Knowz may receive:
 

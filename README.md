@@ -19,13 +19,14 @@ This repository is the public source for two plugins and the marketplace that se
 - **[Knowz](./knowz/)** — give your AI a persistent, team-wide memory
 - **[KnowzCode](./knowzcode/)** — a disciplined development workflow with quality gates and TDD
 
-Both are built on the open [Model Context Protocol](https://modelcontextprotocol.io/), so your knowledge base works with any compatible AI — Claude, ChatGPT, Gemini, Copilot, Cursor, Windsurf, or your own agents:
+Both are built on the open [Model Context Protocol](https://modelcontextprotocol.io/), so your knowledge base works with any compatible AI — Claude, Grok, ChatGPT, Gemini, Copilot, Cursor, Windsurf, or your own agents:
 
 ```mermaid
 flowchart LR
     subgraph tools["Your AI tools"]
         direction TB
         CC["Claude Code"]
+        GX["Grok Build"]
         CX["Codex · Gemini"]
         OT["Cursor · Copilot · ..."]
     end
@@ -37,8 +38,10 @@ One knowledge base. Every AI tool in your workflow.
 
 ## Quick Start
 
+**Claude Code**
+
 ```bash
-# 1. Add the marketplace (in Claude Code)
+# 1. Add the marketplace
 /plugin marketplace add knowz-io/knowz-skills
 
 # 2. Install what you need
@@ -49,6 +52,23 @@ One knowledge base. Every AI tool in your workflow.
 /knowz register                          # create account + configure MCP
 /knowzcode:setup                         # initialize in your project
 ```
+
+**Grok Build**
+
+```bash
+# 1. Add the marketplace
+grok plugin marketplace add knowz-io/knowz-skills
+
+# 2. Install what you need (--trust activates MCP)
+grok plugin install knowz --trust
+grok plugin install knowzcode --trust
+
+# 3. Get going (new session so skills and MCP attach)
+/knowz register                          # create account + configure MCP
+/knowzcode:setup                         # initialize in your project
+```
+
+The same `knowz-io/knowz-skills` repo is the catalog for both hosts. Grok reads `.grok-plugin/marketplace.json`; Claude Code reads `.claude-plugin/marketplace.json`.
 
 ## Knowz — Knowledge Management
 

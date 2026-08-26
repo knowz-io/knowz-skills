@@ -21,9 +21,17 @@ KnowzCode brings discipline to AI-assisted development: impact analysis before d
 ## Quick Start
 
 ```bash
-# Claude Code (recommended)
+# Claude Code
 /plugin marketplace add knowz-io/knowz-skills
 /plugin install knowzcode@knowz-skills
+cd your-project/
+/knowzcode:setup
+```
+
+```bash
+# Grok Build
+grok plugin marketplace add knowz-io/knowz-skills
+grok plugin install knowzcode --trust
 cd your-project/
 /knowzcode:setup
 ```
@@ -169,6 +177,7 @@ Full guide: **[docs/enterprise-compliance.md](./docs/enterprise-compliance.md)**
 | Platform | Install | Status |
 |----------|---------|--------|
 | Claude Code | `/plugin install knowzcode@knowz-skills` | Full |
+| Grok Build | `grok plugin install knowzcode --trust` | Full |
 | OpenAI Codex | `npx @knowzai/knowzcode install --platforms codex` | Full |
 | Gemini CLI | `npx @knowzai/knowzcode install --platforms gemini` | Full |
 | GitHub Copilot | `npx @knowzai/knowzcode install --platforms copilot` | Experimental |

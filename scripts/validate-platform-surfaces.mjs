@@ -239,6 +239,12 @@ expect(
 );
 
 const claudeMarketplace = readJson('.claude-plugin', 'marketplace.json');
+const grokMarketplace = readJson('.grok-plugin', 'marketplace.json');
+const grokManifests = {
+  knowz: readJson('knowz', '.grok-plugin', 'plugin.json'),
+  knowzcode: readJson('knowzcode', '.grok-plugin', 'plugin.json'),
+};
+const grokPluginIndex = readJson('.grok-plugin', 'plugin-index.json');
 const codexMarketplace = readJson('.agents', 'plugins', 'marketplace.json');
 const codexManifests = {
   knowz: readJson('plugins', 'knowz', '.codex-plugin', 'plugin.json'),
@@ -316,6 +322,48 @@ if (claudeMarketplace?.plugins && codexMarketplace?.plugins) {
   }
 }
 
+if (grokMarketplace?.plugins) {
+  expect(grokMarketplace.name === 'knowz-skills', 'Grok marketplace name must be knowz-skills');
+  expect(
+    grokPluginIndex?.version === 1 && grokPluginIndex?.plugins,
+    'Missing or invalid .grok-plugin/plugin-index.json'
+  );
+
+  for (const productName of Object.keys(sourcePackages)) {
+    const sourcePkg = sourcePackages[productName];
+    const grokEntry = grokMarketplace.plugins.find((plugin) => plugin.name === productName);
+    const grokManifest = grokManifests[productName];
+    const grokIndex = grokPluginIndex?.plugins?.[productName];
+
+    expect(Boolean(grokEntry), `Missing Grok marketplace entry for ${productName}`);
+    expect(Boolean(grokManifest), `Missing Grok plugin manifest for ${productName}`);
+    expect(Boolean(grokIndex), `Missing Grok plugin-index entry for ${productName}`);
+    if (!sourcePkg || !grokEntry || !grokManifest) continue;
+
+    const grokSourcePath = grokEntry.source?.path ?? grokEntry.source;
+    expect(
+      grokSourcePath === `./${productName}` && (typeof grokEntry.source === 'string' || grokEntry.source?.type === 'local'),
+      `Unexpected Grok marketplace source for ${productName}: ${JSON.stringify(grokEntry.source)}`
+    );
+    expect(
+      grokEntry.version === sourcePkg.version,
+      `Grok marketplace version drift for ${productName}: ${grokEntry.version} !== ${sourcePkg.version}`
+    );
+    expect(
+      grokManifest.version === sourcePkg.version,
+      `Grok plugin version drift for ${productName}: ${grokManifest.version} !== ${sourcePkg.version}`
+    );
+    expect(
+      grokManifest.name === productName,
+      `Grok plugin manifest name drift for ${productName}: ${grokManifest.name}`
+    );
+    expect(
+      grokManifest.license === 'MIT',
+      `Grok plugin manifest must declare MIT license for ${productName}`
+    );
+  }
+}
+
 if (sourcePackages.knowzcode?.version) {
   const expectedVersion = sourcePackages.knowzcode.version;
   for (const file of [
@@ -337,6 +385,17 @@ expect(Boolean(knowzMcpManifest?.mcpServers?.knowz?.url), 'plugins/knowz/.mcp.js
 expect(
   Boolean(knowzMcpManifest?.mcpServers?.knowz?.bearer_token_env_var),
   'plugins/knowz/.mcp.json is missing bearer_token_env_var for Codex shared auth'
+);
+
+const grokKnowzMcp = readJson('knowz', '.mcp.json');
+expect(Boolean(grokKnowzMcp?.mcpServers?.knowz?.url), 'knowz/.mcp.json is missing mcpServers.knowz.url');
+expect(
+  grokKnowzMcp?.mcpServers?.knowz?.type === 'http',
+  'knowz/.mcp.json must declare type=http for Grok plugin MCP attach'
+);
+expect(
+  grokKnowzMcp?.mcpServers?.knowz?.url === knowzMcpManifest?.mcpServers?.knowz?.url,
+  'knowz/.mcp.json URL must match plugins/knowz/.mcp.json'
 );
 
 validateSkillDirectory('plugins', 'knowz', 'skills');

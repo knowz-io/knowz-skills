@@ -11,7 +11,7 @@ You are the **Knowz Auto** trigger skill. You make vault interaction lightweight
 
 ## When This Skill Activates
 
-This skill activates automatically when Claude detects the user's message matches this skill's description:
+This skill activates automatically when the host agent detects the user's message matches this skill's description:
 
 - Questions about past decisions: "why did we...", "what's our convention for...", "how did we build..."
 - Questions about patterns/standards: "what's the pattern for...", "do we have a standard for..."

@@ -90,7 +90,7 @@ Extract from response: API key from `data.personalApiKey` (prefix: `ukz_`). Vaul
 
 ## Step R5: Configure MCP Server
 
-Parse scope from arguments (default: `local`). If `project` scope, warn about `.mcp.json` git visibility.
+Parse scope from arguments (Claude default: `local`; Grok default: `user`). If `project` scope, warn about git visibility (`.mcp.json` on Claude, `./.grok/config.toml` on Grok).
 
 Ask auth method:
 ```
@@ -102,7 +102,7 @@ How would you like to authenticate with the MCP server?
 
 Configure per [mcp-setup.md](mcp-setup.md).
 
-Verify: `CLAUDECODE= claude mcp get knowz`
+Verify with the host **List / get** command from that file.
 
 ---
 
@@ -132,10 +132,10 @@ Then display the restart box:
 ┌─────────────────────────────────────────────────────┐
 │  RESTART REQUIRED                                   │
 │                                                     │
-│  Claude Code must be restarted to load the new      │
-│  MCP server — this is a platform limitation.        │
+│  Start a new session to load the new MCP server —   │
+│  this is a platform limitation.                     │
 │                                                     │
-│  → Close and reopen Claude Code                     │
+│  → Close and reopen this agent (Claude Code / Grok) │
 │  → Then run: /knowz status                          │
 │                                                     │
 │  {If OAuth: "Your browser will open for login on    │

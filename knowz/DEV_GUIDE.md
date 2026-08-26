@@ -1,13 +1,16 @@
 # knowz - Plugin Development Guide
 
-This is a Claude Code plugin that provides frictionless interaction with the Knowz MCP server.
+This is a Claude Code and Grok Build plugin that provides frictionless interaction with the Knowz MCP server.
 
 ## Structure
 
 ```
 knowz-skill/
 |- .claude-plugin/
-|  `- plugin.json              # Plugin manifest
+|  `- plugin.json              # Claude Code plugin manifest
+|- .grok-plugin/
+|  `- plugin.json              # Grok Build plugin manifest
+|- .mcp.json                   # Grok/Claude plugin MCP attach (HTTP Knowz server)
 |- skills/
 |  |- knowz/SKILL.md           # User-invocable: /knowz <action>
 |  |  `- references/
@@ -47,7 +50,7 @@ knowz-skill/
 - **`skills/knowz/SKILL.md`** - The core skill. All explicit `/knowz` commands route through here.
 - **`platform_adapters.md`** - Codex/Gemini generated skill templates.
 - **`skills/knowz/references/registration.md`** - Registration API endpoints, error codes, response format.
-- **`skills/knowz/references/mcp-setup.md`** - MCP server configuration: `claude mcp add` format, OAuth vs API key, scope options.
+- **`skills/knowz/references/mcp-setup.md`** - MCP server configuration: host CLI (Grok `grok mcp add` / Claude `claude mcp add`), OAuth vs API key, scope options.
 - **`skills/knowz-auto/SKILL.md`** - The trigger skill. Lightweight - reads the vault file, matches rules, does a quick search, or offers to save.
 - **`skills/knowz-cli/SKILL.md`** - GENERATED. Routes knowledge work through the `knowz` CLI instead of MCP. See "Regenerating knowz-cli" below.
 - **`agents/knowledge-worker.md`** - Dispatched for complex user-initiated multi-step operations.
