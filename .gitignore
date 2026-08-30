@@ -60,8 +60,5 @@ CLAUDE.local.md
 # Superpowers specs and plans (local only)
 docs/superpowers/
 
-# Dev-only slash commands (not shipped)
-.claude/commands/
-
 # Plugin validator/fixer output
 validation-reports/
