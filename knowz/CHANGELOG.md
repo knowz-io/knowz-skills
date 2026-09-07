@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.1] - 2026-09-07
+
+### Fixed
+
+- Claude, Codex, and Gemini installations now receive the verified Knowz CLI 0.5.0 skill, including its exact-version install command and 113-command inventory. The skill distinguishes public selfhosted setup from licensed portable deployments and checks the installed CLI version before using the inventory.
+- The Codex plugin now includes the same released CLI skill. Existing MCP skills retain the MCP package version; the CLI skill retains its independent release version and manifest hash.
+- Install, reinstall, upgrade, and uninstall acceptance checks verify the released skill bytes and preserve unrelated skills, MCP settings, profiles, vault routing, and pending knowledge.
+
 ## [0.11.0] - 2026-08-22
 
 ### Changed
