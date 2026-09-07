@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "cliVersion": "0.5.0",
+  "mcpPackageVersion": "0.11.1",
+  "sourceRevision": "4dc5ceccfaa12ac16829c8183c199731a9454b40",
+  "candidateRun": "https://github.com/knowz-io/knowz-platform/actions/runs/34154449959",
+  "publicRelease": "https://github.com/knowz-io/knowz-cli/releases/tag/v0.5.0",
+  "manifestSha256": "9f5063969235f7b26ba0af15f85e4cd38dee2d02967e0c24797f4d9a2e657e45",
+  "manifestHashMethod": "SHA-256 of JSON.stringify(parsed oclif.manifest.json)",
+  "commandCount": 113,
+  "assets": {
+    "claude": {
+      "name": "knowz-cli-SKILL.md",
+      "sha256": "76af915c07227245fa541b612f039f5ca79fda88e614e5c02f09dcc2b8925815"
+    },
+    "codex": {
+      "name": "knowz-cli-codex-SKILL.md",
+      "sha256": "cbec72aa2ceb14cb1e4906f2253d3eaf86bd4b9ce89176d07f9db87e18b3bdae"
+    }
+  },
+  "package": {
+    "filename": "knowzai-mcp-0.11.1.tgz",
+    "sha256": "e11d9a947e60e87fa12b3ce34611ee11a5430601f2582bb6e9f8ff55abf44811",
+    "publication": "prepared; publication is a separate action"
+  },
+  "localValidation": {
+    "host": {
+      "platform": "darwin",
+      "arch": "arm64"
+    },
+    "platformSurfaces": "passed",
+    "fiveDistributionTargets": "exact release bytes",
+    "installedPackageLifecycle": {
+      "platforms": [
+        "claude",
+        "codex",
+        "gemini"
+      ],
+      "operations": [
+        "install",
+        "reinstall",
+        "upgrade",
+        "uninstall"
+      ],
+      "exactReleasedBytes": true,
+      "ownershipManifests": true,
+      "unrelatedDataPreserved": true
+    },
+    "timestamp": "2026-09-07T19:33:59.041Z"
+  }
+}
