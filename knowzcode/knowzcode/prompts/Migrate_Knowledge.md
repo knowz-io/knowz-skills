@@ -256,23 +256,28 @@ Content:
 - Warnings and issues
 - Next steps checklist
 
-### 3. Log Entry (unless dry-run)
-Location: `knowzcode/knowzcode_log.md` (prepend)
+### 3. Journal Shard (unless dry-run)
+Location: `knowzcode/journal/YYYY-MM/<WorkGroupID>/YYYYMMDDTHHMMSSZ-knowledge-migration-<shortid>.md` (new file)
+
+Use `ungrouped` in place of `<WorkGroupID>` when the migration runs outside a WorkGroup. Never prepend or append `knowzcode/knowzcode_log.md` — it is a frozen archive.
 
 Format:
 ```markdown
 ---
-**Type:** Migration
-**Timestamp:** {timestamp}
-**NodeID(s):** {comma-separated}
-**Logged By:** knowledge-migrator
-**Details:**
+wgid: {WorkGroupID or ungrouped}
+type: knowledge-migration
+timestamp: {ISO-8601 UTC, e.g. 2026-09-12T19:00:00Z}
+agent: knowledge-migrator
+nodeids: [{comma-separated}]
+knowz_sync: pending
+summary: Migrated {n} specs from {count} sources
+---
+
 - **Sources:** {count} processed
 - **Format:** {format(s)}
 - **Created:** {n} specs
 - **Updated:** {n} specs
 - **Report:** {report_path}
----
 ```
 
 ---

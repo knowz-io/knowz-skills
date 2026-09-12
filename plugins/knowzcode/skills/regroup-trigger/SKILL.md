@@ -19,7 +19,7 @@ Use this as a lightweight router into `/knowzcode:regroup`. It never writes hand
 2. Do not trigger for normal questions or active implementation requests.
 3. Do not trigger during explicit `/knowzcode:*` or `/knowz` command execution.
 4. Check that `knowzcode/` exists. If not, do nothing.
-5. Read `knowzcode/knowzcode_tracker.md` when available to detect active WorkGroups, but do not block if the read fails and the user's handoff intent is explicit.
+5. Detect active WorkGroups from `knowzcode/journal/*/*/` (folders with no `arc-completion` or `workgroup-abandoned` shard) or `knowzcode/workgroups/*.md`, but do not block if the read fails and the user's handoff intent is explicit.
 6. Offer exactly once:
    ```text
    This looks like a good checkpoint. Want me to run `/knowzcode:regroup` with the current goal and next step so you can resume cleanly after clearing context?

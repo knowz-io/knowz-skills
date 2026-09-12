@@ -23,5 +23,5 @@ Read `knowzcode/knowzcode_loop.md` section on Micro-Fix.
 
 1. Implement the fix
 2. Run targeted tests for the affected code
-3. Prepend a MicroFix entry to `knowzcode/knowzcode_log.md`
-4. Commit with `fix: {description}` message
+3. Create one immutable `microfix` shard at `knowzcode/journal/YYYY-MM/<WorkGroupID-or-ungrouped>/YYYYMMDDTHHMMSSZ-microfix-<shortid>.md`; never prepend `knowzcode/knowzcode_log.md` (frozen archive)
+4. Commit with `fix: {description}` message

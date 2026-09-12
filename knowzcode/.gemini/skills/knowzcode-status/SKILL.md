@@ -26,7 +26,7 @@ Check KnowzCode MCP connection, vault health, and agent status.
 3. Read `knowz-vaults.md` for vault configuration
 4. Test MCP connectivity by calling `list_vaults`
 5. Check each configured vault's health and item count
-6. Read `knowzcode/knowzcode_tracker.md` for active WorkGroups
+6. Derive active WorkGroups from `knowzcode/journal/*/*/` (no `arc-completion` or `workgroup-abandoned` shard)
 
 Report connection status, vault health, agent availability, and active WorkGroups.
 If MCP is not configured, suggest `/knowz setup <api-key>` or `/knowz register`.
@@ -48,4 +48,4 @@ WorkGroups: {A} active, {C} completed
 Next: {one concrete suggested action}
 ```
 
-Omit lines that don't apply.
+Omit lines that don't apply.

@@ -204,12 +204,29 @@ If `VAULTS_CONFIGURED = false` or `MCP_ACTIVE = false`, skip this step silently.
 
 Default: return the bounded Step 4 report and make zero writes.
 
-Only when `PERSIST_AUTHORIZED = true`, persist exactly the authorized targets. If local log persistence was explicitly requested, request write permission and append to `knowzcode/knowzcode_log.md`:
-```markdown
-| {timestamp} | AUDIT | {audit_type} | {summary} |
+Only when `PERSIST_AUTHORIZED = true`, persist exactly the authorized targets. If local persistence was explicitly requested, request write permission and create one new immutable journal shard. Never prepend or append `knowzcode/knowzcode_log.md` — it is a frozen archive.
+
+```
+knowzcode/journal/YYYY-MM/<WorkGroupID>/YYYYMMDDTHHMMSSZ-audit-<shortid>.md
 ```
 
-An enterprise-vault push additionally requires explicit vault-save authorization, `mcp_compliance_enabled: true`, a resolved enterprise vault, and `COMPLIANCE_CONFIG.push_audit_results != false`. Configuration can forbid a write but cannot authorize one. Never broaden local-log authorization into vault authorization or vice versa.
+Use `ungrouped` in place of `<WorkGroupID>` when no WorkGroup is active.
+
+```markdown
+---
+wgid: {WorkGroupID or ungrouped}
+type: audit
+timestamp: {ISO-8601 UTC}
+agent: reviewer
+nodeids: [{audited NodeIDs, or empty}]
+knowz_sync: pending
+summary: {audit_type} — {one-line finding}
+---
+
+{bounded audit report body: scope, score, findings with file/line evidence}
+```
+
+An enterprise-vault push additionally requires explicit vault-save authorization, `mcp_compliance_enabled: true`, a resolved enterprise vault, and `COMPLIANCE_CONFIG.push_audit_results != false`. Configuration can forbid a write but cannot authorize one. Never broaden local-shard authorization into vault authorization or vice versa.
 
 ## Related Skills
 

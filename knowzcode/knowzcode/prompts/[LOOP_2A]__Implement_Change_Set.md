@@ -3,7 +3,7 @@
 **WorkGroupID for Implementation:**
 [Orchestrator: Re-state the `WorkGroupID` that you have reviewed and are now approving for implementation. This confirms all associated specs are approved.]
 
-> **Automation Path (Claude Code):** Use `/knowzcode-step phase=2A workgroup_id=<ID>` to activate the `builder` subagent. The command enforces the `environment-guard` skill and writes back tracker updates once the loop instructions are complete. On Codex, use the `/knowzcode:work` skill's inline Phase 2A flow and follow `knowzcode/codex_execution.md` for native delegation.
+> **Automation Path (Claude Code):** Use `/knowzcode-step phase=2A workgroup_id=<ID>` to activate the `builder` subagent. The command enforces the `environment-guard` skill and records progress in the WorkGroup session file once the loop instructions are complete. On Codex, use the `/knowzcode:work` skill's inline Phase 2A flow and follow `knowzcode/codex_execution.md` for native delegation.
 
 **Remember:**
 - Cross-check code updates against the latest specs and refresh them if implementation diverges.

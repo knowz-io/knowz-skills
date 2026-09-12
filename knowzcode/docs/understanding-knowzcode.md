@@ -175,9 +175,28 @@ Here's how it all works together:
    - Knows how they connect
    - Knows what changes are safe to make
 
-### 5. Your Mission Control Dashboard (knowzcode/knowzcode_tracker.md)
+### 5. Your Mission Control Dashboard (knowzcode/journal/)
 
-Think of this as your project's control center - everything visible at a glance:
+Think of this as your project's control center. Earlier KnowzCode versions kept
+this state in a single `knowzcode_tracker.md` table; that file is now a frozen
+archive. Current state is **derived** from the journal tree, so nothing has to
+be hand-maintained and no two agents ever edit the same row:
+
+| Question | How it is answered |
+|:---|:---|
+| **What is in flight?** | A `journal/YYYY-MM/<WorkGroupID>/` folder with no `arc-completion` or `workgroup-abandoned` shard |
+| **What shipped recently?** | The newest shard filenames — they are UTC time-prefixed, so `ls | sort -r` is the history |
+| **What does a NodeID look like now?** | Its spec at `knowzcode/specs/[NodeID].md`, kept at "as-built" state |
+| **What was learned?** | The shard body: verification summary, architectural learnings, ripple effects |
+| **What debt exists?** | `REFACTOR_` items in each spec's `Debt & Gaps` section |
+
+`knowzcode/scripts/journal-index.sh` prints the in-flight list and recent
+history if you'd rather not type the `find` yourself.
+
+#### The Archived Table
+
+The old dashboard columns are still readable in `knowzcode_tracker.md` for
+projects that used it before the journal:
 
 | Column | What It Reveals |
 |:---|:---|
@@ -214,21 +233,36 @@ All three are being built as one coordinated change!
 - Identify technical debt (REFACTOR_ tasks)
 - One-click access to any component's details
 
-### 6. Your Project's Flight Recorder (knowzcode/knowzcode_log.md)
+### 6. Your Project's Flight Recorder (knowzcode/journal/)
 
-Think of this as your project's **permanent memory** - a detailed history of every important decision, change, and event:
+Think of this as your project's **permanent memory** - a detailed history of
+every important decision, change, and event.
 
-#### What Gets Logged
+Every event is one **immutable file**:
 
-Every significant action creates a timestamped entry:
+```
+knowzcode/journal/YYYY-MM/<WorkGroupID>/YYYYMMDDTHHMMSSZ-<type>-<shortid>.md
+```
 
-- **🚀 SystemInitialization**: Project started
-- **📋 SpecApproved**: Blueprint for `API_AuthCheck` approved
-- **✅ ARC-Completion**: Login feature built, tested, and verified
-- **🔧 MicroFix**: Fixed typo in error message
-- **❗ Issue**: API timeout discovered, investigating
-- **♻️ RefactorCompletion**: Optimized database queries
-- **🎯 FeatureAddition**: Payment system scope added
+Shards are created and never edited. A correction is a new shard that references
+the earlier filename. Because each event is its own file, several agents can
+record work at the same time without ever touching a shared document — which is
+exactly what the old single `knowzcode_log.md` could not do. That file is now a
+frozen archive; nothing writes to it.
+
+#### What Gets Recorded
+
+Every significant action creates a timestamped shard:
+
+- **🚀 `init`**: Project started
+- **🏁 `start-work`**: Work session opened with an approved scope
+- **✅ `arc-completion`**: Login feature built, tested, and verified
+- **🔧 `microfix`**: Fixed typo in error message
+- **🔎 `audit`**: Completeness or quality audit result
+- **📡 `telemetry`**: Production error investigation
+- **♻️ `refactor-completion`**: Optimized database queries
+- **🗄️ `knowledge-migration`**: Existing docs migrated into specs
+- **🛑 `workgroup-abandoned`**: Work stopped, with reason
 
 #### Why History Matters
 
@@ -242,22 +276,31 @@ Every significant action creates a timestamped entry:
 
 #### Real Example Entry
 
+`knowzcode/journal/2025-01/kc-feat-user-auth-20250107-143022/20250107T143022Z-arc-completion-9f3a.md`:
+
 ```markdown
 ---
-**Type:** ARC-Completion
-**Timestamp:** 2025-01-07T14:30:22Z
-**WorkGroupID:** feat-20250107-143022
-**NodeID(s):** UI_LoginForm, API_AuthCheck, SVC_TokenValidator
-**Details:**
+wgid: kc-feat-user-auth-20250107-143022
+type: arc-completion
+timestamp: 2025-01-07T14:30:22Z
+agent: closer
+nodeids: [UI_LoginForm, API_AuthCheck, SVC_TokenValidator]
+knowz_sync: pending
+summary: User authentication shipped and verified
+---
+
 Successfully implemented and verified the Change Set for user authentication.
 - **ARC Verification Summary:** All security criteria met, 15 tests passing
 - **Architectural Learnings:** Discovered need for rate limiting
 - **Unforeseen Ripple Effects:** UI_Dashboard needs update for new auth state
 - **Technical Debt Created:** REFACTOR_API_AuthCheck (optimize token generation)
----
 ```
 
-From this single entry, future AI sessions know:
+The `knowz_sync` field is `pending` until the event is synced to a Knowz vault,
+then it holds the knowledge id. Knowz is optional and never blocks anything — a
+shard written offline with `knowz_sync: pending` is already a complete record.
+
+From this single shard, future AI sessions know:
 - What was built together
 - When it happened
 - What was discovered during building
@@ -266,7 +309,8 @@ From this single entry, future AI sessions know:
 
 #### The Hidden Second Purpose: Quality Standards
 
-The log also contains your project's **quality criteria** - the standards every piece of code must meet:
+`knowzcode/journal/README.md` also carries your project's **quality criteria** -
+the standards every piece of code must meet:
 
 - **Reliability**: Error handling, fault tolerance
 - **Security**: Input validation, authentication
@@ -282,8 +326,8 @@ The Loop gives AI-assisted development a repeatable, verified workflow. Each pro
 #### Starting Every Session
 
 Start with `/knowzcode:work "your goal"` (Claude Code) or the Loop 1A prompt (any platform):
-- AI reads the log (what happened before)
-- Checks the tracker (what's the current state)
+- AI reads recent journal shards (what happened before)
+- Derives what's in flight from the journal tree (what's the current state)
 - Analyzes impact for your goal
 - **You:** Approve the proposed Change Set
 

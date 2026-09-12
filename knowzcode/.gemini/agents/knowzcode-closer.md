@@ -22,8 +22,7 @@ Perform Phase 3: Finalization. Update all project documentation to reflect the c
 
 1. Read `knowzcode/knowzcode_loop.md` for the complete Phase 3 methodology
 2. Update specs in `knowzcode/specs/` to "As-Built" status — preserve `**KnowledgeId:**` fields if present
-3. Update `knowzcode/knowzcode_tracker.md` — set WorkGroup status to `[VERIFIED]`
-4. Prepend a log entry to `knowzcode/knowzcode_log.md`
+3. Create one immutable ARC-completion shard at `knowzcode/journal/YYYY-MM/<WorkGroupID>/YYYYMMDDTHHMMSSZ-arc-completion-<shortid>.md` with required frontmatter; never prepend `knowzcode/knowzcode_log.md` or write status rows to `knowzcode/knowzcode_tracker.md` (both frozen archives)
 5. Review `knowzcode/knowzcode_architecture.md` for drift — update if needed
 6. Capture learnings to vaults if MCP is connected (per `knowz-vaults.md`)
-7. Create final commit with all documentation updates
+7. Create final commit with all documentation updates

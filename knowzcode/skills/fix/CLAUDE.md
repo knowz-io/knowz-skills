@@ -18,7 +18,7 @@ Agents are invoked with the current `Agent()` tool (`Task` is the older compatib
 2. **Profile resolution** — parse `--profile` flag or read `knowzcode/knowzcode_orchestration.md`; detect advisor environment constraints
 3. **Delegate to knowzcode:microfix-specialist** — single `Agent()` call with target, summary, and resolved model/advisor-guidance
 4. **Verification loop (inside agent)** — run tests, fix failures, re-run until all pass; then run linter
-5. **Log and commit** — MicroFix entry in `knowzcode/knowzcode_log.md`; commit with `fix:` prefix
+5. **Record and commit** — write one immutable `microfix` shard under `knowzcode/journal/YYYY-MM/<wgid-or-ungrouped>/`; commit with `fix:` prefix. Never prepend `knowzcode_log.md` or write to `knowzcode_tracker.md` (frozen archives).
 
 ## Scope Redirect
 
@@ -46,6 +46,6 @@ Frontier profile: keeps the micro-fix on Opus (execution work). `--fable-executi
 
 ## Output Paths
 
-- Log entry: `knowzcode/knowzcode_log.md`
+- Journal shard: `knowzcode/journal/YYYY-MM/<wgid-or-ungrouped>/YYYYMMDDTHHMMSSZ-microfix-<shortid>.md`
 - Commit: in the project's git history (`fix:` prefix)
 - No WorkGroup file, no specs, no planning documents

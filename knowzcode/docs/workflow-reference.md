@@ -326,11 +326,17 @@ Agent(subagent_type="closer"):
 
 ### 5. File Update Protocol
 At EVERY phase transition:
-1. Update `knowzcode/knowzcode_tracker.md` (status changes)
-2. Update `knowzcode/knowzcode_log.md` (event logging)
-3. Update `knowzcode/workgroups/{WorkGroupID}.md` (phase progress, todos)
+1. Update `knowzcode/workgroups/{WorkGroupID}.md` (phase progress, todos)
+2. At completion, create one immutable shard at
+   `knowzcode/journal/YYYY-MM/{WorkGroupID}/YYYYMMDDTHHMMSSZ-<type>-<shortid>.md`
 
-Use Read -> Edit -> Verify pattern for all file updates.
+Never prepend `knowzcode/knowzcode_log.md` and never write status rows to
+`knowzcode/knowzcode_tracker.md` — both are frozen archives. Status is derived
+from the journal tree, not recorded in a shared table.
+
+Use Read -> Edit -> Verify for the WorkGroup file. Journal shards are plain
+creates: never edit an existing shard, and record corrections as a new shard
+referencing the earlier filename.
 
 ---
 

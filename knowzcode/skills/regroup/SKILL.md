@@ -34,7 +34,7 @@ Platform-specific frontmatter may differ, but the workflow contract and handoff 
 Verify this is a KnowzCode project:
 
 1. Check that `knowzcode/` exists.
-2. Check for `knowzcode/knowzcode_tracker.md`.
+2. Check for `knowzcode/knowzcode_loop.md`.
 3. If missing, stop and suggest `/knowzcode:setup`.
 
 ### Step 2: Resolve WorkGroup
@@ -42,7 +42,7 @@ Verify this is a KnowzCode project:
 Find the WorkGroup this handoff belongs to:
 
 1. If the user supplied a WorkGroup ID or path, use it.
-2. Else read `knowzcode/knowzcode_tracker.md` for active `[WIP]` entries.
+2. Else derive active WorkGroups: glob `knowzcode/journal/*/*/` for folders with no `*-arc-completion-*.md` and no `*-workgroup-abandoned-*.md` shard, cross-checked against `knowzcode/workgroups/*.md` session files. Do not read `knowzcode_tracker.md` — it is a frozen archive.
 3. If one active WorkGroup exists, use it.
 4. If multiple active WorkGroups exist, choose the one clearly referenced by the current session; otherwise ask the user to choose.
 5. If none exist, create a standalone handoff with `WorkGroupID: none` and point the user toward `/knowzcode:work` after resume.

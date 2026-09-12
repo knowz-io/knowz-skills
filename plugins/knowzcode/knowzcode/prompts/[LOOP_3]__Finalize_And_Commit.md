@@ -3,7 +3,7 @@
 **WorkGroupID for Finalization:**
 [Orchestrator: Re-state the `WorkGroupID` that has passed implementation and verification, authorizing its finalization and commit.]
 
-> **Automation Path:** Execute `/knowzcode-step phase=3 workgroup_id=<ID>` to hand off to the `closer` subagent. It chains `tracker-update`, `log-entry-builder`, and `architecture-diff` skills to wrap up the loop.
+> **Automation Path:** Execute `/knowzcode-step phase=3 workgroup_id=<ID>` to hand off to the `closer` subagent. It chains `journal-shard-writer` and `architecture-diff` skills to wrap up the loop.
 
 **Remember:**
 - Finalize every spec in `knowzcode/specs/` to reflect the as-built system.
@@ -28,14 +28,15 @@ The implementation and verification for the specified `WorkGroupID` is complete.
     *   For **each** `NodeID` in the `WorkGroupID`, update its spec file in `specs/` to the "as-built" state, ensuring it perfectly reflects the verified code.
 
 2.  **Check Architecture (Step 8):**
-    *   Conduct the Flowchart Consistency Check. If you find a simple discrepancy, fix `knowzcode_architecture.md` directly. If it's complex, document it in the log.
+    *   Conduct the Flowchart Consistency Check. If you find a simple discrepancy, fix `knowzcode_architecture.md` directly. If it's complex, document it in the Step 9 shard.
 
-3.  **Log Operation (Step 9):**
-    *   Create the single, comprehensive `ARC-Completion` log entry in `knowzcode_log.md`. Ensure it includes the flowchart check outcome, any unforeseen ripple effects, and project overview updates. Use an environment-sourced timestamp.
+3.  **Write ARC-Completion Shard (Step 9):**
+    *   Create one new immutable journal shard at `knowzcode/journal/YYYY-MM/<WorkGroupID>/YYYYMMDDTHHMMSSZ-arc-completion-<shortid>.md` using an environment-sourced UTC timestamp. Required frontmatter: `wgid`, `type: arc-completion`, `timestamp`, `agent`, `nodeids`, `knowz_sync: pending`, `summary` (see `knowzcode_loop.md` section 2.1). The body must include the flowchart check outcome, any unforeseen ripple effects, and project overview updates.
+    *   Never prepend or append `knowzcode_log.md`, and never edit an existing shard. This shard is the terminal record that closes the WorkGroup.
 
-4.  **Update Tracker, Schedule Debt, & Check Project Overview (Step 10):**
-    *   **Update Tracker:** In `knowzcode_tracker.md`, mark all nodes in the `WorkGroupID` as `[VERIFIED]` and clear their `WorkGroupID`.
-    *   **Schedule Debt:** Perform the "Technical Debt Scheduling" step. For any nodes with documented debt, create new `REFACTOR_` tasks in the tracker.
+4.  **Schedule Debt & Check Project Overview (Step 10):**
+    *   **Do not mutate `knowzcode_tracker.md`** — it is a frozen archive. NodeID status is implied by the ARC-completion shard plus the as-built specs.
+    *   **Schedule Debt:** Perform the "Technical Debt Scheduling" step. For any nodes with documented debt, record new `REFACTOR_` tasks in the `Debt & Gaps` section of the relevant spec and list them in the shard body.
     *   **Update Project Overview:** Check if this Change Set impacts `knowzcode_project.md`:
         - New major features → Update "Key Features" section
         - New libraries/tools → Update "Technology Stack" table
@@ -52,8 +53,8 @@ The implementation and verification for the specified `WorkGroupID` is complete.
 >
 > *   All specifications have been updated to the 'as-built' state.
 > *   The architecture flowchart has been checked and updated.
-> *   A complete `ARC-Completion` entry has been logged.
-> *   The tracker is updated, and all nodes are now `[VERIFIED]`.
+> *   A complete `ARC-Completion` shard has been written to `knowzcode/journal/`.
+> *   Completion is recorded by that shard; the frozen `knowzcode_log.md`/`knowzcode_tracker.md` archives were not modified.
 > *   **Project Overview Updates:** [None | Updated sections: Technology Stack, Key Features]
 > *   The final `feat:` commit has been made to version control.
 > *   **New Refactor Tasks Created:** [List any REFACTOR_ nodes created, or 'None'].

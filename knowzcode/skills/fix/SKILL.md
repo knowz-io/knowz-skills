@@ -84,10 +84,11 @@ REPEAT until all checks pass:
 | Configuration fix | Integration tests |
 | Data handling fix | Unit + Integration tests |
 
-### 5. Log and Commit
-- Log MicroFix entry in `knowzcode/knowzcode_log.md`
-- Include verification evidence (which tests passed)
-- Commit with `fix:` prefix
+### 5. Record and Commit
+- Write one immutable `microfix` journal shard at `knowzcode/journal/YYYY-MM/<WorkGroupID>/YYYYMMDDTHHMMSSZ-microfix-<shortid>.md`, using `ungrouped` when no WorkGroup is active. Required frontmatter: `wgid`, `type`, `timestamp`, `agent`, `nodeids`, `knowz_sync`, `summary` (see `knowzcode_loop.md` section 2.1).
+- Never prepend to `knowzcode/knowzcode_log.md` and never write rows to `knowzcode/knowzcode_tracker.md` — both are frozen archives.
+- Include verification evidence (which tests passed) in the shard body
+- Commit with `fix:` prefix, staging the new shard with the code change
 
 ---
 
