@@ -47,8 +47,9 @@ Orchestrate the update process by:
    ├─ Apply changes systematically
    ├─ Log all changes to update manifest
    ├─ Preserve project-specific data:
-   │  ├─ knowzcode_tracker.md entries
-   │  ├─ knowzcode_log.md events
+   │  ├─ journal/**/*.md shards (immutable work record)
+   │  ├─ knowzcode_tracker.md (frozen archive)
+   │  ├─ knowzcode_log.md (frozen archive)
    │  ├─ knowzcode_project.md content
    │  └─ workgroups/*.md files
    └─ Update version markers
@@ -99,8 +100,9 @@ For each command file:
 **Strategy**: Smart merge with data preservation
 
 **CRITICAL - Never overwrite these data files:**
-- `knowzcode_tracker.md` (project tracking data)
-- `knowzcode_log.md` (project history)
+- `journal/**/*.md` (immutable work shards — the live record; append new files only)
+- `knowzcode_tracker.md` (frozen archive of pre-journal tracking data)
+- `knowzcode_log.md` (frozen archive of pre-journal history)
 - `knowzcode_project.md` (project-specific content)
 - `environment_context.md` (project-specific config)
 - `workgroups/*.md` (active WorkGroup state)
@@ -356,7 +358,7 @@ After successful update:
 ```markdown
 1. Update version markers:
    - Create/update knowzcode/VERSION.txt
-   - Log in knowzcode_log.md
+   - Ensure knowzcode/journal/ exists (create with README if missing)
 
 2. Generate update report:
    - Show what changed

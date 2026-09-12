@@ -54,7 +54,7 @@ Do NOT trigger if:
 
 When triggered:
 
-1. Check for an active WorkGroup by reading `knowzcode/knowzcode_tracker.md` when present.
+1. Check for an active WorkGroup: a `knowzcode/journal/*/*/` folder with no `*-arc-completion-*.md` or `*-workgroup-abandoned-*.md` shard, or an active `knowzcode/workgroups/*.md` session file.
 2. Extract a concise next-step hint from the user's message when one is present.
 3. Offer exactly once:
    ```text

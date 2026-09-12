@@ -3,7 +3,7 @@
 **WorkGroupID for Audit:**
 [Orchestrator: Re-state the `WorkGroupID` that has completed Loop 2A and requires an implementation audit.]
 
-> **Automation Path:** Trigger `/knowzcode-step phase=2B workgroup_id=<ID>` or `/knowzcode-audit audit=implementation workgroup_id=<ID>` to run the `reviewer` subagent in read-only mode. It utilizes `spec-quality-check`, `tracker-scan`, and `log-entry-builder` skills to compute the completion percentage.
+> **Automation Path:** Trigger `/knowzcode-step phase=2B workgroup_id=<ID>` or `/knowzcode-audit audit=implementation workgroup_id=<ID>` to run the `reviewer` subagent in read-only mode. It utilizes `spec-quality-check` and `journal-scan` skills to compute the completion percentage.
 
 **Remember:**
 - Flag any spec discrepancies you uncover and update the relevant files in `knowzcode/specs/`.
@@ -25,7 +25,7 @@ This is a **READ-ONLY** quality gate to audit the completeness of the implementa
 ### Execution Protocol
 
 #### Phase 0: Reconnaissance (READ-ONLY)
-1.  **Identify Audit Scope:** Get all `NodeID`s associated with the `WorkGroupID` from `knowzcode_tracker.md`.
+1.  **Identify Audit Scope:** Get all `NodeID`s associated with the `WorkGroupID` from `knowzcode/workgroups/<WorkGroupID>.md` and the WorkGroup's `knowzcode/journal/YYYY-MM/<WorkGroupID>/` shards.
 2.  **List Artifacts:** List all source code files that were created or modified for this `WorkGroupID`.
 3.  **Map Built Features:** Briefly map what was built (e.g., components, functions, features, tests).
 

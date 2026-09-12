@@ -10,8 +10,8 @@ Create a local handoff in `knowzcode/handoffs/`. Do not save the handoff itself 
 
 ## Instructions
 
-1. Verify `knowzcode/` and `knowzcode/knowzcode_tracker.md` exist.
-2. Resolve the active WorkGroup from the user's argument or `[WIP]` entries in `knowzcode/knowzcode_tracker.md`.
+1. Verify `knowzcode/` and `knowzcode/knowzcode_loop.md` exist.
+2. Resolve the active WorkGroup from the user's argument or from `knowzcode/journal/*/*/` folders with no `arc-completion` or `workgroup-abandoned` shard.
 3. Read the selected WorkGroup file when available.
 4. Collect goal, current phase, state, blockers, next step, autonomy mode, branch, commit, dirty files, and useful references.
 5. Create `knowzcode/handoffs/` if missing.

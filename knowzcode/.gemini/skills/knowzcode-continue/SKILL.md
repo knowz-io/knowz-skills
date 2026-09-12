@@ -10,7 +10,7 @@ Resume an interrupted KnowzCode workflow or advance to the next phase.
 
 ## Instructions
 
-Check `knowzcode/handoffs/*.md` for a requested or latest local handoff, then read `knowzcode/knowzcode_tracker.md` to find active `[WIP]` WorkGroups.
+Check `knowzcode/handoffs/*.md` for a requested or latest local handoff, then derive active WorkGroups from `knowzcode/journal/*/*/` (folders with no `arc-completion` or `workgroup-abandoned` shard).
 
 ### Step 1: Find Active WorkGroup
 - One active: use it

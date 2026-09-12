@@ -94,14 +94,14 @@ If `AUTONOMOUS_MODE = false`: If rejected — re-run specs needing revision. If 
 **Pre-Implementation Commit:**
 ```bash
 git status --short
-git diff -- knowzcode/workgroups/{WorkGroupID}.md knowzcode/knowzcode_tracker.md {approved-spec-paths}
-git add -- knowzcode/workgroups/{WorkGroupID}.md knowzcode/knowzcode_tracker.md {approved-spec-paths}
+git diff -- {approved-spec-paths} {new-journal-shards}
+git add -- {approved-spec-paths} {new-journal-shards}
 git diff --cached --check
 git diff --cached --name-only
 git commit -m "KnowzCode: Specs approved for {WorkGroupID}"
 ```
 
-Resolve `{approved-spec-paths}` to an explicit, reviewed list before running these commands. Abort if the staged name list contains anything outside the active WorkGroup, tracker, and approved specs. Never stage the `knowzcode/` directory wholesale.
+Resolve `{approved-spec-paths}` to an explicit, reviewed list before running these commands. Abort if the staged name list contains anything outside the approved specs and newly created journal shards. `knowzcode/workgroups/` is gitignored local session state and is never staged; `knowzcode_tracker.md` is a frozen archive and has no changes to stage. Never stage the `knowzcode/` directory wholesale.
 
 ### Lead Responsibility: Progress Capture (Gate #2) — MUST
 
@@ -239,8 +239,8 @@ Invoke `vault-delta` with `explicit_save: true`, consolidate all retained deltas
 
 Before reporting "Workflow Complete", verify:
 - [ ] WorkGroup file created and updated to "Closed" in `knowzcode/workgroups/`
-- [ ] `knowzcode_tracker.md` updated — all NodeIDs at `[VERIFIED]`
-- [ ] `knowzcode_log.md` ARC-Completion entry written
+- [ ] ARC-completion journal shard written at `knowzcode/journal/YYYY-MM/{WorkGroupID}/` with required frontmatter (`wgid`, `type`, `timestamp`, `agent`, `nodeids`, `knowz_sync`, `summary`)
+- [ ] No writes made to `knowzcode_log.md` or `knowzcode_tracker.md` (both frozen archives)
 - [ ] MCP progress capture attempted (or every failed logical mutation confirmed exactly once in `knowz-pending.md` with its distinct idempotency key and announced to the user)
 - [ ] Specs updated to As-Built / FINAL status
 - [ ] As-built specs, components, diagrams, integration contracts, corrections/deprecations, and enterprise guideline provenance captured or explicitly skipped with reason

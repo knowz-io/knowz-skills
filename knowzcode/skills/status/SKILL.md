@@ -33,10 +33,12 @@ Check KnowzCode project status and report findings to the user.
 
    Verify the `knowzcode/` directory exists and check for required files:
    - `knowzcode/knowzcode_loop.md`
-   - `knowzcode/knowzcode_tracker.md`
+   - `knowzcode/journal/` (directory — the active work record)
    - `knowzcode/knowzcode_project.md`
    - `knowzcode/knowzcode_architecture.md`
    - `knowzcode/knowzcode_orchestration.md`
+
+   `knowzcode/knowzcode_log.md` and `knowzcode/knowzcode_tracker.md` may still be present as frozen archives from before the journal; their absence is not a problem and they are never written to.
 
    Report:
    ```
@@ -45,7 +47,7 @@ Check KnowzCode project status and report findings to the user.
    KnowzCode Directory: {Found | Not found}
    Core Files: {count}/{total} present
      - knowzcode_loop.md: {Present | Missing}
-     - knowzcode_tracker.md: {Present | Missing}
+     - journal/: {Present | Missing}
      - knowzcode_project.md: {Present | Missing}
      - knowzcode_architecture.md: {Present | Missing}
      - knowzcode_orchestration.md: {Present | Missing}
@@ -74,21 +76,29 @@ Check KnowzCode project status and report findings to the user.
    Plugin Frontmatter: {supported | unsupported fields found: paths}
    ```
 
-3. **Check Active WorkGroups and Tracker**
+3. **Derive Activity from the Journal**
 
-   - Glob for `knowzcode/workgroups/*.md` — count active (Status: Active) vs completed
-   - Read `knowzcode/knowzcode_tracker.md` — count NodeIDs by status ([WIP], [VERIFIED], [PLANNED])
-   - Check `knowzcode/knowzcode_log.md` — show last 3 log entries if available
+   In-flight state is derived from the journal tree — there is no index file to read and the tracker is never consulted for live status.
+
+   - Glob for `knowzcode/journal/*/*/` — each directory is one WorkGroup's shard folder
+   - A WorkGroup is **in flight** when its folder contains no `*-arc-completion-*.md` and no `*-workgroup-abandoned-*.md` shard; otherwise it is closed
+   - Glob for `knowzcode/workgroups/*.md` — local session files are a second signal for an in-flight WorkGroup (gitignored, may be absent on a fresh clone)
+   - Glob for `knowzcode/journal/*/*/*.md` and sort descending — filenames are UTC time-prefixed, so the newest shards are the recent history. Read the `summary:` frontmatter of the last few.
+   - Optional: `knowzcode/scripts/journal-index.sh` prints the same thing if installed. It is a convenience, not a requirement.
 
    Report:
    ```
    ## Project Activity
 
-   Active WorkGroups: {count}
-   Completed WorkGroups: {count}
-   Tracker: {WIP count} WIP, {VERIFIED count} verified, {PLANNED count} planned
-   Recent Log: {last 3 entries or "No entries"}
+   In-flight WorkGroups: {count}
+   Closed WorkGroups: {count}
+   Total journal shards: {count}
+   Recent activity:
+     - {timestamp} {type} {wgid} — {summary}
+     - ... (last 3 shards, or "No shards yet")
    ```
+
+   If `knowzcode/knowzcode_log.md` or `knowzcode_tracker.md` exist, note them once as pre-journal archives; do not count their entries as current activity.
 
 4. **Check Pending Captures**
 

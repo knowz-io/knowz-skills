@@ -24,7 +24,8 @@ Parallel independent work uses named agents. Agent Teams is optional, experiment
 - Default active inherited/resumed writers: two; no overlapping file ownership; nesting depth two.
 - Named plugin agents rely on session permissions plus supported tool allowlists; never bypass permission checks.
 - Agent results are bounded summaries with file/line or test evidence and artifact paths. Raw logs stay in artifacts.
-- TDD, gates, security/compliance blockers, vault capture, tracker/log updates, and consolidated pre-Gate-3 verification survive every capability fallback.
+- TDD, gates, security/compliance blockers, vault capture, journal shard writes, and consolidated pre-Gate-3 verification survive every capability fallback.
+- Completion is recorded as one immutable journal shard (`knowzcode/journal/YYYY-MM/<wgid>/...`). Never prepend `knowzcode_log.md` or write status rows to `knowzcode_tracker.md`; both are frozen archives.
 - Strict relay remains exec/MCP transport as documented in `references/relay-execution.md`; do not add Agent, fork, Team, ambient MCP, browser, or wider permissions.
 
 ## References

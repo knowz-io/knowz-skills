@@ -169,7 +169,7 @@ If local work is cheaper or named-agent dispatch is unavailable, the lead perfor
    - Call `search_knowledge({vault_id}, "{specific_aspect_of_topic}")` for targeted follow-ups.
    - Call `ask_question({vault_id}, "{question_about_topic}")` for synthesized answers.
 
-3. **Local context**: Start with topic grep/file inventory. Read matching specs first; load architecture only for a boundary/design question, project standards only for a convention decision, tracker only for active-scope conflict, and prior WorkGroups only when historical implementation evidence is needed.
+3. **Local context**: Start with topic grep/file inventory. Read matching specs first; load architecture only for a boundary/design question, project standards only for a convention decision, in-flight journal folders only for an active-scope conflict, and closed WorkGroup shards (or the frozen `knowzcode_log.md`/`knowzcode_tracker.md` archives for pre-journal history) only when historical implementation evidence is needed.
 
 4. **Codebase exploration** (lead reads directly):
    - Grep for topic-related keywords across source files
@@ -182,8 +182,8 @@ If local work is cheaper or named-agent dispatch is unavailable, the lead perfor
 
 **After** any agent dispatches (or local research) and **before** synthesizing findings, the lead performs project management research directly:
 
-1. Read targeted tracker rows for WIP conflicts and related refactors.
-2. Read recent log entries only when the plan depends on prior similar completion evidence.
+1. Derive in-flight scope conflicts from `knowzcode/journal/*/*/` folders that have no `*-arc-completion-*.md` or `*-workgroup-abandoned-*.md` shard; pick up related refactors from spec `Debt & Gaps` sections.
+2. Read recent journal shards (newest-first by filename) only when the plan depends on prior similar completion evidence. Fall back to the frozen `knowzcode_log.md`/`knowzcode_tracker.md` archives only for pre-journal history.
 3. Read relevant architecture sections only when the proposed design crosses a documented boundary.
 
 Store findings for inclusion in the plan output.
@@ -269,9 +269,9 @@ Save to `knowzcode/planning/{slug}.md` where slug is derived from the topic (2-4
 - **Spec consolidation**: {existing specs to update vs new specs}
 
 ## Project Context
-- **WIP conflicts**: {overlapping tracker items, or "None"}
+- **In-flight conflicts**: {overlapping in-flight WorkGroups, or "None"}
 - **Related backlog**: {REFACTOR tasks to bundle, or "None"}
-- **Recent similar work**: {relevant log entries, or "None"}
+- **Recent similar work**: {relevant journal shards, or "None"}
 
 ## Risk Assessment
 {risk with mitigation, one per bullet}

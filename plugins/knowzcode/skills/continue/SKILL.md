@@ -15,7 +15,7 @@ state on disk and takes precedence over generic phase inference.
    - If the user supplied a handoff path or slug, load that handoff.
    - If no explicit path was supplied, find the newest handoff by filename timestamp.
    - Handoffs are local operational state. Do not search Knowz vaults for workflow handoffs.
-2. Read `knowzcode/knowzcode_tracker.md` and locate active `[WIP]` work.
+2. Derive active work from `knowzcode/journal/*/*/` (a folder with no `arc-completion` or `workgroup-abandoned` shard is in flight), cross-checked against `knowzcode/workgroups/*.md`. Do not rely on `knowzcode_tracker.md` `[WIP]` rows; it is a frozen archive.
 3. If multiple active WorkGroups exist, ask the user which one to resume unless the selected handoff clearly names a WorkGroup.
 4. Read the selected WorkGroup file and check for
    `knowzcode/workgroups/{wgid}-relay/state.md` before choosing a generic phase action.

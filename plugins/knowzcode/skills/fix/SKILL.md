@@ -14,5 +14,5 @@ Use the KnowzCode micro-fix path for small, contained changes.
 2. Read the micro-fix guidance in `knowzcode/knowzcode_loop.md` if available.
 3. Implement the fix.
 4. Run the smallest meaningful verification set for the touched behavior.
-5. Prepend a `MicroFix` entry to `knowzcode/knowzcode_log.md` describing the request, action, and verification outcome.
+5. Create one immutable `microfix` shard at `knowzcode/journal/YYYY-MM/<WorkGroupID-or-ungrouped>/YYYYMMDDTHHMMSSZ-microfix-<shortid>.md` describing the request, action, and verification outcome. Required frontmatter: `wgid`, `type`, `timestamp`, `agent`, `nodeids`, `knowz_sync`, `summary`. Never prepend `knowzcode/knowzcode_log.md` or write to `knowzcode/knowzcode_tracker.md` — both are frozen archives.
 6. If the work grows beyond micro-fix scope, stop and move to `/knowzcode:work`.

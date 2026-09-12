@@ -287,7 +287,7 @@ Use these prompts when `FRONTEND_DESIGNER_ENABLED` or `ENTERPRISE_ENFORCER_ENABL
 > **Coordination Mode**: {coordination_mode}
 >
 > **Goal**: {goal}
-> **Context files**: Read sections 1-2 and 3.1 of `knowzcode/knowzcode_loop.md` (skip other phases), `knowzcode/knowzcode_tracker.md`, `knowzcode/knowzcode_project.md`, `knowzcode/knowzcode_architecture.md`
+> **Context files**: Read sections 1-2, 2.1, and 3.1 of `knowzcode/knowzcode_loop.md` (skip other phases), `knowzcode/knowzcode_project.md`, `knowzcode/knowzcode_architecture.md`. For prior work, list `knowzcode/journal/*/*/*.md` newest-first rather than reading the frozen `knowzcode_log.md`/`knowzcode_tracker.md` archives.
 > **WorkGroup file**: `knowzcode/workgroups/{wgid}.md`
 >
 > {coordination_task_clause}
@@ -470,7 +470,7 @@ Teammates inherit the lead's effective permissions. Do not depend on plugin-agen
 > **Goal**: {goal}
 > **Change Set**: {NodeIDs}
 > **Specs**: {list of spec file paths}
-> **Context files**: Read sections 1-2, 3.5, 6, and 7 of `knowzcode/knowzcode_loop.md` (skip other phases), `knowzcode/knowzcode_tracker.md`, `knowzcode/knowzcode_project.md`, `knowzcode/knowzcode_architecture.md`, `knowzcode/knowzcode_log.md`
+> **Context files**: Read sections 1-2, 2.1, 3.5, 6, and 7 of `knowzcode/knowzcode_loop.md` (skip other phases), `knowzcode/knowzcode_project.md`, `knowzcode/knowzcode_architecture.md`. Write the ARC-completion journal shard per section 2.1; never prepend `knowzcode_log.md` or write status rows to `knowzcode_tracker.md` (both frozen archives).
 > **WorkGroup file**: `knowzcode/workgroups/{wgid}.md`
 >
 > **Your Task**: #{task-id} — claim immediately with `TaskUpdate({taskId: "{task-id}", status: "in_progress"})`. Mark completed with `TaskUpdate({taskId: "{task-id}", status: "completed"})` and a summary when done.
@@ -487,7 +487,7 @@ Teammates inherit the lead's effective permissions. Do not depend on plugin-agen
 > **Goal**: {goal}
 > **Change Set**: {NodeIDs}
 > **Specs**: {list of spec file paths}
-> **Context files**: Read sections 1-2, 3.5, 6, and 7 of `knowzcode/knowzcode_loop.md` (skip other phases), `knowzcode/knowzcode_tracker.md`, `knowzcode/knowzcode_project.md`, `knowzcode/knowzcode_architecture.md`, `knowzcode/knowzcode_log.md`
+> **Context files**: Read sections 1-2, 2.1, 3.5, 6, and 7 of `knowzcode/knowzcode_loop.md` (skip other phases), `knowzcode/knowzcode_project.md`, `knowzcode/knowzcode_architecture.md`. Write the ARC-completion journal shard per section 2.1; never prepend `knowzcode_log.md` or write status rows to `knowzcode_tracker.md` (both frozen archives).
 > **WorkGroup file**: `knowzcode/workgroups/{wgid}.md`
 >
 > **Result contract**: Do not call shared task-list or peer-message tools. Update the WorkGroup file only when explicitly delegated. Return the bounded result directly to the lead; if blocked, include the exact blocker.

@@ -20,9 +20,8 @@ graph TD
     subgraph "Core System Files"
         Project[knowzcode/knowzcode_project.md<br/>Vision & Standards]
         Architecture[knowzcode/knowzcode_architecture.md<br/>System Blueprint]
-        Tracker[knowzcode/knowzcode_tracker.md<br/>Progress Dashboard]
         Loop[knowzcode/knowzcode_loop.md<br/>AI Instructions]
-        Log[knowzcode/knowzcode_log.md<br/>History & Memory]
+        Journal[knowzcode/journal/<br/>Immutable Work Shards]
     end
 
     subgraph "Generated During Development"
@@ -42,8 +41,7 @@ graph TD
 
     %% How Loop uses other files
     Loop -->|Reads context from| Project
-    Loop -->|Updates status in| Tracker
-    Loop -->|Logs actions to| Log
+    Loop -->|Writes one shard per event to| Journal
     Loop -->|Follows map in| Architecture
     Loop -->|Uses commands from| EnvContext
 
@@ -54,7 +52,7 @@ graph TD
 
     %% Dependencies
     Architecture -->|Defines all| Specs
-    Tracker -->|Tracks status of| Specs
+    Journal -->|Derives in-flight status of| Specs
     Specs -->|Blueprint for| Code
 
     style User fill:#4CAF50,color:#fff
@@ -63,8 +61,7 @@ graph TD
     style Loop fill:#FF9800,color:#fff
     style Project fill:#2196F3,color:#fff
     style Architecture fill:#2196F3,color:#fff
-    style Tracker fill:#2196F3,color:#fff
-    style Log fill:#2196F3,color:#fff
+    style Journal fill:#2196F3,color:#fff
     style Specs fill:#9C27B0,color:#fff
     style Planning fill:#9C27B0,color:#fff
     style Prompts fill:#607D8B,color:#fff
@@ -85,9 +82,10 @@ KnowzCode organizes AI-assisted development into a systematic, maintainable proc
 | 📁 `knowzcode/` | ← The System's Core Documents |
 | ├── `knowzcode_project.md` | The Project's Constitution & Vision |
 | ├── `knowzcode_architecture.md` | The Visual System Blueprint |
-| ├── `knowzcode_tracker.md` | The Live Progress Dashboard |
 | ├── `knowzcode_loop.md` | The AI Agent's Operational Manual |
-| └── `knowzcode_log.md` | The Project's Immutable History |
+| ├── `journal/` | The Project's Immutable History (one shard per event) |
+| ├── `knowzcode_tracker.md` | Frozen archive — pre-journal progress table |
+| └── `knowzcode_log.md` | Frozen archive — pre-journal history |
 | ├── `environment_context.md` | ← The Agent's Tactical "Driver" |
 | ├── `specs/` | ← The Blueprint Library for Components |
 | │   └── `[NodeID].md` | Individual Component Contracts |
@@ -109,15 +107,18 @@ The brain of your operation—five essential files that orchestrate strategy.
 **`knowzcode/knowzcode_architecture.md`** - The Visual Blueprint
 *   **Purpose:** An interactive system flowchart showing all components (`NodeID`s) and their connections.
 
-**`knowzcode/knowzcode_tracker.md`** - The Live Dashboard
-*   **Purpose:** Provides real-time progress monitoring of all nodes.
-*   **Key Columns:** `Status`, `WorkGroupID` (for active work), `Dependencies`.
-
 **`knowzcode/knowzcode_loop.md`** - The AI's Playbook
 *   **Purpose:** The AI agent's primary instruction manual, detailing the step-by-step development process.
 
-**`knowzcode/knowzcode_log.md`** - The Project's Memory
-*   **Purpose:** A complete, chronological history of all significant decisions, actions, and outcomes.
+**`knowzcode/journal/`** - The Project's Memory and Live Dashboard
+*   **Purpose:** A complete, chronological history of all significant decisions, actions, and outcomes — and the source of current status.
+*   **Layout:** `journal/YYYY-MM/<WorkGroupID>/YYYYMMDDTHHMMSSZ-<type>-<shortid>.md`, one immutable file per event.
+*   **Reading it:** Filenames are UTC time-prefixed, so `ls knowzcode/journal/*/*/*.md | sort -r` is the recent history. A WorkGroup folder with no `arc-completion` or `workgroup-abandoned` shard is still in flight.
+*   **Writing it:** Agents create shards; they never edit or delete one. Corrections are new shards.
+*   **Helper:** `knowzcode/scripts/journal-index.sh` prints in-flight WorkGroups and recent shards.
+
+**`knowzcode/knowzcode_tracker.md`** and **`knowzcode/knowzcode_log.md`** - Frozen Archives
+*   **Purpose:** Read-only history from before the journal. Nothing writes to them. New installs get stubs pointing at `journal/`.
 
 ---
 
@@ -198,9 +199,9 @@ graph LR
 | :--- | :--- |
 | Understand the project's vision | `knowzcode/knowzcode_project.md` |
 | See the big picture | `knowzcode/knowzcode_architecture.md`|
-| Check project progress | `knowzcode/knowzcode_tracker.md` |
+| Check project progress | `knowzcode/journal/` (or `knowzcode/scripts/journal-index.sh`) |
 | Find a component's details | `knowzcode/specs/[NodeID].md` |
-| Review project history | `knowzcode/knowzcode_log.md` |
+| Review project history | `knowzcode/journal/*/*/*.md`, newest filenames first |
 | Know how the agent works | `knowzcode/knowzcode_loop.md` |
 | See how to run commands | `knowzcode/environment_context.md` |
 | Plan future features | `knowzcode/planning/` directory |

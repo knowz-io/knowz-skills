@@ -111,7 +111,7 @@ The analyst starts immediately and does not wait for optional workers. It may se
    - If `ENTERPRISE_ENFORCER_ENABLED`: `compliance_spec_task_id := TaskCreate({subject: "Enterprise enforcer: spec compliance audit", description: "Audit specs for required guideline-derived VERIFY criteria and blocking omissions."})`; then `TaskUpdate({taskId: compliance_spec_task_id, addBlockedBy: [spec_task_id], owner: "enterprise-enforcer"})`. DM the returned ID to enterprise-enforcer.
 10. Lead presents **Quality Gate #2** to user (see [quality-gates.md](quality-gates.md))
 11. User approves (or rejects → architect revises)
-12. Pre-implementation commit: inspect `git status --short` and scoped diffs; stage only `knowzcode/workgroups/{wgid}.md`, `knowzcode/knowzcode_tracker.md`, and the explicit approved spec paths with `git add -- ...`. Run `git diff --cached --check` and verify the exact `git diff --cached --name-only` list before committing. Abort if any unrelated path is staged; never stage `knowzcode/` wholesale.
+12. Pre-implementation commit: inspect `git status --short` and scoped diffs; stage only the explicit approved spec paths and any new journal shards with `git add -- ...` (`knowzcode/workgroups/` is gitignored; `knowzcode_tracker.md` is a frozen archive). Run `git diff --cached --check` and verify the exact `git diff --cached --name-only` list before committing. Abort if any unrelated path is staged; never stage `knowzcode/` wholesale.
 13. Release the analyst after approval unless a concrete early-implementation question is already pending.
 14. Retain the architect through Stage 2 only when active cross-scope clarification is likely; otherwise release it and resume from lineage if a compatible question arises.
 
@@ -283,7 +283,7 @@ The direct officer-to-closer handoff above is coordinated-team-only. In named-ag
 2c. **Shut down Group C/D officers**: security-officer, test-advisor, frontend-designer (if active), enterprise-enforcer (if active). Any order — they're all read-only and have delivered their final reports.
 3. Closer tasks (can be parallel subtasks):
    - Update all specs to FINAL as-built
-   - Update `knowzcode_tracker.md`: all NodeIDs `[WIP]` → `[VERIFIED]`
+   - Write the ARC-completion journal shard; do not mutate `knowzcode_tracker.md` (frozen archive)
    - Write ARC-Completion log entry
    - Review architecture docs for discrepancies
    - Schedule REFACTOR tasks for tech debt

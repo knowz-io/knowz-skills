@@ -34,7 +34,7 @@ This project uses KnowzCode for structured TDD development with multi-agent orch
 ## Required Reading
 - `knowzcode/knowzcode_loop.md` — Development methodology (TDD, quality gates, phases)
 - `knowzcode/knowzcode_project.md` — Project context and tech stack
-- `knowzcode/knowzcode_tracker.md` — Current WorkGroup status
+- `knowzcode/journal/` — in-flight WorkGroups are folders under `knowzcode/journal/*/*/` with no `arc-completion` or `workgroup-abandoned` shard
 - `knowzcode/knowzcode_architecture.md` — Architecture documentation
 
 ## Workflow Phases
@@ -196,16 +196,16 @@ Use the matching KnowzCode skill for feature work; do not preload every framewor
 ### Phase 3: Finalization
 - Update specs to "As-Built" status
 - Check architecture doc for drift
-- Prepend log entry to `knowzcode/knowzcode_log.md`
-- Update tracker statuses to `[VERIFIED]`
-- Create final commit with all changes
+- Create one immutable ARC-completion shard at `knowzcode/journal/YYYY-MM/<WorkGroupID>/YYYYMMDDTHHMMSSZ-arc-completion-<shortid>.md` with required frontmatter (`wgid`, `type`, `timestamp`, `agent`, `nodeids`, `knowz_sync`, `summary`)
+- Never prepend `knowzcode/knowzcode_log.md` or write status rows to `knowzcode/knowzcode_tracker.md` — both are frozen archives
+- Create final commit with all changes (include the new shard)
 
 ## Key Rules
 - Always propose a Change Set before implementing
 - Get user approval at every quality gate (STOP points above)
 - TDD is mandatory — no production code without failing tests
-- Log all completions in `knowzcode/knowzcode_log.md`
-- Track work in `knowzcode/knowzcode_tracker.md`
+- Record all completions as immutable shards under `knowzcode/journal/`
+- Never prepend `knowzcode/knowzcode_log.md` or write status rows to `knowzcode/knowzcode_tracker.md` — both are frozen archives
 - Every WorkGroup todo must start with `KnowzCode:` prefix
 - Target <20 specs per project — consolidate when domains overlap
 
@@ -228,7 +228,7 @@ For single-file, <50 line, no-ripple-effect changes:
 - `knowzcode/codex_execution.md` — Codex-native delegation, handoffs, MCP, and enterprise enforcement
 - `knowzcode/knowzcode_project.md` — Project context
 - `knowzcode/knowzcode_architecture.md` — Architecture docs
-- `knowzcode/knowzcode_tracker.md` — WorkGroup tracking
+- `knowzcode/journal/` — in-flight WorkGroups are folders under `knowzcode/journal/*/*/` with no `arc-completion` or `workgroup-abandoned` shard
 - `knowzcode/specs/` — Component specifications
 - `knowzcode/workgroups/` — Active session data (gitignored)
 ```
@@ -257,18 +257,18 @@ when the relay contract below resolves an external target.
 1. Verify the project is initialized by checking for, but do not eagerly read:
    - `knowzcode/knowzcode_loop.md`
    - `knowzcode/knowzcode_project.md`
-   - `knowzcode/knowzcode_tracker.md`
    - `knowzcode/knowzcode_architecture.md`
+   - `knowzcode/journal/` (create it if missing — completion records are written there)
 2. Classify the request and resolve specification reuse **before any enterprise/vault retrieval, relay launch, worker or team delegation, WorkGroup write, or other side effect**:
    - Micro fix -> use `/knowzcode:fix`.
    - Light change -> streamlined change set, reusable or focused spec, implementation, verification.
    - Full change -> Phase 1A, 1B, 2A, 2B, 3.
-   - Inspect only the selected active WorkGroup/capsule, the tracker slice needed to select one, and goal-relevant spec headings/`VERIFY:` criteria. Record whether an existing specification applies before requesting broader context.
+   - Inspect only the selected active WorkGroup/capsule, the journal folders needed to select one, and goal-relevant spec headings/`VERIFY:` criteria. Record whether an existing specification applies before requesting broader context.
    - Relay is Full-only. For Micro/Light, announce `[RELAY-SKIP]` and use the native path unless the user explicitly expands the scope.
 3. Load context progressively:
    - Start with an explicitly selected active WorkGroup or compact context capsule and the current phase contract.
-   - If no WorkGroup is selected, inspect the tracker only far enough to resolve active work, then read the project/architecture file only for a concrete planning question.
-   - Read only assigned specs, `VERIFY:` criteria, and relevant source paths for the current phase. Do not eagerly load the complete loop, project, tracker, architecture, provider, or history set.
+   - If no WorkGroup is selected, derive active work from `knowzcode/journal/*/*/` (a folder with no `arc-completion` or `workgroup-abandoned` shard is in flight) cross-checked against `knowzcode/workgroups/*.md`, then read the project/architecture file only for a concrete planning question. Do not read `knowzcode_tracker.md`; it is a frozen archive.
+   - Read only assigned specs, `VERIFY:` criteria, and relevant source paths for the current phase. Do not eagerly load the complete loop, project, journal, architecture, provider, or history set.
    - Read `knowzcode/codex_execution.md` only when native delegation, context inheritance, warm-agent reuse, or conditional handoffs are eligible. Its semantic capability contract is authoritative.
    - Load the relay reference only after relay resolves non-`none`; load detailed enterprise guidance only when the compliance master switch or an explicit guideline source activates it.
 4. Discover applicable enterprise guidance after classification and spec reuse:
@@ -293,7 +293,7 @@ when the relay contract below resolves an external target.
 11. Keep inter-agent communication structured and resolve an output policy per the Spawned-Agent Contract: bounded `ephemeral` results for tiny read-only side checks, `durable` handoffs for material/resumable/writer work, and `artifact` pointers plus bounded deltas for authorized large logs. The coordinator consolidates authoritative shared state into the WorkGroup.
 12. Phase 2B: perform a read-only audit against the approved specs, verification criteria, and active enterprise guidelines. The first independent reviewer must use a fresh reviewer-owned lineage and MUST NOT inherit or resume builder reasoning. Split large audits by disjoint file areas only if the review can stay read-only. **Cap the audit -> fix loop at 3 iterations.** Route each gap back to the compatible original builder before spawning a replacement, and resume the same compatible reviewer for its bounded re-audit. If the audit still surfaces failures after the 3rd fix attempt, stop and surface the residual issues to the user with a recommended downscope or spec revision; do not loop indefinitely. If enterprise vaults are configured and `push_audit_results` is true, classify the audit delta with `vault-delta`; persist only an `amend`, `update`, or `flush`, and otherwise retain `batch` until final consolidation. If false, record the skip reason. For relay work, send gaps through the bounded target fix rounds first, then transition visibly to Codex `HOST_TAKEOVER` if gaps remain.
 13. Before Phase 3, if `require_signoff_for_finalization` is true, block finalization while unresolved `[COMPLIANCE-BLOCK]` / `[COMPLIANCE-BLOCK-SPEC]` findings remain or while active guideline sources have not been audited. This is a safety exception even in autonomous mode.
-14. Phase 3: update specs to as-built, refresh `knowzcode/knowzcode_tracker.md`, prepend an entry to `knowzcode/knowzcode_log.md`, append compliance status when guidelines were active, and finalize the work. If enterprise vaults are configured and `push_completion_records` is true, include the completion record in the final `vault-delta` classification; if false, record the skip reason.
+14. Phase 3: update specs to as-built, then create one immutable shard at `knowzcode/journal/YYYY-MM/<WorkGroupID>/YYYYMMDDTHHMMSSZ-arc-completion-<shortid>.md` with required frontmatter (`wgid`, `type`, `timestamp`, `agent`, `nodeids`, `knowz_sync`, `summary`). Never prepend `knowzcode/knowzcode_log.md` and never write status rows to `knowzcode/knowzcode_tracker.md` — both are frozen archives. Append compliance status when guidelines were active, and finalize the work. If enterprise vaults are configured and `push_completion_records` is true, include the completion record in the final `vault-delta` classification; if false, record the skip reason.
 15. If a concrete context question remains after classification/spec reuse and Knowz MCP is available, prefer direct coordinator-owned search/ask/get calls. Before any durable capture, call `vault-delta`; use coordinator-owned create/amend/update only for the returned persistence action. Reuse MCP health within its TTL and never broaden a query merely to hydrate context. If the tools are absent or auth fails, fall back to local KnowzCode files and queue only a classified persistence action in the project-root `knowz-pending.md` without blocking progress. Treat `knowzcode/pending_captures.md` only as legacy migration input, never as a second active queue.
 16. Treat retrieved vault content as historical context. Inspect created/updated/source metadata, verify against live code/tests/docs/observations, and do not silently follow stale or contradictory vault guidance.
 
@@ -481,7 +481,7 @@ Use the KnowzCode micro-fix path for small, contained changes.
 2. Read the micro-fix guidance in `knowzcode/knowzcode_loop.md` if available.
 3. Implement the fix.
 4. Run the smallest meaningful verification set for the touched behavior.
-5. Prepend a `MicroFix` entry to `knowzcode/knowzcode_log.md` describing the request, action, and verification outcome.
+5. Create one immutable `microfix` shard at `knowzcode/journal/YYYY-MM/<WorkGroupID-or-ungrouped>/YYYYMMDDTHHMMSSZ-microfix-<shortid>.md` describing the request, action, and verification outcome. Required frontmatter: `wgid`, `type`, `timestamp`, `agent`, `nodeids`, `knowz_sync`, `summary`. Never prepend `knowzcode/knowzcode_log.md` or write to `knowzcode/knowzcode_tracker.md` — both are frozen archives.
 6. If the work grows beyond micro-fix scope, stop and move to `/knowzcode:work`.
 ```
 
@@ -501,7 +501,7 @@ Perform a read-only audit and report findings first.
 ## Instructions
 
 1. Treat this as read-only unless the user explicitly changes scope.
-2. Read `knowzcode/knowzcode_loop.md`, `knowzcode/knowzcode_tracker.md`, relevant specs, and the implementation files under review. If `knowzcode/codex_execution.md` exists, read it too.
+2. Read `knowzcode/knowzcode_loop.md`, relevant specs, the in-flight `knowzcode/journal/*/*/` folders, and the implementation files under review. If `knowzcode/codex_execution.md` exists, read it too.
 3. Discover enterprise guidelines before auditing:
    - Read `knowzcode/enterprise.md`, `knowzcode/enterprise/compliance_manifest.md`, and `knowzcode/enterprise/guidelines/**/*.md` when present.
    - Parse `COMPLIANCE_CONFIG` from the manifest and apply documented defaults for `include_in_audit`, `show_advisory_issues`, `push_audit_results`, and `preserve_guideline_provenance`.
@@ -584,7 +584,7 @@ Platform-specific frontmatter may differ, but the workflow contract and handoff 
 Verify this is a KnowzCode project:
 
 1. Check that `knowzcode/` exists.
-2. Check for `knowzcode/knowzcode_tracker.md`.
+2. Check for `knowzcode/knowzcode_loop.md`.
 3. If missing, stop and suggest `/knowzcode:setup`.
 
 ### Step 2: Resolve WorkGroup
@@ -592,7 +592,7 @@ Verify this is a KnowzCode project:
 Find the WorkGroup this handoff belongs to:
 
 1. If the user supplied a WorkGroup ID or path, use it.
-2. Else read `knowzcode/knowzcode_tracker.md` for active `[WIP]` entries.
+2. Else derive active WorkGroups from `knowzcode/journal/*/*/` (folders with no `arc-completion` or `workgroup-abandoned` shard), cross-checked against `knowzcode/workgroups/*.md`. Do not read `knowzcode_tracker.md` — it is a frozen archive.
 3. If one active WorkGroup exists, use it.
 4. If multiple active WorkGroups exist, choose the one clearly referenced by the current session; otherwise ask the user to choose.
 5. If none exist, create a standalone handoff with `WorkGroupID: none` and point the user toward `/knowzcode:work` after resume.
@@ -753,7 +753,7 @@ Use this as a lightweight router into `/knowzcode:regroup`. It never writes hand
 2. Do not trigger for normal questions or active implementation requests.
 3. Do not trigger during explicit `/knowzcode:*` or `/knowz` command execution.
 4. Check that `knowzcode/` exists. If not, do nothing.
-5. Read `knowzcode/knowzcode_tracker.md` when available to detect active WorkGroups, but do not block if the read fails and the user's handoff intent is explicit.
+5. Detect active WorkGroups from `knowzcode/journal/*/*/` (folders with no `arc-completion` or `workgroup-abandoned` shard) or `knowzcode/workgroups/*.md`, but do not block if the read fails and the user's handoff intent is explicit.
 6. Offer exactly once:
    ```text
    This looks like a good checkpoint. Want me to run `/knowzcode:regroup` with the current goal and next step so you can resume cleanly after clearing context?
@@ -783,7 +783,7 @@ state on disk and takes precedence over generic phase inference.
    - If the user supplied a handoff path or slug, load that handoff.
    - If no explicit path was supplied, find the newest handoff by filename timestamp.
    - Handoffs are local operational state. Do not search Knowz vaults for workflow handoffs.
-2. Read `knowzcode/knowzcode_tracker.md` and locate active `[WIP]` work.
+2. Derive active work from `knowzcode/journal/*/*/` (a folder with no `arc-completion` or `workgroup-abandoned` shard is in flight), cross-checked against `knowzcode/workgroups/*.md`. Do not rely on `knowzcode_tracker.md` `[WIP]` rows; it is a frozen archive.
 3. If multiple active WorkGroups exist, ask the user which one to resume unless the selected handoff clearly names a WorkGroup.
 4. Read the selected WorkGroup file and check for
    `knowzcode/workgroups/{wgid}-relay/state.md` before choosing a generic phase action.
@@ -954,8 +954,8 @@ Report local KnowzCode health without starting or resuming work.
 ## Instructions
 
 1. Check whether `knowzcode/` exists and whether the core files are present.
-2. Inspect `knowzcode/knowzcode_tracker.md` for `[WIP]`, `[VERIFIED]`, and planned work.
-3. Count active and completed WorkGroups in `knowzcode/workgroups/` if that directory exists.
+2. Derive work state from `knowzcode/journal/*/*/`: a WorkGroup folder with no `*-arc-completion-*.md` and no `*-workgroup-abandoned-*.md` shard is in flight; the rest are closed. Sort `knowzcode/journal/*/*/*.md` descending for recent history — filenames are UTC time-prefixed. Do not read `knowzcode_tracker.md` or `knowzcode_log.md` for live status; both are frozen archives.
+3. Cross-check `knowzcode/workgroups/` session files if that directory exists (local, gitignored, may be absent).
 4. Count queued items in the project-root `knowz-pending.md` when present. If legacy `knowzcode/pending_captures.md` exists, report it separately as migration input; do not count it as a second active queue.
 5. If Knowz MCP is available, call `mcp__knowz__list_vaults` with `includeStats: true` and report vault availability. If not, report that Knowz enhancement is unavailable but the local workflow still works.
 6. Evaluate relay status using the fixed `RELAY_HOST=codex` rules below.
@@ -996,9 +996,9 @@ target relay that should normally resume from Claude Code.
 ## KnowzCode Status
 
 Framework: {Initialized | Not initialized}
-  Core files: {N}/4 present (loop, tracker, project, architecture)
-Tracker: {W} WIP, {V} verified, {P} planned
-WorkGroups: {A} active, {C} completed
+  Core files: {N}/4 present (loop, journal, project, architecture)
+Journal: {S} shard(s), {R} recent
+WorkGroups: {A} in flight, {C} closed
 Pending captures: {Q} queued
 MCP & vaults: {Connected — N vault(s) | Not connected}
 Relay host: codex
@@ -1109,7 +1109,7 @@ Investigate telemetry directly with the tools available in the current environme
 4. Use the available tools directly. Do not rely on Claude-specific task delegation APIs.
 5. Build a concise incident summary with timeline, strongest hypothesis, supporting evidence, and the recommended next action.
 6. If the issue is small and local, suggest `/knowzcode:fix`. If it needs broader changes, suggest `/knowzcode:work`.
-7. Append a brief telemetry investigation entry to `knowzcode/knowzcode_log.md` when the project is initialized.
+7. Create one immutable `telemetry` shard at `knowzcode/journal/YYYY-MM/<WorkGroupID-or-ungrouped>/YYYYMMDDTHHMMSSZ-telemetry-<shortid>.md` when the project is initialized. Never append to `knowzcode/knowzcode_log.md` — it is a frozen archive.
 ```
 
 #### .agents/skills/knowzcode-telemetry-setup/SKILL.md
@@ -1705,7 +1705,7 @@ description = "Quick targeted fix (micro-fix workflow)"
 prompt = """Read .gemini/skills/knowzcode-fix/SKILL.md for full instructions.
 Apply a targeted fix for: <ARGS/>
 Scope guard: single file, <50 lines, no architectural impact. If larger, suggest /knowzcode:work.
-Run tests, log a MicroFix entry in knowzcode/knowzcode_log.md, commit with fix: prefix."""
+Run tests, create a microfix shard under knowzcode/journal/, commit with fix: prefix."""
 ```
 
 ```toml
@@ -1734,7 +1734,7 @@ description = "Check KnowzCode MCP connection and vault status"
 prompt = """Read .gemini/skills/knowzcode-status/SKILL.md for full instructions.
 Check MCP connection: read .gemini/settings.json for mcpServers.knowz entry, run gemini mcp list.
 Report vault config from knowz-vaults.md (project root), test connectivity via list_vaults.
-Show active WorkGroups from knowzcode/knowzcode_tracker.md."""
+Show active WorkGroups derived from knowzcode/journal/*/* (folders with no arc-completion or workgroup-abandoned shard)."""
 ```
 
 ```toml
@@ -1742,7 +1742,7 @@ Show active WorkGroups from knowzcode/knowzcode_tracker.md."""
 description = "Create a local KnowzCode handoff before clearing context"
 prompt = """Read .gemini/skills/knowzcode-regroup/SKILL.md for full instructions.
 Create a local handoff in knowzcode/handoffs/.
-Use active WorkGroup state from knowzcode/knowzcode_tracker.md and knowzcode/workgroups/.
+Use active WorkGroup state derived from knowzcode/journal/*/* and knowzcode/workgroups/.
 Do not save the handoff itself to Knowz. Only list durable learning candidates for later capture.
 <ARGS/>"""
 ```
@@ -1752,7 +1752,7 @@ Do not save the handoff itself to Knowz. Only list durable learning candidates f
 description = "Resume interrupted KnowzCode workflow"
 prompt = """Read .gemini/skills/knowzcode-continue/SKILL.md for full instructions.
 Check knowzcode/handoffs/ for a requested or latest local handoff.
-Read knowzcode/knowzcode_tracker.md to find active [WIP] WorkGroups.
+Find active WorkGroups in knowzcode/journal/*/* (folders with no arc-completion or workgroup-abandoned shard).
 Read the selected WorkGroup file from knowzcode/workgroups/.
 Determine the current phase from the Phase History table.
 Resume from where the workflow left off, following knowzcode/knowzcode_loop.md."""
@@ -1832,7 +1832,7 @@ Read these files before starting any feature work (use @import syntax for direct
 - `knowzcode/knowzcode_loop.md` — Complete workflow methodology
 - `knowzcode/knowzcode_project.md` — Project context and tech stack
 - `knowzcode/knowzcode_architecture.md` — Architecture documentation
-- `knowzcode/knowzcode_tracker.md` — Active WorkGroups
+- `knowzcode/journal/` — in-flight WorkGroups are folders under `knowzcode/journal/*/*/` with no `arc-completion` or `workgroup-abandoned` shard
 
 ## Phase Walkthrough
 
@@ -1870,7 +1870,7 @@ Read these files before starting any feature work (use @import syntax for direct
 - TDD is mandatory for all feature work
 - Propose Change Sets before implementing
 - Update specs and tracker after implementation
-- Log completions in `knowzcode/knowzcode_log.md`
+- Record completions as immutable shards under `knowzcode/journal/`; never prepend `knowzcode/knowzcode_log.md` (frozen archive)
 - Target <20 specs — consolidate when domains overlap >50%
 
 ## Knowledge Capture (CRITICAL — DO NOT SKIP)
@@ -1913,7 +1913,7 @@ Start a structured KnowzCode development workflow for the given goal.
 Read these files for methodology and project context:
 - `knowzcode/knowzcode_loop.md` — Complete methodology
 - `knowzcode/knowzcode_project.md` — Project context
-- `knowzcode/knowzcode_tracker.md` — Active WorkGroups
+- `knowzcode/journal/` — in-flight WorkGroups are folders under `knowzcode/journal/*/*/` with no `arc-completion` or `workgroup-abandoned` shard
 - `knowzcode/knowzcode_architecture.md` — Architecture docs
 
 ### Step 1: Classify Tier
@@ -1993,7 +1993,7 @@ Read `knowzcode/knowzcode_loop.md` section on Micro-Fix.
 
 1. Implement the fix
 2. Run targeted tests for the affected code
-3. Prepend a MicroFix entry to `knowzcode/knowzcode_log.md`
+3. Create one immutable `microfix` shard at `knowzcode/journal/YYYY-MM/<WorkGroupID-or-ungrouped>/YYYYMMDDTHHMMSSZ-microfix-<shortid>.md`; never prepend `knowzcode/knowzcode_log.md` (frozen archive)
 4. Commit with `fix: {description}` message
 ```
 
@@ -2014,7 +2014,7 @@ Perform a READ-ONLY audit comparing implementation against specs.
 
 Read these files:
 - `knowzcode/knowzcode_loop.md` — Phase 2B methodology
-- `knowzcode/knowzcode_tracker.md` — Find active WorkGroups
+- `knowzcode/journal/` — in-flight WorkGroups are folders under `knowzcode/journal/*/*/` with no `arc-completion` or `workgroup-abandoned` shard
 
 **CRITICAL: This is a READ-ONLY audit. Do NOT modify source files.**
 
@@ -2080,8 +2080,8 @@ Create a local handoff in `knowzcode/handoffs/`. Do not save the handoff itself 
 
 ## Instructions
 
-1. Verify `knowzcode/` and `knowzcode/knowzcode_tracker.md` exist.
-2. Resolve the active WorkGroup from the user's argument or `[WIP]` entries in `knowzcode/knowzcode_tracker.md`.
+1. Verify `knowzcode/` and `knowzcode/knowzcode_loop.md` exist.
+2. Resolve the active WorkGroup from the user's argument or from `knowzcode/journal/*/*/` folders with no `arc-completion` or `workgroup-abandoned` shard.
 3. Read the selected WorkGroup file when available.
 4. Collect goal, current phase, state, blockers, next step, autonomy mode, branch, commit, dirty files, and useful references.
 5. Create `knowzcode/handoffs/` if missing.
@@ -2105,7 +2105,7 @@ Resume an interrupted KnowzCode workflow or advance to the next phase.
 
 ## Instructions
 
-Check `knowzcode/handoffs/*.md` for a requested or latest local handoff, then read `knowzcode/knowzcode_tracker.md` to find active `[WIP]` WorkGroups.
+Check `knowzcode/handoffs/*.md` for a requested or latest local handoff, then derive active WorkGroups from `knowzcode/journal/*/*/` (folders with no `arc-completion` or `workgroup-abandoned` shard).
 
 ### Step 1: Find Active WorkGroup
 - One active: use it
@@ -2186,7 +2186,7 @@ Check KnowzCode MCP connection, vault health, and agent status.
 3. Read `knowz-vaults.md` (project root) for vault IDs and routing rules
 4. Test MCP connectivity by calling `list_vaults`
 5. Check each configured vault's health and item count
-6. Read `knowzcode/knowzcode_tracker.md` for active WorkGroups
+6. Derive active WorkGroups from `knowzcode/journal/*/*/` (no `arc-completion` or `workgroup-abandoned` shard)
 
 Report connection status, vault health, agent availability, and active WorkGroups.
 If MCP is not configured, suggest `/knowz setup <api-key>` or `/knowz register`.
@@ -2489,7 +2489,7 @@ Perform Phase 1A: Impact Analysis. Identify all components affected by a propose
 
 1. Read `knowzcode/knowzcode_loop.md` for the complete Phase 1A methodology
 2. Read `knowzcode/knowzcode_project.md` for project context and tech stack
-3. Read `knowzcode/knowzcode_tracker.md` for active work
+3. Derive active work from `knowzcode/journal/*/*/` (no `arc-completion` or `workgroup-abandoned` shard)
 4. Scan `knowzcode/specs/` for existing specs that may overlap with the proposed change
 5. Search the codebase for files affected by the change goal
 
@@ -2649,9 +2649,8 @@ Perform Phase 3 finalization and return one consolidated `FinalCaptureDelta` plu
 
 1. Read `knowzcode/knowzcode_loop.md` for the complete Phase 3 methodology
 2. Update specs in `knowzcode/specs/` to "As-Built" status
-3. Update `knowzcode/knowzcode_tracker.md` — set WorkGroup status to `[VERIFIED]`
-4. Prepend a log entry to `knowzcode/knowzcode_log.md`
-5. Review `knowzcode/knowzcode_architecture.md` for drift — update if needed
+3. Create one immutable ARC-completion shard at `knowzcode/journal/YYYY-MM/<WorkGroupID>/YYYYMMDDTHHMMSSZ-arc-completion-<shortid>.md` with required frontmatter; never prepend `knowzcode/knowzcode_log.md` or write status rows to `knowzcode/knowzcode_tracker.md` (both frozen archives)
+4. Review `knowzcode/knowzcode_architecture.md` for drift — update if needed
 6. Return one consolidated `FinalCaptureDelta` to the lead; do not call vault tools or queue an unclassified capture
 7. Return the explicit documentation file list and suggested commit message; the lead creates the final commit
 ```
@@ -2751,7 +2750,7 @@ Execute targeted, single-file fixes using the micro-fix protocol. Scope: single 
 1. Read `knowzcode/knowzcode_loop.md` section on Micro-Fix
 2. Implement the fix in the target file
 3. Run targeted tests for the affected code
-4. Prepend a MicroFix entry to `knowzcode/knowzcode_log.md`
+4. Create one immutable `microfix` shard at `knowzcode/journal/YYYY-MM/<WorkGroupID-or-ungrouped>/YYYYMMDDTHHMMSSZ-microfix-<shortid>.md`; never prepend `knowzcode/knowzcode_log.md` (frozen archive)
 5. If the fix exceeds scope (multi-file, >50 lines, architectural impact), escalate to `/knowzcode:work`
 ```
 
@@ -2938,7 +2937,7 @@ This project uses KnowzCode for structured TDD development.
 Before any feature work, read:
 - `knowzcode/knowzcode_loop.md` — Complete methodology
 - `knowzcode/knowzcode_project.md` — Project context
-- `knowzcode/knowzcode_tracker.md` — Active WorkGroups
+- `knowzcode/journal/` — in-flight WorkGroups are folders under `knowzcode/journal/*/*/` with no `arc-completion` or `workgroup-abandoned` shard
 - `knowzcode/knowzcode_architecture.md` — Architecture docs
 
 ## Phase Rules
@@ -2978,8 +2977,8 @@ Before any feature work, read:
 - Every WorkGroup todo starts with `KnowzCode:` prefix
 - Consolidate specs when domains overlap >50%
 - Target <20 specs per project
-- Read `knowzcode/knowzcode_tracker.md` for active work
-- Log completions in `knowzcode/knowzcode_log.md`
+- Derive active work from `knowzcode/journal/*/*/` (no `arc-completion` or `workgroup-abandoned` shard)
+- Record completions as immutable shards under `knowzcode/journal/`; never prepend `knowzcode/knowzcode_log.md` (frozen archive)
 
 ## Knowledge Capture (CRITICAL — DO NOT SKIP)
 Every durable candidate — decisions, patterns, gotchas, workarounds — **must** be classified by the lead with `node knowzcode/context_efficiency_runtime.mjs vault-delta`.
@@ -3021,7 +3020,7 @@ This repository uses KnowzCode for structured TDD development with quality gates
 - `knowzcode/knowzcode_loop.md` — Complete methodology (read first)
 - `knowzcode/knowzcode_project.md` — Project context and tech stack
 - `knowzcode/knowzcode_architecture.md` — Architecture documentation
-- `knowzcode/knowzcode_tracker.md` — WorkGroup status tracking
+- `knowzcode/journal/` — in-flight WorkGroups are folders under `knowzcode/journal/*/*/` with no `arc-completion` or `workgroup-abandoned` shard
 
 ## Workflow Overview
 
@@ -3070,13 +3069,13 @@ Follow Red-Green-Refactor for every feature/criterion in the spec.
 - Consolidate specs when domains overlap >50%
 - Every WorkGroup todo starts with `KnowzCode:` prefix
 - Target <20 specs per project
-- Log completions in `knowzcode/knowzcode_log.md`
+- Record completions as immutable shards under `knowzcode/journal/`; never prepend `knowzcode/knowzcode_log.md` (frozen archive)
 
 ## Key Files
 - `knowzcode/knowzcode_loop.md` — Methodology
 - `knowzcode/knowzcode_project.md` — Project context
 - `knowzcode/knowzcode_architecture.md` — Architecture docs
-- `knowzcode/knowzcode_tracker.md` — WorkGroup tracking
+- `knowzcode/journal/` — in-flight WorkGroups are folders under `knowzcode/journal/*/*/` with no `arc-completion` or `workgroup-abandoned` shard
 - `knowzcode/specs/` — Component specifications
 - `knowzcode/workgroups/` — Active session data (gitignored)
 
@@ -3132,7 +3131,7 @@ You are starting a new KnowzCode development workflow. Follow the methodology pr
 Read these files for methodology and project context:
 - #file:knowzcode/knowzcode_loop.md
 - #file:knowzcode/knowzcode_project.md
-- #file:knowzcode/knowzcode_tracker.md
+- #file:knowzcode/journal/README.md
 - #file:knowzcode/knowzcode_architecture.md
 
 ## Instructions
@@ -3164,7 +3163,7 @@ Follow Phase 1A from `knowzcode/knowzcode_loop.md`:
 
 Present the Change Set for user approval. Do NOT proceed until approved.
 
-**After approval:** Update `knowzcode/knowzcode_tracker.md` with new NodeIDs as `[WIP]`, then tell the user to invoke `#prompt:knowzcode-specify` to draft specifications.
+**After approval:** Record the WorkGroup and its new NodeIDs in `knowzcode/workgroups/{WorkGroupID}.md` (do not write `[WIP]` rows to the frozen `knowzcode/knowzcode_tracker.md`), then tell the user to invoke `#prompt:knowzcode-specify` to draft specifications.
 ```
 
 #### knowzcode-analyze.prompt.md
@@ -3184,9 +3183,9 @@ You are re-running impact analysis on an existing WorkGroup.
 ## Context
 
 - #file:knowzcode/knowzcode_loop.md
-- #file:knowzcode/knowzcode_tracker.md
+- #file:knowzcode/journal/README.md
 
-Read `knowzcode/knowzcode_tracker.md` to find the active `[WIP]` WorkGroup.
+Find the active WorkGroup: a `knowzcode/journal/*/*/` folder with no `arc-completion` or `workgroup-abandoned` shard, cross-checked against `knowzcode/workgroups/*.md`.
 Then read the WorkGroup file at `knowzcode/workgroups/{WorkGroupID}.md`.
 
 ## Instructions
@@ -3222,9 +3221,9 @@ You are drafting specifications for the approved Change Set.
 ## Context
 
 - #file:knowzcode/knowzcode_loop.md
-- #file:knowzcode/knowzcode_tracker.md
+- #file:knowzcode/journal/README.md
 
-Read `knowzcode/knowzcode_tracker.md` to find the active `[WIP]` WorkGroup.
+Find the active WorkGroup: a `knowzcode/journal/*/*/` folder with no `arc-completion` or `workgroup-abandoned` shard.
 If no `[WIP]` entries found, scan `knowzcode/workgroups/` for the most recent draft WorkGroup file.
 Then read the WorkGroup file at `knowzcode/workgroups/{WorkGroupID}.md` for the approved Change Set.
 
@@ -3268,9 +3267,9 @@ You are implementing the approved specifications using strict TDD.
 ## Context
 
 - #file:knowzcode/knowzcode_loop.md
-- #file:knowzcode/knowzcode_tracker.md
+- #file:knowzcode/journal/README.md
 
-Read `knowzcode/knowzcode_tracker.md` to find the active `[WIP]` WorkGroup.
+Find the active WorkGroup: a `knowzcode/journal/*/*/` folder with no `arc-completion` or `workgroup-abandoned` shard.
 Then read:
 - The WorkGroup file at `knowzcode/workgroups/{WorkGroupID}.md`
 - The spec files and assigned acceptance criteria for the current NodeID or microtask from `knowzcode/specs/`
@@ -3327,9 +3326,9 @@ You are performing an independent, READ-ONLY audit of the implementation.
 ## Context
 
 - #file:knowzcode/knowzcode_loop.md
-- #file:knowzcode/knowzcode_tracker.md
+- #file:knowzcode/journal/README.md
 
-Read `knowzcode/knowzcode_tracker.md` to find the active `[WIP]` WorkGroup.
+Find the active WorkGroup: a `knowzcode/journal/*/*/` folder with no `arc-completion` or `workgroup-abandoned` shard.
 Then read:
 - The WorkGroup file at `knowzcode/workgroups/{WorkGroupID}.md`
 - The spec files and assigned acceptance criteria for the current audit scope from `knowzcode/specs/`
@@ -3384,10 +3383,10 @@ You are finalizing the WorkGroup after approved implementation and audit.
 ## Context
 
 - #file:knowzcode/knowzcode_loop.md
-- #file:knowzcode/knowzcode_tracker.md
+- #file:knowzcode/journal/README.md
 - #file:knowzcode/knowzcode_architecture.md
 
-Read `knowzcode/knowzcode_tracker.md` to find the active `[WIP]` WorkGroup.
+Find the active WorkGroup: a `knowzcode/journal/*/*/` folder with no `arc-completion` or `workgroup-abandoned` shard, cross-checked against `knowzcode/workgroups/*.md`.
 Then read the WorkGroup file at `knowzcode/workgroups/{WorkGroupID}.md`.
 
 ## Instructions
@@ -3396,8 +3395,8 @@ Follow Phase 3 from `knowzcode/knowzcode_loop.md`:
 
 1. **Finalize Specs**: Update each `knowzcode/specs/{NodeID}.md` to as-built state (Status: As-Built)
 2. **Architecture Check**: Compare `knowzcode/knowzcode_architecture.md` against the Change Set. Fix simple discrepancies directly; document complex ones for user review
-3. **Log Entry**: Prepend an `ARC-Completion` entry to `knowzcode/knowzcode_log.md` with WorkGroupID, NodeIDs, verification summary, architectural learnings, and ripple effects
-4. **Update Tracker**: Change NodeID statuses from `[WIP]` to `[VERIFIED]` in `knowzcode/knowzcode_tracker.md`. Create `REFACTOR_` tasks for significant tech debt
+3. **ARC-Completion Shard**: Create one immutable shard at `knowzcode/journal/YYYY-MM/<WorkGroupID>/YYYYMMDDTHHMMSSZ-arc-completion-<shortid>.md` carrying WorkGroupID, NodeIDs, verification summary, architectural learnings, and ripple effects. Never prepend `knowzcode/knowzcode_log.md` (frozen archive)
+4. **Schedule Debt**: Do not mutate `knowzcode/knowzcode_tracker.md` (frozen archive). Record `REFACTOR_` tasks for significant tech debt in each spec's `Debt & Gaps` section
 5. **Final Commit**: Inspect status and scoped diffs, stage only the explicit approved source and KnowzCode paths, verify the cached path list and diff, then commit; preserve unrelated user state
 6. **Close WorkGroup**: Mark the WorkGroup file as closed
 
@@ -3440,10 +3439,9 @@ Follow the Micro-Fix Protocol from `knowzcode/knowzcode_loop.md` Section 4:
 
 1. **Implement** the fix
 2. **Test** — run targeted tests for the affected code
-3. **Log** — prepend a `MicroFix` entry to `knowzcode/knowzcode_log.md`:
-   - Type: MicroFix
-   - File/NodeID affected
-   - User request, action taken, verification outcome
+3. **Record** — create one immutable shard at `knowzcode/journal/YYYY-MM/<WorkGroupID-or-ungrouped>/YYYYMMDDTHHMMSSZ-microfix-<shortid>.md`; never prepend `knowzcode/knowzcode_log.md` (frozen archive):
+   - Frontmatter: `wgid`, `type: microfix`, `timestamp`, `agent`, `nodeids`, `knowz_sync: pending`, `summary`
+   - Body: user request, action taken, verification outcome
 4. **Commit** with `fix: {description}` message
 ```
 
@@ -3506,13 +3504,13 @@ You are resuming an interrupted KnowzCode workflow or advancing to the next phas
 ## Context
 
 - #file:knowzcode/knowzcode_loop.md
-- #file:knowzcode/knowzcode_tracker.md
+- #file:knowzcode/journal/README.md
 
 ## Instructions
 
 ### Step 1: Find Active WorkGroup
 
-Read `knowzcode/knowzcode_tracker.md` and find entries with `[WIP]` status.
+Find in-flight WorkGroups: `knowzcode/journal/*/*/` folders with no `arc-completion` or `workgroup-abandoned` shard.
 
 - **One active WorkGroup**: Use it
 - **Multiple active**: Present the list and ask the user which to resume
@@ -3632,7 +3630,7 @@ Follow `knowzcode/knowzcode_loop.md` for all feature development.
 ## Required Reading
 - `knowzcode/knowzcode_loop.md` — Complete methodology
 - `knowzcode/knowzcode_project.md` — Project context
-- `knowzcode/knowzcode_tracker.md` — Active WorkGroups
+- `knowzcode/journal/` — in-flight WorkGroups are folders under `knowzcode/journal/*/*/` with no `arc-completion` or `workgroup-abandoned` shard
 - `knowzcode/knowzcode_architecture.md` — Architecture docs
 
 ## Phase Walkthrough
@@ -3664,8 +3662,8 @@ Follow `knowzcode/knowzcode_loop.md` for all feature development.
 ## Enforcement Rules
 - TDD is mandatory — write failing tests before implementation code
 - Respect quality gates between phases — PAUSE at each gate
-- Update `knowzcode/knowzcode_tracker.md` when completing work
-- Log completions in `knowzcode/knowzcode_log.md`
+- Derive in-flight work from `knowzcode/journal/*/*/`; never write status rows to `knowzcode/knowzcode_tracker.md` (frozen archive)
+- Record completions as immutable shards under `knowzcode/journal/`; never prepend `knowzcode/knowzcode_log.md` (frozen archive)
 - Consolidate specs when domains overlap >50%
 - Target <20 specs per project
 - Every WorkGroup todo starts with `KnowzCode:` prefix

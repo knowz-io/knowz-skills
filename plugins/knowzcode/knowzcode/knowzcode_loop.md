@@ -16,11 +16,62 @@
 
 * **`knowzcode/knowzcode_project.md`**: Read-only project context.
 * **`knowzcode/knowzcode_architecture.md`**: Architecture docs. Update for simple consistency changes.
-* **`knowzcode/knowzcode_tracker.md`**: Track NodeID statuses and WorkGroup assignments.
-* **`knowzcode/knowzcode_log.md`**: Prepend log entries. Read reference quality criteria.
-* **`knowzcode/specs/[NodeID].md`**: Create, read, and finalize specifications.
-* **`knowzcode/workgroups/<WorkGroupID>.md`**: Session todo list. Every entry must begin with `KnowzCode:`.
+* **`knowzcode/journal/`**: Append-only record of work events. One immutable shard per event. **This is where you write.**
+* **`knowzcode/knowzcode_tracker.md`**: Frozen archive. Read-only historical NodeID statuses. **Never write to it.**
+* **`knowzcode/knowzcode_log.md`**: Frozen archive of pre-journal entries. Read-only. **Never prepend or append to it.**
+* **`knowzcode/specs/[NodeID].md`**: Create, read, and finalize specifications. Specs carry as-built NodeID state.
+* **`knowzcode/workgroups/<WorkGroupID>.md`**: Session todo list (local, gitignored). Every entry must begin with `KnowzCode:`.
 * **This document (`knowzcode/knowzcode_loop.md`)**: Your primary workflow reference.
+
+### 2.1 Journal Contract
+
+Every work event is recorded as one **immutable shard**:
+
+```
+knowzcode/journal/YYYY-MM/<WorkGroupID>/YYYYMMDDTHHMMSSZ-<type>-<shortid>.md
+```
+
+* `YYYY-MM` — UTC year and month of the event timestamp.
+* `<WorkGroupID>` — the active `kc-{type}-{slug}-YYYYMMDD-HHMMSS` id, or `ungrouped` for a micro-fix with no WorkGroup.
+* `YYYYMMDDTHHMMSSZ` — UTC timestamp, so filenames sort chronologically.
+* `<type>` — kebab-case event type: `arc-completion`, `microfix`, `refactor-completion`, `audit`, `telemetry`, `start-work`, `knowledge-migration`, `init`, `workgroup-abandoned`.
+* `<shortid>` — 4–8 lowercase hex/alphanumeric characters for uniqueness.
+
+**Required frontmatter on every shard:**
+```yaml
+---
+wgid: kc-feat-example-20260912-150000
+type: arc-completion
+timestamp: 2026-09-12T19:00:00Z
+agent: closer
+nodeids: [Authentication]
+knowz_sync: pending
+summary: One-line outcome
+---
+```
+The body after the frontmatter holds the prose that used to go in the log entry: verification summary, learnings, ripple effects, outcomes.
+
+`knowz_sync` is `pending` until the event is synced to a Knowz vault, then it holds the resulting knowledge id. Knowz is optional and never a gate — a shard written with `knowz_sync: pending` is already a complete record. Never create a fourth pending-queue file; `knowz-pending.md` remains the only queue.
+
+**Rules:**
+* Shards are written with a plain file create. **Never edit or delete an existing shard.**
+* A correction is a **new shard** whose body references the earlier shard's filename.
+* **Do not** prepend or append `knowzcode/knowzcode_log.md`.
+* **Do not** write completion, `[WIP]`, or `[VERIFIED]` rows to `knowzcode/knowzcode_tracker.md`.
+* **Do not** maintain `knowzcode/journal/index.md` or any other hand-written index.
+
+**Deriving state from the tree** (no index file needed):
+```bash
+# open WorkGroups: journal WG folders with no terminal shard
+for wg in knowzcode/journal/*/*/; do
+  ls "$wg" | grep -qE -- '-(arc-completion|workgroup-abandoned)-' || echo "IN FLIGHT: $wg"
+done
+
+# recent history, newest first (filenames are time-prefixed)
+ls knowzcode/journal/*/*/*.md | sort -r | head -20
+```
+A WorkGroup is in flight while its journal folder has no `arc-completion` or `workgroup-abandoned` shard. An active `knowzcode/workgroups/<id>.md` session file is a second, local-only signal for the same thing.
+`knowzcode/scripts/journal-index.sh` does the same thing if it is installed, but no agent is required to run it.
 
 ## 3. The Main Operational Loop
 
@@ -70,7 +121,7 @@ NodeIDs must be **domain concepts**, not tasks.
 #### Quality Gate: Change Set Approval
 Present the proposed Change Set to the user. **PAUSE and await user approval.** Do NOT proceed to Phase 1B until the user explicitly approves. In autonomous mode, auto-approve and proceed immediately (see Section 5).
 
-Upon approval, generate a unique WorkGroupID and update `knowzcode_tracker.md` for all nodes to `[WIP]`.
+Upon approval, generate a unique WorkGroupID and create the WorkGroup session file `knowzcode/workgroups/<WorkGroupID>.md` listing the Change Set NodeIDs. Optionally write a `start-work` journal shard recording the approved scope. Do **not** write `[WIP]` rows to `knowzcode_tracker.md` — it is a frozen archive. In-flight state is derived from the journal and the session file.
 
 **WorkGroupID Format**: `kc-{type}-{slug}-YYYYMMDD-HHMMSS`
 - Valid types: `feat`, `fix`, `refactor`, `issue`
@@ -120,7 +171,7 @@ Known limitations and future work.
 #### Quality Gate: Spec Approval
 Present drafted specs to the user. **PAUSE and await user approval.** Log "SpecApproved" events. In autonomous mode, auto-approve and proceed immediately (see Section 5).
 
-**Pre-Implementation Commit:** After specs are approved, inspect status and scoped diffs, then stage only the active WorkGroup file, tracker row changes, and explicit approved spec paths. Verify `git diff --cached --check` and the exact staged name list before committing. Abort if any unrelated path is staged; never stage the `knowzcode/` directory wholesale.
+**Pre-Implementation Commit:** After specs are approved, inspect status and scoped diffs, then stage only new journal shards and explicit approved spec paths. Verify `git diff --cached --check` and the exact staged name list before committing. Abort if any unrelated path is staged; never stage the `knowzcode/` directory wholesale.
 
 ---
 
@@ -206,30 +257,35 @@ Update each `knowzcode/specs/[NodeID].md` to match the verified "as-built" imple
 
 **Step 8: Architecture Check**
 Review `knowzcode/knowzcode_architecture.md` against the Change Set.
-- Simple discrepancies: fix directly and note in log
+- Simple discrepancies: fix directly and record the outcome in the Step 9 shard
 - Complex discrepancies: document for user review
 
-**Step 9: Log Entry**
-Prepend a comprehensive `ARC-Completion` entry to `knowzcode/knowzcode_log.md`:
+**Step 9: Write ARC-Completion Shard**
+Create one new file at `knowzcode/journal/YYYY-MM/<WorkGroupID>/YYYYMMDDTHHMMSSZ-arc-completion-<shortid>.md` (see §2.1). Never prepend to `knowzcode/knowzcode_log.md`.
 ```markdown
 ---
-**Type:** ARC-Completion
-**Timestamp:** [timestamp]
-**WorkGroupID:** [ID]
-**NodeID(s):** [list all]
-**Logged By:** AI-Agent
-**Details:**
+wgid: [WorkGroupID]
+type: arc-completion
+timestamp: [ISO-8601 UTC, e.g. 2026-09-12T19:00:00Z]
+agent: closer
+nodeids: [list all]
+knowz_sync: pending
+summary: [one-line outcome]
+---
+
 Successfully implemented and verified the Change Set for [goal].
+
 - **Verification Summary:** [key checks]
 - **Architectural Learnings:** [discoveries]
 - **Unforeseen Ripple Effects:** [affected nodes outside this WorkGroup, or None]
 - **Specification Finalization:** All specs updated to "as-built" state.
 - **Architecture Check Outcome:** [outcome]
----
 ```
 
-**Step 10: Update Tracker & Schedule Debt**
-- Change each NodeID status from `[WIP]` to `[VERIFIED]`, clear WorkGroupID
+This shard is the completion record for the WorkGroup. Its presence is what marks the WorkGroup no longer in flight.
+
+**Step 10: Schedule Debt**
+- Do **not** mutate `knowzcode_tracker.md`. NodeID status is implied by the ARC-completion shard, the as-built specs, and the WorkGroup session file.
 - If significant tech debt documented, create `REFACTOR_[NodeID]` tasks
 - Check if changes impact `knowzcode_project.md` (new features, stack changes)
 
@@ -247,20 +303,23 @@ For single-file, no-ripple-effect changes (results in a single `fix:` commit):
 
 1. Implement the small change
 2. Quick focused verification
-3. Log a `MicroFix` entry:
+3. Write a `microfix` shard at `knowzcode/journal/YYYY-MM/<WorkGroupID>/YYYYMMDDTHHMMSSZ-microfix-<shortid>.md`, using `ungrouped` in place of `<WorkGroupID>` when no WorkGroup is active. Never prepend to `knowzcode/knowzcode_log.md`.
 ```markdown
 ---
-**Type:** MicroFix
-**Timestamp:** [timestamp]
-**NodeID(s)/File:** [target]
-**Logged By:** AI-Agent
-**Details:**
+wgid: [WorkGroupID or ungrouped]
+type: microfix
+timestamp: [ISO-8601 UTC]
+agent: microfix-specialist
+nodeids: [NodeID(s) or target file]
+knowz_sync: pending
+summary: [one-line outcome]
+---
+
 - **User Request:** [description]
 - **Action Taken:** [change made]
 - **Verification:** [method/outcome]
----
 ```
-4. Commit with `fix: [description]`
+4. Commit with `fix: [description]` (include the new shard in the staged path list)
 
 ---
 
@@ -344,7 +403,7 @@ All phases work without MCP. MCP enhances analysis depth and organizational lear
 
 ## 7. Learning Capture (Optional)
 
-> **Content Detail Principle:** Vault entries live in a vector search index — they are chunked and retrieved via semantic search. Unlike local files (specs, workgroups, logs) which are read directly and benefit from being scannable, vault entries must be **self-contained, detailed, and keyword-rich** because they are discovered by meaning, not by file path.
+> **Content Detail Principle:** Vault entries live in a vector search index — they are chunked and retrieved via semantic search. Unlike local files (specs, workgroups, journal shards) which are read directly and benefit from being scannable, vault entries must be **self-contained, detailed, and keyword-rich** because they are discovered by meaning, not by file path.
 >
 > **Include in every vault entry:**
 > - Full reasoning and context — why, not just what
@@ -599,7 +658,7 @@ When phases transition (whether via agents or sequentially), the following data 
 ### 1B → 2A Handoff
 - WorkGroupID
 - Approved specifications (file paths)
-- Tracker state (all NodeIDs marked `[WIP]`)
+- WorkGroup session file listing the in-flight NodeIDs
 - Compliance constraints (if enterprise enabled)
 - Pre-implementation commit hash
 
@@ -673,19 +732,24 @@ The user MUST select a recovery option before work continues.
 If a WorkGroup needs to be abandoned mid-workflow:
 
 1. **Preserve user state and unwind only proven workflow-owned changes**: Compare the pre-WorkGroup checkpoint, `git status --short`, and the explicit writer-owned path list. Never run a blanket revert, reset, checkout, clean, or stash. Restore a path only when the workflow created its current delta, the prior state is known, and restoration cannot overwrite unrelated user work; otherwise preserve the delta and list it in the abandonment record for user direction.
-2. **Update tracker**: Set all affected NodeIDs back to their pre-WorkGroup status
-3. **Log abandonment**: Create a log entry with type `WorkGroup-Abandoned` including the reason
-4. **Close WorkGroup file**: Mark the WorkGroup file as abandoned with reason
-5. **Preserve learnings**: If any useful patterns were discovered, capture them before closing
+2. **Write an abandonment shard**: Create `knowzcode/journal/YYYY-MM/<WorkGroupID>/YYYYMMDDTHHMMSSZ-workgroup-abandoned-<shortid>.md`. This is the terminal shard for the WorkGroup — it closes the WorkGroup for in-flight derivation just like an ARC-completion shard. Do not mutate `knowzcode_tracker.md`.
+3. **Close WorkGroup file**: Mark the WorkGroup session file as abandoned with reason
+4. **Preserve learnings**: If any useful patterns were discovered, capture them before closing
 
 ```markdown
 ---
-**Type:** WorkGroup-Abandoned
-**Timestamp:** [timestamp]
-**WorkGroupID:** [ID]
-**Phase At Abandonment:** [1A/1B/2A/2B/3]
-**Reason:** [user decision / blocker / scope change]
-**NodeID(s) Affected:** [list with their reverted statuses]
-**Learnings Preserved:** [any useful insights, or None]
+wgid: [WorkGroupID]
+type: workgroup-abandoned
+timestamp: [ISO-8601 UTC]
+agent: [role]
+nodeids: [list]
+knowz_sync: pending
+summary: [one-line reason]
 ---
+
+- **Phase At Abandonment:** [1A/1B/2A/2B/3]
+- **Reason:** [user decision / blocker / scope change]
+- **NodeID(s) Affected:** [list with their state at abandonment]
+- **Preserved Deltas:** [paths left in place for user direction, or None]
+- **Learnings Preserved:** [any useful insights, or None]
 ```

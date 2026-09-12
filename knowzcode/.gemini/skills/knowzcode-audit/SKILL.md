@@ -12,7 +12,7 @@ Perform a READ-ONLY audit comparing implementation against specs.
 
 Read these files:
 - `knowzcode/knowzcode_loop.md` — Phase 2B methodology
-- `knowzcode/knowzcode_tracker.md` — Find active WorkGroups
+- `knowzcode/journal/` — in-flight WorkGroups are folders under `knowzcode/journal/*/*/` with no `arc-completion` or `workgroup-abandoned` shard
 
 **CRITICAL: This is a READ-ONLY audit. Do NOT modify source files.**
 
@@ -28,4 +28,4 @@ Read these files:
 - **security**: OWASP top 10, input validation, auth flows
 - **integration**: API contracts, dependency health
 
-**STOP** — Present audit results with completion percentage and gap list.
+**STOP** — Present audit results with completion percentage and gap list.

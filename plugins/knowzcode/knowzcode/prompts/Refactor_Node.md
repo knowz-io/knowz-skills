@@ -3,7 +3,7 @@
 **Target NodeID:** [The NodeID to be refactored, e.g., `API_UserSearch`]
 **Refactoring Goal:** [The specific goal, e.g., "Improve performance by optimizing database queries"]
 
-> **Automation Path:** Begin with `/knowzcode-step phase=1A` targeting the `REFACTOR_<NodeID>` tracker entry to scope the Change Set before executing this prompt.
+> **Automation Path:** Begin with `/knowzcode-step phase=1A` targeting the `REFACTOR_<NodeID>` item in the node's spec `Debt & Gaps` section to scope the Change Set before executing this prompt.
 
 ---
 
@@ -16,7 +16,7 @@ You have been assigned a technical debt task to refactor the specified `TargetNo
 
 ### Pre-Flight Check
 Before proceeding, confirm the following:
-*   The `TargetNodeID` is in a stable, `[VERIFIED]` state in `knowzcode/knowzcode_tracker.md`.
+*   The `TargetNodeID` has a finalized as-built spec at `knowzcode/specs/[TargetNodeID].md` and is not part of an in-flight WorkGroup (no `knowzcode/journal/*/*/` folder naming it that lacks an `arc-completion` or `workgroup-abandoned` shard).
 *   The goal is purely internal improvement, not adding features or fixing functional bugs. If this is not the case, **STOP** and inform the Orchestrator that a different protocol is required.
 
 ---
@@ -25,7 +25,7 @@ Before proceeding, confirm the following:
 
 #### Phase 1: Planning & Setup
 1.  **Initiate Work:**
-    *   In `knowzcode/knowzcode_tracker.md`, find the row for the `TargetNodeID`. Change its `Status` from `[VERIFIED]` to `[WIP]` and assign a new, unique `WorkGroupID` (e.g., `refactor-<timestamp>`).
+    *   Generate a new, unique `WorkGroupID` for this refactor (e.g., `kc-refactor-<slug>-YYYYMMDD-HHMMSS`) and record it in `knowzcode/workgroups/<WorkGroupID>.md`. Do **not** write `[WIP]` rows to `knowzcode/knowzcode_tracker.md` — it is a frozen archive.
 2.  **Review & Plan:**
     *   Thoroughly review the existing code for the `TargetNodeID`.
     *   Review its spec at `knowzcode/specs/[TargetNodeID].md`, paying close attention to the `VERIFY:` statements in the Verification Criteria section. These are your success metrics.
@@ -45,28 +45,33 @@ Before proceeding, confirm the following:
 1.  **Update Specification (If Necessary):**
     *   If the internal "Core Logic" was significantly changed (e.g., a different algorithm is now used), update that section of the spec to reflect the new, cleaner approach.
     *   **Do not change the Interfaces or Verification Criteria sections.**
-2.  **Log Operation:**
-    *   Prepend a `RefactorCompletion` entry to `knowzcode/knowzcode_log.md`. The entry **MUST** use the following format and an environment-sourced timestamp:
+2.  **Record Operation (Ref: `knowzcode_loop.md` - Section 2.1):**
+    *   Create one new immutable journal shard. Never prepend or append `knowzcode/knowzcode_log.md` — it is a frozen archive.
+        ```
+        knowzcode/journal/YYYY-MM/<WorkGroupID>/YYYYMMDDTHHMMSSZ-refactor-completion-<shortid>.md
+        ```
+    *   `YYYY-MM` and `YYYYMMDDTHHMMSSZ` come from an environment-sourced UTC timestamp; `<shortid>` is 4-8 hex/alphanumeric characters.
         ```markdown
         ---
-        **Type:** RefactorCompletion
-        **Timestamp:** [Generated Timestamp]
-        **WorkGroupID:** [The WorkGroupID for this refactor]
-        **NodeID(s):** [TargetNodeID]
-        **Logged By:** AI-Agent
-        **Details:**
+        wgid: [The WorkGroupID for this refactor]
+        type: refactor-completion
+        timestamp: [ISO-8601 UTC, e.g. 2026-09-12T19:00:00Z]
+        agent: builder
+        nodeids: [TargetNodeID]
+        knowz_sync: pending
+        summary: [One-line outcome]
+        ---
+
         - **Goal:** [Original refactoring goal].
         - **Summary of Improvements:** [List of specific improvements made, e.g., "Replaced N+1 query with a single JOIN", "Extracted duplicated logic into a helper function"].
         - **Verification:** Confirmed that all original Verification Criteria for the node still pass, ensuring no functional regressions.
-        ---
         ```
-3.  **Update Tracker & Finalize:**
-    *   In `knowzcode/knowzcode_tracker.md`:
-        *   Find the row for `TargetNodeID`, change its `Status` back to `[VERIFIED]`, and clear its `WorkGroupID`.
-        *   If a `REFACTOR_[TargetNodeID]` task exists, **delete that entire row** from the tracker.
+    *   This shard is the terminal record for the refactor WorkGroup. Shards are immutable: a later correction is a new shard referencing this filename.
+3.  **Resolve Debt Item:**
+    *   Do **not** mutate `knowzcode/knowzcode_tracker.md`. Remove the resolved `REFACTOR_[TargetNodeID]` item from the `Debt & Gaps` section of `knowzcode/specs/[TargetNodeID].md` and note its resolution in the shard body.
 4.  **Final Commit:**
-    *   Inspect status and scoped diffs; stage only the explicit approved code, spec, log, and tracker paths, verify the cached name list and diff, then commit with a descriptive `refactor:` message (e.g., `refactor(API_UserSearch): Optimize query performance`). Preserve unrelated user state.
+    *   Inspect status and scoped diffs; stage only the explicit approved code, spec, and new journal shard paths, verify the cached name list and diff, then commit with a descriptive `refactor:` message (e.g., `refactor(API_UserSearch): Optimize query performance`). Preserve unrelated user state.
 
 ### Final Report
 *   Once all steps are complete, provide a concise confirmation report.
-> "✓ Refactoring of `[TargetNodeID]` is complete. The technical debt task has been resolved, logged, and committed. The tracker has been updated."
+> "✓ Refactoring of `[TargetNodeID]` is complete. The technical debt task has been resolved, recorded in a journal shard, and committed."

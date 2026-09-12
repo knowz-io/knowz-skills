@@ -37,7 +37,8 @@ These phrases indicate `/knowzcode:work` intent:
 
 Verify KnowzCode is initialized:
 1. Check if `knowzcode/` directory exists
-2. Check required files exist: `knowzcode_loop.md`, `knowzcode_tracker.md`, `knowzcode_project.md`, `knowzcode_architecture.md`
+2. Check required files exist: `knowzcode_loop.md`, `knowzcode_project.md`, `knowzcode_architecture.md`
+3. Ensure `knowzcode/journal/` exists — completion records are written there as immutable shards (see `knowzcode_loop.md` section 2.1). Create the directory if missing.
 
 If missing: inform user to run `/knowzcode:setup` first. STOP.
 
@@ -330,7 +331,7 @@ If no match was found, proceed to Phase 1A. Do not repeat the same broad spec se
 
 ### Refactor Task Check
 
-Scan `knowzcode/knowzcode_tracker.md` for outstanding `REFACTOR_` tasks that overlap with the current goal's scope. If found, mention them to the user during Phase 1A so the analyst can factor them into the Change Set.
+Scan `knowzcode/specs/*.md` `Debt & Gaps` sections and recent `knowzcode/journal/*/*/*.md` shards for outstanding `REFACTOR_` tasks that overlap with the current goal's scope. If found, mention them to the user during Phase 1A so the analyst can factor them into the Change Set.
 
 ---
 

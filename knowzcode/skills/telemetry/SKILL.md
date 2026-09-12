@@ -186,20 +186,32 @@ Display the synthesized telemetry investigation results:
 
 ---
 
-## Logging
+## Recording the Investigation
 
-After investigation, log to `knowzcode/knowzcode_log.md`:
+After investigation, create one immutable journal shard. Never prepend or append `knowzcode/knowzcode_log.md` — it is a frozen archive.
+
+```
+knowzcode/journal/YYYY-MM/<WorkGroupID>/YYYYMMDDTHHMMSSZ-telemetry-<shortid>.md
+```
+
+Use `ungrouped` in place of `<WorkGroupID>` when no WorkGroup is active.
 
 ```markdown
 ---
-**Type:** Telemetry Investigation
-**Timestamp:** {timestamp}
-**Query:** {original natural language query}
-**Extracted**: env={env}, timeframe={timeframe}
-**Sources:** {sources queried}
-**Finding:** {one-line root cause summary}
-**Status:** Complete
+wgid: {WorkGroupID or ungrouped}
+type: telemetry
+timestamp: {ISO-8601 UTC, e.g. 2026-09-12T19:00:00Z}
+agent: reviewer
+nodeids: [{affected NodeIDs, or empty}]
+knowz_sync: pending
+summary: {one-line root cause summary}
 ---
+
+- **Query:** {original natural language query}
+- **Extracted:** env={env}, timeframe={timeframe}
+- **Sources:** {sources queried}
+- **Finding:** {root cause detail}
+- **Status:** Complete
 ```
 
 ## Related Skills

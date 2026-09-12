@@ -20,7 +20,7 @@ Agents are invoked with the current `Agent()` tool (`Task` is the older compatib
 4. **Verify authentication** — confirm each installed tool is authenticated before querying
 5. **Investigate** — delegate to `knowzcode:reviewer` with full config, detected sources, and parsed query
 6. **Present findings** — merged event timeline, root cause hypothesis, confidence level, recommendations
-7. **Log** — append investigation entry to `knowzcode/knowzcode_log.md`
+7. **Record** — create one immutable `telemetry` shard under `knowzcode/journal/YYYY-MM/<wgid-or-ungrouped>/`; never write to `knowzcode/knowzcode_log.md` (frozen archive)
 
 ## Configuration Gate
 
@@ -38,6 +38,6 @@ If tools are installed but not authenticated, stop and direct user to `/knowzcod
 
 ## Output Paths
 
-- Log entry: `knowzcode/knowzcode_log.md`
-- Findings: presented inline (no file written to project tree)
+- Journal shard: `knowzcode/journal/YYYY-MM/<wgid-or-ungrouped>/YYYYMMDDTHHMMSSZ-telemetry-<shortid>.md`
+- Findings: presented inline (no other file written to project tree)
 - Handoff to: `/knowzcode:fix` or `/knowzcode:work` per user choice

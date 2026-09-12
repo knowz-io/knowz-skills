@@ -22,7 +22,7 @@ Perform Phase 1A: Impact Analysis. Identify all components affected by a propose
 
 1. Read `knowzcode/knowzcode_loop.md` for the complete Phase 1A methodology
 2. Read `knowzcode/knowzcode_project.md` for project context and tech stack
-3. Read `knowzcode/knowzcode_tracker.md` for active work
+3. Derive active work from `knowzcode/journal/*/*/` (no `arc-completion` or `workgroup-abandoned` shard)
 4. Scan `knowzcode/specs/` for existing specs that may overlap with the proposed change
 5. Search the codebase for files affected by the change goal
 
@@ -32,4 +32,4 @@ Perform Phase 1A: Impact Analysis. Identify all components affected by a propose
 - **Risk assessment**: Impact scope, complexity, potential regressions
 - **Dependency map**: Which NodeIDs depend on others
 
-**STOP** after presenting the Change Set — wait for user approval before Phase 1B begins.
+**STOP** after presenting the Change Set — wait for user approval before Phase 1B begins.

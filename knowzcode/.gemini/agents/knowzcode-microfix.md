@@ -23,5 +23,5 @@ Execute targeted, single-file fixes using the micro-fix protocol. Scope: single 
 1. Read `knowzcode/knowzcode_loop.md` section on Micro-Fix
 2. Implement the fix in the target file
 3. Run targeted tests for the affected code
-4. Prepend a MicroFix entry to `knowzcode/knowzcode_log.md`
-5. If the fix exceeds scope (multi-file, >50 lines, architectural impact), escalate to `/knowzcode:work`
+4. Create one immutable `microfix` shard at `knowzcode/journal/YYYY-MM/<WorkGroupID-or-ungrouped>/YYYYMMDDTHHMMSSZ-microfix-<shortid>.md`; never prepend `knowzcode/knowzcode_log.md` (frozen archive)
+5. If the fix exceeds scope (multi-file, >50 lines, architectural impact), escalate to `/knowzcode:work`

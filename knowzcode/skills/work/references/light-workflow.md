@@ -48,8 +48,8 @@ Approve Change Set and spec to proceed to implementation?
 
 6. **Autonomous Mode**: If `AUTONOMOUS_MODE = true`, log `[AUTO-APPROVED] Light mode gate` and proceed directly to implementation.
    If `AUTONOMOUS_MODE = false`: If rejected — adjust based on feedback and re-present. If approved:
-   - Update `knowzcode_tracker.md` with NodeID status `[WIP]`
-   - Pre-implementation commit: inspect `git status --short` and scoped diffs, then run `git add -- knowzcode/workgroups/{wgid}.md knowzcode/knowzcode_tracker.md {approved-spec-paths}`. Verify `git diff --cached --check` and `git diff --cached --name-only`; abort on any unapproved path before `git commit -m "KnowzCode: Light spec approved for {wgid}"`.
+   - Record the WorkGroup and its NodeIDs in `knowzcode/workgroups/{wgid}.md`. Do not write `[WIP]` rows to `knowzcode_tracker.md` — it is a frozen archive.
+   - Pre-implementation commit: inspect `git status --short` and scoped diffs, then run `git add -- {approved-spec-paths} {any-new-journal-shards}`. Verify `git diff --cached --check` and `git diff --cached --name-only`; abort on any unapproved path before `git commit -m "KnowzCode: Light spec approved for {wgid}"`.
 
 ---
 
@@ -77,17 +77,19 @@ If user did not request smoke testing, skip to Light Phase 3.
 
 After builder completes successfully:
 1. Update spec to As-Built status
-2. Update `knowzcode_tracker.md`: NodeID status `[WIP]` → `[VERIFIED]`
-3. Write a brief log entry to `knowzcode_log.md`:
+2. Write one immutable ARC-completion shard at `knowzcode/journal/YYYY-MM/{wgid}/YYYYMMDDTHHMMSSZ-arc-completion-{shortid}.md`. Do not prepend `knowzcode_log.md` and do not write status rows to `knowzcode_tracker.md` — both are frozen archives.
    ```markdown
    ---
-   **Type:** ARC-Completion
-   **Timestamp:** [timestamp]
-   **WorkGroupID:** [ID]
-   **NodeID(s):** [list]
-   **Logged By:** AI-Agent
-   **Details:** Light mode (Tier 2). {brief summary of implementation}.
+   wgid: {wgid}
+   type: arc-completion
+   timestamp: [ISO-8601 UTC]
+   agent: lead
+   nodeids: [list]
+   knowz_sync: pending
+   summary: Light mode (Tier 2) — {one-line outcome}
    ---
+
+   Light mode (Tier 2). {brief summary of implementation}.
    ```
 4. **Knowledge capture**:
    - Classify the consolidated delta with `vault-delta` and `explicit_save: true`; store `FINAL_CAPTURE_ACTION` and its stable identity/reason.
@@ -95,8 +97,8 @@ After builder completes successfully:
 5. **Vault Write Checklist (MUST — do not skip, do not defer)**:
    You MUST attempt every item. Check each off or report failure to the user.
    - [ ] WorkGroup file exists in `knowzcode/workgroups/{wgid}.md`
-   - [ ] `knowzcode_tracker.md` updated with NodeID status
-   - [ ] `knowzcode_log.md` entry written
+   - [ ] ARC-completion journal shard written with required frontmatter
+   - [ ] No writes made to `knowzcode_log.md` or `knowzcode_tracker.md`
    - [ ] Classified persistence handled exactly once when `FINAL_CAPTURE_ACTION` is `amend`, `update`, or `flush`:
      - Read `knowz-vaults.md`, resolve vault IDs. Read the WorkGroup file for the `**KnowledgeId:**` value.
      - **For `amend`/`update`**: give the writer the exact `KnowledgeId`, operation, and stable mutation key for the targeted mutation. A missing ID is an explicit error; never create a duplicate or replacement implicitly.

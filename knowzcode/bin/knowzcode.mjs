@@ -1263,6 +1263,7 @@ function preflightInstallFrameworkFiles(dir, preserveFiles) {
   };
 
   assertFileOrMissing(join(kcDir, 'workgroups', 'README.md'), 'the WorkGroup README target', dir);
+  assertFileOrMissing(join(kcDir, 'journal', 'README.md'), 'the journal README target', dir);
   for (const entry of readdirSync(srcKc, { withFileTypes: true })) {
     if (!entry.isFile()) continue;
     if (entry.name === 'knowzcode_tracker.md' || entry.name === 'knowzcode_log.md') continue;
@@ -1302,6 +1303,8 @@ function preflightUpgradeFrameworkFiles(dir, preserveFiles) {
       assertDirectoryOrMissing(join(kcDir, entry), `the upgraded framework directory ${entry}`, dir);
     }
   }
+  assertDirectoryOrMissing(join(kcDir, 'journal'), 'the upgraded journal directory', dir);
+  assertFileOrMissing(join(kcDir, 'journal', 'README.md'), 'the upgraded journal README target', dir);
   assertFileOrMissing(join(kcDir, '.knowzcode-version'), 'the upgraded framework version target', dir);
 }
 
@@ -1928,59 +1931,117 @@ function discoverApiKey(dir) {
 
 // ─── Stale File Cleanup ─────────────────────────────────────────────────────
 
-// ─── Tracker & Log Initializers ──────────────────────────────────────────────
+// ─── Journal, Tracker & Log Initializers ─────────────────────────────────────
+
+// The journal replaces the old shared-log prepend. Every work event is one
+// immutable file, so concurrent agents never contend on a single document.
+function initJournalReadme(filePath) {
+  writeFileSync(filePath, `# KnowzCode Journal
+
+Every work event is recorded here as one **immutable shard**. Agents no longer
+prepend to a single shared \`knowzcode_log.md\`, which serialized every agent
+through one file and produced merge conflicts.
+
+## Path
+
+\`\`\`
+knowzcode/journal/YYYY-MM/<WorkGroupID>/YYYYMMDDTHHMMSSZ-<type>-<shortid>.md
+\`\`\`
+
+- \`YYYY-MM\` — UTC year and month of the event
+- \`<WorkGroupID>\` — \`kc-{type}-{slug}-YYYYMMDD-HHMMSS\`, or \`ungrouped\` for a
+  micro-fix with no WorkGroup
+- \`YYYYMMDDTHHMMSSZ\` — UTC timestamp, so filenames sort chronologically
+- \`<type>\` — \`arc-completion\`, \`microfix\`, \`refactor-completion\`, \`audit\`,
+  \`telemetry\`, \`start-work\`, \`knowledge-migration\`, \`init\`,
+  \`workgroup-abandoned\`
+- \`<shortid>\` — 4–8 lowercase hex/alphanumeric characters
+
+## Required frontmatter
+
+\`\`\`yaml
+---
+wgid: kc-feat-example-20260912-150000
+type: arc-completion
+timestamp: 2026-09-12T19:00:00Z
+agent: closer
+nodeids: [Authentication]
+knowz_sync: pending
+summary: One-line outcome
+---
+\`\`\`
+
+The body holds the prose: verification summary, learnings, ripple effects.
+\`knowz_sync\` is \`pending\` until the event is synced to a Knowz vault, then it
+holds the knowledge id. Knowz is optional and never a gate — a shard written
+with \`knowz_sync: pending\` is already a complete record.
+
+## Rules
+
+- Shards are created, never edited or deleted.
+- A correction is a **new shard** referencing the earlier shard's filename.
+- There is no \`index.md\`. State is derived from the tree.
+- \`knowzcode_log.md\` and \`knowzcode_tracker.md\` are frozen archives. Never
+  write to them.
+- The journal is tracked in git. Commit shards with the change they describe.
+
+## Deriving state
+
+\`\`\`bash
+# in-flight WorkGroups: folders with no terminal shard
+for wg in knowzcode/journal/*/*/; do
+  ls "$wg" | grep -qE -- '-(arc-completion|workgroup-abandoned)-' || echo "IN FLIGHT: $wg"
+done
+
+# recent history, newest first
+ls knowzcode/journal/*/*/*.md | sort -r | head -20
+\`\`\`
+
+\`knowzcode/scripts/journal-index.sh\` does the same, if installed. No agent is
+required to run it.
+`);
+}
 
 function initTracker(filePath) {
-  writeFileSync(filePath, `# KnowzCode - Status Map
+  writeFileSync(filePath, `# KnowzCode - Status Map (Archive)
 
-**Purpose:** This document tracks the development status of all implementable components (NodeIDs) defined in \`knowzcode_architecture.md\`.
+**Status:** Frozen archive. Nothing writes to this file.
 
----
-**Progress: 0%**
----
+NodeID status and WorkGroup assignments are no longer tracked here. Current
+state is derived from:
 
-| Status | WorkGroupID | Node ID | Label | Dependencies | Logical Grouping | Spec Link | Classification | Notes / Issues |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| | | | | | | | | |
+- \`knowzcode/journal/\` — immutable shards, one per work event. A WorkGroup is
+  in flight while its folder has no \`arc-completion\` or \`workgroup-abandoned\`
+  shard.
+- \`knowzcode/specs/[NodeID].md\` — as-built NodeID state.
+- \`knowzcode/workgroups/<WorkGroupID>.md\` — local session state (gitignored).
 
----
-### Status Legend:
-
-*   ⚪️ **\`[TODO]\`**: Task is defined and ready to be picked up if dependencies are met.
-*   📝 **\`[NEEDS_SPEC]\`**: Node has been identified but requires a detailed specification.
-*   ◆ **\`[WIP]\`**: Work In Progress. The KnowzCode AI Agent is currently working on this node.
-*   🟢 **\`[VERIFIED]\`**: Node has been implemented and verified.
-*   ❗ **\`[ISSUE]\`**: A significant issue or blocker has been identified.
+See \`knowzcode/journal/README.md\` for the shard contract.
 
 ---
-*(This table will be populated as you define your architecture and NodeIDs.)*
+### Archived Entries
+
+*None — this project started on the journal.*
 `);
 }
 
 function initLog(filePath) {
-  const ts = new Date().toISOString().replace('T', ' ').slice(0, 19);
-  writeFileSync(filePath, `# KnowzCode - Operational Record
+  writeFileSync(filePath, `# KnowzCode - Operational Record (Archive)
 
-**Purpose:** Chronological record of significant events, decisions, and verification outcomes.
+**Status:** Frozen archive. Nothing prepends or appends to this file.
+
+Work events are recorded as immutable shards under \`knowzcode/journal/\`, one
+file per event. See \`knowzcode/journal/README.md\` for the path convention,
+required frontmatter, and how in-flight WorkGroups are derived.
+
+---
+### Archived Entries
+
+*None — this project started on the journal.*
 
 ---
 
-## Section 1: Operational Log
-
----
-**[NEWEST ENTRIES APPEAR HERE - DO NOT REMOVE THIS MARKER]**
----
-**Type:** SystemInitialization
-**Timestamp:** ${ts}
-**NodeID(s):** Project-Wide
-**Logged By:** knowzcode-cli
-**Details:**
-KnowzCode framework installed via \`npx @knowzai/knowzcode\`.
-- Framework files initialized
-- Ready for first feature
----
-
-## Section 2: Reference Quality Criteria (ARC-Based Verification)
+## Reference Quality Criteria (ARC-Based Verification)
 
 ### Core Quality Criteria
 1.  **Maintainability:** Ease of modification, clarity of code and design.
@@ -2097,6 +2158,8 @@ function scanExistingInstallation(kcDir, dir) {
     specs: [],
     trackerEntries: 0,
     logEntries: 0,
+    journalShards: 0,
+    openWorkGroups: 0,
     hasArchitecture: false,
     hasProject: false,
     hasPreferences: false,
@@ -2126,12 +2189,31 @@ function scanExistingInstallation(kcDir, dir) {
     result.trackerEntries = rows.length;
   }
 
-  // Log entries (count --- delimited entries beyond SystemInitialization)
+  // Archived log entries (count --- delimited entries beyond SystemInitialization).
+  // Pre-journal installs carry history here; the file is frozen, so this only
+  // reports what is already archived.
   const logFile = join(kcDir, 'knowzcode_log.md');
   if (existsSync(logFile)) {
     const content = readFileSync(logFile, 'utf8');
     const typeMatches = content.match(/\*\*Type:\*\*/g);
     result.logEntries = typeMatches ? Math.max(0, typeMatches.length - 1) : 0; // -1 for SystemInitialization
+  }
+
+  // Journal shards — the live record. Layout is journal/YYYY-MM/<wgid>/*.md.
+  // A WorkGroup folder without a terminal shard is still in flight.
+  const journalDir = join(kcDir, 'journal');
+  if (existsSync(journalDir)) {
+    for (const month of readdirSync(journalDir, { withFileTypes: true })) {
+      if (!month.isDirectory()) continue;
+      const monthDir = join(journalDir, month.name);
+      for (const workGroup of readdirSync(monthDir, { withFileTypes: true })) {
+        if (!workGroup.isDirectory()) continue;
+        const shards = readdirSync(join(monthDir, workGroup.name)).filter(f => f.endsWith('.md'));
+        result.journalShards += shards.length;
+        const closed = shards.some(f => /-(arc-completion|workgroup-abandoned)-/.test(f));
+        if (!closed && shards.length > 0) result.openWorkGroups += 1;
+      }
+    }
   }
 
   // Architecture — check if edited (compare size to source template)
@@ -2204,8 +2286,9 @@ function displayInstallationSummary(scan, dir) {
   console.log('');
 
   // User data
-  const hasData = scan.specs.length > 0 || scan.trackerEntries > 0 || scan.logEntries > 0 ||
-    scan.hasArchitecture || scan.hasProject || scan.hasPreferences || scan.workgroups.length > 0;
+  const hasData = scan.specs.length > 0 || scan.journalShards > 0 || scan.trackerEntries > 0 ||
+    scan.logEntries > 0 || scan.hasArchitecture || scan.hasProject || scan.hasPreferences ||
+    scan.workgroups.length > 0;
 
   if (hasData) {
     console.log('  Your data:');
@@ -2214,8 +2297,12 @@ function displayInstallationSummary(scan, dir) {
       const more = scan.specs.length > 5 ? `, +${scan.specs.length - 5} more` : '';
       console.log(`    ${String(scan.specs.length).padStart(2)} spec(s)         (${specNames}${more})`);
     }
-    if (scan.trackerEntries > 0) console.log(`    ${String(scan.trackerEntries).padStart(2)} tracker entries`);
-    if (scan.logEntries > 0) console.log(`    ${String(scan.logEntries).padStart(2)} log entries`);
+    if (scan.journalShards > 0) {
+      const inFlight = scan.openWorkGroups > 0 ? ` (${scan.openWorkGroups} WorkGroup(s) in flight)` : '';
+      console.log(`    ${String(scan.journalShards).padStart(2)} journal shard(s)${inFlight}`);
+    }
+    if (scan.trackerEntries > 0) console.log(`    ${String(scan.trackerEntries).padStart(2)} archived tracker entries`);
+    if (scan.logEntries > 0) console.log(`    ${String(scan.logEntries).padStart(2)} archived log entries`);
     if (scan.hasArchitecture) console.log('    Architecture     customized');
     if (scan.hasProject) console.log('    Project config   customized');
     if (scan.hasPreferences) console.log('    Preferences      configured');
@@ -2584,6 +2671,7 @@ async function cmdInstall(opts) {
   ensureDir(join(kcDir, 'specs'));
   ensureDir(join(kcDir, 'workgroups'));
   ensureDir(join(kcDir, 'prompts'));
+  ensureDir(join(kcDir, 'journal'));
 
   // Create workgroups/README.md (workgroups/ is gitignored and excluded from npm)
   writeFileSync(join(kcDir, 'workgroups', 'README.md'), '# WorkGroups\n\nSession-specific WorkGroup files are stored here.\nThis directory is gitignored — contents are local to each checkout.\n');
@@ -2637,7 +2725,14 @@ async function cmdInstall(opts) {
     copyDirContents(join(PKG_ROOT, 'docs'), join(kcDir, 'docs'));
   }
 
-  // Initialize tracker and log — only create fresh if not preserving
+  // Journal README — refresh the contract doc, but never touch user shards.
+  // Shards are immutable files created by agents; install/upgrade only ensures
+  // the directory and its README exist.
+  initJournalReadme(join(kcDir, 'journal', 'README.md'));
+
+  // Initialize tracker and log as archive stubs — only create fresh if not
+  // preserving. An existing tracker/log is a user archive of pre-journal
+  // history and is never overwritten or dual-written.
   if (!preserveFiles.has('knowzcode_tracker.md') || !existsSync(join(kcDir, 'knowzcode_tracker.md'))) {
     initTracker(join(kcDir, 'knowzcode_tracker.md'));
   }
@@ -2650,8 +2745,9 @@ async function cmdInstall(opts) {
 
   if (isReinstall && preserveFiles.size > 0) {
     const preserved = [];
-    if (preserveFiles.has('knowzcode_tracker.md') && existsSync(join(kcDir, 'knowzcode_tracker.md'))) preserved.push('tracker');
-    if (preserveFiles.has('knowzcode_log.md') && existsSync(join(kcDir, 'knowzcode_log.md'))) preserved.push('log');
+    if (preserveFiles.has('knowzcode_tracker.md') && existsSync(join(kcDir, 'knowzcode_tracker.md'))) preserved.push('tracker archive');
+    if (preserveFiles.has('knowzcode_log.md') && existsSync(join(kcDir, 'knowzcode_log.md'))) preserved.push('log archive');
+    preserved.push('journal shards');
     if (preserveFiles.has('knowzcode_architecture.md') && existsSync(join(kcDir, 'knowzcode_architecture.md'))) preserved.push('architecture');
     if (preserveFiles.has('knowzcode_project.md') && existsSync(join(kcDir, 'knowzcode_project.md'))) preserved.push('project config');
     if (preserveFiles.has('environment_context.md') && existsSync(join(kcDir, 'environment_context.md'))) preserved.push('environment');
@@ -3019,7 +3115,7 @@ async function cmdUninstall(opts) {
   for (const comp of components) {
     if (comp.path === kcDir && preserveUserData) {
       // Selective removal — keep user data
-      const preserve = ['specs', 'knowzcode_architecture.md', 'knowzcode_tracker.md', 'knowzcode_log.md', 'knowzcode_project.md'];
+      const preserve = ['specs', 'journal', 'knowzcode_architecture.md', 'knowzcode_tracker.md', 'knowzcode_log.md', 'knowzcode_project.md'];
 
       for (const entry of readdirSync(kcDir)) {
         if (preserve.includes(entry)) continue;
@@ -3178,6 +3274,12 @@ async function cmdUpgrade(opts) {
     copyDirContents(join(PKG_ROOT, 'docs'), docsDst);
     if (opts.verbose) log.info('Updated: docs/');
   }
+
+  // Ensure the journal exists and refresh only its contract README. User shards
+  // are immutable records and are never removed, rewritten, or migrated here.
+  ensureDir(join(kcDir, 'journal'));
+  initJournalReadme(join(kcDir, 'journal', 'README.md'));
+  if (opts.verbose) log.info('Updated: journal/README.md (shards preserved)');
 
   // Update Claude Code components if present
   const claudeRoot = opts.global ? process.env.HOME || process.env.USERPROFILE : dir;

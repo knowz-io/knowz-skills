@@ -3,7 +3,7 @@
 **Confirmed Change Set:**
 [Orchestrator: Copy and paste the *exact* Change Set that the agent proposed and you are approving. This serves as the official, unambiguous authorization.]
 
-> **Automation Path:** Invoke `/knowzcode-step phase=1B workgroup_id=<ID>` to delegate to the `architect` subagent. This automatically applies the `spec-template`, `spec-quality-check`, and `tracker-update` skills before presenting draft specs.
+> **Automation Path:** Invoke `/knowzcode-step phase=1B workgroup_id=<ID>` to delegate to the `architect` subagent. This automatically applies the `spec-template` and `spec-quality-check` skills before presenting draft specs.
 
 **Remember:**
 - Update each affected spec in `knowzcode/specs/` using the lean 4-section template (Rules & Decisions, Interfaces, Verification Criteria, Debt & Gaps).
@@ -19,7 +19,7 @@
 ---
 
 ## Your Mission
-The Change Set has been confirmed. Your first action is to **update the `knowzcode_tracker.md`** to reflect the start of this work. Then, proceed to draft or refine all required specifications directly in their respective files.
+The Change Set has been confirmed. Your first action is to **open the WorkGroup session file** to reflect the start of this work. Then, proceed to draft or refine all required specifications directly in their respective files.
 
 **CRITICAL RULE: Your work in this phase is strictly limited to updating KnowzCode's own project and specification files (`.md` files). You MUST NOT write or modify any application source code (e.g., `.js`, `.py`, `.html` files).**
 
@@ -27,17 +27,16 @@ The Change Set has been confirmed. Your first action is to **update the `knowzco
 
 ---
 
-### Step 1: Establish Work Group & Update Tracker (Ref: `knowzcode_loop.md` - Step 1.4)
+### Step 1: Establish Work Group (Ref: `knowzcode_loop.md` - Step 1.4)
 
-*   Generate a single, unique `WorkGroupID` for this session (e.g., `wip-<timestamp>`).
-*   In `knowzcode_tracker.md`, immediately update every node listed in the confirmed Change Set above:
-    1.  Set its `Status` to `[WIP]`.
-    2.  Assign the new `WorkGroupID` to it.
+*   Generate a single, unique `WorkGroupID` for this session (format `kc-{type}-{slug}-YYYYMMDD-HHMMSS`).
+*   Create `knowzcode/workgroups/<WorkGroupID>.md` listing every node in the confirmed Change Set. This is local session state (gitignored).
+*   Do **not** write `[WIP]` rows to `knowzcode_tracker.md` — it is a frozen archive. The WorkGroup counts as in flight until its `knowzcode/journal/YYYY-MM/<WorkGroupID>/` folder gains an `arc-completion` or `workgroup-abandoned` shard.
 *   This action formally begins the work session and reserves the nodes for this task.
 
 ### Step 2: Draft and Refine Specifications (Ref: `knowzcode_loop.md` - Steps 2 & 3)
 
-*   Now that the tracker is updated, execute a **full Context Assembly (Step 2)** from the loop to gather all necessary information for the entire Change Set.
+*   Now that the WorkGroup is open, execute a **full Context Assembly (Step 2)** from the loop to gather all necessary information for the entire Change Set.
 *   Proceed to **Specification Management (Step 3)**:
     *   For each **new** node in the Change Set, **create and write** its complete specification to a new file at `specs/[NodeID].md`.
     *   For each **existing** node in the Change Set, **read, modify, and save** its specification file at `specs/[NodeID].md`.
@@ -48,7 +47,7 @@ The Change Set has been confirmed. Your first action is to **update the `knowzco
 *   Instead, report that the administrative and drafting phases are complete, providing a clear list of the files that are now ready for the Orchestrator's review.
 
 **Example Response Format:**
-> "Authorization received. The `knowzcode_tracker.md` has been updated and all nodes in `WorkGroupID: [ID]` are now marked as `[WIP]`.
+> "Authorization received. The WorkGroup session file for `WorkGroupID: [ID]` is open and all Change Set nodes are reserved for it.
 >
 > The specification drafting and refinement phase is also complete. The following files are now ready for your review in the `specs/` directory:
 >
