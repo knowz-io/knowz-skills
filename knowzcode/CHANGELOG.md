@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.23.0] - 2026-09-12
+
+### Added
+- Immutable offline-first journal shards at `knowzcode/journal/YYYY-MM/<WorkGroupID>/YYYYMMDDTHHMMSSZ-<type>-<shortid>.md`, with required frontmatter (`wgid`, `type`, `timestamp`, `agent`, `nodeids`, `knowz_sync`, `summary`). In-flight WorkGroups are derived from the tree — no hand-maintained journal index.
+- Optional `scripts/journal-index.sh` helper and a contract test that fails if shipped skills instruct agents to prepend `knowzcode_log.md`.
+
+### Changed
+- Completions, micro-fixes, audits, telemetry, and related events write a new shard instead of prepending `knowzcode/knowzcode_log.md` or writing status rows to `knowzcode_tracker.md`. Both files are frozen archives. Knowz sync state lives on the shard (`pending` or a knowledge id); Knowz remains optional and never a gate.
+
+
 ## [0.22.0] - 2026-08-22
 
 ### Changed
