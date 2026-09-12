@@ -5,6 +5,7 @@ These templates are generated during `/knowzcode:setup` Step 3. Create each file
 ## Contents
 
 - [knowzcode_project.md](#knowzcode_projectmd)
+- [journal/README.md](#journalreadmemd)
 - [knowzcode_tracker.md](#knowzcode_trackermd)
 - [knowzcode_log.md](#knowzcode_logmd)
 - [knowzcode_architecture.md](#knowzcode_architecturemd)
@@ -35,38 +36,78 @@ These templates are generated during `/knowzcode:setup` Step 3. Create each file
 
 ### Links to Other Artifacts
 * **Loop Protocol:** `knowzcode/knowzcode_loop.md`
-* **Session Log:** `knowzcode/knowzcode_log.md`
+* **Work Journal:** `knowzcode/journal/` (immutable shards — the live record)
 * **Architecture:** `knowzcode/knowzcode_architecture.md`
-* **Tracker:** `knowzcode/knowzcode_tracker.md`
 * **Specifications:** `knowzcode/specs/`
+* **Archives (read-only):** `knowzcode/knowzcode_log.md`, `knowzcode/knowzcode_tracker.md`
 ```
 
-## knowzcode_tracker.md
-```markdown
-# KnowzCode Status Map (WorkGroup Tracker)
+## journal/README.md
 
-**Purpose:** Tracks all active and completed WorkGroups.
+Create `knowzcode/journal/` and write this README into it. The journal is tracked in git — do **not** add it to `.gitignore`.
 
-## Active WorkGroups
+````markdown
+# KnowzCode Journal
 
-*None yet. Run `/knowzcode:work "your feature description"` to create your first WorkGroup.*
+Every work event is recorded here as one **immutable shard**. Agents no longer
+prepend to a single shared `knowzcode_log.md`, which serialized every agent
+through one file and produced merge conflicts.
 
-## Completed WorkGroups
+## Path
 
-*None yet.*
-
-**Next WorkGroup ID:** WG-001
+```
+knowzcode/journal/YYYY-MM/<WorkGroupID>/YYYYMMDDTHHMMSSZ-<type>-<shortid>.md
 ```
 
-## knowzcode_log.md
-```markdown
-# KnowzCode Operational Record
+- `YYYY-MM` — UTC year and month of the event
+- `<WorkGroupID>` — `kc-{type}-{slug}-YYYYMMDD-HHMMSS`, or `ungrouped` for a
+  micro-fix with no WorkGroup
+- `YYYYMMDDTHHMMSSZ` — UTC timestamp, so filenames sort chronologically
+- `<type>` — `arc-completion`, `microfix`, `refactor-completion`, `audit`,
+  `telemetry`, `start-work`, `knowledge-migration`, `init`, `workgroup-abandoned`
+- `<shortid>` — 4–8 lowercase hex/alphanumeric characters
 
-**Purpose:** Session log and quality criteria reference.
+## Required frontmatter
 
-## Recent Sessions
+```yaml
+---
+wgid: kc-feat-example-20260912-150000
+type: arc-completion
+timestamp: 2026-09-12T19:00:00Z
+agent: closer
+nodeids: [Authentication]
+knowz_sync: pending
+summary: One-line outcome
+---
+```
 
-*No sessions yet.*
+The body holds the prose: verification summary, learnings, ripple effects.
+`knowz_sync` is `pending` until synced to a Knowz vault, then holds the
+knowledge id. Knowz is optional and never a gate — a shard with
+`knowz_sync: pending` is already a complete record.
+
+## Rules
+
+- Shards are created, never edited or deleted.
+- A correction is a **new shard** referencing the earlier shard's filename.
+- There is no `index.md`. State is derived from the tree.
+- `knowzcode_log.md` and `knowzcode_tracker.md` are frozen archives. Never write
+  to them.
+
+## Deriving state
+
+```bash
+# in-flight WorkGroups: folders with no terminal shard
+for wg in knowzcode/journal/*/*/; do
+  ls "$wg" | grep -qE -- '-(arc-completion|workgroup-abandoned)-' || echo "IN FLIGHT: $wg"
+done
+
+# recent history, newest first
+ls knowzcode/journal/*/*/*.md | sort -r | head -20
+```
+
+`knowzcode/scripts/journal-index.sh` does the same, if installed. No agent is
+required to run it.
 
 ## Reference Quality Criteria
 
@@ -75,13 +116,58 @@ These templates are generated during `/knowzcode:setup` Step 3. Create each file
 3. **Security:** Input validation, secure authentication, data protection
 4. **Performance:** Efficient algorithms, optimized queries
 5. **Testability:** Comprehensive test coverage, clear test cases
+````
+
+## knowzcode_tracker.md
+
+An **archive stub**. Nothing writes to this file. It exists so that projects
+upgrading from a pre-journal KnowzCode keep a stable path for their history; a
+fresh install gets the stub below.
+
+```markdown
+# KnowzCode Status Map — Archive
+
+**Status:** Frozen archive. Not written to.
+
+NodeID status and WorkGroup assignments are no longer tracked in this file.
+Current state is derived from:
+
+- `knowzcode/journal/` — immutable shards, one per work event. A WorkGroup is
+  in flight while its folder has no `arc-completion` or `workgroup-abandoned`
+  shard.
+- `knowzcode/specs/[NodeID].md` — as-built NodeID state.
+- `knowzcode/workgroups/<WorkGroupID>.md` — local session state (gitignored).
+
+See `knowzcode/journal/README.md` for the shard contract.
+
+## Archived Entries
+
+*None — this project started on the journal.*
+```
+
+## knowzcode_log.md
+
+An **archive stub**. Nothing prepends or appends to this file.
+
+```markdown
+# KnowzCode Operational Record — Archive
+
+**Status:** Frozen archive. Not written to.
+
+Work events are recorded as immutable shards under `knowzcode/journal/`, one
+file per event. See `knowzcode/journal/README.md` for the path convention,
+required frontmatter, and how in-flight WorkGroups are derived.
+
+## Archived Entries
+
+*None — this project started on the journal.*
 ```
 
 ## knowzcode_architecture.md
 ````markdown
 # KnowzCode — Architectural Flowchart
 
-**Purpose:** Mermaid flowchart defining this project's architecture, components (NodeIDs), and primary interactions. Source of truth for components tracked in `knowzcode_tracker.md`.
+**Purpose:** Mermaid flowchart defining this project's architecture, components (NodeIDs), and primary interactions. Source of truth for components specified in `knowzcode/specs/`.
 
 ## Diagram
 

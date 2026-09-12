@@ -39,21 +39,24 @@ This manifest describes the resources that support the KnowzCode workflow.
 | `continue` | Detect continuation intent and resume active WorkGroup |
 | `load-core-context` | Load project overview, architecture, tracker into memory |
 | `generate-workgroup-id` | Produce WorkGroupID timestamps |
-| `tracker-update` | Apply validated updates to tracker |
+| `journal-shard-writer` | Create one immutable journal shard per work event |
 | `spec-template` | Seed specs with 4-section template |
 | `spec-quality-check` | Verify spec completeness |
-| `log-entry-builder` | Structure log entries |
+| `journal-shard-frontmatter` | Structure required shard frontmatter |
 | `architecture-diff` | Highlight differences between specs and architecture docs |
 | `environment-guard` | Confirm environment context is complete |
-| `tracker-scan` | Extract current status and WorkGroup assignments |
+| `journal-scan` | Derive in-flight WorkGroups and recent history from the journal tree |
 | `alias-resolver` | Convert natural language to canonical KnowzCode values |
 | `spec-validator` | Validate individual spec quality |
 
 ## State Files
 
 The authoritative state:
-- `knowzcode/knowzcode_tracker.md` — backlog and node status
-- `knowzcode/knowzcode_log.md` — operational history
-- `knowzcode/specs/` — NodeID specifications
-- `knowzcode/workgroups/` — session todo queues
+- `knowzcode/journal/` — immutable shards, one per work event; the operational record. A WorkGroup is in flight until its folder gains an `arc-completion` or `workgroup-abandoned` shard. Never edit a shard, never maintain an index file.
+- `knowzcode/specs/` — NodeID specifications and as-built node status
+- `knowzcode/workgroups/` — session todo queues (local, gitignored)
 - `knowzcode/knowzcode_architecture.md` — architecture documentation
+
+Frozen archives, never written to:
+- `knowzcode/knowzcode_tracker.md` — pre-journal backlog and node status
+- `knowzcode/knowzcode_log.md` — pre-journal operational history

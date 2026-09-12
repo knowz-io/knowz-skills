@@ -26,19 +26,26 @@ You have been instructed to perform a "Micro-Fix." This protocol is for small, l
 2.  **Quick Verification:**
     *   Perform a focused check to confirm the fix resolves the described issue and introduces no regressions in the immediate vicinity of the change.
 
-3.  **Log Operation (Ref: `knowzcode_loop.md` - Step 4.3):**
-    *   Prepend a `MicroFix` entry to `knowzcode_log.md`. The entry **MUST** use the following format and an environment-sourced timestamp:
+3.  **Record Operation (Ref: `knowzcode_loop.md` - Section 2.1 and Section 4):**
+    *   Create one new immutable journal shard. Never prepend or append `knowzcode/knowzcode_log.md` and never write rows to `knowzcode/knowzcode_tracker.md` — both are frozen archives.
+        ```
+        knowzcode/journal/YYYY-MM/<WorkGroupID>/YYYYMMDDTHHMMSSZ-microfix-<shortid>.md
+        ```
+    *   Use `ungrouped` in place of `<WorkGroupID>` when no WorkGroup is active. `YYYY-MM` and `YYYYMMDDTHHMMSSZ` come from an environment-sourced UTC timestamp; `<shortid>` is 4–8 hex/alphanumeric characters.
         ```markdown
         ---
-        **Type:** MicroFix
-        **Timestamp:** [Generated Timestamp]
-        **NodeID(s)/File:** [TargetNodeID or file_path]
-        **Logged By:** AI-Agent
-        **Details:**
+        wgid: [WorkGroupID or ungrouped]
+        type: microfix
+        timestamp: [ISO-8601 UTC, e.g. 2026-09-12T19:00:00Z]
+        agent: microfix-specialist
+        nodeids: [TargetNodeID or file_path]
+        knowz_sync: pending
+        summary: [One-line outcome]
+        ---
+
         - **User Request:** [Orchestrator's brief issue description].
         - **Action Taken:** [Brief description of change made].
         - **Verification:** [Brief verification method/outcome].
-        ---
         ```
 
 4.  **Commit Fix (Ref: `knowzcode_loop.md` - Step 4.4):**
@@ -52,6 +59,6 @@ You have been instructed to perform a "Micro-Fix." This protocol is for small, l
 > "✓ Micro-Fix completed for `[Target]`.
 > *   **Change:** Corrected the CSS padding on the main header.
 > *   **Verification:** Visually confirmed the alignment is now correct.
-> *   **Documentation:** Log entry added and a `fix:` commit has been made.
+> *   **Documentation:** Journal shard created and a `fix:` commit has been made.
 > 
 > Awaiting next `PrimaryGoal`."

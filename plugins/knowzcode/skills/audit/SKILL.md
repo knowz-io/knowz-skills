@@ -11,7 +11,7 @@ Perform a read-only audit and report findings first.
 ## Instructions
 
 1. Treat this as read-only unless the user explicitly changes scope.
-2. Read `knowzcode/knowzcode_loop.md`, `knowzcode/knowzcode_tracker.md`, relevant specs, and the implementation files under review. If `knowzcode/codex_execution.md` exists, read it too.
+2. Read `knowzcode/knowzcode_loop.md`, relevant specs, the in-flight `knowzcode/journal/*/*/` folders, and the implementation files under review. If `knowzcode/codex_execution.md` exists, read it too.
 3. Discover enterprise guidelines before auditing:
    - Read `knowzcode/enterprise.md`, `knowzcode/enterprise/compliance_manifest.md`, and `knowzcode/enterprise/guidelines/**/*.md` when present.
    - Parse `COMPLIANCE_CONFIG` from the manifest and apply documented defaults for `include_in_audit`, `show_advisory_issues`, `push_audit_results`, and `preserve_guideline_provenance`.

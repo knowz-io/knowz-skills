@@ -64,16 +64,24 @@ For EACH NodeID, update `knowzcode/specs/[NodeID].md`:
 ### Step 2: Architecture Check
 
 Review `knowzcode/knowzcode_architecture.md` against the Change Set:
-- **Simple discrepancies**: Fix directly and note in log
+- **Simple discrepancies**: Fix directly and record the outcome in the Step 3 shard
 - **Complex discrepancies**: Document for user review
 
-### Step 3: Log Entry
+### Step 3: Write the ARC-Completion Shard
 
-Prepend an `ARC-Completion` entry to `knowzcode/knowzcode_log.md` (format in `knowzcode_loop.md` section 3.5).
+Create one new immutable journal shard (format and frontmatter in `knowzcode_loop.md` section 2.1 and section 3.5 Step 9):
 
-### Step 4: Update Tracker & Schedule Debt
+```
+knowzcode/journal/YYYY-MM/<WorkGroupID>/YYYYMMDDTHHMMSSZ-arc-completion-<shortid>.md
+```
 
-- Change each NodeID status from `[WIP]` to `[VERIFIED]`, clear WorkGroupID
+Use `type: arc-completion`, `agent: closer`, `knowz_sync: pending`, and a one-line `summary`. The body carries the verification summary, architectural learnings, ripple effects, spec finalization, and architecture check outcome.
+
+This is a plain file create. Never edit an existing shard, never write to `knowzcode/knowzcode_log.md` (frozen archive), and never maintain a journal index file. A later correction is a new shard that references this shard's filename.
+
+### Step 4: Schedule Debt
+
+- Do **not** mutate `knowzcode/knowzcode_tracker.md` — it is a frozen archive. NodeID status is implied by the ARC-completion shard plus the as-built specs.
 - If significant tech debt documented, create `REFACTOR_[NodeID]` tasks
 - Check if changes impact `knowzcode_project.md`
 
@@ -246,8 +254,8 @@ This applies to writer-dispatched mutations. The user must always know when vaul
 ## Exit Expectations
 
 - Specs updated to as-built state in 4-section format
-- Tracker statuses changed to `[VERIFIED]`
-- Log entry created
+- ARC-completion journal shard created with required frontmatter
+- No writes to `knowzcode_log.md` or `knowzcode_tracker.md`
 - Architecture updated if needed
 - Consolidation opportunities flagged
 - Consolidated `FinalCaptureDelta`, explicit changed-file list, verification summary, and suggested commit message returned to the lead

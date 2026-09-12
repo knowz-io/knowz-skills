@@ -21,7 +21,7 @@ This is a **READ-ONLY** quality gate to ensure all specifications for the given 
 ### Execution Protocol
 
 1.  **Identify Scope:**
-    *   Using the `WorkGroupID`, identify all `NodeID`s from `knowzcode_tracker.md` that are part of this verification task.
+    *   Using the `WorkGroupID`, identify all `NodeID`s from `knowzcode/workgroups/<WorkGroupID>.md` and the WorkGroup's `knowzcode/journal/YYYY-MM/<WorkGroupID>/` shards that are part of this verification task.
 
 2.  **Systematic Spec Review:**
     *   For **each** `NodeID` in the scope, read its corresponding `specs/[NodeID].md` file.

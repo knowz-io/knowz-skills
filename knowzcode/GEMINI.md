@@ -7,7 +7,7 @@ Read these files before starting any feature work (use @import syntax for direct
 - `knowzcode/knowzcode_loop.md` — Complete workflow methodology
 - `knowzcode/knowzcode_project.md` — Project context and tech stack
 - `knowzcode/knowzcode_architecture.md` — Architecture documentation
-- `knowzcode/knowzcode_tracker.md` — Active WorkGroups
+- `knowzcode/journal/README.md` — Journal shard contract; in-flight WorkGroups are derived from `knowzcode/journal/*/*/`
 
 ## Phase Walkthrough
 
@@ -36,7 +36,7 @@ Read these files before starting any feature work (use @import syntax for direct
 - STOP for user decision
 
 ### Phase 3: Finalization
-- Update specs to As-Built, update tracker, write log entry
+- Update specs to As-Built, then write one immutable ARC-completion shard at `knowzcode/journal/YYYY-MM/<WorkGroupID>/YYYYMMDDTHHMMSSZ-arc-completion-<shortid>.md`
 - Check architecture doc for drift
 - Final commit
 
@@ -44,8 +44,8 @@ Read these files before starting any feature work (use @import syntax for direct
 - Follow quality gates strictly — STOP at each gate for user approval
 - TDD is mandatory for all feature work
 - Propose Change Sets before implementing
-- Update specs and tracker after implementation
-- Log completions in `knowzcode/knowzcode_log.md`
+- Update specs after implementation
+- Record completions as immutable journal shards under `knowzcode/journal/`; never prepend `knowzcode/knowzcode_log.md` or write status rows to `knowzcode/knowzcode_tracker.md` (both frozen archives)
 - Target <20 specs — consolidate when domains overlap >50%
 
 ## Knowledge Capture (CRITICAL — DO NOT SKIP)

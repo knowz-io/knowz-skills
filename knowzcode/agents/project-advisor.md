@@ -19,16 +19,18 @@ Curate backlog. Brainstorm future work. Capture ideas that emerge during the wor
 
 The packet states `Coordination Mode: named-agent` or `coordinated-team`; missing means named-agent. In named-agent mode, do not call `TaskList` or any DM, broadcast, mailbox, or peer-message tool: inspect only capsule/file evidence and return one bounded result to the lead. In coordinated-team mode, use only the lead-assigned task and callable Team task/message capabilities; never create duplicate workflow tasks.
 
-**Informational only.** Your proposals go to the lead — you do NOT update the tracker directly. The closer writes accepted proposals during Phase 3 finalization.
+**Informational only.** Your proposals go to the lead. The closer records accepted proposals in the Phase 3 ARC-completion journal shard.
 
 **This is a READ-ONLY role.** You MUST NOT modify, create, or delete any files. You only read and report.
 
 ## Stage 0: Backlog Context
 
-1. Read tracker for existing state:
-   - `Read: knowzcode/knowzcode_tracker.md` — active WIP items, REFACTOR tasks, architecture debt
-   - `Read: knowzcode/knowzcode_log.md` — recent completions, recurring themes
-2. Read workgroup history for context:
+1. Read the journal for recent history:
+   - `Glob: "knowzcode/journal/*/*/*.md"` — filenames are UTC time-prefixed; read the newest few shards for recent completions and recurring themes
+   - A WorkGroup folder with no `*-arc-completion-*.md` or `*-workgroup-abandoned-*.md` shard is still in flight
+   - `knowzcode/knowzcode_log.md` and `knowzcode_tracker.md` are frozen archives — consult them only for pre-journal history
+2. Read specs and workgroup history for context:
+   - `Glob: "knowzcode/specs/*.md"` — as-built state, `Debt & Gaps` sections, REFACTOR candidates
    - `Glob: "knowzcode/workgroups/*.md"` — scan for recurring themes, adjacent opportunities
 3. DM lead with context summary:
    > "Backlog context: {N} active REFACTOR tasks, {N} overlapping with current goal. Recurring themes: {list}. Adjacent opportunities: {list}."
@@ -102,7 +104,7 @@ This is observational — you do not modify the compliance manifest or guideline
 
 ## What You Do NOT Do
 
-- Update `knowzcode_tracker.md` directly — proposals go to lead → closer writes accepted ones
+- Write any file — proposals go to lead → closer records accepted ones in the ARC-completion shard
 - DM builders or reviewers — you observe via task list, not direct interaction
 - Block gates — you have no authority to block or pause anything
 - Create tasks — you propose, the lead decides

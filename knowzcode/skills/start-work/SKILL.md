@@ -93,8 +93,8 @@ Search for context in this priority order:
 3. Handle "option N" phrases by extracting that specific option
 
 #### Priority C: Active WorkGroup
-1. Check `knowzcode/knowzcode_tracker.md` for `[WIP]` entries
-2. If found: Use existing primary goal from WorkGroup file
+1. Derive active WorkGroups from `knowzcode/journal/*/*/` — a folder with no `*-arc-completion-*.md` and no `*-workgroup-abandoned-*.md` shard is still in flight. Cross-check `knowzcode/workgroups/*.md` session files when present. Do not read `knowzcode_tracker.md` for live status; it is a frozen archive.
+2. If found: Use existing primary goal from the WorkGroup session file or the folder's `start-work` shard
 
 #### Priority D: User's Explicit Statement
 1. If user message contains actionable content beyond trigger phrase
@@ -222,21 +222,31 @@ This skill prepares context for /knowzcode:work, which will then:
 2. Offer optimization paths (Quick/Validation/Full workflow)
 3. Load investigation context to pre-populate Phase 1A if applicable
 
-## Logging
+## Recording Activation
 
-Log skill activation in `knowzcode/knowzcode_log.md`:
+Create one immutable `start-work` journal shard. Never prepend or append `knowzcode/knowzcode_log.md` — it is a frozen archive.
+
+```
+knowzcode/journal/YYYY-MM/<WorkGroupID>/YYYYMMDDTHHMMSSZ-start-work-<shortid>.md
+```
+
+Use `ungrouped` in place of `<WorkGroupID>` when no WorkGroup has been generated yet.
 
 ```markdown
 ---
-**Type:** SkillActivation
-**Timestamp:** [Generated Timestamp]
-**Skill:** start-work
-**Trigger:** User said "{user_message}"
-**Context Source:** {plan|investigation|workgroup|user_input|none}
-**Goal Extracted:** "{goal or context summary}"
-**Action:** Invoked /knowzcode:work
-**Logged By:** AI-Agent
+wgid: {WorkGroupID or ungrouped}
+type: start-work
+timestamp: {ISO-8601 UTC, e.g. 2026-09-12T19:00:00Z}
+agent: lead
+nodeids: [{known NodeIDs, or empty}]
+knowz_sync: pending
+summary: {goal or context summary}
 ---
+
+- **Trigger:** User said "{user_message}"
+- **Context Source:** {plan|investigation|workgroup|user_input|none}
+- **Goal Extracted:** "{goal or context summary}"
+- **Action:** Invoked /knowzcode:work
 ```
 
 ## Related Skills

@@ -74,12 +74,13 @@ your-project/
 └── knowzcode/                    # Everything inside!
     ├── knowzcode_project.md
     ├── knowzcode_architecture.md
-    ├── knowzcode_tracker.md
-    ├── knowzcode_log.md
     ├── knowzcode_loop.md
+    ├── knowzcode_tracker.md      # frozen archive stub
+    ├── knowzcode_log.md          # frozen archive stub
     ├── environment_context.md
+    ├── journal/                  # immutable work shards (tracked in git)
     ├── specs/
-    ├── workgroups/
+    ├── workgroups/               # local session state (gitignored)
     └── prompts/
 ```
 
@@ -397,15 +398,16 @@ Before building, research your approach:
 
 **Solutions:**
 - Follow the complete 4-step Loop
-- Check `knowzcode/knowzcode_tracker.md` shows correct statuses
-- Verify git commits are happening
+- Check `knowzcode/journal/` — a completed WorkGroup should have an
+  `arc-completion` shard in its folder, and its specs should read "As-Built"
+- Verify git commits are happening (journal shards are committed with the change)
 - Don't skip steps - each updates different files
 
 ### Getting Help
 
 When stuck, check these in order:
-1. **Review `knowzcode/knowzcode_log.md`** - Recent entries often reveal issues
-2. **Check `knowzcode/knowzcode_tracker.md`** - Ensure dependencies are correct
+1. **Review recent journal shards** - `ls knowzcode/journal/*/*/*.md | sort -r | head`, or run `knowzcode/scripts/journal-index.sh`
+2. **Check `knowzcode/specs/`** - Ensure dependencies and as-built state are correct
 3. **Verify architecture** - Missing connections cause confusion
 4. **Test environment commands** - Manual testing reveals broken commands
 5. **Review recent git commits** - See what actually changed

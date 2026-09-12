@@ -106,17 +106,28 @@ Before logging, capture:
 
 **MUST provide before completion:**
 1. Verification evidence (tests passed, iteration count)
-2. Log entry in `knowzcode/knowzcode_log.md` with evidence
+2. A `microfix` journal shard with that evidence
 3. Commit with `fix:` prefix message
 
-**Log Entry Format:**
+**Journal Shard:** create one new file — never prepend to `knowzcode/knowzcode_log.md` (frozen archive) and never write to `knowzcode/knowzcode_tracker.md`:
+
+```
+knowzcode/journal/YYYY-MM/<WorkGroupID>/YYYYMMDDTHHMMSSZ-microfix-<shortid>.md
+```
+
+Use `ungrouped` in place of `<WorkGroupID>` when no WorkGroup is active. `YYYY-MM` and `YYYYMMDDTHHMMSSZ` come from the UTC timestamp; `<shortid>` is 4–8 hex/alphanumeric characters.
+
 ```markdown
 ---
-**Type:** MicroFix
-**Timestamp:** [Generated Timestamp]
-**NodeID(s)/File:** [target]
-**Logged By:** AI-Agent
-**Details:**
+wgid: [WorkGroupID or ungrouped]
+type: microfix
+timestamp: [ISO-8601 UTC, e.g. 2026-09-12T19:00:00Z]
+agent: microfix-specialist
+nodeids: [NodeID(s) or target file]
+knowz_sync: pending
+summary: [one-line outcome]
+---
+
 - **User Request:** [summary]
 - **Action Taken:** [description of fix]
 - **Verification:**
@@ -124,8 +135,9 @@ Before logging, capture:
   - Test Result: PASS ([N] tests passed)
   - Static Analysis: CLEAN
   - Iterations Required: [count]
----
 ```
+
+Shards are immutable. A follow-up correction is a new shard referencing this filename.
 
 ---
 

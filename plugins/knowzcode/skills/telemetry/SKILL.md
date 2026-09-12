@@ -18,4 +18,4 @@ Investigate telemetry directly with the tools available in the current environme
 4. Use the available tools directly. Do not rely on Claude-specific task delegation APIs.
 5. Build a concise incident summary with timeline, strongest hypothesis, supporting evidence, and the recommended next action.
 6. If the issue is small and local, suggest `/knowzcode:fix`. If it needs broader changes, suggest `/knowzcode:work`.
-7. Append a brief telemetry investigation entry to `knowzcode/knowzcode_log.md` when the project is initialized.
+7. Create one immutable `telemetry` shard at `knowzcode/journal/YYYY-MM/<WorkGroupID-or-ungrouped>/YYYYMMDDTHHMMSSZ-telemetry-<shortid>.md` when the project is initialized. Never append to `knowzcode/knowzcode_log.md` — it is a frozen archive.

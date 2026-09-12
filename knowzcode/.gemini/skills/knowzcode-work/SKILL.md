@@ -13,7 +13,7 @@ Start a structured KnowzCode development workflow for the given goal.
 Read these files for methodology and project context:
 - `knowzcode/knowzcode_loop.md` — Complete methodology
 - `knowzcode/knowzcode_project.md` — Project context
-- `knowzcode/knowzcode_tracker.md` — Active WorkGroups
+- `knowzcode/journal/` — in-flight WorkGroups are folders under `knowzcode/journal/*/*/` with no `arc-completion` or `workgroup-abandoned` shard
 - `knowzcode/knowzcode_architecture.md` — Architecture docs
 
 ### Step 1: Classify Tier
@@ -35,4 +35,4 @@ Create `knowzcode/workgroups/{WorkGroupID}.md`
 
 After approval, continue through Phase 1B (Specification) → Phase 2A (TDD Implementation) → Phase 2B (Audit) → Phase 3 (Finalization), stopping at each quality gate.
 
-**Audit loop cap**: Phase 2B may return failures back to Phase 2A. Cap audit → fix iterations at 3. If failures persist after the 3rd attempt, stop and surface residual issues to the user with a recommended downscope or spec revision; do not loop indefinitely.
+**Audit loop cap**: Phase 2B may return failures back to Phase 2A. Cap audit → fix iterations at 3. If failures persist after the 3rd attempt, stop and surface residual issues to the user with a recommended downscope or spec revision; do not loop indefinitely.

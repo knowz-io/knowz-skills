@@ -40,7 +40,7 @@ When processing multiple sources:
 | NodeID deduplication | **SEQUENTIAL** | Must merge all extractions |
 | Conflict resolution decisions | **SEQUENTIAL** | Requires human input if prompting |
 | Migration report generation | **SEQUENTIAL** | After all processing complete |
-| Log entry creation | **SEQUENTIAL** | Final atomic operation |
+| Journal shard creation | **SEQUENTIAL** | Final atomic operation |
 
 ---
 
@@ -266,24 +266,33 @@ Create `knowzcode/planning/migration-{timestamp}.md`:
 - [ ] Update any `[NEEDS_REVIEW]` markers
 ```
 
-### 3. Log Entry
+### 3. Journal Shard
 
-Append to `knowzcode/knowzcode_log.md`:
+Create one new immutable shard — never append to `knowzcode/knowzcode_log.md` (frozen archive):
+
+```
+knowzcode/journal/YYYY-MM/<WorkGroupID>/YYYYMMDDTHHMMSSZ-knowledge-migration-<shortid>.md
+```
+
+Use `ungrouped` in place of `<WorkGroupID>` when the migration runs outside a WorkGroup.
 
 ```markdown
 ---
-**Type:** Migration
-**Timestamp:** {timestamp}
-**NodeID(s):** {comma-separated list}
-**Logged By:** knowledge-migrator
-**Details:**
+wgid: {WorkGroupID or ungrouped}
+type: knowledge-migration
+timestamp: {ISO-8601 UTC, e.g. 2026-09-12T19:00:00Z}
+agent: knowledge-migrator
+nodeids: [{comma-separated list}]
+knowz_sync: pending
+summary: Migrated {count} specs from {source count} sources
+---
+
 - **Sources:** {source count} files/folders processed
 - **Format:** {detected format(s)}
 - **Created:** {count} specs
 - **Updated:** {count} specs
 - **Skipped:** {count} specs
 - **Report:** knowzcode/planning/migration-{timestamp}.md
----
 ```
 
 ---
@@ -293,7 +302,7 @@ Append to `knowzcode/knowzcode_log.md`:
 When `--dry-run` is specified:
 
 1. **DO NOT** write any spec files
-2. **DO NOT** update knowzcode_log.md
+2. **DO NOT** write a journal shard
 3. **DO** create migration report with `[DRY RUN]` prefix
 4. **DO** show what WOULD be created/updated
 

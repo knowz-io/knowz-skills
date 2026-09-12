@@ -15,7 +15,7 @@ You are performing a focused investigation of the codebase to answer a specific 
 Read these files ONCE at the start:
 - `knowzcode/knowzcode_project.md` - project context
 - `knowzcode/knowzcode_architecture.md` - architecture overview
-- `knowzcode/knowzcode_tracker.md` - existing NodeIDs
+- `knowzcode/specs/*.md` - existing NodeIDs and as-built state
 
 ---
 
@@ -212,16 +212,25 @@ If user message does NOT contain implementation trigger:
 
 ---
 
-## Logging
+## Recording the Investigation
 
-After investigation, log to `knowzcode/knowzcode_log.md`:
+After investigation, create one new immutable journal shard at
+`knowzcode/journal/YYYY-MM/<WorkGroupID>/YYYYMMDDTHHMMSSZ-audit-<shortid>.md`,
+using `ungrouped` in place of `<WorkGroupID>` when no WorkGroup is active.
+Never prepend or append `knowzcode/knowzcode_log.md` — it is a frozen archive.
 
 ```markdown
 ---
-**Type:** Investigation
-**Timestamp:** {timestamp}
-**Question:** {$ARGUMENTS}
-**Finding:** {one-line summary}
-**Status:** {Complete | Handoff to Phase 1A}
+wgid: {WorkGroupID or ungrouped}
+type: audit
+timestamp: {ISO-8601 UTC, e.g. 2026-09-12T19:00:00Z}
+agent: analyst
+nodeids: [{affected NodeIDs, or empty}]
+knowz_sync: pending
+summary: {one-line summary}
 ---
+
+- **Question:** {$ARGUMENTS}
+- **Finding:** {detail}
+- **Status:** {Complete | Handoff to Phase 1A}
 ```

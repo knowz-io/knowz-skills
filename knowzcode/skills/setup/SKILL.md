@@ -57,8 +57,8 @@ KnowzCode is a structured development methodology that provides:
 ```
 knowzcode/
 ├── knowzcode_project.md
-├── knowzcode_tracker.md
-├── knowzcode_log.md
+├── knowzcode_tracker.md      (archive stub — never written to)
+├── knowzcode_log.md          (archive stub — never written to)
 ├── knowzcode_architecture.md
 ├── knowzcode_loop.md
 ├── knowzcode_orchestration.md
@@ -66,11 +66,15 @@ knowzcode/
 ├── environment_context.md
 ├── user_preferences.md (if configured)
 ├── .gitignore
+├── journal/                  (immutable work shards — tracked in git)
+│   └── README.md
 ├── specs/
-├── workgroups/
+├── workgroups/               (local session state — gitignored)
 ├── prompts/
 └── enterprise/ (optional)
 ```
+
+`journal/` is where all work events are recorded, one immutable shard per event at `journal/YYYY-MM/<WorkGroupID>/YYYYMMDDTHHMMSSZ-<type>-<shortid>.md`. `knowzcode_log.md` and `knowzcode_tracker.md` are created as archive stubs that point at `journal/`; nothing ever writes to them.
 
 ### 3. Copy template files
 
@@ -430,13 +434,14 @@ KnowzCode initialized successfully!
 
 Created:
   knowzcode/knowzcode_project.md
-  knowzcode/knowzcode_tracker.md
-  knowzcode/knowzcode_log.md
+  knowzcode/knowzcode_tracker.md (archive stub)
+  knowzcode/knowzcode_log.md (archive stub)
   knowzcode/knowzcode_architecture.md
   knowzcode/knowzcode_loop.md
   knowzcode/knowzcode_orchestration.md
   knowzcode/platform_adapters.md
   knowzcode/.gitignore
+  knowzcode/journal/README.md
   knowzcode/specs/
   knowzcode/workgroups/
   knowzcode/prompts/
@@ -459,7 +464,7 @@ Next steps:
 
 **Templates**: Read [references/templates.md](references/templates.md) for the full template content to generate.
 
-Templates included: `knowzcode_project.md`, `knowzcode_tracker.md`, `knowzcode_log.md`, `knowzcode_architecture.md`, `environment_context.md`, `knowzcode_orchestration.md`.
+Templates included: `knowzcode_project.md`, `knowzcode_tracker.md` (archive stub), `knowzcode_log.md` (archive stub), `journal/README.md`, `knowzcode_architecture.md`, `environment_context.md`, `knowzcode_orchestration.md`.
 
 ---
 

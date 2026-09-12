@@ -9,6 +9,10 @@ environment_context.md
 workgroups/
 handoffs/
 
+# NOT ignored on purpose: journal/
+# Journal shards are the tracked, immutable record of completed work.
+# Commit them alongside the change they describe.
+
 # Personal notes and scratch files
 *.local.md
 .scratch/
