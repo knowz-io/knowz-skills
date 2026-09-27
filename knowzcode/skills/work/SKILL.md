@@ -2,7 +2,6 @@
 name: work
 description: "Execute a full KnowzCode development workflow — TDD, quality gates, agent coordination, and structured implementation phases. Use when the user wants to BUILD, IMPLEMENT, or CREATE code, not just research or audit."
 user-invocable: true
-allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Agent
 # Note: Also uses MCP tools (create_knowledge, search_knowledge) when MCP is configured
 argument-hint: "[feature_description]"
 ---

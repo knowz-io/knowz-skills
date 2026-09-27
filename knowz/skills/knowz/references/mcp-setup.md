@@ -104,7 +104,7 @@ For personal keys, consider using --scope local (default)
 
 Before prompting for an API key, check known config sources in order:
 
-1. **Plugin userConfig / user-provided key**: prefer the sensitive `knowz_api_key` plugin option (or an API key the user pastes in-session). Do **not** read ambient credential environment variables.
+1. **Plugin userConfig / user-provided token**: prefer the sensitive `api_token` plugin option (or an API token the user pastes in-session). Never scrape secrets from the local machine.
 
 2. **Cross-platform config files** (check for API key or OAuth):
    - `.gemini/settings.json` → `mcpServers.knowz.authProviderType` (OAuth) or `mcpServers.knowz.headers.Authorization` (API key)

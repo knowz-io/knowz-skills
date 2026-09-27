@@ -1036,7 +1036,7 @@ Requires an API key. If the user doesn't have one, suggest `/knowz register` fir
 
 1. Accept API key and optional parameters (endpoint, dev mode)
 1.5. **Smart Config Discovery (if no API key provided)**:
-   - Check `KNOWZ_API_KEY` environment variable — if set, use as API key
+   - Prefer an API token the user pastes in-session or an existing user-managed config entry
    - Check `knowzcode/mcp_config.md` — if `Connected: Yes`, pre-populate endpoint
    - Check `knowz-vaults.md` (project root) — if vaults configured, skip vault prompts
    - Check cross-platform configs (`.gemini/settings.json`, `.vscode/mcp.json`) for existing Bearer token
@@ -1072,7 +1072,7 @@ Register for KnowzCode and automatically configure the MCP server.
 **Registration API:** `https://api.knowz.io/api/v1/users/register`
 **Dev API:** `https://api.dev.knowz.io/api/v1/users/register`
 
-0. **Smart Discovery**: Check `KNOWZ_API_KEY`, `knowzcode/mcp_config.md`, and cross-platform configs (`.gemini/settings.json`, `.vscode/mcp.json`) for existing API key. If found, offer: "Use existing key via /knowz setup" or "Register new account"
+0. **Smart Discovery**: Check `knowzcode/mcp_config.md` and cross-platform configs, or an API token the user pastes in-session (`.gemini/settings.json`, `.vscode/mcp.json`) for existing API key. If found, offer: "Use existing key via /knowz setup" or "Register new account"
 1. Prompt user for name, email, and password (one at a time)
 2. Call the KnowzCode registration API via HTTP POST
 3. Extract API key and vault ID from response
@@ -1131,7 +1131,7 @@ Set up the telemetry sources that `/knowzcode:telemetry` should use.
 2. Discover accessible resources such as Sentry projects or App Insights applications.
 3. Ask the user only for the mappings that cannot be inferred automatically.
 4. Write or update `knowzcode/telemetry_config.md` with the selected resources and environment mappings using the format below.
-5. Do not store secrets in the config file. Prefer existing CLI login state or environment variables.
+5. Do not store secrets in the config file. Prefer existing CLI login state or an in-session pasted token.
 6. End with a concrete invocation the user can run, e.g. `/knowzcode:telemetry investigate errors in <env> for <service> over the last 1h`, choosing values that match the resources just configured.
 
 ## Config File Format
@@ -1142,7 +1142,7 @@ Set up the telemetry sources that `/knowzcode:telemetry` should use.
 - For each provider:
   - A field table with `Enabled` (`true`/`false`), detection `Method` (`cli` | `mcp`), and identifying values (organization, subscription, etc.).
   - An **Environment Mapping** table mapping `production` / `staging` / `dev` to the concrete project or resource id.
-- No secrets. Reference auth env vars by name only (e.g. `SENTRY_AUTH_TOKEN`, Azure CLI session).
+- No secrets in the config file. Prefer host CLI login sessions (e.g. Azure `az login`) or in-session pasted tokens.
 
 Example skeleton:
 
@@ -1647,7 +1647,7 @@ For Codex, prefer shared MCP configuration instead of project-local `.mcp.json`.
 Preferred command:
 
 ```bash
-codex mcp add knowz --url https://mcp.knowz.io/mcp --bearer-token-env-var KNOWZ_API_KEY
+codex mcp add knowz --url https://mcp.knowz.io/mcp
 ```
 
 Equivalent `~/.codex/config.toml` block:
@@ -1655,11 +1655,11 @@ Equivalent `~/.codex/config.toml` block:
 ```toml
 [mcp_servers.knowz]
 url = "https://mcp.knowz.io/mcp"
-bearer_token_env_var = "KNOWZ_API_KEY"
+# auth: follow current Codex docs for HTTP MCP token configuration (user-managed)
 http_headers = { X-Project-Path = "<absolute-project-path>" }
 ```
 
-`/knowz setup` should discover existing shared Codex config, `KNOWZ_API_KEY`, and legacy platform configs automatically. Do not invent unverified Codex auth fields.
+`/knowz setup` should discover existing shared Codex config and legacy platform configs automatically (ask the user for a token if needed). Do not invent unverified Codex auth fields.
 
 ### Codex Agent Definitions (`.agents/agents/`)
 
@@ -1775,7 +1775,7 @@ Report generated files and suggest /knowzcode:work as next step.
 description = "Configure KnowzCode MCP server connection for Gemini CLI"
 prompt = """Read .gemini/skills/knowzcode-connect-mcp/SKILL.md for full instructions.
 Configure the KnowzCode MCP server for Gemini CLI.
-Check KNOWZ_API_KEY env var and knowzcode/mcp_config.md before prompting for API key.
+Check knowzcode/mcp_config.md and ask the user for a token before prompting for a new API token.
 Primary method: gemini mcp add --transport http -s <scope> -H "Authorization: Bearer <key>" -H "X-Project-Path: $(pwd)" knowz https://mcp.knowz.io/mcp
 Fallback: write .gemini/settings.json with mcpServers.knowz entry (httpUrl + headers).
 Scopes: project (default), user. Verify: gemini mcp list. Remove: gemini mcp remove knowz.
@@ -1788,7 +1788,7 @@ If user has no API key, suggest /knowz register.
 description = "Register for KnowzCode and configure MCP for Gemini CLI"
 prompt = """Read .gemini/skills/knowzcode-register/SKILL.md for full instructions.
 Register for KnowzCode and auto-configure MCP for Gemini CLI.
-Check for existing API key in KNOWZ_API_KEY, mcp_config.md, or other platform configs before registration.
+Check for an existing API token in mcp_config.md or other platform configs (or an in-session paste) before registration.
 Registration API: https://api.knowz.io/api/v1/users/register
 Prompt for name, email, password. Call API. Extract API key and vault ID.
 Configure MCP via: gemini mcp add --transport http -H "Authorization: Bearer <key>" -H "X-Project-Path: $(pwd)" knowz https://mcp.knowz.io/mcp
@@ -2177,7 +2177,7 @@ Check KnowzCode MCP connection, vault health, and agent status.
    - Run `gemini mcp list` to verify server status
    - Use `/mcp` as in-session alternative for verification
 2.5. **Cross-Platform Config Discovery**:
-   - Check `KNOWZ_API_KEY` env var: Set (ending ...{last4}) | Not set
+   - API token: provided in-session / found in user-managed config (ending ...{last4}) | Not set
    - Check `knowzcode/mcp_config.md`: Connected / Not configured
    - Check `.mcp.json` (Codex) for knowz entry: Configured | Not found
    - Check `.vscode/mcp.json` (Copilot) for knowz entry: Configured | Not found
@@ -2221,8 +2221,8 @@ Requires an API key. If the user doesn't have one, suggest `/knowz register` fir
 
 Before prompting for an API key, check known config sources:
 
-1. **Environment variable**: Check `KNOWZ_API_KEY`
-   - If set: use as the API key, display "Using API key from KNOWZ_API_KEY (ending ...{last4})"
+1. **In-session / userConfig**: Ask the user for an API token or use plugin `userConfig`
+   - If provided: use it and display "Using API token (ending ...{last4})"
 
 2. **Project config**: Read `knowzcode/mcp_config.md`
    - If `Connected: Yes` and endpoint set: pre-populate endpoint
@@ -2328,7 +2328,7 @@ Register for KnowzCode and automatically configure the MCP server.
 
 Before starting registration, check if user already has a KnowzCode API key:
 
-1. Check `KNOWZ_API_KEY` environment variable
+1. Check plugin `userConfig` or an API token the user pastes in-session
 2. Check `knowzcode/mcp_config.md` — if `Connected: Yes`, existing config exists
 3. Check cross-platform configs: `.mcp.json`, `.vscode/mcp.json`
    - Extract Bearer token from Authorization headers if found
@@ -2989,7 +2989,7 @@ Vault entries are retrieved via semantic search — write detailed, self-contain
 
 ## MCP Configuration
 MCP status is tracked in `knowzcode/mcp_config.md` and vaults in `knowz-vaults.md` (project root).
-Set `KNOWZ_API_KEY` environment variable for automatic MCP authentication.
+Paste an API token via plugin `userConfig` or the host's MCP settings for authentication.
 To configure: `/knowz setup <api-key>` or check `knowzcode/mcp_config.md` for existing config.
 ```
 
@@ -3566,7 +3566,7 @@ Optionally generated by `/knowzcode:setup` when Copilot is detected and MCP is c
       "type": "http",
       "url": "${input:knowz_mcp_url}",
       "headers": {
-        "x-api-key": "${input:knowz_api_key}"
+        "x-api-key": "${input:api_token}"
       }
     }
   },
@@ -3577,7 +3577,7 @@ Optionally generated by `/knowzcode:setup` when Copilot is detected and MCP is c
       "type": "promptString"
     },
     {
-      "id": "knowz_api_key",
+      "id": "api_token",
       "description": "KnowzCode API key",
       "type": "promptString",
       "password": true
@@ -3601,7 +3601,7 @@ Optionally generated by `/knowzcode:setup` when Copilot is detected and MCP is c
 
 **MCP Smart Config:**
 - Check `knowzcode/mcp_config.md` for existing endpoint and connection status
-- `KNOWZ_API_KEY` env var can supplement or replace VS Code input prompts
+- An in-session pasted token or plugin `userConfig` can supplement or replace VS Code input prompts
 - If configured on another platform, the API key can be reused
 
 **Copilot Coding Agent:**
@@ -3677,7 +3677,7 @@ Vault entries are retrieved via semantic search — write detailed, self-contain
 
 ## MCP Configuration
 MCP status is tracked in `knowzcode/mcp_config.md` and vaults in `knowz-vaults.md` (project root).
-Set `KNOWZ_API_KEY` environment variable for automatic MCP authentication.
+Paste an API token via plugin `userConfig` or the host's MCP settings for authentication.
 To configure: `/knowz setup <api-key>` or check `knowzcode/mcp_config.md` for existing config.
 
 ## Micro-Fix (for small changes)

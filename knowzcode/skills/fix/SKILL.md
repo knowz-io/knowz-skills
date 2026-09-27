@@ -2,7 +2,6 @@
 name: fix
 description: "Execute a targeted micro-fix for single-file changes under 50 lines. Use when asked to fix a small bug, typo, or localized issue. Redirects to /knowzcode:work for larger changes."
 user-invocable: true
-allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 argument-hint: "[target] [summary]"
 ---
 

@@ -2,7 +2,6 @@
 name: relay
 description: "Delegate implementation to the other supported coding agent while the current host plans, reviews, and finalizes. On Claude Code this resolves to Codex by default; supports explicit Claude/Codex targets, natural-language delegation, setup, and project opt-in."
 user-invocable: true
-allowed-tools: Read, Glob, Grep, Bash, Edit, Write
 ---
 
 # Cross-Agent Relay

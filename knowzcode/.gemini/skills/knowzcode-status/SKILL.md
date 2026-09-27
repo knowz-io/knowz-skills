@@ -17,7 +17,7 @@ Check KnowzCode MCP connection, vault health, and agent status.
    - Run `gemini mcp list` to verify server status
    - Use `/mcp` as in-session alternative for verification
 2.5. **Cross-Platform Config Discovery**:
-   - Check `KNOWZ_API_KEY` env var: Set (ending ...{last4}) | Not set
+   - API token (user-managed / in-session): Set (ending ...{last4}) | Not set
    - Check `knowzcode/mcp_config.md`: Connected / Not configured
    - Check `.mcp.json` (Codex) for knowz entry: Configured | Not found
    - Check `.vscode/mcp.json` (Copilot) for knowz entry: Configured | Not found

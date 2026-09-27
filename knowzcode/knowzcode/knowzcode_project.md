@@ -44,5 +44,5 @@
 *   **Authentication:** [method — session-based, JWT, etc. Passwords MUST be hashed]
 *   **Authorization:** [approach — RBAC, ownership checks, etc.]
 *   **Input Validation:** All user inputs validated server-side
-*   **Secrets:** Environment variables only, never hardcoded
+*   **Secrets:** App secrets store / host secure storage only, never hardcoded
 *   **Dependencies:** Regular `npm audit` / `pip-audit` checks
