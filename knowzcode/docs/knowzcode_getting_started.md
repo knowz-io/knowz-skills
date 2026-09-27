@@ -472,7 +472,12 @@ KnowzCode works perfectly without cloud features — agents use traditional file
 
 ### Setup
 
-Prefer Claude OAuth / marketplace connect. Do **not** put tokens into project files or paste them on the command line.
+Connect through Claude OAuth / marketplace:
+
+```bash
+claude plugin install knowz
+/knowz setup
+```
 
 ```bash
 # Install the Knowz companion plugin, then connect with OAuth / marketplace
@@ -483,7 +488,6 @@ claude plugin install knowz
 /knowzcode:status
 ```
 
-Optional: paste a Knowz token once into this plugin's Settings → **Knowz API token** (`userConfig.api_token`, stored in Claude secure storage). Never commit tokens, never instruct the agent to scrape `.mcp.json` / host secret stores, and never pass a token as a slash-command argument.
 
 ### How Agents Use MCP
 
@@ -498,7 +502,7 @@ Once connected, KnowzCode agents automatically use MCP tools:
 
 ### Configuration Scopes
 
-Choose how to configure the MCP server (via `/knowz setup` OAuth flow or Claude plugin Settings — not by embedding secrets in the repo):
+Choose the MCP scope during the `/knowz setup` OAuth flow:
 
 - **local** (default): Only this project, private to you
 - **project**: Shared team MCP endpoint config (never commit secret material)
