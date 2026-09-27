@@ -143,10 +143,8 @@ To enable vault access in Copilot, configure `.vscode/mcp.json`:
   "servers": {
     "knowzcode": {
       "type": "http",
-      "url": "${input:knowzcode_mcp_url}",
-      "headers": {
-        "x-api-key": "${input:knowzcode_api_key}"
-      }
+      "url": "https://mcp.knowz.io/mcp",
+
     }
   },
   "inputs": [

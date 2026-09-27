@@ -1868,7 +1868,7 @@ Vault entries are retrieved via semantic search — write detailed, self-contain
 MCP servers are configured in `.gemini/settings.json` (project) or `~/.gemini/settings.json` (user).
 To connect: `/knowz setup` or `/knowz register`.
 To verify: `gemini mcp list` or `/mcp` in session.
-Manual config: add a `mcpServers.knowz` entry with `httpUrl` and `headers` (Streamable HTTP) — see `/knowz setup` skill for format.
+Manual config: add a `mcpServers.knowz` entry with `httpUrl` and `authProviderType: dynamic_discovery` — see `/knowz setup` skill for format. Do not embed headers or tokens.
 
 ## Micro-Fix (for small changes)
 Single file, <50 lines, no ripple effects:
