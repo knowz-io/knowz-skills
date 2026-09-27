@@ -10,21 +10,17 @@ You are the **KnowzCode Initialization Agent**. Set up the KnowzCode framework i
 
 ## Enterprise Configuration
 
-> **Note:** This section is about **white-label** config (brand + endpoints) only. The separate **enterprise compliance** feature (custom guidelines enforced at quality gates) is set up in step 10 and documented in `${CLAUDE_PLUGIN_ROOT}/docs/enterprise-compliance.md`.
+> **Note:** This section is about **white-label brand** only. The separate **enterprise compliance** feature (custom guidelines enforced at quality gates) is set up in step 10 and documented in `${CLAUDE_PLUGIN_ROOT}/docs/enterprise-compliance.md`.
 
-Before using any endpoints or brand names in this skill, check for an `enterprise.json` file in the plugin root directory (the directory containing `.claude-plugin/plugin.json`). Read it once at the start of initialization.
+Before using brand names in this skill, check for an `enterprise.json` file in the plugin root directory (the directory containing `.claude-plugin/plugin.json`). Read it once at the start of initialization.
 
 If the file exists, use its values:
 - `brand` → replaces "Knowz" in all user-facing messages and generated config
-- `mcp_endpoint` → replaces `https://mcp.knowz.io/mcp` in all MCP commands and generated config (e.g., Gemini settings.json)
-- `api_endpoint` → replaces `https://api.knowz.io/api/v1` in all API references
 
 If the file is absent or a field is missing, use the defaults:
 - brand: `Knowz`
-- mcp_endpoint: `https://mcp.knowz.io/mcp`
-- api_endpoint: `https://api.knowz.io/api/v1`
 
-When `enterprise.json` is present, ignore the `--dev` flag for endpoint selection.
+White-label applies to brand naming only. Vault connect via Knowz Claude plugin OAuth / marketplace only (`claude plugin install knowz` then `/knowz setup`). Do not generate MCP config into settings.json from enterprise endpoints.
 
 ## What KnowzCode Provides
 
@@ -249,7 +245,7 @@ Ask:
 "Would you like to connect Knowz cloud features for Gemini CLI?"
 ```
 
-- If **"Yes, use OAuth / marketplace"**: Connect via Knowz Claude plugin OAuth / marketplace (`claude plugin install knowz` then `/knowz setup`). Do not write MCP server JSON into project files and do not read `.gemini/settings.json` / `.mcp.json` / `.vscode/mcp.json` for tokens or headers. Verify with `list_vaults` when available, and update `knowzcode/mcp_config.md` with connection status only.
+- If **"Yes, use OAuth / marketplace"**: Connect only via Knowz Claude plugin OAuth / marketplace (`claude plugin install knowz` then `/knowz setup`). Do not scrape project config files. Verify with `list_vaults` when available, and update `knowzcode/mcp_config.md` with connection status only.
 - If **"No"**: Skip; mention `/knowz setup` (OAuth / marketplace) for later.
 
 **Step 7c-gemini: Generate Gemini TOML commands, skills, and subagents**
@@ -343,8 +339,8 @@ When Copilot is selected, generate the full prompt file suite in addition to the
    - .github/prompts/knowzcode-explore.prompt.md
    - .github/prompts/knowzcode-continue.prompt.md
 5. Replace "vX.Y.Z" in generated files with the current KnowzCode version
-6. Optionally create .vscode/mcp.json skeleton from template Section C
-   (ask user: "Would you like to generate MCP configuration for VS Code?")
+6. Do not generate `.vscode/mcp.json`. Vault connect via Knowz Claude plugin OAuth / marketplace only
+   (ask user: "Would you like to connect Knowz via Claude OAuth / marketplace?")
 ```
 
 **Skip Agent Teams enablement for Copilot** — Copilot uses single-agent sequential execution.

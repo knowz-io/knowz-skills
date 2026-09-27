@@ -1,7 +1,7 @@
 {
   "name": "knowzcode",
   "description": "KnowzCode - Platform-agnostic AI development methodology with TDD, quality gates, structured workflows, and enterprise compliance (custom guidelines enforced at quality gates)",
-  "version": "0.23.10",
+  "version": "0.23.11",
   "keywords": [
     "tdd",
     "development-methodology",
@@ -16,5 +16,14 @@
     "name": "Alex Headscarf"
   },
   "homepage": "https://github.com/knowz-io/knowz-skills/tree/main/knowzcode",
-  "repository": "https://github.com/knowz-io/knowz-skills"
+  "repository": "https://github.com/knowz-io/knowz-skills",
+  "userConfig": {
+    "api_token": {
+      "type": "string",
+      "title": "Knowz API token (optional)",
+      "description": "Optional Knowz API token when not using Claude marketplace OAuth. Leave blank for OAuth.",
+      "sensitive": true,
+      "required": false
+    }
+  }
 }

@@ -136,11 +136,11 @@ The Coding Agent should structure PR descriptions to reflect the KnowzCode workf
 
 ## MCP Configuration for VS Code
 
-To enable vault access in Copilot, connect through Claude OAuth / marketplace: install the Knowz companion plugin (`claude plugin install knowz`) and run `/knowz setup`.
+To enable vault access in Copilot, install the Knowz Claude plugin and run `/knowz setup` (OAuth). Connect only via Knowz Claude plugin OAuth / marketplace. Do not scrape project config files.
 
-If VS Code needs a project MCP entry, point it at `https://mcp.knowz.io/mcp` and use the editor's own OAuth mechanism for authentication.
+Do not generate or commit a project MCP URL entry for VS Code. Leave MCP config empty; do not copy secrets into it.
 
-MCP provides `search_knowledge`, `ask_question`, and `create_knowledge` tools for vault access. All prompt files work without MCP — it enhances context but never blocks.
+MCP tools (when available via the Knowz plugin) provide `search_knowledge`, `ask_question`, and `create_knowledge` for vault access. All prompt files work without MCP — it enhances context but never blocks.
 
 ---
 
@@ -176,7 +176,7 @@ VS Code allows model selection per chat session. For complex features, prefer st
 - `#file:` references efficiently pull in methodology and context
 - WorkGroup files maintain state across sessions
 - Copilot Coding Agent follows `copilot-instructions.md` for autonomous issue resolution
-- MCP tools integrate natively via `.vscode/mcp.json`
+- MCP tools integrate via Knowz Claude plugin OAuth / marketplace (do not scrape project config files)
 
 ---
 

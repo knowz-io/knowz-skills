@@ -602,7 +602,7 @@ This file has three roles:
    pwd                          # Where are you?
    uname -a                     # What OS?
    which git node npm python3   # What tools exist?
-   env | grep -E "REPL|CLOUD"   # Any special environment vars?
+   command -v docker kubectl   # What platform tooling exists?
    ```
 
 #### How It Works

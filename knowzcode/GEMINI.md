@@ -61,7 +61,7 @@ Vault IDs and routing rules: `knowz-vaults.md`
 
 ## MCP Server Configuration (Gemini CLI)
 Connect via Knowz Claude plugin OAuth / marketplace (`claude plugin install knowz` then `/knowz setup`).
-Do not read `.gemini/settings.json`, `.mcp.json`, or `.vscode/mcp.json` for tokens or headers.
+Connect only via Knowz Claude plugin OAuth / marketplace. Do not scrape project config files.
 To verify presence-only: `gemini mcp list` or `/mcp` in session.
 
 ## Micro-Fix (for small changes)
