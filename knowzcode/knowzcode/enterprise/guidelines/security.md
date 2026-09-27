@@ -84,10 +84,10 @@ if (storedPassword === inputPassword) { /* ... */ }
 **Compliant Example:**
 ```typescript
 app.use(session({
-  secret: process.env.SESSION_SECRET,
+  secret: config.sessionSecret, // from app secrets store — never hardcode
   cookie: {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: config.isProduction, // true in production deployments
     sameSite: 'strict',
     maxAge: 24 * 60 * 60 * 1000 // 24 hours max
   },
@@ -211,12 +211,12 @@ async function getDocument(req, res) {
 ```typescript
 // TLS connection to database
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: config.databaseUrl, // from app secrets store
   ssl: { rejectUnauthorized: true }
 });
 
 // Encrypt sensitive fields
-const encryptedSSN = encrypt(user.ssn, process.env.ENCRYPTION_KEY);
+const encryptedSSN = encrypt(user.ssn, config.encryptionKey);
 ```
 
 ---

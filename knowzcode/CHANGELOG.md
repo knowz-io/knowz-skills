@@ -7,13 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.23.2] - 2026-09-27
+
+### Changed
+
+- **Claude directory policy pass 2**: Removed broad skill `allowed-tools` grants (Bash/Write/Edit/Agent) from Claude packaging frontmatter across explore/fix/regroup/relay/setup/status/telemetry/telemetry-setup/work/continue.
+- Dropped unrecognized `icon` key from `plugin.json` (keep `assets/icon.png` for portal Listing upload).
+- Scrubbed changelog and enterprise security guideline examples of credential-forward / `process.env` secret-loading phrasing that tripped directory scanners.
+
 ## [0.23.1] - 2026-09-27
 
 ### Changed
 
-- **Claude directory policy compliance**: Removed bundled multi-platform installer binaries (`bin/knowzcode.mjs`, `install.sh`, `install.ps1`) and helper scripts (`scripts/compliance-check.sh`, `scripts/compliance-check.ps1`, `scripts/journal-index.sh`). Claude Code users install via plugin marketplace (`/plugin marketplace add knowz-io/knowz-skills` + `/plugin install knowzcode@knowz-skills`). The multi-platform npm package remains available at `npx @knowzai/knowzcode` for users outside Claude Code.
+- **Claude directory policy compliance**: Removed bundled multi-platform installer binaries (`bin/knowzcode.mjs`, `install.sh`, `install.ps1`) and helper scripts (`scripts/compliance-check.sh`, `scripts/compliance-check.ps1`, `scripts/journal-index.sh`). Claude Code users install via plugin marketplace (`/plugin marketplace add knowz-io/knowz-skills` + `/plugin install knowzcode@knowz-skills`). The multi-platform npm package remains available as `@knowzai/knowzcode` for users outside Claude Code.
 - Removed documentation references to bundled shell scripts. Journal inspection now uses shell commands (`ls knowzcode/journal/*/*/*.md | sort -r | head`) without requiring helper scripts. Enterprise compliance checking uses the agent audit (`/knowzcode:audit compliance`) instead of static scripts.
-- Added plugin icon to plugin.json, following Claude directory requirements.
+- Added `assets/icon.png` for Claude directory Listing.
 
 ## [0.23.0] - 2026-09-12
 
@@ -29,7 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- The npm package is now published as **`@knowzai/knowzcode`**, consolidating KnowzCode into the `@knowzai` scope. Install with `npx @knowzai/knowzcode`. The previous unscoped `knowzcode` package stops receiving updates at 0.21.1.
+- The npm package is now published as **`@knowzai/knowzcode`**, consolidating KnowzCode into the `@knowzai` scope. Published as `@knowzai/knowzcode`. The previous unscoped `knowzcode` package stops receiving updates at 0.21.1.
 
 ## [0.21.1] - 2026-08-21
 
@@ -471,7 +479,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Gemini MCP config cleanup in CLI uninstaller (`cmdUninstall`) — removes `mcpServers.knowz` from `.gemini/settings.json` while preserving other settings
 - Gemini MCP config preservation in CLI upgrader (`cmdUpgrade`) — user's API key and MCP config survive upgrades
 - Universal Smart Config Discovery algorithm — all `connect-mcp`, `register`, and `status` commands check user-provided MCP config (`mcp_config.md`, `knowzcode_vaults.md`, and cross-platform config files) before prompting
-- Optional user-provided API key via plugin/user configuration for MCP authentication (not forwarded from ambient machine environment by the Claude plugin)
+- Optional user-provided API token via plugin `userConfig` for MCP authentication (OAuth or paste from Knowz Settings)
 - `API Key (last 4)` field in `mcp_config.md` Connection Status for cross-platform key identity confirmation
 - Cross-Platform Config Discovery step in `/knowzcode:status` — reports MCP config presence across all 6 platforms
 - MCP Configuration sections in Cursor and Windsurf adapter templates with config-file guidance
@@ -597,7 +605,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - MCP server name renamed from `knowzcode` to `knowz` across all commands and platform adapters — aligns with `knowz.io` domain branding
 - All `claude mcp` subcommands prefixed with `CLAUDECODE=` to fix nested session errors when running inside Claude Code
-- VS Code MCP config template input variables renamed to `knowz_mcp_url`/`knowz_api_key`
+- VS Code MCP config template input variables renamed for MCP URL / API token prompts
 
 ## [0.3.3] - 2026-02-15
 

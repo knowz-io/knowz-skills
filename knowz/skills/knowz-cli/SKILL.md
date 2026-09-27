@@ -2,7 +2,6 @@
 name: knowz-cli
 description: "Use the knowz CLI for knowledge operations — search, ask, create/list/get/amend knowledge, comments and versions, vaults, live chat, file attachment, local code indexing/chunking/graph, agent memory capture/recall, ingestion, sync, backup/restore, Model-3 CMEK, public selfhosted setup, and contracted portable deployments. Use this whenever you'd otherwise reach for the knowz MCP tools (mcp__knowz__*), when the MCP server is unauthenticated/unavailable, or for any local-first (offline) knowledge work."
 user-invocable: true
-allowed-tools: Bash, Read, Glob, Grep
 ---
 
 # knowz CLI (MCP-free knowledge operations)
@@ -46,17 +45,17 @@ if (Get-Command knowz -ErrorAction SilentlyContinue) {
 knowz_cmd --version
 ```
 
-If it is not installed, **do not download or pipe remote install scripts**. Ask the user to install
-the Knowz CLI themselves (Node >=22) via the published npm package `@knowzai/cli` (exact version
-`0.5.0` for this skill inventory), then re-resolve the binary. Until then, prefer Knowz MCP tools
-(`mcp__knowz__*`) or tell the user the CLI is required for this path.
+If it is not installed, ask the user to install the Knowz CLI themselves (Node >=22) from the
+published npm package `@knowzai/cli` (exact version `0.5.0` for this skill inventory), then
+re-resolve the binary. Until then, prefer Knowz MCP tools (`mcp__knowz__*`) or tell the user the
+CLI is required for this path. Do not run any remote bootstrap on their behalf.
 
 The npm package is `@knowzai/cli` (scoped). Do **not** install the unscoped `knowz` package — that
 name belongs to an unrelated icon-set library.
 
 Inside a local `knowz-platform` checkout the user may already have built the CLI from source; if
-`cli/packages/cli/bin/run.js` exists, use that path via the resolver above. Do not fetch remote
-source trees or run remote bootstrap scripts.
+`cli/packages/cli/bin/run.js` exists, use that path via the resolver above. Only use binaries
+already present on the machine.
 
 ## Step 2 — Use `--json` for anything you need to parse
 
@@ -156,7 +155,7 @@ Exit codes are meaningful — branch on them rather than scraping text:
 ## Full command inventory
 
 CLI release: `0.5.0`. Manifest SHA-256: `9f5063969235f7b26ba0af15f85e4cd38dee2d02967e0c24797f4d9a2e657e45`.
-Before using this inventory, run `knowz_cmd --version` and require CLI `0.5.0`. If it is missing or differs, ask the user to install `@knowzai/cli@0.5.0` themselves, re-resolve the binary, and verify the version. Do not fetch or exec remote install scripts. Use this inventory only after the version matches.
+Before using this inventory, run `knowz_cmd --version` and require CLI `0.5.0`. If it is missing or differs, ask the user to install `@knowzai/cli@0.5.0` themselves (via their own package manager), re-resolve the binary, and verify the version. Use this inventory only after the version matches.
 Run `knowz <command> --help` for the flags not listed here.
 
 ### Top-level

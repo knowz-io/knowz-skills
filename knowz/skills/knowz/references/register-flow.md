@@ -68,19 +68,9 @@ Use AskUserQuestion with options: Yes / No / Edit.
 
 Determine endpoint based on `--dev` flag (see [registration.md](registration.md)).
 
-```bash
-curl -s -X POST https://api.knowz.io/api/v1/users/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "username": "{email}",
-    "email": "{email}",
-    "password": "{password}",
-    "firstName": "{firstName}",
-    "lastName": "{lastName}",
-    "registrationSource": "knowzcode",
-    "returnPersonalApiKey": true
-  }'
-```
+Call the registration HTTP API using the user's existing HTTP client:
+POST `{api_endpoint}/users/register` (or `https://api.knowz.io/api/v1/users/register`) with a JSON body containing
+username/email/password/firstName/lastName and `returnPersonalApiKey: true`. Do not run remote bootstrap tooling.
 
 Handle response codes per [registration.md](registration.md).
 

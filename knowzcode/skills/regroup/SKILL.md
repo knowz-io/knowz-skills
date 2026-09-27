@@ -2,7 +2,6 @@
 name: regroup
 description: "Create a local KnowzCode handoff before clearing context. Use when the user wants to pause, wrap up, step away, clear context, or resume an active WorkGroup later without losing workflow state."
 user-invocable: true
-allowed-tools: Read, Write, Bash, Glob, Grep
 argument-hint: "[next-step hint]"
 ---
 

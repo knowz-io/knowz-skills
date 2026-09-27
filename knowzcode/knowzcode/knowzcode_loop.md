@@ -354,7 +354,7 @@ Autonomous mode is per-WorkGroup and does not carry over.
 
 If MCP is configured, agents can leverage vault queries to enhance every phase. Vault configuration lives in `knowz-vaults.md` at the project root — created via `/knowz setup`.
 
-**Cross-platform config**: Set `KNOWZ_API_KEY` as an environment variable to enable automatic MCP authentication on any platform.
+**Cross-platform config**: Paste an API token via the host's MCP settings or plugin `userConfig` to enable MCP authentication on any platform.
 
 **Before using MCP, read `knowz-vaults.md` (project root) to discover vault IDs, descriptions, and routing rules.** Use each vault's description and "When to query"/"When to save" rules to confirm the query is appropriate for that vault. If a single vault is configured, use it for everything. If no vault file exists, fall back to `list_vaults()`. Never hardcode vault names — always resolve from config.
 

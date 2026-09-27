@@ -2,7 +2,6 @@
 name: status
 description: "Check KnowzCode project status — framework health, agent availability, and a brief MCP/vault summary. Use when asked about project status, framework health, or to verify KnowzCode setup."
 user-invocable: true
-allowed-tools: Read, Glob, Grep, Bash
 ---
 
 # KnowzCode Project Status

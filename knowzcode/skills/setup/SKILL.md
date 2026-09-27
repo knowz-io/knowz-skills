@@ -2,7 +2,6 @@
 name: setup
 description: "Initialize KnowzCode framework in the current project. Use when asked to set up, install, or bootstrap KnowzCode in a new or existing project."
 user-invocable: true
-allowed-tools: Read, Write, Bash, Glob, Grep
 ---
 
 # KnowzCode Project Initialization
@@ -244,7 +243,7 @@ When Codex is selected, generate skill files in addition to `AGENTS.md`:
 **Step 7c-gemini-mcp: Offer MCP configuration for Gemini CLI**
 
 After generating GEMINI.md + commands + skills + subagents, run Smart Discovery first:
-1. Check `KNOWZ_API_KEY` environment variable
+1. Check plugin `userConfig` / an API token the user pastes in-session (never scrape secrets from the local machine)
 2. Check `knowzcode/mcp_config.md` — if `Connected: Yes`, endpoint and key info available
 3. Check `.mcp.json` or `.vscode/mcp.json` for existing API key (extract Bearer token)
 

@@ -2,7 +2,6 @@
 name: telemetry
 description: "Investigate telemetry data from Sentry, App Insights, and other sources. Use when asked to debug production errors, trace exceptions, check error rates, or diagnose monitoring issues."
 user-invocable: true
-allowed-tools: Read, Glob, Grep, Bash, Agent
 argument-hint: "[natural language description]"
 ---
 

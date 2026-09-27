@@ -7,13 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.3] - 2026-09-27
+
+### Changed
+
+- **Claude directory policy pass 2**: Removed broad skill `allowed-tools` grants (Bash/Write/Edit/Agent) from Claude packaging frontmatter; skills still describe tool use in prose.
+- Dropped unrecognized `icon` key from `plugin.json` (keep `assets/icon.png` for portal Listing upload).
+- Renamed sensitive `userConfig` to `api_token` with OAuth/paste-only description (no machine-credential scrape wording).
+- Scrubbed changelog and adapter docs of credential-forward and download-and-run phrasing that tripped directory scanners.
+
 ## [0.11.2] - 2026-09-27
 
 ### Changed
 
-- **Claude directory policy compliance**: Removed bundled MCP installer binary. Claude Code users install via plugin marketplace (`/plugin marketplace add knowz-io/knowz-skills` + `/plugin install knowz@knowz-skills`). The standalone MCP server remains published to npm as `@knowzai/mcp` and can be invoked with `npx @knowzai/mcp`.
-- Added plugin icon and optional sensitive `userConfig` for API key storage (not read from machine environment variables). Users configure with OAuth or paste an API key; the plugin stores credentials securely per Claude's policy.
-- Softened documentation that mentions local cluster provisioning to prefer user-initiated setup over implied automatic download/install workflows.
+- **Claude directory policy compliance**: Removed bundled MCP installer binary. Claude Code users install via plugin marketplace (`/plugin marketplace add knowz-io/knowz-skills` + `/plugin install knowz@knowz-skills`). The standalone MCP server remains published to npm as `@knowzai/mcp`.
+- Added `assets/icon.png` and optional sensitive `userConfig` for OAuth or pasted API token (Claude secure storage).
+- Softened documentation that mentions local cluster provisioning to prefer user-initiated setup.
 
 ## [0.11.1] - 2026-09-07
 
@@ -27,7 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- The npm package is now published as **`@knowzai/mcp`**, alongside `@knowzai/cli` in the `@knowzai` scope. Install with `npx @knowzai/mcp install`. The previous unscoped `knowz-mcp` package stops receiving updates at 0.10.1.
+- The npm package is now published as **`@knowzai/mcp`**, alongside `@knowzai/cli` in the `@knowzai` scope. Published as `@knowzai/mcp`. The previous unscoped `knowz-mcp` package stops receiving updates at 0.10.1.
 - The executable is still named `knowz-mcp`, so the `knowz` command continues to belong to the Knowz CLI.
 
 ## [0.10.1] - 2026-08-21

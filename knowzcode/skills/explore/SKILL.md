@@ -2,7 +2,6 @@
 name: explore
 description: "Explore a topic, investigate the codebase, or produce a structured implementation plan using vault knowledge, impact analysis, architecture assessment, and project context. Use when the user wants to EXPLORE, RESEARCH, or PLAN before deciding whether to build."
 user-invocable: true
-allowed-tools: Read, Write, Bash, Glob, Grep, Agent
 # Note: Also uses MCP tools (search_knowledge, ask_question) when MCP is configured
 argument-hint: "[topic, question, or feature to plan]"
 ---

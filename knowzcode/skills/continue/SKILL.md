@@ -2,7 +2,6 @@
 name: continue
 description: "Detect continuation intent and resume active WorkGroup workflow or latest KnowzCode handoff. Triggers when user says continue, keep going, resume, resume handoff, or similar continuation intent"
 user-invocable: false
-allowed-tools: Read, Glob, Grep, Agent
 ---
 
 # Continue Skill

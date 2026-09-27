@@ -26,19 +26,9 @@ Before using any endpoints or brand names below, check for an `enterprise.json` 
 
 ## Request Format
 
-```bash
-curl -X POST https://api.knowz.io/api/v1/users/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "username": "{email}",
-    "email": "{email}",
-    "password": "{password}",
-    "firstName": "{firstName}",
-    "lastName": "{lastName}",
-    "registrationSource": "knowzcode",
-    "returnPersonalApiKey": true
-  }'
-```
+Call the registration HTTP API using the user's existing HTTP client:
+POST `{api_endpoint}/users/register` (or `https://api.knowz.io/api/v1/users/register`) with a JSON body containing
+username/email/password/firstName/lastName and `returnPersonalApiKey: true`. Do not run remote bootstrap tooling.
 
 Notes:
 - `username` is set to the email address (simplifies UX — users don't need a separate username)

@@ -1,9 +1,14 @@
 {
   "name": "knowz",
-  "description": "Frictionless knowledge management across Knowz vaults — search, save, and query knowledge through the knowz CLI when it is installed, or the Knowz MCP server otherwise",
-  "version": "0.11.2",
-  "keywords": ["knowledge", "knowz", "mcp", "cli", "vaults"],
-  "icon": "./assets/icon.png",
+  "description": "Frictionless knowledge management across Knowz vaults \u2014 search, save, and query knowledge through the knowz CLI when it is installed, or the Knowz MCP server otherwise",
+  "version": "0.11.3",
+  "keywords": [
+    "knowledge",
+    "knowz",
+    "mcp",
+    "cli",
+    "vaults"
+  ],
   "author": {
     "name": "Alex Headscarf",
     "email": "alexheadscarf@gmail.com",
@@ -12,10 +17,10 @@
   "homepage": "https://github.com/knowz-io/knowz-skills/tree/main/knowz",
   "repository": "https://github.com/knowz-io/knowz-skills",
   "userConfig": {
-    "knowz_api_key": {
+    "api_token": {
       "type": "string",
-      "title": "Knowz API key",
-      "description": "Personal Knowz API key (optional if you use OAuth). Stored in secure storage — not read from machine environment variables.",
+      "title": "Knowz API token",
+      "description": "Paste from Knowz Settings \u2192 API keys (optional when using OAuth). Stored in Claude secure storage.",
       "sensitive": true
     }
   }

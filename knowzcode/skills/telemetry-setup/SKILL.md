@@ -2,7 +2,6 @@
 name: telemetry-setup
 description: "Configure telemetry sources (Sentry, App Insights) for /knowzcode:telemetry. Use when the user wants to set up or reconfigure telemetry connections."
 user-invocable: true
-allowed-tools: Read, Write, Bash, Glob, Grep, AskUserQuestion
 argument-hint: "[sentry|appinsights|all]"
 ---
 
@@ -357,9 +356,7 @@ The configuration is saved to:
 - **Git**: Should be committed (shared team configuration)
 - **Override**: Team members can edit locally if needed
 
-For sensitive tokens, use environment variables instead of the config file:
-- `SENTRY_AUTH_TOKEN` - Sentry authentication
-- `AZURE_*` - Azure CLI uses `az login` session
+For sensitive tokens, prefer the host CLI's own secure login/session (for example `az login` for Azure) rather than writing secrets into the config file. Paste provider tokens only when the user supplies them in-session.
 
 ---
 
