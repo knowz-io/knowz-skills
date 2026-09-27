@@ -13,7 +13,7 @@
       "name": "knowzcode",
       "source": "./knowzcode",
       "description": "Platform-agnostic AI development methodology with TDD, quality gates, and optional enterprise compliance. Commands: /knowzcode:work, /knowzcode:explore, /knowzcode:fix, /knowzcode:audit, /knowzcode:setup, /knowzcode:regroup, /knowzcode:relay, /knowzcode:status, /knowzcode:telemetry, /knowzcode:telemetry-setup, and /knowzcode:continue, plus automatic regroup-trigger and start-work routing.",
-      "version": "0.23.6",
+      "version": "0.23.7",
       "author": {
         "name": "Alex Headscarf"
       },
