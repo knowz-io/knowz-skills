@@ -1233,21 +1233,22 @@ function promotionCorpusDigest(pairs) {
   return `sha256:${createHash('sha256').update(canonicalJson(pairs)).digest('hex')}`;
 }
 
-function trustedMeasurementPublicKey(keyId) {
-  const source = process.env.KNOWZCODE_TRUSTED_MEASUREMENT_KEYS;
-  if (typeof source !== 'string' || source.length === 0 || source.length > 65_536) return null;
-  try {
-    const keys = JSON.parse(source);
-    if (!keys || typeof keys !== 'object' || Array.isArray(keys)) return null;
-    const key = keys[keyId];
-    if (typeof key !== 'string'
-        || !/^-----BEGIN PUBLIC KEY-----\r?\n[A-Za-z0-9+/=\r\n]+-----END PUBLIC KEY-----\r?\n?$/.test(key)) {
-      return null;
-    }
-    return key;
-  } catch {
+/**
+ * Resolve an allowlisted measurement *public* key by id.
+ * Callers pass the map explicitly (tests / offline promotion tooling).
+ * Keys are SPKI public material for verifying signed measurement envelopes;
+ * they are not secrets and are never loaded from the host machine.
+ */
+function trustedMeasurementPublicKey(keyId, publicKeys = null) {
+  if (!publicKeys || typeof publicKeys !== 'object' || Array.isArray(publicKeys)) return null;
+  const key = publicKeys[keyId];
+  if (typeof key !== 'string'
+      || key.length === 0
+      || key.length > 65_536
+      || !/^-----BEGIN PUBLIC KEY-----\r?\n[A-Za-z0-9+/=\r\n]+-----END PUBLIC KEY-----\r?\n?$/.test(key)) {
     return null;
   }
+  return key;
 }
 
 function trustedMeasurementEnvelope(pairs, envelope, {
@@ -1256,6 +1257,7 @@ function trustedMeasurementEnvelope(pairs, envelope, {
   expectedCandidateVersion,
   expectedCorpusVersion,
   expectedRuntimeDigest,
+  trustedMeasurementPublicKeys = null,
 } = {}) {
   if (!envelope || typeof envelope !== 'object' || Array.isArray(envelope)) return false;
   const exactKeys = [
@@ -1301,7 +1303,7 @@ function trustedMeasurementEnvelope(pairs, envelope, {
       || envelope.corpus_digest !== promotionCorpusDigest(pairs)
       || typeof envelope.signature !== 'string'
       || !/^[A-Za-z0-9+/]+={0,2}$/.test(envelope.signature)) return false;
-  const publicKey = trustedMeasurementPublicKey(envelope.signer_key_id);
+  const publicKey = trustedMeasurementPublicKey(envelope.signer_key_id, trustedMeasurementPublicKeys);
   if (publicKey === null) return false;
   try {
     const signed = canonicalJson(envelope, { omit: ['signature'] });
@@ -1327,6 +1329,7 @@ export function evaluatePromotion(
     expected_candidate_version: expectedCandidateVersion = null,
     expected_corpus_version: expectedCorpusVersion = null,
     expected_runtime_digest: expectedRuntimeDigest = null,
+    trusted_measurement_public_keys: trustedMeasurementPublicKeys = null,
   } = {}
 ) {
   if (!Array.isArray(pairs) || pairs.length === 0) throw new TypeError('pairs must be a non-empty array');
@@ -1480,6 +1483,7 @@ export function evaluatePromotion(
       expectedCandidateVersion,
       expectedCorpusVersion,
       expectedRuntimeDigest,
+      trustedMeasurementPublicKeys,
     }),
   };
   const requiredStrata = effectiveThresholds.required_strata;

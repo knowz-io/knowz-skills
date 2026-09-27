@@ -79,10 +79,10 @@ Parse auth JSON without echoing it. It can contain email, organization ID, and o
 |---|---|
 | Codex not installed | `npm i -g @openai/codex` or `brew install codex`, then `codex login` |
 | Codex broken | `npm i -g @openai/codex --force` or `brew reinstall codex` |
-| Codex unauthenticated | `codex login` (or configure `CODEX_API_KEY`) |
+| Codex unauthenticated | `codex login` |
 | Claude not installed | install Claude Code with its supported installer, then `claude auth login` |
 | Claude broken | reinstall/update Claude Code, then verify `claude --version` |
-| Claude unauthenticated | `claude auth login` (or configure the supported API/provider credentials) |
+| Claude unauthenticated | `claude auth login` |
 
 Behavior depends on intent:
 

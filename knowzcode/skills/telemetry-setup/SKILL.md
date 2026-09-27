@@ -111,11 +111,9 @@ az account show --query "{name:name, user:user.name}" -o table 2>&1 | head -5
 ```markdown
 ⚠️ Sentry CLI is installed but not authenticated.
 
-Run these commands to authenticate:
+Authenticate interactively (do not paste tokens into project files):
 \`\`\`bash
 sentry-cli login
-# OR set the auth token directly
-export SENTRY_AUTH_TOKEN="your-token-here"
 \`\`\`
 
 Then run `/knowzcode:telemetry-setup sentry` again.

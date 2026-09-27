@@ -39,7 +39,7 @@ KnowzCode is a structured development methodology that provides:
 - Project is **already initialized** (knowzcode/ directory exists with content) — inform user, offer merge/overwrite
 - User is asking **about KnowzCode features**, not requesting setup → answer directly
 - User wants to **start a feature** → use `/knowzcode:work` (which checks initialization itself)
-- User wants to **connect MCP** → use `/knowz setup`
+- User wants to **connect MCP** → use `/knowz setup` (OAuth / marketplace; or paste into plugin `userConfig.api_token`)
 
 ## Steps to Execute
 
@@ -242,40 +242,28 @@ When Codex is selected, generate skill files in addition to `AGENTS.md`:
 
 **Step 7c-gemini-mcp: Offer MCP configuration for Gemini CLI**
 
-After generating GEMINI.md + commands + skills + subagents, run Smart Discovery first:
-1. Check plugin `userConfig` / an API token the user pastes in-session (never scrape secrets from the local machine)
-2. Check `knowzcode/mcp_config.md` — if `Connected: Yes`, endpoint and key info available
-3. Check `.mcp.json` or `.vscode/mcp.json` for existing API key (extract Bearer token)
+After generating GEMINI.md + commands + skills + subagents, offer cloud/MCP connection **without reading credentials from the local machine**. Never open `.mcp.json`, `.vscode/mcp.json`, shell secrets stores, or other host files looking for tokens. Prefer Claude OAuth / marketplace connect, or a value the user pastes into this plugin's sensitive `userConfig.api_token` (Claude secure storage).
 
-If existing config found:
-  "Found existing MCP config (endpoint: {endpoint}, key ending ...{last4}).
-   Configure Gemini using this existing config? [Yes] [No, enter different key] [Skip]"
-  If Yes: write .gemini/settings.json using discovered config (no key prompt needed)
-
-If no existing config found, ask:
+Ask:
 ```
-"Would you like to configure MCP for Gemini CLI? (Requires a KnowzCode API key)"
+"Would you like to connect Knowz cloud features for Gemini CLI?"
 ```
 
-- If **"Yes, I have a key"**: Accept API key →
-  1. Write `.gemini/settings.json` (merge with existing if present):
-     ```json
-     {
-       "mcpServers": {
-         "knowz": {
-           "httpUrl": "https://mcp.knowz.io/mcp",
-           "headers": {
-             "Authorization": "Bearer <api-key>",
-             "X-Project-Path": "<project-path>"
-           }
-         }
-       }
-     }
-     ```
-  2. Verify by calling `list_vaults` if possible
-  3. Update `knowzcode/mcp_config.md` with connection status
-- If **"Yes, register first"**: Direct to `/knowz setup`
-- If **"No"**: Skip, mention `/knowz setup` for later setup
+- If **"Yes, use OAuth / marketplace"**: Direct the user to install/connect the Knowz plugin (`claude plugin install knowz` then `/knowz setup`) so Claude handles sign-in. Do not scrape or copy tokens.
+- If **"Yes, I will paste a token"**: Ask them to paste once into this chat **or** into plugin Settings → `api_token` (sensitive). Then write `.gemini/settings.json` using OAuth-style discovery when possible:
+  ```json
+  {
+    "mcpServers": {
+      "knowz": {
+        "httpUrl": "https://mcp.knowz.io/mcp",
+        "authProviderType": "dynamic_discovery"
+      }
+    }
+  }
+  ```
+  Only if the host cannot use dynamic discovery, ask the user whether to store the pasted token in Gemini's own secure prompt/input mechanism — never write a raw token into a committed project file, and never read one back from disk later.
+  Verify with `list_vaults` when available, and update `knowzcode/mcp_config.md` with connection status only (no secret material, no last-4 fingerprints from machine files).
+- If **"No"**: Skip; mention `/knowz setup` (OAuth) or plugin `userConfig.api_token` for later.
 
 **Step 7c-gemini: Generate Gemini TOML commands, skills, and subagents**
 
@@ -423,7 +411,7 @@ This works correctly — no action needed.
 
 Inform user about enhanced features:
 ```
-Optional: For knowledge vault features: `claude plugin install knowz` then `/knowz setup`
+Optional: For knowledge vault features: `claude plugin install knowz` then `/knowz setup` (OAuth / marketplace connect; do not paste tokens into project files)
 ```
 
 ### 12. Report success
@@ -471,7 +459,7 @@ Templates included: `knowzcode_project.md`, `knowzcode_tracker.md` (archive stub
 
 - `/knowzcode:work` — Start first feature after initialization
 - `/knowzcode:explore` — Research the codebase after initialization
-- `/knowz setup` — Configure MCP and vaults
+- `/knowz setup` — Connect MCP and vaults via OAuth / marketplace (or paste into sensitive `userConfig`)
 - `/knowzcode:status` — Verify setup
 
 ## Error Handling

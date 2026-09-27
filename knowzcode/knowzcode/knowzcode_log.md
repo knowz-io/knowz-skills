@@ -64,7 +64,7 @@ Key premise correction captured in plan: tree-sitter alone doesn't monitor or sa
 Artifacts:
 - `knowzcode/planning/tree-sitter-knowz-fit.md` — full plan with 3 options, NodeID breakdown, risk table.
 
-MCP note: vault capture queued to `knowzcode/pending_captures.md` (MCP auth failed at probe — 401). Run `/knowz flush` after API key refresh.
+MCP note: vault capture queued to `knowzcode/pending_captures.md` (MCP auth failed at probe — 401). Run `/knowz flush` after reconnecting via `/knowz setup` (OAuth) or refreshing plugin Settings.
 ---
 **Type:** ARC-Completion
 **Timestamp:** 2026-04-18 13:28:17
@@ -85,7 +85,7 @@ Deliverables:
 
 Scope note: platform-side implementation is out of repo scope. Spec exists to make the debt visible and give the platform team a verifiable target.
 
-MCP note: vault capture queued to `knowzcode/pending_captures.md` (MCP auth failed at probe — 401, API key invalid/expired). Run `/knowz flush` after API key is refreshed.
+MCP note: vault capture queued to `knowzcode/pending_captures.md` (MCP auth failed at probe — 401, auth invalid/expired). Run `/knowz flush` after reconnecting via `/knowz setup` (OAuth) or refreshing plugin Settings.
 ---
 **Type:** SystemInitialization
 **Timestamp:** 2026-03-08 16:05:30

@@ -1021,22 +1021,18 @@ test('evaluation corpus executes forty distinct self-contained cases across five
     ...pair,
     provenance: { kind: 'measured', empirical: true, promotion_authorized: true },
   }));
-  const previousTrustedKeys = process.env.KNOWZCODE_TRUSTED_MEASUREMENT_KEYS;
-  t.after(() => {
-    if (previousTrustedKeys === undefined) delete process.env.KNOWZCODE_TRUSTED_MEASUREMENT_KEYS;
-    else process.env.KNOWZCODE_TRUSTED_MEASUREMENT_KEYS = previousTrustedKeys;
-  });
   const { publicKey, privateKey } = generateKeyPairSync('ed25519');
   const signerKeyId = 'measurement-key-contract-test';
-  process.env.KNOWZCODE_TRUSTED_MEASUREMENT_KEYS = JSON.stringify({
+  const trustedMeasurementPublicKeys = {
     [signerKeyId]: publicKey.export({ type: 'spki', format: 'pem' }),
-  });
+  };
   const trustedVersion = {
     expected_candidate_version: 'candidate-v1',
     expected_corpus_version: 'corpus-v1',
     expected_runtime_digest: `sha256:${'1'.repeat(64)}`,
     now: '2026-07-31T12:00:00Z',
     consumed_measurement_run_ids: [],
+    trusted_measurement_public_keys: trustedMeasurementPublicKeys,
   };
   const signMeasurementEnvelope = (pairs, overrides = {}) => {
     const envelope = {
