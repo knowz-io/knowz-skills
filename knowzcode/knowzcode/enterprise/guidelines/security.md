@@ -295,7 +295,7 @@ return <div dangerouslySetInnerHTML={{ __html: userInput }} />;
 
 ### SEC-LOG-01: Security Event Logging
 
-**Requirement:** Authentication events (login success/failure, logout, password changes) MUST be logged with audit trail. Logs MUST NOT contain passwords, tokens, or other secrets.
+**Requirement:** Authentication events (login success/failure, logout, password changes) MUST be logged with audit trail. Logs MUST NOT contain passwords, session secrets, or other credentials.
 
 **Applies To:** implementation
 
@@ -303,7 +303,7 @@ return <div dangerouslySetInnerHTML={{ __html: userInput }} />;
 
 **ARC Verification:**
 - ARC_SEC_LOG_01a: Verify login attempts (success and failure) are logged
-- ARC_SEC_LOG_01b: Verify logs do NOT contain passwords, tokens, or API keys
+- ARC_SEC_LOG_01b: Verify logs do NOT contain passwords, session secrets, or other credentials
 - ARC_SEC_LOG_01c: Verify log entries include timestamp, user ID, event type, IP address
 - ARC_SEC_LOG_01d: Verify password change events are logged
 
@@ -328,7 +328,7 @@ logger.info({ event: 'login_attempt', email, password }); // NEVER!
 ```typescript
 // VIOLATION: Logging sensitive data
 logger.info(`User ${email} logged in with password ${password}`);
-logger.debug({ user, token: authToken }); // Leaking token
+logger.debug({ user, sessionSecret: secret }); // Leaking credential
 ```
 
 ---

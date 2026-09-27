@@ -131,7 +131,7 @@ Create a new Knowz account and automatically configure MCP + vault.
 
 Before starting registration, check if user already has an API key:
 
-1. Prefer plugin `userConfig` (`api_token`) / an API token the user pastes in-session (never scrape secrets from the local machine)
+1. Prefer Claude OAuth / marketplace connect (never scrape secrets from the local machine)
 2. Check cross-platform configs: `.gemini/settings.json`, `.vscode/mcp.json`, `.mcp.json`
 
 If existing API key found: present options (use existing key → advise `/knowz setup`, register new account, or cancel). Use AskUserQuestion.
@@ -195,7 +195,7 @@ Check if `mcp__knowz__list_vaults` exists in available tools.
 
 Before prompting for credentials, check known sources per [references/mcp-setup.md](references/mcp-setup.md):
 
-1. Prefer plugin `userConfig` (`api_token`) / an API token the user pastes in-session (never scrape secrets from the local machine)
+1. Prefer Claude OAuth / marketplace connect (never scrape secrets from the local machine)
 2. Check cross-platform configs (`.gemini/settings.json`, `.vscode/mcp.json`, `.mcp.json`)
 3. Parse API key or `--oauth` from `$ARGUMENTS`
 
