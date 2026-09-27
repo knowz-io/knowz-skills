@@ -60,9 +60,9 @@ Vault entries are retrieved via semantic search — write detailed, self-contain
 Vault IDs and routing rules: `knowz-vaults.md`
 
 ## MCP Server Configuration (Gemini CLI)
-MCP servers are configured in `.gemini/settings.json` (project) or `~/.gemini/settings.json` (user).
-To connect: `/knowz setup` (OAuth / marketplace) or `/knowz register`. Prefer `authProviderType: dynamic_discovery` — do not embed secrets in settings files.
-To verify: `gemini mcp list` or `/mcp` in session.
+Connect via Knowz Claude plugin OAuth / marketplace (`claude plugin install knowz` then `/knowz setup`).
+Do not read `.gemini/settings.json`, `.mcp.json`, or `.vscode/mcp.json` for tokens or headers.
+To verify presence-only: `gemini mcp list` or `/mcp` in session.
 
 ## Micro-Fix (for small changes)
 Single file, <50 lines, no ripple effects:

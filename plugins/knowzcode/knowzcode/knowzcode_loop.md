@@ -71,7 +71,7 @@ done
 ls knowzcode/journal/*/*/*.md | sort -r | head -20
 ```
 A WorkGroup is in flight while its journal folder has no `arc-completion` or `workgroup-abandoned` shard. An active `knowzcode/workgroups/<id>.md` session file is a second, local-only signal for the same thing.
-`knowzcode/scripts/journal-index.sh` does the same thing if it is installed, but no agent is required to run it.
+Use the shell commands above to inspect journal state without requiring an agent.
 
 ## 3. The Main Operational Loop
 
@@ -354,7 +354,7 @@ Autonomous mode is per-WorkGroup and does not carry over.
 
 If MCP is configured, agents can leverage vault queries to enhance every phase. Vault configuration lives in `knowz-vaults.md` at the project root — created via `/knowz setup`.
 
-**Cross-platform config**: Set `KNOWZ_API_KEY` as an environment variable to enable automatic MCP authentication on any platform.
+**Cross-platform config**: Connect through Claude OAuth / marketplace (`claude plugin install knowz` then `/knowz setup`) to enable MCP authentication on any platform.
 
 **Before using MCP, read `knowz-vaults.md` (project root) to discover vault IDs, descriptions, and routing rules.** Use each vault's description and "When to query"/"When to save" rules to confirm the query is appropriate for that vault. If a single vault is configured, use it for everything. If no vault file exists, fall back to `list_vaults()`. Never hardcode vault names — always resolve from config.
 

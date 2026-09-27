@@ -214,7 +214,7 @@ only after `interrupt-and-resume` creates a safe resume prompt boundary.
 - Default to `--permission-mode dontAsk`. Restrict available tools to the implementation set `Bash,Read,Edit,Write,Glob,Grep`; auto-allow sandboxed Bash plus cwd-scoped `Edit(./**)` and `Write(./**)`. Read/search tools are non-mutating and require no blanket allow rule. Never use `--dangerously-skip-permissions` or `bypassPermissions` as a substitute for a sandbox.
 - Enable strict Bash sandbox settings: `"enabled": true`, `"failIfUnavailable": true`, and `"allowUnsandboxedCommands": false`. If sandbox startup fails, the leg fails rather than executing unsandboxed.
 - Pass an explicit empty MCP config with `--strict-mcp-config` and use `--no-chrome`; ambient MCP and desktop browser integrations are not needed for implementation relay.
-- Do not use `--bare` by default: it bypasses OAuth/keychain auth. Do not use `--safe-mode` by default: it also removes project `CLAUDE.md` conventions. The strict tool/MCP/Chrome/sandbox contract supplies relay hygiene while preserving project guidance.
+- Do not use `--bare` by default: it bypasses host authentication. Do not use `--safe-mode` by default: it also removes project `CLAUDE.md` conventions. The strict tool/MCP/Chrome/sandbox contract supplies relay hygiene while preserving project guidance.
 - Treat success as a final `type=result`, `subtype=success`, `is_error=false` record plus process exit zero. Exit zero alone is insufficient.
 - Clamp liveness timeout to at least 12 minutes because a Claude API request may legitimately run for 10 minutes. Interrupted-turn resume is best-effort; keep every fix prompt self-contained.
 
@@ -425,11 +425,7 @@ Run only after the workflow is known to be Tier 3 and Gate #2 has approved the s
    }
    ```
 
-   `claude-mcp.json`:
-
-   ```json
-   { "mcpServers": {} }
-   ```
+   `claude-mcp.json`: write an empty MCP config (no servers registered). Do not populate credentials or forward host auth into this file.
 
 ---
 
