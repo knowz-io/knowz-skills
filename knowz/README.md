@@ -46,6 +46,9 @@ The Knowz MCP server works with any AI model and any MCP-compatible agent. This 
 
 ---
 
+
+> Claude Code directory packaging: configure via Claude OAuth / marketplace connect — no pasted token field in the plugin manifest.
+
 ## Quick Start
 
 **For Claude Code users** (via plugin marketplace):

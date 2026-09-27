@@ -104,7 +104,7 @@ For personal keys, consider using --scope local (default)
 
 Before prompting for an API key, check known config sources in order:
 
-1. **Plugin userConfig / user-provided token**: prefer the sensitive `api_token` plugin option (or an API token the user pastes in-session). Never scrape secrets from the local machine.
+1. **Claude OAuth / marketplace connect**: prefer Claude's OAuth or marketplace connect flow. Never scrape secrets from the local machine.
 
 2. **Cross-platform config files** (check for API key or OAuth):
    - `.gemini/settings.json` → `mcpServers.knowz.authProviderType` (OAuth) or `mcpServers.knowz.headers.Authorization` (API key)
