@@ -1,25 +1,19 @@
 {
   "name": "@knowzai/mcp",
-  "version": "0.11.1",
+  "version": "0.11.2",
   "description": "Frictionless knowledge management across Knowz vaults -- search, save, and query knowledge through the knowz CLI when it is installed, or the Knowz MCP server otherwise",
   "type": "module",
-  "bin": {
-    "knowz-mcp": "bin/knowz-mcp.mjs"
-  },
   "files": [
-    "bin/",
     "CHANGELOG.md",
     "agents/",
     "skills/",
     ".claude-plugin/",
+    "assets/",
     "platform_adapters.md",
     "knowz-vaults.example.md",
     "knowz-pending.example.md",
     "enterprise.example.json"
   ],
-  "scripts": {
-    "prepublishOnly": "node bin/knowz-mcp.mjs --version"
-  },
   "keywords": [
     "ai",
     "knowledge",

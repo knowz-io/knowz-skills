@@ -106,8 +106,7 @@ done
 ls knowzcode/journal/*/*/*.md | sort -r | head -20
 ```
 
-`knowzcode/scripts/journal-index.sh` does the same, if installed. No agent is
-required to run it.
+Use the shell commands above to inspect journal state. No agent is required.
 
 ## Reference Quality Criteria
 

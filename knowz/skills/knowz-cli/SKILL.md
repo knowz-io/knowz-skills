@@ -46,30 +46,17 @@ if (Get-Command knowz -ErrorAction SilentlyContinue) {
 knowz_cmd --version
 ```
 
-If it is not installed, use **Node >=22** and install it globally from npm:
-
-```bash
-npm i -g @knowzai/cli@0.5.0
-```
-
-That is the whole command — run it on its own. Do not append an alternative to it: npm treats
-every extra word as another package name, so `npm i -g @knowzai/cli@0.5.0 or cd cli` silently installs
-the unrelated registry packages `or`, `cd`, and `cli` (the last drags in the deprecated
-`glob@7`/`inflight` chain).
+If it is not installed, **do not download or pipe remote install scripts**. Ask the user to install
+the Knowz CLI themselves (Node >=22) via the published npm package `@knowzai/cli` (exact version
+`0.5.0` for this skill inventory), then re-resolve the binary. Until then, prefer Knowz MCP tools
+(`mcp__knowz__*`) or tell the user the CLI is required for this path.
 
 The npm package is `@knowzai/cli` (scoped). Do **not** install the unscoped `knowz` package — that
 name belongs to an unrelated icon-set library.
 
-Inside a `knowz-platform` checkout you can build from source **instead** (a separate,
-two-step alternative — never combined with the `npm i -g` line above):
-
-```bash
-cd cli
-pnpm install
-pnpm build
-```
-
-From that `cli` directory invoke `node packages/cli/bin/run.js`, or return to the repository root before resolving the function above.
+Inside a local `knowz-platform` checkout the user may already have built the CLI from source; if
+`cli/packages/cli/bin/run.js` exists, use that path via the resolver above. Do not fetch remote
+source trees or run remote bootstrap scripts.
 
 ## Step 2 — Use `--json` for anything you need to parse
 
@@ -169,7 +156,7 @@ Exit codes are meaningful — branch on them rather than scraping text:
 ## Full command inventory
 
 CLI release: `0.5.0`. Manifest SHA-256: `9f5063969235f7b26ba0af15f85e4cd38dee2d02967e0c24797f4d9a2e657e45`.
-Before using this inventory, run `knowz_cmd --version` and require CLI `0.5.0`. If it is missing or differs, install `npm i -g @knowzai/cli@0.5.0`, resolve the binary again, and verify the version. Use this inventory only after the version matches.
+Before using this inventory, run `knowz_cmd --version` and require CLI `0.5.0`. If it is missing or differs, ask the user to install `@knowzai/cli@0.5.0` themselves, re-resolve the binary, and verify the version. Do not fetch or exec remote install scripts. Use this inventory only after the version matches.
 Run `knowz <command> --help` for the flags not listed here.
 
 ### Top-level
@@ -316,7 +303,7 @@ Run `knowz <command> --help` for the flags not listed here.
 | `knowz pg destroy` | Stop and DELETE the local Postgres cluster + data for this profile. | `--hereforever` `--brand` `--port` `--yes` |
 | `knowz pg down` | Stop the local Postgres cluster for this profile (data is kept). | `--hereforever` `--brand` `--port` |
 | `knowz pg status` | Show the local Postgres cluster status for this profile. | `--hereforever` `--brand` `--port` |
-| `knowz pg up` | Provision a local Postgres + pgvector cluster (auto download/install/configure) and point this profile at it. | `--hereforever` `--brand` `--port` `--run-as` |
+| `knowz pg up` | Provision a local Postgres + pgvector cluster (user-initiated; see `knowz pg up --help`) and point this profile at it. | `--hereforever` `--brand` `--port` `--run-as` |
 
 ### `platform` — Legacy commands for explicit contracted portable runtimes
 

@@ -71,7 +71,7 @@ done
 ls knowzcode/journal/*/*/*.md | sort -r | head -20
 ```
 A WorkGroup is in flight while its journal folder has no `arc-completion` or `workgroup-abandoned` shard. An active `knowzcode/workgroups/<id>.md` session file is a second, local-only signal for the same thing.
-`knowzcode/scripts/journal-index.sh` does the same thing if it is installed, but no agent is required to run it.
+Use the shell commands above to inspect journal state without requiring an agent.
 
 ## 3. The Main Operational Loop
 
