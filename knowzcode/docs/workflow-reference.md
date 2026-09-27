@@ -373,7 +373,7 @@ The KnowzCode workflow is orchestrated by **commands** (not a spawnable agent) t
 
 ## Agent Teams (Experimental)
 
-When the environment variable `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` is set, KnowzCode may use **teammate spawning** when multiple workers genuinely need peer messages or shared task state. Independent work normally uses local execution, a compatible resumed worker, a real conversation fork when eligible, or a fresh context capsule. Teams are not the Tier 2+ default.
+When Agent Teams is enabled on this host (via Claude Code's own docs/UI), KnowzCode may use **teammate spawning** when multiple workers genuinely need peer messages or shared task state. Independent work normally uses local execution, a compatible resumed worker, a real conversation fork when eligible, or a fresh context capsule. Teams are not the Tier 2+ default.
 
 - A **team lead** that coordinates workflow and delegates to specialized teammates
 - **Shared task lists** with dependencies between phases
@@ -384,10 +384,7 @@ The same phases, quality gates, and approval points apply regardless of executio
 Current Claude Code forms the team when the first teammate is spawned and manages cleanup automatically. KnowzCode does not call removed `TeamCreate` or `TeamDelete` APIs. Referenced teammate definitions apply their body/tools/model automatically.
 
 **Enabling Agent Teams:**
-- `npx @knowzai/knowzcode install --agent-teams` explicitly opts in via the CLI installer
-- Or manually set it in `.claude/settings.local.json`:
-  ```json
-  { "env": { "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1" } }
-  ```
+- Prefer Claude Code's own enablement path — see https://code.claude.com/docs/en/agent-teams
+- `npx @knowzai/knowzcode install --agent-teams` points at that same Claude Code opt-in; KnowzCode does not write host settings for you
 
 For full details on team conventions and communication patterns, see `knowzcode/claude_code_execution.md`.

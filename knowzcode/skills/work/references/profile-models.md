@@ -94,7 +94,7 @@ Agent Teams is a separate explicit runtime opt-in. No profile enables, recommend
 
 ## Advisor Requirements & Graceful Fallback
 
-For `advisor`, fall back to `teams` model policy when `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1`, or when `ANTHROPIC_BASE_URL` is set and is not an Anthropic endpoint. Announce the exact reason. Do not probe by making a paid API call. This fallback changes model/tool policy only; it never changes the selected coordination mode.
+For `advisor`, fall back to `teams` model policy when the advisor tool is unavailable on this host (for example experimental betas disabled, or the host is routed through Bedrock/Vertex/Foundry/custom endpoints rather than the direct Anthropic API). Announce the host-capability reason without probing by making a paid API call. This fallback changes model/tool policy only; it never changes the selected coordination mode.
 
 ---
 
@@ -102,7 +102,7 @@ For `advisor`, fall back to `teams` model policy when `CLAUDE_CODE_DISABLE_EXPER
 
 Fable (the `fable` alias → `claude-fable-5`) requires the direct Anthropic API (or Claude Platform on AWS) — it is **not** available on Amazon Bedrock, Google Vertex AI, or Microsoft Foundry — and requires 30-day data retention (not available under zero-data-retention orgs).
 
-When `frontier` is requested but Fable can't be used, `/knowzcode:work` (Step 2.3) resolves the would-be `fable` spawns to `opus` and announces the downgrade — the run proceeds as an all-Opus flow rather than failing. Detection mirrors the advisor env-guard: if `ANTHROPIC_BASE_URL` is set and does NOT contain `"anthropic.com"` (case-insensitive; likely Bedrock/Vertex/custom endpoint), downgrade `fable → opus` up front. The other unavailability cases — a zero-data-retention org, no Fable entitlement, or an older Claude Code that doesn't recognize the `fable` alias — can't be probed in advance, so they're caught at spawn time: **if any `fable` spawn is rejected at runtime for any reason, re-spawn that agent with `model: opus` and continue.** The run always degrades to Opus rather than failing — no restart and no `--profile` change needed.
+When `frontier` is requested but Fable can't be used, `/knowzcode:work` (Step 2.3) resolves the would-be `fable` spawns to `opus` and announces the downgrade — the run proceeds as an all-Opus flow rather than failing. Detection mirrors the advisor host-capability check: if Fable/advisor routing is unavailable on this host (for example Bedrock/Vertex/Foundry/custom endpoints instead of the direct Anthropic API), downgrade `fable → opus` up front. The other unavailability cases — a zero-data-retention org, no Fable entitlement, or an older Claude Code that doesn't recognize the `fable` alias — can't be probed in advance, so they're caught at spawn time: **if any `fable` spawn is rejected at runtime for any reason, re-spawn that agent with `model: opus` and continue.** The run always degrades to Opus rather than failing — no restart and no `--profile` change needed.
 
 Model identifiers use the bare aliases `fable` and `opus` (never pinned versions), so routing always targets the latest Fable and the latest Opus — a new model release can't break it. Version-locking is possible but discouraged: replace the aliases with pinned IDs (e.g. `claude-fable-5`, `claude-opus-4-8`) in the mapping above only if you deliberately want to freeze a version.
 

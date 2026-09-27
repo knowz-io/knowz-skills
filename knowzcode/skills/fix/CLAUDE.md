@@ -15,7 +15,7 @@ Agents are invoked with the current `Agent()` tool (`Task` is the older compatib
 ## Workflow Phases
 
 1. **Scope guard** — verify: ≤1 file, <50 lines, no ripple effects, no new dependencies, existing tests cover the area
-2. **Profile resolution** — parse `--profile` flag or read `knowzcode/knowzcode_orchestration.md`; detect advisor environment constraints
+2. **Profile resolution** — parse `--profile` flag or read `knowzcode/knowzcode_orchestration.md`; detect advisor host-capability constraints
 3. **Delegate to knowzcode:microfix-specialist** — single `Agent()` call with target, summary, and resolved model/advisor-guidance
 4. **Verification loop (inside agent)** — run tests, fix failures, re-run until all pass; then run linter
 5. **Record and commit** — write one immutable `microfix` shard under `knowzcode/journal/YYYY-MM/<wgid-or-ungrouped>/`; commit with `fix:` prefix. Never prepend `knowzcode_log.md` or write to `knowzcode_tracker.md` (frozen archives).
@@ -32,7 +32,7 @@ If ANY scope criterion fails, stop immediately and suggest `/knowzcode:work`. Do
 | `profile:` in `knowzcode/knowzcode_orchestration.md` | Config fallback |
 | Default: `frontier` | Lowest |
 
-Advisor profile: routes `microfix-specialist` to Sonnet with advisor-tool guidance block. Advisor falls back to `teams` if `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1` or `ANTHROPIC_BASE_URL` points outside `anthropic.com`.
+Advisor profile: routes `microfix-specialist` to Sonnet with advisor-tool guidance block. Advisor falls back to `teams` if the advisor tool is unavailable on this host (for example experimental betas disabled, or host routed off the direct Anthropic API).
 
 Frontier profile: keeps the micro-fix on Opus (execution work). `--fable-execution` runs it on Fable for a high-value job, with graceful downgrade to Opus if Fable is unavailable.
 
