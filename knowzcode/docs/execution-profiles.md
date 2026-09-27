@@ -68,9 +68,9 @@ Or override per-invocation:
 
 ## Graceful fallback
 
-When `profile: advisor` is set but the environment can't support the advisor tool (e.g., `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1`, or `ANTHROPIC_BASE_URL` pointing to Bedrock/Vertex/custom endpoints), `/work` and `/audit` automatically fall back to `teams` with a clear message. Your workflow proceeds — you just don't get the cost savings.
+When `profile: advisor` is set but the advisor tool is unavailable on this host (for example experimental betas disabled, or the host is routed through Bedrock/Vertex/custom endpoints rather than the direct Anthropic API), `/work` and `/audit` automatically fall back to `teams` with a clear message. Your workflow proceeds — you just don't get the cost savings.
 
-Similarly, `profile: frontier` requires Fable, which runs on the direct Anthropic API (or Claude Platform on AWS) and needs 30-day data retention. If Fable is unavailable (e.g. `ANTHROPIC_BASE_URL` pointing at Bedrock/Vertex/Foundry), the planning/review agents fall back to Opus with a clear message and the run proceeds as an all-Opus flow.
+Similarly, `profile: frontier` requires Fable, which runs on the direct Anthropic API (or Claude Platform on AWS) and needs 30-day data retention. If Fable is unavailable on this host (for example Bedrock/Vertex/Foundry routing), the planning/review agents fall back to Opus with a clear message and the run proceeds as an all-Opus flow.
 
 ## Conflicts
 

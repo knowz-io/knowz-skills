@@ -120,10 +120,9 @@ Before the `Agent()` dispatch, resolve `PROFILE`:
 2. **Config**: else read `knowzcode/knowzcode_orchestration.md` for the `^profile:\s*(\S+)` line. Use that value if valid; else `frontier`.
 3. **Default**: if config file is absent or line is missing, `PROFILE = "frontier"`.
 4. **Advisor detection** (only when `PROFILE == "advisor"`):
-   - If `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS == "1"` → fall back to `teams`, announce reason.
-   - If `ANTHROPIC_BASE_URL` is set AND does NOT contain `"anthropic.com"` → fall back to `teams`, announce reason.
+   - If the advisor tool is unavailable on this host (experimental betas disabled, or host routed off the direct Anthropic API) → fall back to `teams`, announce the host-capability reason.
    - Otherwise proceed with `advisor`.
-5. **Frontier execution**: default `EXECUTE_ON_FABLE = false` (so it is always bound for the `MODEL_FOR` call below). Only when `PROFILE == "frontier"`: set `EXECUTE_ON_FABLE = true` if `$ARGUMENTS` contains `--fable-execution`, else read `execute_on_fable:` from `knowzcode/knowzcode_orchestration.md` (default `false`). If `EXECUTE_ON_FABLE == true` AND `ANTHROPIC_BASE_URL` is set AND does NOT contain `"anthropic.com"` → downgrade `EXECUTE_ON_FABLE = false` (Fable unavailable) and announce.
+5. **Frontier execution**: default `EXECUTE_ON_FABLE = false` (so it is always bound for the `MODEL_FOR` call below). Only when `PROFILE == "frontier"`: set `EXECUTE_ON_FABLE = true` if `$ARGUMENTS` contains `--fable-execution`, else read `execute_on_fable:` from `knowzcode/knowzcode_orchestration.md` (default `false`). If `EXECUTE_ON_FABLE == true` AND Fable is unavailable on this host (for example Bedrock/Vertex/Foundry/custom routing) → downgrade `EXECUTE_ON_FABLE = false` and announce.
 
 See `${CLAUDE_PLUGIN_ROOT}/skills/work/references/profile-models.md` for `MODEL_FOR()` semantics. For `/knowzcode:fix`: `MODEL_FOR("microfix-specialist", "advisor") == "sonnet"`; under `frontier`, `MODEL_FOR("microfix-specialist", "frontier", EXECUTE_ON_FABLE)` returns `"opus"` by default or `"fable"` when `--fable-execution` is set; `teams`/`classic` return null.
 

@@ -1,6 +1,6 @@
 {
   "name": "@knowzai/knowzcode",
-  "version": "0.23.7",
+  "version": "0.23.8",
   "description": "Platform-agnostic AI development methodology with TDD, quality gates, and structured workflows",
   "type": "module",
   "files": [
@@ -8,8 +8,7 @@
     "docs/",
     "agents/",
     "skills/",
-    ".claude-plugin/",
-    "assets/"
+    ".claude-plugin/"
   ],
   "scripts": {
     "context-efficiency": "node knowzcode/context_efficiency_runtime.mjs",

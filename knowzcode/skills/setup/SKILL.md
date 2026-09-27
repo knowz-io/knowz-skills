@@ -364,31 +364,24 @@ When Copilot is selected, generate the full prompt file suite in addition to the
 
 ### 9. Optional Agent Teams Opt-In (Claude Code only)
 
-Agent Teams is experimental, costs a separate model context per teammate, and is never required for parallel work, knowledge capture, or quality gates. Ordinary setup MUST leave Claude settings unchanged.
+Agent Teams is experimental, costs a separate model context per teammate, and is never required for parallel work, knowledge capture, or quality gates. Ordinary setup MUST leave Claude settings unchanged and MUST NOT write credential-like host settings on the user's behalf.
 
-Enable it only when the user explicitly requested Agent Teams in the setup request or supplied `--agent-teams`. A general confirmation, pressing Enter, selecting a model profile, or using Tier 2/3 is not opt-in. Even when configured, workflows form a team only when at least two active peers require shared tasks or direct messaging; independent parallel work uses named agents.
+Enablement is owned by Claude Code itself. When the user explicitly requested Agent Teams in the setup request or supplied `--agent-teams`, point them to Claude Code's Agent Teams docs and UI — do not merge settings JSON, do not write host configuration keys, and do not instruct the user to paste host-routing values into project settings:
+
+- Docs: https://code.claude.com/docs/en/agent-teams
+- Prefer Claude Code's own enablement path (settings UI / documented opt-in) over any plugin-authored settings write.
+
+A general confirmation, pressing Enter, selecting a model profile, or using Tier 2/3 is not opt-in. Even when Agent Teams is enabled on this host, workflows form a team only when at least two active peers require shared tasks or direct messaging; independent parallel work uses named agents.
 
 If the active platform is not Claude Code, ignore `--agent-teams` with a clear not-applicable message and do not write settings.
 
-For an explicit project opt-in, read `.claude/settings.local.json`, require valid JSON, preserve every existing key, and merge:
-
-```json
-{
-  "env": {
-    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
-  }
-}
-```
-
-If the file is missing, create it. If it is malformed or unreadable, fail closed: report the path and parse error, preserve the file byte-for-byte, and do not enable Agent Teams. Never replace an unreadable settings file with `{}`. A global `~/.claude/settings.json` write requires a separate explicit request for global enablement; do not prompt for or infer it.
-
 **Step 9c: Windows note**
 
-If the platform is Windows (`process.platform === 'win32'` or detected via environment):
+If the platform is Windows:
 ```
 Note: On Windows, Agent Teams runs in "in-process" mode by default
 (split-pane tmux mode is not supported in Windows Terminal).
-This works correctly — no action needed.
+This works correctly — no action needed. Enable via Claude Code's own docs/UI.
 ```
 
 ### 10. Optional: Set up enterprise compliance (Beta)
