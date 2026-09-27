@@ -190,8 +190,7 @@ be hand-maintained and no two agents ever edit the same row:
 | **What was learned?** | The shard body: verification summary, architectural learnings, ripple effects |
 | **What debt exists?** | `REFACTOR_` items in each spec's `Debt & Gaps` section |
 
-`knowzcode/scripts/journal-index.sh` prints the in-flight list and recent
-history if you'd rather not type the `find` yourself.
+Use `ls knowzcode/journal/*/*/*.md | sort -r | head` to see recent shards without typing the full find command.
 
 #### The Archived Table
 

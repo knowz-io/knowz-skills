@@ -178,29 +178,22 @@ Any one of these is enough to activate enforcement.
 
 ## CI integration
 
-For a deterministic, agent-free **spec-presence pre-screen** in a pipeline, use the bundled
-scripts:
+For comprehensive compliance checking, use the agent audit:
 
 ```bash
-# Bash (Linux/macOS)
-bash scripts/compliance-check.sh full      # or: spec | impl
-
-# PowerShell (Windows)
-pwsh -File scripts/compliance-check.ps1 -Scope full
+# Full compliance audit (spec + implementation)
+/knowzcode:audit compliance
 ```
 
-They no-op (exit 0) unless `compliance_enabled: true`. Spec-tier checks verify each active
-guideline's ARC criteria appear in `knowzcode/specs/`. Implementation-tier checks are
-reported as **REVIEW** (deferred to the enforcer agent) rather than auto-passed — the static
-script never claims an implementation is compliant when it can't actually tell. Exit code is
-`1` on blocking **spec** violations (or on advisory violations under `KC_COMPLIANCE_STRICT=true` /
-`-Strict`).
+Spec-tier checks verify each active guideline's ARC criteria appear in `knowzcode/specs/`.
+Implementation-tier checks are reported with detail, covering your blocking and advisory
+rules. The agent audit is the authoritative gate — it loads your active guidelines, injects
+verification criteria into the workflow, and blocks Gate 3 on violations.
 
-> **Scope caveat:** a green run means the spec-presence checks passed — it does **not** verify
-> implementation-tier blocking rules (those emit REVIEW and never fail the build). Substantive
-> implementation compliance requires the agent audit (`/knowzcode:work` with the
-> `enterprise-enforcer`, or `/knowzcode:audit compliance`). Treat this script as a fast floor,
-> not the whole gate.
+> **For CI/CD pipelines:** Run `/knowzcode:audit compliance` in your pipeline to gate on
+> active guidelines. Substantive compliance enforcement requires the agent audit; static
+> script checks cannot verify implementation-tier rules accurately. The agent-driven audit
+> is the canonical gate.
 
 ---
 

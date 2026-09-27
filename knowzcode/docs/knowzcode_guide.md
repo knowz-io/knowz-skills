@@ -115,7 +115,6 @@ The brain of your operation—five essential files that orchestrate strategy.
 *   **Layout:** `journal/YYYY-MM/<WorkGroupID>/YYYYMMDDTHHMMSSZ-<type>-<shortid>.md`, one immutable file per event.
 *   **Reading it:** Filenames are UTC time-prefixed, so `ls knowzcode/journal/*/*/*.md | sort -r` is the recent history. A WorkGroup folder with no `arc-completion` or `workgroup-abandoned` shard is still in flight.
 *   **Writing it:** Agents create shards; they never edit or delete one. Corrections are new shards.
-*   **Helper:** `knowzcode/scripts/journal-index.sh` prints in-flight WorkGroups and recent shards.
 
 **`knowzcode/knowzcode_tracker.md`** and **`knowzcode/knowzcode_log.md`** - Frozen Archives
 *   **Purpose:** Read-only history from before the journal. Nothing writes to them. New installs get stubs pointing at `journal/`.
@@ -199,7 +198,7 @@ graph LR
 | :--- | :--- |
 | Understand the project's vision | `knowzcode/knowzcode_project.md` |
 | See the big picture | `knowzcode/knowzcode_architecture.md`|
-| Check project progress | `knowzcode/journal/` (or `knowzcode/scripts/journal-index.sh`) |
+| Check project progress | `knowzcode/journal/` (see recent shards with `ls knowzcode/journal/*/*/*.md \| sort -r \| head`) |
 | Find a component's details | `knowzcode/specs/[NodeID].md` |
 | Review project history | `knowzcode/journal/*/*/*.md`, newest filenames first |
 | Know how the agent works | `knowzcode/knowzcode_loop.md` |

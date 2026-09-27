@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.2] - 2026-09-27
+
+### Changed
+
+- **Claude directory policy compliance**: Removed bundled MCP installer binary. Claude Code users install via plugin marketplace (`/plugin marketplace add knowz-io/knowz-skills` + `/plugin install knowz@knowz-skills`). The standalone MCP server remains published to npm as `@knowzai/mcp` and can be invoked with `npx @knowzai/mcp`.
+- Added plugin icon and optional sensitive `userConfig` for API key storage (not read from machine environment variables). Users configure with OAuth or paste an API key; the plugin stores credentials securely per Claude's policy.
+- Softened documentation that mentions local cluster provisioning to prefer user-initiated setup over implied automatic download/install workflows.
+
 ## [0.11.1] - 2026-09-07
 
 ### Fixed

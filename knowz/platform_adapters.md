@@ -220,26 +220,25 @@ Check whether Knowz tools such as `mcp__knowz__list_vaults` are already availabl
 
 Before prompting, check:
 1. `~/.codex/config.toml` for `[mcp_servers.knowz]`
-2. `KNOWZ_API_KEY` in the environment
-3. Cross-platform configs such as `.gemini/settings.json`, `.vscode/mcp.json`, and `.mcp.json`
-4. API key passed in the user's request
+2. Cross-platform configs such as `.gemini/settings.json`, `.vscode/mcp.json`, and `.mcp.json`
+3. An API key the user explicitly provides in this conversation (do not scrape ambient machine env for secrets)
 
-For Codex, prefer shared configuration instead of project-local `.mcp.json`.
+For Codex, prefer shared configuration instead of project-local `.mcp.json`. Ask the user to supply a personal API key interactively; do not have the plugin read or forward ambient credential environment variables.
 
-Preferred command:
+Preferred approach: have the user run Codex's MCP add flow and set whatever bearer-token env var name *they* choose in their own shell profile. Example shape (user-managed; not plugin-forwarded):
 ```bash
-codex mcp add knowz --url {mcp_endpoint} --bearer-token-env-var KNOWZ_API_KEY
+codex mcp add knowz --url {mcp_endpoint} --bearer-token-env-var YOUR_KNOWZ_TOKEN_ENV
 ```
 
-Equivalent `~/.codex/config.toml` block:
+Equivalent user-managed `~/.codex/config.toml` block:
 ```toml
 [mcp_servers.knowz]
 url = "{mcp_endpoint}"
-bearer_token_env_var = "KNOWZ_API_KEY"
+bearer_token_env_var = "YOUR_KNOWZ_TOKEN_ENV"
 http_headers = { X-Project-Path = "<absolute-project-path>" }
 ```
 
-Do not invent unsupported Codex auth fields. If the current Codex runtime cannot be configured safely, explain the required shared-config command instead of guessing.
+Do not invent unsupported Codex auth fields. If the current Codex runtime cannot be configured safely, explain the required shared-config command instead of guessing. On Claude Code, prefer plugin `userConfig` (sensitive) / OAuth instead of machine env credentials.
 
 After setup, tell the user to restart Codex if the tools do not appear immediately.
 
@@ -270,19 +269,20 @@ Resolve endpoints using `enterprise.json`, `--dev`, default production, and `--e
 
 ## Instructions
 
-1. Check for an existing API key in `KNOWZ_API_KEY`, `~/.codex/config.toml`, `.gemini/settings.json`, and `.mcp.json`.
+1. Check for an existing user-managed API key in `~/.codex/config.toml`, `.gemini/settings.json`, and `.mcp.json` (do not scrape ambient credential env vars).
    - If one already exists, offer `/knowz-setup` instead of creating another account.
 2. Collect name (split into first/last), email, and password one field at a time.
 3. Call the registration API:
    ```bash
+   # API HTTP call only — does not download or execute remote scripts
    curl -s -X POST {api_endpoint}/users/register \
      -H "Content-Type: application/json" \
      -d '{"username":"{email}","email":"{email}","password":"{password}","firstName":"{firstName}","lastName":"{lastName}","registrationSource":"knowzcode","returnPersonalApiKey":true}'
    ```
 4. Extract the API key from `data.personalApiKey` in the response.
 5. Configure Codex using the shared MCP command or `~/.codex/config.toml` block from `/knowz-setup`.
-   - Use `KNOWZ_API_KEY` as the bearer token env var.
-   - If you cannot safely persist the environment variable from the current Codex session, tell the user exactly what to set and continue.
+   - Ask the user to set a bearer-token env var name of their choosing in their own shell (user-managed; the plugin must not forward ambient credentials).
+   - If you cannot safely persist that from the current Codex session, tell the user exactly what to set and continue.
 6. Generate `knowz-vaults.md` for the newly created vault.
 7. Tell the user to restart Codex after configuration.
 ```
@@ -306,11 +306,11 @@ Inspect Knowz MCP health and configuration.
 2. If available, call `mcp__knowz__list_vaults` with `includeStats: true`.
 3. Check configuration locations:
    - `enterprise.json`
-   - `KNOWZ_API_KEY` environment variable
    - `~/.codex/config.toml` for `[mcp_servers.knowz]`
    - `.gemini/settings.json`
    - `.vscode/mcp.json`
    - project `.mcp.json` only as a legacy signal
+   - (Do not read ambient credential environment variables; ask the user if a key is needed.)
 4. Read `knowz-vaults.md` if present and validate listed vault IDs against the server response.
 5. Count pending items in `knowz-pending.md` if it exists.
 6. Report:
@@ -505,28 +505,17 @@ if (Get-Command knowz -ErrorAction SilentlyContinue) {
 knowz_cmd --version
 ```
 
-If it is not installed, use **Node >=22** and install it globally from npm:
-
-```bash
-npm i -g @knowzai/cli@0.5.0
-```
-
-That is the whole command — run it on its own. Do not append an alternative to it: npm treats
-every extra word as another package name, so `npm i -g @knowzai/cli@0.5.0 or cd cli` silently installs
-the unrelated registry packages `or`, `cd`, and `cli` (the last drags in the deprecated
-`glob@7`/`inflight` chain).
+If it is not installed, **do not download or pipe remote install scripts**. Ask the user to install
+the Knowz CLI themselves (Node >=22) via the published npm package `@knowzai/cli` (exact version
+`0.5.0` for this skill inventory), then re-resolve the binary. Until then, prefer Knowz MCP tools
+or tell the user the CLI is required for this path.
 
 The npm package is `@knowzai/cli` (scoped). Do **not** install the unscoped `knowz` package — that
 name belongs to an unrelated icon-set library.
 
-Inside a `knowz-platform` checkout you can build from source **instead** (a separate,
-two-step alternative — never combined with the `npm i -g` line above):
-
-```bash
-cd cli
-pnpm install
-pnpm build
-```
+Inside a local `knowz-platform` checkout the user may already have built the CLI from source; if
+`cli/packages/cli/bin/run.js` exists, use that path via the resolver above. Do not fetch remote
+source trees or run remote bootstrap scripts.
 
 From that `cli` directory invoke `node packages/cli/bin/run.js`, or return to the repository root before resolving the function above.
 
@@ -628,7 +617,7 @@ Exit codes are meaningful — branch on them rather than scraping text:
 ## Full command inventory
 
 CLI release: `0.5.0`. Manifest SHA-256: `9f5063969235f7b26ba0af15f85e4cd38dee2d02967e0c24797f4d9a2e657e45`.
-Before using this inventory, run `knowz_cmd --version` and require CLI `0.5.0`. If it is missing or differs, install `npm i -g @knowzai/cli@0.5.0`, resolve the binary again, and verify the version. Use this inventory only after the version matches.
+Before using this inventory, run `knowz_cmd --version` and require CLI `0.5.0`. If it is missing or differs, ask the user to install `@knowzai/cli@0.5.0` themselves, re-resolve the binary, and verify the version. Do not fetch or exec remote install scripts. Use this inventory only after the version matches.
 Run `knowz <command> --help` for the flags not listed here.
 
 ### Top-level
@@ -775,7 +764,7 @@ Run `knowz <command> --help` for the flags not listed here.
 | `knowz pg destroy` | Stop and DELETE the local Postgres cluster + data for this profile. | `--hereforever` `--brand` `--port` `--yes` |
 | `knowz pg down` | Stop the local Postgres cluster for this profile (data is kept). | `--hereforever` `--brand` `--port` |
 | `knowz pg status` | Show the local Postgres cluster status for this profile. | `--hereforever` `--brand` `--port` |
-| `knowz pg up` | Provision a local Postgres + pgvector cluster (auto download/install/configure) and point this profile at it. | `--hereforever` `--brand` `--port` `--run-as` |
+| `knowz pg up` | Provision a local Postgres + pgvector cluster and point this profile at it. See `knowz pg up --help` for options. | `--hereforever` `--brand` `--port` `--run-as` |
 
 ### `platform` — Legacy commands for explicit contracted portable runtimes
 
@@ -912,7 +901,7 @@ Browse vault contents. Call list_topics and list_vault_contents.
 description = "Configure Knowz MCP server connection for Gemini CLI"
 prompt = """Read .agents/skills/knowz-setup/SKILL.md for full instructions.
 Configure the MCP server for Gemini CLI.
-Check enterprise.json first for custom endpoints. Then check KNOWZ_API_KEY env var and cross-platform configs.
+Check enterprise.json first for custom endpoints. Then check user-managed cross-platform configs (do not scrape ambient credential env vars).
 For Gemini — OAuth: gemini mcp add --transport http -s <scope> knowz {mcp_endpoint}
 For Gemini — API Key: write .gemini/settings.json with mcpServers.knowz entry using resolved endpoint.
 <ARGS/>"""

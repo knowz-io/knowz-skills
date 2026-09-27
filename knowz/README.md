@@ -48,17 +48,17 @@ The Knowz MCP server works with any AI model and any MCP-compatible agent. This 
 
 ## Quick Start
 
+**For Claude Code users** (via plugin marketplace):
 ```bash
-# New users
+/plugin marketplace add knowz-io/knowz-skills
+/plugin install knowz@knowz-skills
 /knowz register            # create account + configure MCP + set up vault
 # restart Claude Code
 /knowz status              # verify connection
+```
 
-# Existing users
-/knowz setup --oauth       # configure with OAuth (recommended)
-/knowz setup <api-key>     # or configure with an API key
-
-# Daily usage
+**For users with the CLI installed** (`npm i -g @knowzai/cli`):
+```bash
 /knowz ask "What's our convention for error handling?"
 /knowz save "We chose Redis over Memcached for pub/sub support"
 /knowz amend "Add a caveat to the auth pattern: SameSite=None requires Secure in production"
@@ -81,6 +81,14 @@ The Knowz MCP server works with any AI model and any MCP-compatible agent. This 
 | `/knowz flush` | Process pending captures queued while MCP was unavailable |
 
 ---
+
+## Installation
+
+The Knowz plugin for Claude Code is installed from the Claude marketplace. The underlying MCP server (`@knowzai/mcp`) is published to npm:
+
+```bash
+npx @knowzai/mcp
+```
 
 ## Skills
 

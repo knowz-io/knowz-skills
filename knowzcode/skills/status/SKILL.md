@@ -84,7 +84,6 @@ Check KnowzCode project status and report findings to the user.
    - A WorkGroup is **in flight** when its folder contains no `*-arc-completion-*.md` and no `*-workgroup-abandoned-*.md` shard; otherwise it is closed
    - Glob for `knowzcode/workgroups/*.md` — local session files are a second signal for an in-flight WorkGroup (gitignored, may be absent on a fresh clone)
    - Glob for `knowzcode/journal/*/*/*.md` and sort descending — filenames are UTC time-prefixed, so the newest shards are the recent history. Read the `summary:` frontmatter of the last few.
-   - Optional: `knowzcode/scripts/journal-index.sh` prints the same thing if installed. It is a convenience, not a requirement.
 
    Report:
    ```

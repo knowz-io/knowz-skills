@@ -406,7 +406,7 @@ Before building, research your approach:
 ### Getting Help
 
 When stuck, check these in order:
-1. **Review recent journal shards** - `ls knowzcode/journal/*/*/*.md | sort -r | head`, or run `knowzcode/scripts/journal-index.sh`
+1. **Review recent journal shards** - `ls knowzcode/journal/*/*/*.md | sort -r | head`
 2. **Check `knowzcode/specs/`** - Ensure dependencies and as-built state are correct
 3. **Verify architecture** - Missing connections cause confusion
 4. **Test environment commands** - Manual testing reveals broken commands

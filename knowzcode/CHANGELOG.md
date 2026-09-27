@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.23.1] - 2026-09-27
+
+### Changed
+
+- **Claude directory policy compliance**: Removed bundled multi-platform installer binaries (`bin/knowzcode.mjs`, `install.sh`, `install.ps1`) and helper scripts (`scripts/compliance-check.sh`, `scripts/compliance-check.ps1`, `scripts/journal-index.sh`). Claude Code users install via plugin marketplace (`/plugin marketplace add knowz-io/knowz-skills` + `/plugin install knowzcode@knowz-skills`). The multi-platform npm package remains available at `npx @knowzai/knowzcode` for users outside Claude Code.
+- Removed documentation references to bundled shell scripts. Journal inspection now uses shell commands (`ls knowzcode/journal/*/*/*.md | sort -r | head`) without requiring helper scripts. Enterprise compliance checking uses the agent audit (`/knowzcode:audit compliance`) instead of static scripts.
+- Added plugin icon to plugin.json, following Claude directory requirements.
+
 ## [0.23.0] - 2026-09-12
 
 ### Added
@@ -462,11 +470,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Gemini MCP config generation in CLI installer (`cmdInstall`) — interactive API key prompt for Gemini platform
 - Gemini MCP config cleanup in CLI uninstaller (`cmdUninstall`) — removes `mcpServers.knowz` from `.gemini/settings.json` while preserving other settings
 - Gemini MCP config preservation in CLI upgrader (`cmdUpgrade`) — user's API key and MCP config survive upgrades
-- Universal Smart Config Discovery algorithm — all `connect-mcp`, `register`, and `status` commands check `KNOWZ_API_KEY` env var, `mcp_config.md`, `knowzcode_vaults.md`, and cross-platform config files before prompting
-- `KNOWZ_API_KEY` environment variable support for automatic MCP authentication on any platform
+- Universal Smart Config Discovery algorithm — all `connect-mcp`, `register`, and `status` commands check user-provided MCP config (`mcp_config.md`, `knowzcode_vaults.md`, and cross-platform config files) before prompting
+- Optional user-provided API key via plugin/user configuration for MCP authentication (not forwarded from ambient machine environment by the Claude plugin)
 - `API Key (last 4)` field in `mcp_config.md` Connection Status for cross-platform key identity confirmation
 - Cross-Platform Config Discovery step in `/knowzcode:status` — reports MCP config presence across all 6 platforms
-- MCP Configuration sections in Cursor and Windsurf adapter templates with env var and config file guidance
+- MCP Configuration sections in Cursor and Windsurf adapter templates with config-file guidance
 - MCP Smart Config notes in Copilot adapter (Section D) for VS Code integration
 
 ### Changed
@@ -477,7 +485,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `kc-status` Gemini skill updated with Gemini-specific MCP checks (`.gemini/settings.json`, `gemini mcp list`, `/mcp`)
 - `/knowzcode:status` command now platform-aware — detects Claude Code, Gemini CLI, Copilot, and Codex for MCP config checks (was: hardcoded `claude mcp get knowz`)
 - "Restart Claude Code" references in status command generalized to "restart your AI coding assistant"
-- `/knowz setup` command now checks env var and cross-platform configs before prompting for API key (Step 1.5)
+- `/knowz setup` command now checks existing user configs before prompting for API key (Step 1.5)
 - `/knowz register` command now detects existing API keys and offers reuse before registration (Step 0)
 - `/knowzcode:setup` Step 7c-gemini-mcp now runs Smart Discovery before prompting for API key
 - `knowzcode_loop.md` Section 6 updated with cross-platform config documentation
