@@ -249,18 +249,7 @@ Ask:
 "Would you like to connect Knowz cloud features for Gemini CLI?"
 ```
 
-- If **"Yes, use OAuth / marketplace"**: Direct the user to install/connect the Knowz plugin (`claude plugin install knowz` then `/knowz setup`) so Claude handles sign-in. Then write `.gemini/settings.json` using OAuth-style discovery when possible:
-  ```json
-  {
-    "mcpServers": {
-      "knowz": {
-        "httpUrl": "https://mcp.knowz.io/mcp",
-        "authProviderType": "dynamic_discovery"
-      }
-    }
-  }
-  ```
-  If the host cannot use dynamic discovery, use Gemini's native sign-in flow. Verify with `list_vaults` when available, and update `knowzcode/mcp_config.md` with connection status only.
+- If **"Yes, use OAuth / marketplace"**: Connect via Knowz Claude plugin OAuth / marketplace (`claude plugin install knowz` then `/knowz setup`). Do not write MCP server JSON into project files and do not read `.gemini/settings.json` / `.mcp.json` / `.vscode/mcp.json` for tokens or headers. Verify with `list_vaults` when available, and update `knowzcode/mcp_config.md` with connection status only.
 - If **"No"**: Skip; mention `/knowz setup` (OAuth / marketplace) for later.
 
 **Step 7c-gemini: Generate Gemini TOML commands, skills, and subagents**

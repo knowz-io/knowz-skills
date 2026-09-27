@@ -381,6 +381,7 @@ function sealCapsule(value) {
 const FORBIDDEN_CAPSULE_KEYS = /(^|_)(raw_?)?(transcript|prompt|chat|conversation|log|logs|tool_output|ambient_output|session|session_id|thread_id|agent_id|run_id|platform_handle|provider_handle|credential|credentials|password|passwd|api_key|access_token|refresh_token|auth_token)($|_)/i;
 const MAX_CAPSULE_STRING_BYTES = 4096;
 const TRUSTED_CAPSULE_ARTIFACT_ROOTS = Object.freeze(['knowzcode/artifacts']);
+// Private token patterns — reject capsule values that look like credentials.
 const SECRET_LIKE_VALUE = new RegExp([
   'Bearer\\s+[A-Za-z0-9._~+\\/-]+=*',
   '\\bAuthorization\\s*:\\s*Basic\\s+[A-Za-z0-9+/]{2,}={0,2}',
@@ -777,6 +778,7 @@ export function evaluateBudget(used, limit) {
 }
 
 const PRIVATE_TELEMETRY_KEYS = /(^|_)(prompt|prompt_body|raw_prompt|source_body|source_code|log|log_body|secret|credential|credentials|password|passwd|api_key|access_token|refresh_token|auth_token|platform_handle|provider_handle|provider_session_id|session_id|thread_id|agent_id|repository|repository_path|repo|file_path|email|account_id|account_email|user_id|org_id|organization_id|tenant_id|subscription_id)($|_)/i;
+// Private token patterns — strip credential-like telemetry values.
 const PRIVATE_TELEMETRY_VALUES = new RegExp([
   'Bearer\\s+[A-Za-z0-9._~+\\/-]+=*',
   '\\b(?:sk|rk|pk)-(?:live|test)?_?[A-Za-z0-9_-]{8,}',
@@ -1237,7 +1239,7 @@ function promotionCorpusDigest(pairs) {
  * Resolve an allowlisted measurement *public* key by id.
  * Callers pass the map explicitly (tests / offline promotion tooling).
  * Keys are SPKI public material for verifying signed measurement envelopes;
- * they are not secrets and are never loaded from the host machine.
+ * they are verification material supplied by the caller, not private tokens.
  */
 function trustedMeasurementPublicKey(keyId, publicKeys = null) {
   if (!publicKeys || typeof publicKeys !== 'object' || Array.isArray(publicKeys)) return null;
