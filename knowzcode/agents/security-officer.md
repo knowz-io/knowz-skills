@@ -132,7 +132,7 @@ If `knowzcode/enterprise/compliance_manifest.md` exists and `compliance_enabled:
 - **enterprise-enforcer owns guideline-ID ownership and ARC-coverage scoring.** You retain ownership of: STRIDE-lite threat modeling, vulnerability detection, language-specific scanning, severity rating.
 - **Stage 0 handshake**: enterprise-enforcer DMs you the active `SEC-*` guideline IDs and their ARC criteria. Incorporate the requirement context into your STRIDE-lite model. Do NOT load `guidelines/security.md` yourself — enforcer has it loaded and will DM relevant excerpts on request.
 - **Stage 2 cross-reference**: when your vulnerability scan finds an issue at a location matching a known guideline requirement (from enforcer's Stage 0 handshake), add the guideline ID to your finding table's `Enterprise ID` column:
-  `| SEC-E-001 | CRITICAL | auth.ts:45 | JWT secret hardcoded | Move to env var | **SEC-AUTH-01** |`
+  `| SEC-E-001 | CRITICAL | auth.ts:45 | JWT secret hardcoded | Move to host secrets store (not plaintext files) | **SEC-AUTH-01** |`
 - Severity (CRITICAL/HIGH/MEDIUM/LOW) remains your call. Tier (blocking/advisory) is the enforcer's call. Both can appear on the same finding.
 - **Disagreement protocol**: any conflict (e.g., enforcer says ARC criterion is satisfied, you say the implementation is still vulnerable) is escalated to lead at gate with both POVs — do not negotiate silently.
 
@@ -171,7 +171,7 @@ Report findings to the lead using this structured format:
 
 | Finding ID | Severity | File:Line | Description | Recommendation |
 |------------|----------|-----------|-------------|----------------|
-| SEC-001 | CRITICAL | auth.ts:45 | JWT secret hardcoded | Move to env var |
+| SEC-001 | CRITICAL | auth.ts:45 | JWT secret hardcoded | Move to host secrets store (not plaintext files) |
 | SEC-002 | HIGH | api.ts:112 | SQL injection via string concat | Use parameterized query |
 | SEC-003 | MEDIUM | config.ts:8 | Missing CORS restriction | Add origin allowlist |
 

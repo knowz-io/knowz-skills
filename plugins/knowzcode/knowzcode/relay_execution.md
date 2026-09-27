@@ -425,7 +425,7 @@ Run only after the workflow is known to be Tier 3 and Gate #2 has approved the s
    }
    ```
 
-   `claude-mcp.json`: write an empty MCP config (no servers registered). Do not populate credentials or forward host auth into this file.
+   `claude-mcp.json`: write an empty MCP config (no servers registered). Leave MCP config empty; do not copy secrets into it.
 
 ---
 
