@@ -39,7 +39,7 @@ KnowzCode is a structured development methodology that provides:
 - Project is **already initialized** (knowzcode/ directory exists with content) — inform user, offer merge/overwrite
 - User is asking **about KnowzCode features**, not requesting setup → answer directly
 - User wants to **start a feature** → use `/knowzcode:work` (which checks initialization itself)
-- User wants to **connect MCP** → use `/knowz setup` (OAuth / marketplace; or paste into plugin `userConfig.api_token`)
+- User wants to **connect MCP** → connect through Claude OAuth / marketplace (`claude plugin install knowz` then `/knowz setup`)
 
 ## Steps to Execute
 
@@ -242,15 +242,14 @@ When Codex is selected, generate skill files in addition to `AGENTS.md`:
 
 **Step 7c-gemini-mcp: Offer MCP configuration for Gemini CLI**
 
-After generating GEMINI.md + commands + skills + subagents, offer cloud/MCP connection **without reading credentials from the local machine**. Never open `.mcp.json`, `.vscode/mcp.json`, shell secrets stores, or other host files looking for tokens. Prefer Claude OAuth / marketplace connect, or a value the user pastes into this plugin's sensitive `userConfig.api_token` (Claude secure storage).
+After generating GEMINI.md + commands + skills + subagents, offer cloud/MCP connection through Claude OAuth / marketplace (`claude plugin install knowz` then `/knowz setup`).
 
 Ask:
 ```
 "Would you like to connect Knowz cloud features for Gemini CLI?"
 ```
 
-- If **"Yes, use OAuth / marketplace"**: Direct the user to install/connect the Knowz plugin (`claude plugin install knowz` then `/knowz setup`) so Claude handles sign-in. Do not scrape or copy tokens.
-- If **"Yes, I will paste a token"**: Ask them to paste once into this chat **or** into plugin Settings → `api_token` (sensitive). Then write `.gemini/settings.json` using OAuth-style discovery when possible:
+- If **"Yes, use OAuth / marketplace"**: Direct the user to install/connect the Knowz plugin (`claude plugin install knowz` then `/knowz setup`) so Claude handles sign-in. Then write `.gemini/settings.json` using OAuth-style discovery when possible:
   ```json
   {
     "mcpServers": {
@@ -261,9 +260,8 @@ Ask:
     }
   }
   ```
-  Only if the host cannot use dynamic discovery, ask the user whether to store the pasted token in Gemini's own secure prompt/input mechanism — never write a raw token into a committed project file, and never read one back from disk later.
-  Verify with `list_vaults` when available, and update `knowzcode/mcp_config.md` with connection status only (no secret material, no last-4 fingerprints from machine files).
-- If **"No"**: Skip; mention `/knowz setup` (OAuth) or plugin `userConfig.api_token` for later.
+  If the host cannot use dynamic discovery, use Gemini's native sign-in flow. Verify with `list_vaults` when available, and update `knowzcode/mcp_config.md` with connection status only.
+- If **"No"**: Skip; mention `/knowz setup` (OAuth / marketplace) for later.
 
 **Step 7c-gemini: Generate Gemini TOML commands, skills, and subagents**
 
@@ -411,7 +409,7 @@ This works correctly — no action needed.
 
 Inform user about enhanced features:
 ```
-Optional: For knowledge vault features: `claude plugin install knowz` then `/knowz setup` (OAuth / marketplace connect; do not paste tokens into project files)
+Optional: For knowledge vault features, connect through Claude OAuth / marketplace: `claude plugin install knowz` then `/knowz setup`
 ```
 
 ### 12. Report success
@@ -459,7 +457,7 @@ Templates included: `knowzcode_project.md`, `knowzcode_tracker.md` (archive stub
 
 - `/knowzcode:work` — Start first feature after initialization
 - `/knowzcode:explore` — Research the codebase after initialization
-- `/knowz setup` — Connect MCP and vaults via OAuth / marketplace (or paste into sensitive `userConfig`)
+- `/knowz setup` — Connect MCP and vaults via Claude OAuth / marketplace
 - `/knowzcode:status` — Verify setup
 
 ## Error Handling
