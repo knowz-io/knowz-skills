@@ -1,6 +1,6 @@
 {
   "name": "@knowzai/knowzcode",
-  "version": "0.23.4",
+  "version": "0.23.5",
   "description": "Platform-agnostic AI development methodology with TDD, quality gates, and structured workflows",
   "type": "module",
   "files": [

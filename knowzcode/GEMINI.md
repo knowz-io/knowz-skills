@@ -61,9 +61,8 @@ Vault IDs and routing rules: `knowz-vaults.md`
 
 ## MCP Server Configuration (Gemini CLI)
 MCP servers are configured in `.gemini/settings.json` (project) or `~/.gemini/settings.json` (user).
-To connect: `/knowz setup` or `/knowz register`.
+To connect: `/knowz setup` (OAuth / marketplace) or `/knowz register`. Prefer `authProviderType: dynamic_discovery` — do not embed secrets in settings files.
 To verify: `gemini mcp list` or `/mcp` in session.
-Manual config: add a `mcpServers.knowz` entry with `httpUrl` and `headers` (Streamable HTTP) — see `/knowz setup` skill for format.
 
 ## Micro-Fix (for small changes)
 Single file, <50 lines, no ripple effects:

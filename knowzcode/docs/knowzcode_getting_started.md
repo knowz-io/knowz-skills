@@ -472,18 +472,18 @@ KnowzCode works perfectly without cloud features — agents use traditional file
 
 ### Setup
 
+Prefer Claude OAuth / marketplace connect. Do **not** put tokens into project files or paste them on the command line.
+
 ```bash
-# One-time setup per project
-/knowz setup <your-api-key>
+# Install the Knowz companion plugin, then connect with OAuth / marketplace
+claude plugin install knowz
+/knowz setup
 
-# Optional: Custom endpoint (self-hosted)
-/knowz setup <your-api-key> --endpoint https://your-domain.com/mcp
-
-# Restart Claude Code to activate, then verify
+# Confirm KnowzCode can see the connection
 /knowzcode:status
 ```
 
-Get your API key at [app.knowz.io/settings/api-keys](https://app.knowz.io/settings/api-keys).
+Optional: paste a Knowz token once into this plugin's Settings → **Knowz API token** (`userConfig.api_token`, stored in Claude secure storage). Never commit tokens, never instruct the agent to scrape `.mcp.json` / host secret stores, and never pass a token as a slash-command argument.
 
 ### How Agents Use MCP
 
@@ -498,17 +498,11 @@ Once connected, KnowzCode agents automatically use MCP tools:
 
 ### Configuration Scopes
 
-Choose how to configure the MCP server:
+Choose how to configure the MCP server (via `/knowz setup` OAuth flow or Claude plugin Settings — not by embedding secrets in the repo):
 
 - **local** (default): Only this project, private to you
-- **project**: Shared with team via `.mcp.json` (committed to git)
+- **project**: Shared team MCP endpoint config (never commit secret material)
 - **user**: Available across all your projects
-
-```bash
-/knowz setup <api-key>                  # Local scope (default)
-/knowz setup <api-key> --scope project  # Project-wide (team access)
-/knowz setup <api-key> --scope user     # Global (all your projects)
-```
 
 ### Graceful Degradation
 
