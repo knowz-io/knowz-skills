@@ -282,9 +282,8 @@ The direct officer-to-closer handoff above is coordinated-team-only. In named-ag
 2b. **Enterprise-enforcer handoff** (if `ENTERPRISE_ENFORCER_ENABLED`): once closer is alive and has claimed its task, DM enterprise-enforcer: `"Closer ready at task #{closer-task-id}. Send ComplianceSummary."` Enforcer DMs closer with `"ComplianceSummary: {payload — Compliance Report, ARC coverage, finding table}"`. Closer ACKs and queues the writeback to `compliance_status.md` for inclusion in its final commit.
 2c. **Shut down Group C/D officers**: security-officer, test-advisor, frontend-designer (if active), enterprise-enforcer (if active). Any order — they're all read-only and have delivered their final reports.
 3. Closer tasks (can be parallel subtasks):
-   - Update all specs to FINAL as-built
+   - Update all specs to FINAL as-built; record every changed, dropped, or added `VERIFY:` line (old and new wording, user decision) for the shard, and optionally name each criterion's proving test
    - Write the ARC-completion journal shard; do not mutate `knowzcode_tracker.md` (frozen archive)
-   - Write ARC-Completion log entry
    - Review architecture docs for discrepancies
    - Schedule REFACTOR tasks for tech debt
    - **If enterprise-enforcer was active**: append the compliance audit summary received by Team DM or supplied in the named-agent capsule to `knowzcode/enterprise/compliance_status.md` review history

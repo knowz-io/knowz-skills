@@ -18,7 +18,7 @@ This is a **READ-ONLY** quality gate to audit the completeness of the implementa
 
 **CRITICAL RULE: You MUST NOT modify any files. This is a verification step, not a correction step.**
 
-**Reference:** Your actions are governed by `knowzcode_loop.md`, executing the audit defined in **Step 6B**.
+**Reference:** Your actions are governed by `knowzcode_loop.md`, executing the audit defined in **Section 3.4**.
 
 ---
 
@@ -32,8 +32,9 @@ This is a **READ-ONLY** quality gate to audit the completeness of the implementa
 #### Phase 1: Specification-to-Code Audit
 1.  **Load Specs:** For each `NodeID` in your scope, load its approved specification from `specs/`.
 2.  **Verify Spec-to-Code:** For each spec, systematically verify that every requirement, function, and error handling case listed in the spec has been implemented in the code.
-3.  **Verify Code-to-Spec:** Check for any "orphan" code—features or functions that were implemented but are not described in any specification.
-4.  **Calculate Completion:** Based on your findings, calculate an objective, quantitative **completion percentage**. (e.g., "8 of 10 requirements implemented = 80% complete").
+3.  **Verify Named Tests:** Where a `VERIFY:` line carries a ` [test: <path>::<test name>]` suffix, confirm the named test exists, exercises that criterion, and passes. A missing or unrelated named test is a gap.
+4.  **Verify Code-to-Spec:** Check for any "orphan" code—features or functions that were implemented but are not described in any specification.
+5.  **Calculate Completion:** Based on your findings, calculate an objective, quantitative **completion percentage**. (e.g., "8 of 10 requirements implemented = 80% complete").
 
 #### Phase 2: Synthesize Findings & Report
 *   Compile a single, comprehensive audit report.
@@ -64,9 +65,9 @@ Your report **must** include the following sections:
 
 ### Orchestrator Decision Points
 Based on your report, the Orchestrator will choose one of the following paths:
-*   **(A) Complete Gaps:** Return to implementation (Step 5) to address the identified gaps.
+*   **(A) Complete Gaps:** Return to implementation (Phase 2A) to address the identified gaps.
 *   **(B) Accept & Proceed:** Accept the current implementation as-is and proceed to Loop 3 for finalization.
-*   **(C) Modify Specs:** Update the specifications to match the "as-built" code, formally accepting the deviations.
+*   **(C) Modify Specs:** Update the specifications to match the "as-built" code, formally accepting the deviations. A VERIFY criterion is never dropped, weakened, or substituted to pass without a recorded user decision giving the old and new wording. List each such `VERIFY:` change in the report so the decision can be recorded.
 *   **(D) Cancel:** Cancel the WorkGroupID and potentially revert the changes.
 
 ---

@@ -42,7 +42,7 @@ Follow the phases in `knowzcode_loop.md` for all feature work:
 3. **Phase 2A: Implementation** — Strict TDD (Red-Green-Refactor). No production code without a failing test.
    Stage 2 dispatches builders per ready NodeID/microtask with assigned acceptance criteria; do not implement the whole Change Set in one pass.
 4. **Phase 2B: Completeness Audit** — Independent READ-ONLY audit. PAUSE for user decision on gaps.
-5. **Phase 3: Finalization** — Update specs to as-built, update tracker, log entry, final commit.
+5. **Phase 3: Finalization** — Update specs to as-built, write one immutable ARC-completion journal shard, final commit.
 
 ## Quality Gates
 Never skip phases. PAUSE for user approval at each gate:
@@ -192,7 +192,7 @@ Use the matching KnowzCode skill for feature work; do not preload every framewor
 - **STOP**: Present audit results for user decision
 
 ### Phase 3: Finalization
-- Update specs to "As-Built" status
+- Update specs to "As-Built" status. Record every changed, dropped, or added `VERIFY:` line in the ARC-completion shard with old and new wording. A VERIFY criterion is never dropped, weakened, or substituted to pass without a recorded user decision giving the old and new wording.
 - Check architecture doc for drift
 - Create one immutable ARC-completion shard at `knowzcode/journal/YYYY-MM/<WorkGroupID>/YYYYMMDDTHHMMSSZ-arc-completion-<shortid>.md` with required frontmatter (`wgid`, `type`, `timestamp`, `agent`, `nodeids`, `knowz_sync`, `summary`)
 - Never prepend `knowzcode/knowzcode_log.md` or write status rows to `knowzcode/knowzcode_tracker.md` — both are frozen archives
@@ -286,12 +286,12 @@ when the relay contract below resolves an external target.
 8. Phase 1A: propose a Change Set with affected files, NodeIDs, risks, and enterprise guideline mapping. Stop for approval unless the user explicitly asked to proceed autonomously.
 9. Phase 1B: draft or update specs in `knowzcode/specs/` with clear `VERIFY:` criteria, including applicable enterprise guideline criteria with source IDs or KnowledgeIds. Stop for approval.
 10. Phase 2A:
-    - With no resolved relay: implement with strict TDD. Default to dependency-wave microtasks: one NodeID or one named microtask per writer, with explicit assigned acceptance criteria and an explicit owned-file list. When parallel work is useful, detect the native capabilities callable in the active runtime and map them to the semantic operations `spawn`, `follow up`, `message`, `wait`, `interrupt`, `inspect`, and `release`; current runtime examples can include `spawn_agent`, `followup_task`, `send_message`, `wait_agent`, `interrupt_agent`, and `list_agents`. Prefer a compatible warm-agent follow-up before spawning. Choose `local`, `resume`, `inherit-full`, `inherit-recent`, or `fresh-capsule` per `knowzcode/codex_execution.md`; unavailable modes fall back to a capsule or local work. Give each writer an explicit file or module ownership boundary. Never let two writers edit the same file. Do not dispatch broad bundles such as `N3+N4` unless they are tiny, independent, and share one bounded owned-file set.
+    - With no resolved relay: implement with strict TDD. Keep the failing run for each new test as RED evidence in the completion report; writers do not commit, so the test-first check is that new tests fail against the Gate #2 pre-implementation commit, not commit order. Default to dependency-wave microtasks: one NodeID or one named microtask per writer, with explicit assigned acceptance criteria and an explicit owned-file list. When parallel work is useful, detect the native capabilities callable in the active runtime and map them to the semantic operations `spawn`, `follow up`, `message`, `wait`, `interrupt`, `inspect`, and `release`; current runtime examples can include `spawn_agent`, `followup_task`, `send_message`, `wait_agent`, `interrupt_agent`, and `list_agents`. Prefer a compatible warm-agent follow-up before spawning. Choose `local`, `resume`, `inherit-full`, `inherit-recent`, or `fresh-capsule` per `knowzcode/codex_execution.md`; unavailable modes fall back to a capsule or local work. Give each writer an explicit file or module ownership boundary. Never let two writers edit the same file. Do not dispatch broad bundles such as `N3+N4` unless they are tiny, independent, and share one bounded owned-file set.
     - With `RELAY_TARGET=claude`: follow `references/relay-execution.md`. Claude performs Phase 2A and bounded review-fix legs; Codex owns preflight, state, process polling, checkpoints, review, gates, and finalization. Do not also run native writers against the same files.
 11. Keep inter-agent communication structured and resolve an output policy per the Spawned-Agent Contract: bounded `ephemeral` results for tiny read-only side checks, `durable` handoffs for material/resumable/writer work, and `artifact` pointers plus bounded deltas for authorized large logs. The coordinator consolidates authoritative shared state into the WorkGroup.
 12. Phase 2B: perform a read-only audit against the approved specs, verification criteria, and active enterprise guidelines. The first independent reviewer must use a fresh reviewer-owned lineage and MUST NOT inherit or resume builder reasoning. Split large audits by disjoint file areas only if the review can stay read-only. **Cap the audit -> fix loop at 3 iterations.** Route each gap back to the compatible original builder before spawning a replacement, and resume the same compatible reviewer for its bounded re-audit. If the audit still surfaces failures after the 3rd fix attempt, stop and surface the residual issues to the user with a recommended downscope or spec revision; do not loop indefinitely. If enterprise vaults are configured and `push_audit_results` is true, classify the audit delta with `vault-delta`; persist only an `amend`, `update`, or `flush`, and otherwise retain `batch` until final consolidation. If false, record the skip reason. For relay work, send gaps through the bounded target fix rounds first, then transition visibly to Codex `HOST_TAKEOVER` if gaps remain.
-13. Before Phase 3, if `require_signoff_for_finalization` is true, block finalization while unresolved `[COMPLIANCE-BLOCK]` / `[COMPLIANCE-BLOCK-SPEC]` findings remain or while active guideline sources have not been audited. This is a safety exception even in autonomous mode.
-14. Phase 3: update specs to as-built, then create one immutable shard at `knowzcode/journal/YYYY-MM/<WorkGroupID>/YYYYMMDDTHHMMSSZ-arc-completion-<shortid>.md` with required frontmatter (`wgid`, `type`, `timestamp`, `agent`, `nodeids`, `knowz_sync`, `summary`). Never prepend `knowzcode/knowzcode_log.md` and never write status rows to `knowzcode/knowzcode_tracker.md` — both are frozen archives. Append compliance status when guidelines were active, and finalize the work. If enterprise vaults are configured and `push_completion_records` is true, include the completion record in the final `vault-delta` classification; if false, record the skip reason.
+13. A VERIFY criterion is never dropped, weakened, or substituted to pass without a recorded user decision giving the old and new wording. This is a safety exception even in autonomous mode: present the old and proposed wording, wait for the user, and record the decision in the WorkGroup file. Then, before Phase 3, if `require_signoff_for_finalization` is true, block finalization while unresolved `[COMPLIANCE-BLOCK]` / `[COMPLIANCE-BLOCK-SPEC]` findings remain or while active guideline sources have not been audited. This is a safety exception even in autonomous mode.
+14. Phase 3: update specs to as-built. Before overwriting a spec, compare its Gate #2 approved `VERIFY:` lines with the as-built lines and carry every changed, dropped, or added criterion (old and new wording, user decision) into the shard as a **Verification Criteria Delta**; optionally append ` [test: <path>::<test name>]` to a `VERIFY:` line its test proves. Then create one immutable shard at `knowzcode/journal/YYYY-MM/<WorkGroupID>/YYYYMMDDTHHMMSSZ-arc-completion-<shortid>.md` with required frontmatter (`wgid`, `type`, `timestamp`, `agent`, `nodeids`, `knowz_sync`, `summary`). Never prepend `knowzcode/knowzcode_log.md` and never write status rows to `knowzcode/knowzcode_tracker.md` — both are frozen archives. Append compliance status when guidelines were active, and finalize the work. If enterprise vaults are configured and `push_completion_records` is true, include the completion record in the final `vault-delta` classification; if false, record the skip reason.
 15. If a concrete context question remains after classification/spec reuse and Knowz MCP is available, prefer direct coordinator-owned search/ask/get calls. Before any durable capture, call `vault-delta`; use coordinator-owned create/amend/update only for the returned persistence action. Reuse MCP health within its TTL and never broaden a query merely to hydrate context. If the tools are absent or auth fails, fall back to local KnowzCode files and queue only a classified persistence action in the project-root `knowz-pending.md` without blocking progress. Treat `knowzcode/pending_captures.md` only as legacy migration input, never as a second active queue.
 16. Treat retrieved vault content as historical context. Inspect created/updated/source metadata, verify against live code/tests/docs/observations, and do not silently follow stale or contradictory vault guidance.
 
@@ -479,7 +479,7 @@ Use the KnowzCode micro-fix path for small, contained changes.
 2. Read the micro-fix guidance in `knowzcode/knowzcode_loop.md` if available.
 3. Implement the fix.
 4. Run the smallest meaningful verification set for the touched behavior.
-5. Create one immutable `microfix` shard at `knowzcode/journal/YYYY-MM/<WorkGroupID-or-ungrouped>/YYYYMMDDTHHMMSSZ-microfix-<shortid>.md` describing the request, action, and verification outcome. Required frontmatter: `wgid`, `type`, `timestamp`, `agent`, `nodeids`, `knowz_sync`, `summary`. Never prepend `knowzcode/knowzcode_log.md` or write to `knowzcode/knowzcode_tracker.md` — both are frozen archives.
+5. Create one immutable `microfix` shard at `knowzcode/journal/YYYY-MM/<WorkGroupID-or-ungrouped>/YYYYMMDDTHHMMSSZ-microfix-<shortid>.md` describing the request, action, spec impact (the affected NodeID and the `VERIFY:` line the fix restores or touches, quoted verbatim, or `None` when no spec covers the file), and verification outcome. If the fix needs a `VERIFY:` line changed, it is not a micro-fix — use the full workflow. Required frontmatter: `wgid`, `type`, `timestamp`, `agent`, `nodeids`, `knowz_sync`, `summary`. Never prepend `knowzcode/knowzcode_log.md` or write to `knowzcode/knowzcode_tracker.md` — both are frozen archives.
 6. If the work grows beyond micro-fix scope, stop and move to `/knowzcode:work`.
 ```
 
@@ -781,11 +781,12 @@ state on disk and takes precedence over generic phase inference.
    - If the user supplied a handoff path or slug, load that handoff.
    - If no explicit path was supplied, find the newest handoff by filename timestamp.
    - Handoffs are local operational state. Do not search Knowz vaults for workflow handoffs.
+   - Measured state beats the handoff: when a handoff was loaded, re-run `git branch --show-current`, `git rev-parse --short HEAD`, and `git status --short`, and compare them with its `**Branch:**`, `**Commit:**`, and `## Dirty Files`. Report each mismatch in one line and trust the live result; re-check handoff claims that depend on a stale value before acting on them. Never switch branches, reset, stash, or discard changes to make the repository match the handoff.
 2. Derive active work from `knowzcode/journal/*/*/` (a folder with no `arc-completion` or `workgroup-abandoned` shard is in flight), cross-checked against `knowzcode/workgroups/*.md`. Do not rely on `knowzcode_tracker.md` `[WIP]` rows; it is a frozen archive.
 3. If multiple active WorkGroups exist, ask the user which one to resume unless the selected handoff clearly names a WorkGroup.
 4. Read the selected WorkGroup file and check for
    `knowzcode/workgroups/{wgid}-relay/state.md` before choosing a generic phase action.
-5. If a handoff was loaded, parse `## Goal`, `## Current State`, `## Next Step`, `## References`, and `## Durable Learning Candidates`. Use the handoff as the freshest local state. Do not run `cmd:` references automatically.
+5. If a handoff was loaded, parse `## Goal`, `## Current State`, `## Next Step`, `## References`, and `## Durable Learning Candidates`. Use the handoff as the freshest record of intent; where it disagrees with live git state, the live state wins. Do not run `cmd:` references automatically.
 6. If no relay state exists, resume at the next ordinary step:
    - unfinished Change Set
    - spec drafting or approval
@@ -2038,7 +2039,7 @@ Run only after the workflow is known to be Tier 3 and Gate #2 has approved the s
 
 1. Run live `RELAY_DETECT(RELAY_TARGET)`. Apply named-vs-automatic fallback rules; authentication always pauses.
 2. Refuse the default branch. Create `kc-relay/{wgid}` from current HEAD or reuse an approved non-default feature branch.
-3. Require a clean tree without mutating unrelated state. The Gate #2 checkpoint stages only the active WorkGroup, tracker, approved specs, and other explicit reviewed paths. If any other tracked or untracked change remains, do not commit, stash, revert, clean, or absorb it into the relay checkpoint; stop relay preflight, report the exact paths, and use a separately approved clean worktree or wait for the user to resolve them. Record HEAD as C0 only after the scoped baseline is clean.
+3. Require a clean tree without mutating unrelated state. The Gate #2 checkpoint stages only the active WorkGroup, new journal shards, approved specs, and other explicit reviewed paths. If any other tracked or untracked change remains, do not commit, stash, revert, clean, or absorb it into the relay checkpoint; stop relay preflight, report the exact paths, and use a separately approved clean worktree or wait for the user to resolve them. Record HEAD as C0 only after the scoped baseline is clean.
 4. Record the exact absolute cwd. All initial/resume subprocesses must use it.
 5. Write schema-2 state and the WorkGroup snapshot before launch.
 6. For a Claude target, write:
@@ -2527,7 +2528,7 @@ Do not save the handoff itself to Knowz. Only list durable learning candidates f
 # .gemini/commands/knowzcode/continue.toml
 description = "Resume interrupted KnowzCode workflow"
 prompt = """Read .gemini/skills/knowzcode-continue/SKILL.md for full instructions.
-Check knowzcode/handoffs/ for a requested or latest local handoff.
+Check knowzcode/handoffs/ for a requested or latest local handoff. Measured state beats the handoff: re-run git branch --show-current, git rev-parse --short HEAD, and git status --short, report any mismatch with the handoff, and trust the live result.
 Find active WorkGroups in knowzcode/journal/*/* (folders with no arc-completion or workgroup-abandoned shard).
 Read the selected WorkGroup file from knowzcode/workgroups/.
 Determine the current phase from the Phase History table.
@@ -2634,7 +2635,7 @@ Read these files before starting any feature work (use @import syntax for direct
 - STOP for user decision
 
 ### Phase 3: Finalization
-- Update specs to As-Built, update tracker, write log entry
+- Update specs to As-Built, write one immutable ARC-completion journal shard
 - Check architecture doc for drift
 - Final commit
 
@@ -2765,7 +2766,7 @@ Read `knowzcode/knowzcode_loop.md` section on Micro-Fix.
 
 1. Implement the fix
 2. Run targeted tests for the affected code
-3. Create one immutable `microfix` shard at `knowzcode/journal/YYYY-MM/<WorkGroupID-or-ungrouped>/YYYYMMDDTHHMMSSZ-microfix-<shortid>.md`; never prepend `knowzcode/knowzcode_log.md` (frozen archive)
+3. Create one immutable `microfix` shard at `knowzcode/journal/YYYY-MM/<WorkGroupID-or-ungrouped>/YYYYMMDDTHHMMSSZ-microfix-<shortid>.md`; never prepend `knowzcode/knowzcode_log.md` (frozen archive). Name the affected NodeID and quote the `VERIFY:` line the fix restores or touches (`None` when no spec covers the file).
 4. Commit with `fix: {description}` message
 ```
 
@@ -2885,7 +2886,7 @@ Check `knowzcode/handoffs/*.md` for a requested or latest local handoff, then de
 - None active: suggest `/knowzcode:work`
 
 ### Step 2: Determine Current Phase
-Read the WorkGroup file at `knowzcode/workgroups/{WorkGroupID}.md`. If a handoff was loaded, use its Goal, Current State, Next Step, References, and Durable Learning Candidates as the freshest local state.
+Read the WorkGroup file at `knowzcode/workgroups/{WorkGroupID}.md`. If a handoff was loaded, use its Goal, Current State, Next Step, References, and Durable Learning Candidates as the freshest local state. Measured state beats the handoff: re-run `git branch --show-current`, `git rev-parse --short HEAD`, and `git status --short`, report any mismatch with the handoff's Branch, Commit, and Dirty Files, and trust the live result.
 Check the Phase History table to determine current state.
 
 ### Step 3: Resume
@@ -3326,7 +3327,7 @@ Perform Phase 2B: Completeness Audit. Conduct a READ-ONLY audit comparing implem
 ```markdown
 ---
 name: knowzcode-closer
-description: "KnowzCode: Finalization — specs, tracker, log, architecture, learning capture"
+description: "KnowzCode: Finalization — specs, journal shard, architecture, learning capture"
 kind: local
 tools:
   - read_file
@@ -3347,7 +3348,7 @@ Perform Phase 3 finalization and return one consolidated `FinalCaptureDelta` plu
 ## Instructions
 
 1. Read `knowzcode/knowzcode_loop.md` for the complete Phase 3 methodology
-2. Update specs in `knowzcode/specs/` to "As-Built" status
+2. Update specs in `knowzcode/specs/` to "As-Built" status. Record every changed, dropped, or added `VERIFY:` line in the ARC-completion shard with old and new wording. A VERIFY criterion is never dropped, weakened, or substituted to pass without a recorded user decision giving the old and new wording.
 3. Create one immutable ARC-completion shard at `knowzcode/journal/YYYY-MM/<WorkGroupID>/YYYYMMDDTHHMMSSZ-arc-completion-<shortid>.md` with required frontmatter; never prepend `knowzcode/knowzcode_log.md` or write status rows to `knowzcode/knowzcode_tracker.md` (both frozen archives)
 4. Review `knowzcode/knowzcode_architecture.md` for drift — update if needed
 6. Return one consolidated `FinalCaptureDelta` to the lead; do not call vault tools or queue an unclassified capture
@@ -3449,7 +3450,7 @@ Execute targeted, single-file fixes using the micro-fix protocol. Scope: single 
 1. Read `knowzcode/knowzcode_loop.md` section on Micro-Fix
 2. Implement the fix in the target file
 3. Run targeted tests for the affected code
-4. Create one immutable `microfix` shard at `knowzcode/journal/YYYY-MM/<WorkGroupID-or-ungrouped>/YYYYMMDDTHHMMSSZ-microfix-<shortid>.md`; never prepend `knowzcode/knowzcode_log.md` (frozen archive)
+4. Create one immutable `microfix` shard at `knowzcode/journal/YYYY-MM/<WorkGroupID-or-ungrouped>/YYYYMMDDTHHMMSSZ-microfix-<shortid>.md`; never prepend `knowzcode/knowzcode_log.md` (frozen archive). Name the affected NodeID and quote the `VERIFY:` line the fix restores or touches (`None` when no spec covers the file).
 5. If the fix exceeds scope (multi-file, >50 lines, architectural impact), escalate to `/knowzcode:work`
 ```
 
@@ -3665,8 +3666,8 @@ Before any feature work, read:
 - PAUSE for user decision
 
 ### Phase 3: Finalization
-- Update specs to As-Built status
-- Update tracker and log
+- Update specs to As-Built status. Record every changed, dropped, or added `VERIFY:` line in the ARC-completion shard with old and new wording. A VERIFY criterion is never dropped, weakened, or substituted to pass without a recorded user decision giving the old and new wording.
+- Write one immutable ARC-completion journal shard
 - Check architecture for drift
 - Final commit
 
@@ -3733,7 +3734,7 @@ Use the prompt files in `.github/prompts/` to invoke each phase:
 | 1B: Specification | `#prompt:knowzcode-specify` | Draft specs from approved Change Set |
 | 2A: Implementation | `#prompt:knowzcode-implement` | TDD implementation with verification loop |
 | 2B: Audit | `#prompt:knowzcode-audit` | READ-ONLY audit against specs |
-| 3: Finalization | `#prompt:knowzcode-finalize` | Update specs, tracker, log, commit |
+| 3: Finalization | `#prompt:knowzcode-finalize` | Update specs, write the ARC-completion journal shard, commit |
 | Quick fix | `#prompt:knowzcode-fix` | Micro-fix for small, scoped changes |
 | Research | `#prompt:knowzcode-explore` | Investigate before implementing |
 | Resume | `#prompt:knowzcode-continue` | Resume or advance to next phase |
@@ -3923,7 +3924,7 @@ You are drafting specifications for the approved Change Set.
 - #file:knowzcode/journal/README.md
 
 Find the active WorkGroup: a `knowzcode/journal/*/*/` folder with no `arc-completion` or `workgroup-abandoned` shard.
-If no `[WIP]` entries found, scan `knowzcode/workgroups/` for the most recent draft WorkGroup file.
+If no in-flight journal folder is found, scan `knowzcode/workgroups/` for the most recent draft WorkGroup file.
 Then read the WorkGroup file at `knowzcode/workgroups/{WorkGroupID}.md` for the approved Change Set.
 
 ## Instructions
@@ -4070,7 +4071,7 @@ Present audit results with completion percentage, gap list, and risk assessment.
 ```markdown
 ---
 agent: "agent"
-description: "Finalize WorkGroup — update specs, tracker, log, commit (Phase 3)"
+description: "Finalize WorkGroup — update specs, write the ARC-completion journal shard, commit (Phase 3)"
 ---
 
 <!-- Generated by KnowzCode vX.Y.Z /knowzcode:setup -->
@@ -4092,7 +4093,7 @@ Then read the WorkGroup file at `knowzcode/workgroups/{WorkGroupID}.md`.
 
 Follow Phase 3 from `knowzcode/knowzcode_loop.md`:
 
-1. **Finalize Specs**: Update each `knowzcode/specs/{NodeID}.md` to as-built state (Status: As-Built)
+1. **Finalize Specs**: Update each `knowzcode/specs/{NodeID}.md` to as-built state (Status: As-Built). Record every changed, dropped, or added `VERIFY:` line in the ARC-completion shard with old and new wording. A VERIFY criterion is never dropped, weakened, or substituted to pass without a recorded user decision giving the old and new wording.
 2. **Architecture Check**: Compare `knowzcode/knowzcode_architecture.md` against the Change Set. Fix simple discrepancies directly; document complex ones for user review
 3. **ARC-Completion Shard**: Create one immutable shard at `knowzcode/journal/YYYY-MM/<WorkGroupID>/YYYYMMDDTHHMMSSZ-arc-completion-<shortid>.md` carrying WorkGroupID, NodeIDs, verification summary, architectural learnings, and ripple effects. Never prepend `knowzcode/knowzcode_log.md` (frozen archive)
 4. **Schedule Debt**: Do not mutate `knowzcode/knowzcode_tracker.md` (frozen archive). Record `REFACTOR_` tasks for significant tech debt in each spec's `Debt & Gaps` section
@@ -4140,6 +4141,7 @@ Follow the Micro-Fix Protocol from `knowzcode/knowzcode_loop.md` Section 4:
 2. **Test** — run targeted tests for the affected code
 3. **Record** — create one immutable shard at `knowzcode/journal/YYYY-MM/<WorkGroupID-or-ungrouped>/YYYYMMDDTHHMMSSZ-microfix-<shortid>.md`; never prepend `knowzcode/knowzcode_log.md` (frozen archive):
    - Frontmatter: `wgid`, `type: microfix`, `timestamp`, `agent`, `nodeids`, `knowz_sync: pending`, `summary`
+   - Body: name the affected NodeID and quote the `VERIFY:` line the fix restores or touches (`None` when no spec covers the file)
    - Body: user request, action taken, verification outcome
 4. **Commit** with `fix: {description}` message
 ```
@@ -4329,7 +4331,7 @@ Follow `knowzcode/knowzcode_loop.md` for all feature development.
 - PAUSE for user decision
 
 ### Phase 3: Finalization
-- Update specs to As-Built, tracker, log, architecture
+- Update specs to As-Built, write one immutable ARC-completion journal shard, check architecture. Record every changed, dropped, or added `VERIFY:` line in the ARC-completion shard with old and new wording. A VERIFY criterion is never dropped, weakened, or substituted to pass without a recorded user decision giving the old and new wording.
 - Final commit
 
 ## Enforcement Rules

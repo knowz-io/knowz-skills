@@ -1,6 +1,6 @@
 # KnowzCode: Refactor Node
 
-**Target NodeID:** [The NodeID to be refactored, e.g., `API_UserSearch`]
+**Target NodeID:** [The NodeID to be refactored, e.g., `UserSearch`]
 **Refactoring Goal:** [The specific goal, e.g., "Improve performance by optimizing database queries"]
 
 > **Automation Path:** Begin with `/knowzcode-step phase=1A` targeting the `REFACTOR_<NodeID>` item in the node's spec `Debt & Gaps` section to scope the Change Set before executing this prompt.
@@ -43,7 +43,7 @@ Before proceeding, confirm the following:
 
 #### Phase 3: Documentation & Final Commit
 1.  **Update Specification (If Necessary):**
-    *   If the internal "Core Logic" was significantly changed (e.g., a different algorithm is now used), update that section of the spec to reflect the new, cleaner approach.
+    *   If the internal approach was significantly changed (e.g., a different algorithm is now used), update `Rules & Decisions` to reflect the new, cleaner approach.
     *   **Do not change the Interfaces or Verification Criteria sections.**
 2.  **Record Operation (Ref: `knowzcode_loop.md` - Section 2.1):**
     *   Create one new immutable journal shard. Never prepend or append `knowzcode/knowzcode_log.md` — it is a frozen archive.

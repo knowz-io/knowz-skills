@@ -103,7 +103,7 @@ After implementation, run comprehensive verification:
 ```
 # CORRECT - Parallel verification
 In a SINGLE response:
-  Task #1: SPAWN reviewer (ARC criteria + security + integration check)
+  Task #1: SPAWN reviewer (`VERIFY:` criteria + security + integration check)
 Wait for results
 Present consolidated audit gate
 ```
@@ -133,38 +133,36 @@ If one parallel agent fails while others succeed:
 
 ```
 START LOOP (for WorkGroupID)
-  |-- Step 1: Initialize WorkGroup
-  |-- Step 2: Phase 1A - Impact Analysis
+  |-- Phase 1A - Impact Analysis (loop §3.1)
   |    |-- Delegate to analyst
   |    |-- PAUSE for user approval
-  |    \-- If rejected: restart Step 2
-  |-- Step 3: Phase 1B - Specification
+  |    |-- If rejected: restart Phase 1A
+  |    \-- On approval: open the WorkGroup session file
+  |-- Phase 1B - Specification (loop §3.2)
   |    |-- Delegate to architect
   |    |-- PAUSE for user approval
-  |    |-- If rejected: return to Step 3
+  |    |-- If rejected: return to Phase 1B
   |    \-- Optional: Run spec verification checkpoint for large Change Sets
-  |-- Step 4: Pre-Implementation Commit
-  |-- Step 5: Phase 2A - Implementation
-  |    \-- Delegate to builder
-  |-- Step 6A: Initial Verification (Inner Loop)
-  |    |-- Build, test, verify
-  |    |-- If FAILS: return to Step 5 (Implementation)
+  |-- Pre-Implementation Commit (baseline new tests must fail against)
+  |-- Phase 2A - Implementation, TDD (loop §3.3)
+  |    |-- Delegate to builder
+  |    |-- Build, test, verify (scoped verification loop)
+  |    |-- If FAILS: fix and re-verify
   |    |-- Repeat until tests pass
   |    \-- Report "implementation complete"
-  |-- Step 6B: Completeness Audit
+  |-- Phase 2B - Completeness Audit (loop §3.4)
   |    |-- Delegate to reviewer (READ-ONLY audit)
   |    |-- Calculate completion percentage
   |    |-- PAUSE for user decision:
-  |    |    |-- If <100%: return to Step 5
-  |    |    |-- If acceptable: proceed to Step 7
-  |    |    \-- Or modify specs/cancel
+  |    |    |-- If <100%: return to Phase 2A
+  |    |    |-- If acceptable: proceed to Phase 3
+  |    |    \-- Or modify specs/cancel (a changed VERIFY line needs a recorded user decision)
   |    \-- Quality gate enforced
-  |-- Step 7-11: Atomic Finalization Loop
+  |-- Phase 3 - Atomic Finalization (loop §3.5, Steps 7-12)
   |    |-- Delegate to closer
-  |    |-- Finalize specs to "as-built"
+  |    |-- Finalize specs to "as-built", recording any VERIFY delta
   |    |-- Update architecture
-  |    |-- Log ARC-Completion
-  |    |-- Update tracker to [VERIFIED]
+  |    |-- Write ARC-completion journal shard
   |    |-- Schedule tech debt
   |    \-- Final commit
   \-- COMPLETE: Report and await next goal
@@ -187,7 +185,7 @@ Agent(subagent_type="analyst"):
   - Phase: 1A - Change Set Identification
 
   Instructions:
-  1. Load knowzcode_loop.md for Step 1 requirements
+  1. Load knowzcode_loop.md Section 3.1 requirements
   2. Identify complete Change Set (primary + all dependencies)
   3. Mark [NEEDS_SPEC] dependencies
   4. Create workgroup file with KnowzCode: prefixed discovery tasks
@@ -209,10 +207,10 @@ Agent(subagent_type="architect"):
   - Change Set: {list of NodeIDs}
 
   Instructions:
-  1. Load knowzcode_loop.md Step 3 template
+  1. Load knowzcode_loop.md Section 3.2 template
   2. For EACH NodeID in Change Set, draft spec with:
      - All required sections
-     - ARC verification criteria
+     - `VERIFY:` criteria (minimum 2)
      - Technical debt notes (mirror in workgroup with KnowzCode: prefix)
   3. Present specs for approval
 
@@ -238,14 +236,14 @@ Agent(subagent_type="builder"):
      - Build passes
      - Tests pass
      - Static analysis clean
-     - ARC criteria met
+     - Assigned `VERIFY:` criteria met, with RED evidence for each new test
   4. If ANY verification fails:
      - Fix the issue
      - RESTART verification from beginning
      - Repeat until all checks pass
   5. Report "implementation complete" when verification cycle succeeds
 
-  CRITICAL: Do NOT claim complete until Step 6A verification loop succeeds
+  CRITICAL: Do NOT claim complete until the Phase 2A verification loop succeeds
   Return: Implementation status and verification results
 ```
 
@@ -260,7 +258,7 @@ Agent(subagent_type="reviewer"):
   - Status: Implementation claimed complete from Phase 2A
 
   Instructions:
-  1. Load knowzcode_loop.md Step 6B requirements
+  1. Load knowzcode_loop.md Section 3.4 requirements
   2. READ-ONLY audit: Compare implementation vs specifications
   3. For EACH NodeID in Change Set:
      - Check if specified functionality exists
@@ -284,12 +282,12 @@ Agent(subagent_type="closer"):
   - Status: Implementation verified and approved
 
   Instructions:
-  1. Load knowzcode_loop.md Steps 7-11
+  1. Load knowzcode_loop.md Section 3.5 (Steps 7-12)
   2. Execute atomic finalization loop:
-     Step 7: Finalize EACH spec to "as-built" state
+     Step 7: Finalize EACH spec to "as-built" state; record changed/dropped VERIFY lines
      Step 8: Check and update architecture
-     Step 9: Log comprehensive ARC-Completion entry
-     Step 10: Update tracker to [VERIFIED], schedule tech debt
+     Step 9: Write the ARC-completion journal shard
+     Step 10: Schedule tech debt (tracker stays frozen)
      Step 11: Create final commit
   3. Report completion with any REFACTOR_ tasks created
 
@@ -307,8 +305,8 @@ Agent(subagent_type="closer"):
 - Count iteration attempts
 
 ### 2. Quality Verification Cycles
-- **Step 6A Inner Loop**: Repeat Step 5 -> Step 6A until tests pass
-- **Step 6B Gate**: If audit fails, return to Step 5 with gap report
+- **Phase 2A Inner Loop**: Repeat implement -> verify until tests pass
+- **Phase 2B Gate**: If audit fails, return to Phase 2A with gap report
 - **Never skip verification**: Quality gates are mandatory
 
 ### 3. User Approval Gates
@@ -361,7 +359,7 @@ The KnowzCode workflow is orchestrated by **commands** (not a spawnable agent) t
 | `security-officer` | 1–3 (opt-in) | Threat model, OWASP scan, gate-blocking on CRITICAL/HIGH |
 | `enterprise-enforcer` | 0–3 (auto when compliance enabled) | Guideline-to-ARC mapping, gate-blocking on blocking-tier violations |
 | `frontend-designer` | 0–3 (auto on UI surface) | Design questioning, ASCII mockups, design VERIFY, E2E UI audit |
-| `test-advisor` | 1–3 (opt-in) | TDD enforcement, test quality, ARC coverage (persists through Gate #3) |
+| `test-advisor` | 1–3 (opt-in) | TDD enforcement (new tests fail at the pre-implementation commit), test quality, enterprise ARC coverage (persists through Gate #3) |
 | `project-advisor` | 1 (opt-in) | Backlog curation, idea capture |
 | `smoke-tester` | 2B (opt-in) | Runtime smoke testing |
 | `relay-runner` | 2A (Claude-host relay) | Launches/monitors the resolved headless target leg; Codex-hosted Claude legs use the Codex coordinator's in-turn exec session |

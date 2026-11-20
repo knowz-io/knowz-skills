@@ -83,22 +83,6 @@ When processing multiple sources:
 - ARC Criteria: Extract from `## ARC Criteria` or `### Verification` section
 - Tech Debt: Extract from `## Tech Debt` or `## Known Issues` section
 
-### Noderr Format
-
-**Indicators** (match ANY):
-- `## Component:` or `## Service:` as section headers
-- `### Dependencies` with indent-style listing
-- JSON or YAML code blocks with `type`, `name`, `dependencies` keys
-- `## Inputs` / `## Outputs` paired sections
-- `"component"` or `"service"` in JSON structure
-
-**Extraction**:
-- Name: Extract from `## Component:` or JSON `name` field
-- Type: Infer from structure (Component, Service, Data)
-- Dependencies: Parse from `### Dependencies` or JSON
-- Inputs/Outputs: Map to Interfaces section
-- Description: Extract from first paragraph or `description` field
-
 ### Generic Markdown Format
 
 **Indicators** (fallback when no specific format detected):
@@ -233,7 +217,7 @@ Create `knowzcode/planning/migration-{timestamp}.md`:
 
 **Timestamp**: {timestamp}
 **Sources**: {list of source paths}
-**Format Detected**: {KCv1|Noderr|Generic|Mixed}
+**Format Detected**: {KCv1|Generic|Mixed}
 
 ## Summary
 
@@ -329,7 +313,6 @@ Output format for dry run:
 | Source | Format | NodeIDs Found |
 |--------|--------|---------------|
 | ./legacy/auth.md | KCv1 | Authentication |
-| ./noderr/api.json | Noderr | UserManagement |
 
 Run without `--dry-run` to execute migration.
 ◆━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

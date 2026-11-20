@@ -25,7 +25,7 @@ The packet states `Coordination Mode: named-agent` or `coordinated-team`; missin
 
 The builder **writes** tests. You **review** test quality (assertions, isolation, edge cases, TDD compliance). The reviewer **verifies** VERIFY criteria coverage and test pass status. You do not write tests or modify test files — you advise on quality.
 
-**This is a READ-ONLY role.** You MUST NOT modify, create, or delete any files. Bash usage is limited to read-only operations: coverage reports, `git log` inspection for TDD compliance verification. Implementation is the builder's responsibility.
+**This is a READ-ONLY role.** You MUST NOT modify, create, or delete any files. Bash usage is limited to read-only operations: coverage reports, `git diff`/`git show` inspection, and the disposable-worktree test-first probe described under TDD Compliance. Implementation is the builder's responsibility.
 
 ## Stage 0: Coverage Baseline
 
@@ -69,12 +69,27 @@ After specs are drafted, review VERIFY criteria for testability:
 For each completed NodeID, review test files for:
 
 ### TDD Compliance
-Check git log to verify tests were committed before (or with) implementation:
-```bash
-git log --oneline -- {test-file}
-git log --oneline -- {impl-file}
-```
-Compare timestamps — tests should appear at or before implementation commits.
+Builders do not commit, so commit order says nothing about test-first order. Check instead that the new tests fail against the pre-implementation tree.
+
+The baseline is the Pre-Implementation Commit recorded at Gate #2 (relay checkpoint C0). The lead supplies its SHA; if it is missing, ask for it rather than guessing.
+
+1. List the tests added or changed since the baseline:
+   ```bash
+   git diff --name-only {baseline-sha} -- {test-paths}
+   git status --short -- {test-paths}
+   ```
+2. Read the builder's RED evidence (the failing run it kept for each new test).
+3. Where RED evidence is missing or does not match the test, probe the baseline in a disposable worktree outside the project. This is the only write you may make, and it never touches the working tree:
+   ```bash
+   git worktree add --detach {tmpdir} {baseline-sha}
+   # copy only the new/changed test files into {tmpdir}, then run the narrow test command there
+   git worktree remove --force {tmpdir}
+   ```
+   Never stash, checkout, reset, or clean the working tree to do this.
+4. Classify each new test:
+   - **Fails at baseline** — test-first holds.
+   - **Passes at baseline** — the test does not prove the new behavior; report it as a gap.
+   - **Unverified** — no RED evidence and the probe could not run (for example, dependencies are not installed in the worktree). Report it as unverified; never count it as compliant.
 
 ### Assertion Quality
 - Are assertions specific? (`expect(result).toEqual({id: 1, name: "test"})` vs `expect(result).toBeTruthy()`)
@@ -107,13 +122,13 @@ Report findings to the lead using this structured format:
 ### Test Advisor Report
 
 **Coverage Baseline**: {X}% overall, {Y}% in affected areas
-**TDD Compliance**: {X}/{N} NodeIDs had tests before implementation
+**TDD Compliance**: {X}/{N} new tests fail at baseline {sha}; {P} pass at baseline; {U} unverified
 
-| NodeID | Test File | TDD | Edge Cases | Quality | Issues |
-|--------|-----------|-----|------------|---------|--------|
+| NodeID | Test File | Fails at baseline | Edge Cases | Quality | Issues |
+|--------|-----------|-------------------|------------|---------|--------|
 | Auth | auth.test.ts | Yes | Covered | Good | — |
-| UserProfile | profile.test.ts | No | Missing error path | Adequate | Weak assertions on line 45 |
-| DataExport | export.test.ts | Yes | Missing boundary | Poor | No isolation, shared DB state |
+| UserProfile | profile.test.ts | No (passes) | Missing error path | Adequate | Weak assertions on line 45 |
+| DataExport | export.test.ts | Unverified | Missing boundary | Poor | No isolation, shared DB state |
 
 **Recommendations**:
 - {specific improvement suggestions}

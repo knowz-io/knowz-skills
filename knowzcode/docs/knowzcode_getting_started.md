@@ -224,7 +224,7 @@ Every feature you build follows this robust, structured, and verification-driven
 *   **Your Job:** Review and approve the proposed Change Set.
 
 **`knowzcode/prompts/[LOOP_1B]__Draft_Specs.md`**
-*   **Agent's Job:** Marks all nodes as `[WIP]` and writes detailed specifications.
+*   **Agent's Job:** Opens the WorkGroup for the approved nodes and writes detailed specifications.
 *   **Your Job:** Review the specs in the `knowzcode/specs/` directory.
 *   **Quality Gate:** For large Change Sets (≥10 NodeIDs), the AI will recommend running a `Spec_Verification_Checkpoint` to ensure quality before implementation.
 
@@ -298,14 +298,14 @@ For tiny changes (typos, small CSS tweaks):
 ```
 knowzcode/prompts/Execute_Micro_Fix.md
 
-Target: UI_LoginForm
+Target: Authentication
 Issue: Fix typo in button text "Sigin" -> "Sign in"
 ```
 
 ### Handling Bugs
 When something is broken, use the micro-fix workflow or a full work session:
 ```bash
-/knowzcode:fix "API_Authentication - Login returns 500 error after 5 failed attempts"
+/knowzcode:fix "Authentication - Login returns 500 error after 5 failed attempts"
 # or for larger fixes:
 /knowzcode:work "Fix login 500 error after 5 failed attempts"
 ```
@@ -315,7 +315,7 @@ To improve existing code:
 ```
 knowzcode/prompts/Refactor_Node.md
 
-Target NodeID: API_UserSearch
+Target NodeID: UserSearch
 Refactoring Goal: Optimize database queries to reduce N+1 problem
 ```
 
@@ -380,7 +380,7 @@ Before building, research your approach:
 
 **Solutions:**
 - Run `/knowzcode:work` or start a new loop from Loop 1A to resync
-- Check all NodeIDs in tracker have spec files
+- Check every NodeID named in recent journal shards has a spec file
 - Verify architecture diagram matches implementation
 - Ensure recent changes were committed
 

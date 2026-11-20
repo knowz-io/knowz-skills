@@ -38,17 +38,18 @@ You have been instructed to perform a "Micro-Fix." This protocol is for small, l
         type: microfix
         timestamp: [ISO-8601 UTC, e.g. 2026-09-12T19:00:00Z]
         agent: microfix-specialist
-        nodeids: [TargetNodeID or file_path]
+        nodeids: [affected NodeID(s); the file path only when no spec covers it]
         knowz_sync: pending
         summary: [One-line outcome]
         ---
 
         - **User Request:** [Orchestrator's brief issue description].
         - **Action Taken:** [Brief description of change made].
+        - **Spec Impact:** [NodeID and the `VERIFY:` line this fix restores or touches, quoted verbatim | None — no spec covers this file].
         - **Verification:** [Brief verification method/outcome].
         ```
 
-4.  **Commit Fix (Ref: `knowzcode_loop.md` - Step 4.4):**
+4.  **Commit Fix (Ref: `knowzcode_loop.md` - Section 4):**
     *   Commit the change to version control with a descriptive `fix:` message (e.g., `fix: correct label on login button`). Use the `git` command specified in your `environment_context.md`.
 
 ### Final Report

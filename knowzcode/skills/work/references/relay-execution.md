@@ -412,7 +412,7 @@ Run only after the workflow is known to be Tier 3 and Gate #2 has approved the s
 
 1. Run live `RELAY_DETECT(RELAY_TARGET)`. Apply named-vs-automatic fallback rules; authentication always pauses.
 2. Refuse the default branch. Create `kc-relay/{wgid}` from current HEAD or reuse an approved non-default feature branch.
-3. Require a clean tree without mutating unrelated state. The Gate #2 checkpoint stages only the active WorkGroup, tracker, approved specs, and other explicit reviewed paths. If any other tracked or untracked change remains, do not commit, stash, revert, clean, or absorb it into the relay checkpoint; stop relay preflight, report the exact paths, and use a separately approved clean worktree or wait for the user to resolve them. Record HEAD as C0 only after the scoped baseline is clean.
+3. Require a clean tree without mutating unrelated state. The Gate #2 checkpoint stages only the active WorkGroup, new journal shards, approved specs, and other explicit reviewed paths. If any other tracked or untracked change remains, do not commit, stash, revert, clean, or absorb it into the relay checkpoint; stop relay preflight, report the exact paths, and use a separately approved clean worktree or wait for the user to resolve them. Record HEAD as C0 only after the scoped baseline is clean.
 4. Record the exact absolute cwd. All initial/resume subprocesses must use it.
 5. Write schema-2 state and the WorkGroup snapshot before launch.
 6. For a Claude target, write:

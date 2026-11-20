@@ -19,30 +19,29 @@ You have been given a `PrimaryGoal`. Your sole objective for this step is to per
 
 ---
 
-### Step 1: Analyze System-Wide Impact (Ref: `knowzcode_loop.md` - Step 1.2)
+### Step 1: Analyze System-Wide Impact (Ref: `knowzcode_loop.md` - Section 3.1)
 
 *   Thoroughly analyze the `PrimaryGoal` in the context of the entire project, including `knowzcode_architecture.md`, all files in the `specs/` directory, and in-flight WorkGroups derived from `knowzcode/journal/*/*/` (folders with no `arc-completion` or `workgroup-abandoned` shard).
 *   Your analysis **MUST** identify the complete Change Set, which includes:
     1.  All **new `NodeID`s** that must be created.
-    2.  All **existing `NodeID`s** that will be impacted or require modification. This includes nodes that are currently `[TESTED]` or `[TODO]` but whose specifications or code will need to be updated to support the new feature.
+    2.  All **existing `NodeID`s** that will be impacted or require modification. This includes nodes with an existing as-built spec whose specifications or code will need to be updated to support the new feature.
 
-### Step 2: Propose the Change Set for Orchestrator Review (Ref: `knowzcode_loop.md` - Step 1.3)
+### Step 2: Propose the Change Set for Orchestrator Review (Ref: `knowzcode_loop.md` - Section 3.1)
 
 *   Synthesize your analysis into a clear, itemized list for the Orchestrator.
-*   For each existing node, you **must** briefly state its current status and the reason for its inclusion (e.g., "modify to add new endpoint," "update spec to handle new state").
+*   For each existing node, you **must** briefly state its current spec status and the reason for its inclusion (e.g., "modify to add new endpoint," "update spec to handle new state").
 *   Present this list as the final proposed Change Set.
 
 **Example Response Format:**
 > "Analysis complete. To achieve the goal of '[PrimaryGoal]', I propose the following Change Set for your approval:
 > 
 > *   **New Nodes to Create:**
->     *   `UI_LogoutButton`: The user-facing button component.
->     *   `API_LogoutEndpoint`: The backend endpoint to handle the logout request.
+>     *   `Authentication_Logout`: The logout capability — button, endpoint, and session invalidation.
 > *   **Existing Nodes to be Modified (will become part of the Work Group):**
->     *   `SVC_AuthSession` (Status: `[VERIFIED]`): Will be modified to add a method for invalidating a user's session.
->     *   `UI_Navbar` (Status: `[VERIFIED]`): The spec and code will be updated to include the new `UI_LogoutButton`.
+>     *   `Authentication` (spec: As-Built): Will be modified to add a method for invalidating a user's session.
+>     *   `Navigation` (spec: As-Built): The spec and code will be updated to include the logout button.
 > 
-> Please review and confirm this complete Change Set. Your confirmation via the `[LOOP 1B]` prompt will authorize me to mark all these nodes as `[WIP]` and proceed."
+> Please review and confirm this complete Change Set. Your confirmation via the `[LOOP 1B]` prompt will authorize me to open the WorkGroup for these nodes and proceed."
 
 ### Step 3: Pause for Confirmation
 

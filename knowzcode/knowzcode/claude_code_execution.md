@@ -205,4 +205,4 @@ Common recovery:
 | Large repeated output | Save raw evidence to an artifact and send a bounded delta |
 | Cache counters absent | Report accounting source as unavailable; make no savings claim |
 
-The WorkGroup phase history, approved specs, checkpoint, tracker, and artifacts remain authoritative after any runtime restart.
+The WorkGroup phase history, approved specs, checkpoint, journal shards, and artifacts remain authoritative after any runtime restart.

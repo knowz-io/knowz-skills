@@ -1,7 +1,7 @@
 # KnowzCode: Migrate Knowledge
 
 **Sources:** [List of source paths, patterns, or text]
-**Format Override:** [auto|kc-v1|noderr|generic]
+**Format Override:** [auto|kc-v1|generic]
 **Mode:** [normal|dry-run]
 **Conflict Strategy:** [merge|overwrite|prompt]
 
@@ -11,7 +11,7 @@
 
 ## Your Mission
 
-You have been instructed to migrate external knowledge into KnowzCode spec format. This protocol handles legacy KnowzCode (v1.x), Noderr output, and generic markdown analysis.
+You have been instructed to migrate external knowledge into KnowzCode spec format. This protocol handles legacy KnowzCode (v1.x) and generic markdown analysis.
 
 **CRITICAL RULE: Preserve valuable information.** Never discard content that might be useful. When in doubt, include it with appropriate markers for later review.
 
@@ -52,49 +52,6 @@ You have been instructed to migrate external knowledge into KnowzCode spec forma
 
 ---
 
-### Noderr Format
-
-**Detection Markers:**
-```
-## Component: {name}
-## Service: {name}
-### Dependencies
-{
-  "type": "component|service",
-  "name": "...",
-  "dependencies": [...]
-}
-```
-
-**Field Mapping:**
-
-| Noderr Field | KnowzCode Section |
-|--------------|--------------|
-| `name` / `## Component:` | NodeID (with prefix inference) |
-| First paragraph / `description` | Rules & Decisions |
-| `dependencies` / `### Dependencies` | Rules & Decisions (as context bullets) |
-| `inputs` / `## Inputs` | Interfaces → Inputs |
-| `outputs` / `## Outputs` | Interfaces → Outputs |
-| `logic` / `## Process` | Rules & Decisions |
-| `schema` / `## Data` | Interfaces (as contracts) |
-| — | Verification Criteria (VERIFY: format, generate placeholders) |
-| `issues` / `## Known Issues` | Debt & Gaps |
-
-**NodeID Prefix Inference from Noderr:**
-
-| Noderr Type | Inferred Prefix |
-|-------------|-----------------|
-| `component` with `ui` in name/path | `UI_` |
-| `component` otherwise | `SVC_` |
-| `service` | `SVC_` |
-| `api` / `endpoint` | `API_` |
-| `model` / `data` | `DB_` |
-| `utility` / `helper` | `LIB_` |
-| `config` | `CONFIG_` |
-| `flow` / `workflow` | `UC_` |
-
----
-
 ### Generic Markdown
 
 **Detection:** Fallback when no specific format markers found.
@@ -118,21 +75,18 @@ You have been instructed to migrate external knowledge into KnowzCode spec forma
 
    | Keywords in Context | Inferred Type |
    |---------------------|---------------|
-   | button, form, component, page, modal, dialog | `UI_` |
-   | endpoint, route, REST, GraphQL, API | `API_` |
-   | service, handler, processor, worker, manager | `SVC_` |
-   | model, schema, table, entity, record | `DB_` |
+   | button, form, component, page, modal, dialog, endpoint, route, REST, GraphQL, API, service, handler, processor, worker, manager, model, schema, table, entity, record | Domain-area PascalCase NodeID (consolidate; no `UI_`/`API_`/`SVC_`/`DB_` prefix) |
    | util, helper, lib, format, parse, validate | `LIB_` |
    | config, settings, env, options | `CONFIG_` |
    | flow, journey, process, workflow, use case | `UC_` |
 
-4. **ARC Criteria Generation** (when not present):
-   - Generate 3-5 testable criteria based on extracted purpose
-   - Format: "[ ] {Action verb} {expected behavior}"
+4. **Verification Criteria Generation** (when not present):
+   - Generate 3-5 testable criteria based on extracted purpose and mark the spec `[NEEDS_REVIEW]`
+   - Format: `- VERIFY: {condition}, {expected behavior}`
    - Examples:
-     - "[ ] Returns valid JWT token on successful authentication"
-     - "[ ] Displays error message when validation fails"
-     - "[ ] Persists data to database within 100ms"
+     - `- VERIFY: when credentials are valid, returns a JWT token`
+     - `- VERIFY: when validation fails, displays an error message`
+     - `- VERIFY: persists data to the database within 100ms`
 
 ---
 

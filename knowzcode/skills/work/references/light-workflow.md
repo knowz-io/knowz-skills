@@ -76,7 +76,7 @@ If user did not request smoke testing, skip to Light Phase 3.
 ## Light Phase 3 (Inline — lead coordinates, knowledge-liaison captures)
 
 After builder completes successfully:
-1. Update spec to As-Built status
+1. Update spec to As-Built status. Before overwriting, note any `VERIFY:` line that changed or was dropped since the Light Phase 1 approval, old and new wording verbatim. A VERIFY criterion is never dropped, weakened, or substituted to pass without a recorded user decision giving the old and new wording. Optionally append ` [test: <path>::<test name>]` to a criterion its test proves.
 2. Write one immutable ARC-completion shard at `knowzcode/journal/YYYY-MM/{wgid}/YYYYMMDDTHHMMSSZ-arc-completion-{shortid}.md`. Do not prepend `knowzcode_log.md` and do not write status rows to `knowzcode_tracker.md` — both are frozen archives.
    ```markdown
    ---
@@ -90,6 +90,8 @@ After builder completes successfully:
    ---
 
    Light mode (Tier 2). {brief summary of implementation}.
+
+   - **Verification Criteria Delta:** {None, or old wording → new wording with the user decision}
    ```
 4. **Knowledge capture**:
    - Classify the consolidated delta with `vault-delta` and `explicit_save: true`; store `FINAL_CAPTURE_ACTION` and its stable identity/reason.

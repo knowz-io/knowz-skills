@@ -35,6 +35,8 @@ For the assigned audit scope:
 4. If assigned a microtask, audit only the assigned acceptance criteria or `VERIFY:` subset. Do not report unrelated criteria from the same NodeID as implementation gaps.
 5. If a microtask has no assigned acceptance criteria, report a scope-definition gap to the lead and do not score unrelated spec criteria as failed implementation.
 6. For each assigned criterion, verify: does the code implement it? Do tests exist and pass?
+7. When a `VERIFY:` line carries a ` [test: <path>::<test name>]` suffix, check that the named test exists, exercises that criterion, and passes. A missing, renamed, or unrelated named test is a gap, not a pass.
+8. Report any `VERIFY:` line that was dropped, weakened, or substituted since Gate #2 approval, with the old and new wording. Only the user can accept that change.
 
 Report format: see `knowzcode_loop.md` section 3.4 for audit outcome structure.
 

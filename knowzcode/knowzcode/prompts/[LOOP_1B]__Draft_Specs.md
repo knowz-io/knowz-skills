@@ -13,8 +13,8 @@
     *   `[NodeID_A]`
     *   `[NodeID_B]`
 *   **Existing Nodes to be Modified:**
-    *   `[NodeID_C]` (Status: `[VERIFIED]`)
-    *   `[NodeID_D]` (Status: `[TODO]`)
+    *   `[NodeID_C]` (spec: As-Built)
+    *   `[NodeID_D]` (spec: Draft)
 
 ---
 
@@ -23,25 +23,25 @@ The Change Set has been confirmed. Your first action is to **open the WorkGroup 
 
 **CRITICAL RULE: Your work in this phase is strictly limited to updating KnowzCode's own project and specification files (`.md` files). You MUST NOT write or modify any application source code (e.g., `.js`, `.py`, `.html` files).**
 
-**Reference:** Your actions are governed by `knowzcode_loop.md`, executing the sequence from **Step 1.4 to Step 3**.
+**Reference:** Your actions are governed by `knowzcode_loop.md`, executing **Section 3.1 (WorkGroup creation after Change Set approval)** and **Section 3.2 (Specification)**.
 
 ---
 
-### Step 1: Establish Work Group (Ref: `knowzcode_loop.md` - Step 1.4)
+### Step 1: Establish Work Group (Ref: `knowzcode_loop.md` - Section 3.1)
 
 *   Generate a single, unique `WorkGroupID` for this session (format `kc-{type}-{slug}-YYYYMMDD-HHMMSS`).
 *   Create `knowzcode/workgroups/<WorkGroupID>.md` listing every node in the confirmed Change Set. This is local session state (gitignored).
 *   Do **not** write `[WIP]` rows to `knowzcode_tracker.md` — it is a frozen archive. The WorkGroup counts as in flight until its `knowzcode/journal/YYYY-MM/<WorkGroupID>/` folder gains an `arc-completion` or `workgroup-abandoned` shard.
 *   This action formally begins the work session and reserves the nodes for this task.
 
-### Step 2: Draft and Refine Specifications (Ref: `knowzcode_loop.md` - Steps 2 & 3)
+### Step 2: Draft and Refine Specifications (Ref: `knowzcode_loop.md` - Section 3.2)
 
-*   Now that the WorkGroup is open, execute a **full Context Assembly (Step 2)** from the loop to gather all necessary information for the entire Change Set.
-*   Proceed to **Specification Management (Step 3)**:
+*   Now that the WorkGroup is open, read the project, architecture, and affected spec files to gather all necessary information for the entire Change Set.
+*   Proceed to specification drafting in the 4-section format with `VERIFY:` lines (never the old numbered-section or `ARC_XXX` format):
     *   For each **new** node in the Change Set, **create and write** its complete specification to a new file at `specs/[NodeID].md`.
     *   For each **existing** node in the Change Set, **read, modify, and save** its specification file at `specs/[NodeID].md`.
 
-### Step 3: Report Readiness for Review (Ref: `knowzcode_loop.md` - Step 3.3)
+### Step 3: Report Readiness for Review (Ref: `knowzcode_loop.md` - Section 3.2, Spec Approval gate)
 
 *   Once all spec files for the *entire* Change Set have been created or updated, **do not output their contents.**
 *   Instead, report that the administrative and drafting phases are complete, providing a clear list of the files that are now ready for the Orchestrator's review.

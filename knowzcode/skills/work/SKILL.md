@@ -182,9 +182,9 @@ Default: `AUTONOMOUS_MODE = false`
 
 If `AUTONOMOUS_MODE = true`, announce after the execution mode announcement:
 > **Autonomous Mode: ACTIVE** — Gates presented for transparency but auto-approved.
-> Safety exceptions still pause: critical blockers, HIGH/CRITICAL security findings, >3 same-phase failures, complex architecture discrepancies, >3 gap-fix iterations per builder scope.
+> Safety exceptions still pause: critical blockers, HIGH/CRITICAL security findings, >3 same-phase failures, complex architecture discrepancies, >3 gap-fix iterations per builder scope, and any dropped, weakened, or substituted `VERIFY:` criterion. A VERIFY criterion is never dropped, weakened, or substituted to pass without a recorded user decision giving the old and new wording.
 
-**Autonomous + Vault Write Rule**: Autonomous mode auto-approves quality gates — it does NOT skip mandatory `vault-delta` classification, WorkGroup files, tracker updates, or log entries. `skip` and `batch` intentionally perform no gate-time persistence; only `amend`, `update`, or `flush` may write. Final consolidation and completion artifacts remain mandatory. "Autonomous" means "no user approval needed for gates" — it does not mean "skip the workflow structure."
+**Autonomous + Vault Write Rule**: Autonomous mode auto-approves quality gates — it does NOT skip mandatory `vault-delta` classification, WorkGroup files, or journal shards. `skip` and `batch` intentionally perform no gate-time persistence; only `amend`, `update`, or `flush` may write. Final consolidation and completion artifacts remain mandatory. "Autonomous" means "no user approval needed for gates" — it does not mean "skip the workflow structure."
 
 ## Step 2.6: Specialist Detection
 
@@ -291,7 +291,7 @@ If `$ARGUMENTS` contains `--tier light`, force Tier 2. If `--tier full`, force T
 
 When Tier 2 is selected, execute this streamlined workflow instead of the 5-phase Tier 3 below.
 
-> **Tier 2 still requires**: WorkGroup file (Step 4), tracker updates, log entry, and vault capture attempt. "Light" means fewer agents and phases — not fewer artifacts or vault writes.
+> **Tier 2 still requires**: WorkGroup file (Step 4), the ARC-completion journal shard, and vault capture attempt. "Light" means fewer agents and phases — not fewer artifacts or vault writes.
 
 > **Relay**: not supported in Tier 2. If `RELAY_ACTIVE`, announce `> **Relay: SKIPPED** — Tier 2 Light uses the native builder flow.` and proceed normally.
 
@@ -299,10 +299,10 @@ Read [references/light-workflow.md](references/light-workflow.md) for complete p
 
 **Phase summary**:
 - **Dispatch**: Resume a compatible knowledge-liaison or dispatch one bounded named agent only when the baseline needs deeper research. Team mode is not required.
-- **Light Phase 1** (inline): Impact scan → draft lightweight spec → present combined Change Set + Spec gate → on approval, update tracker and pre-implementation commit.
+- **Light Phase 1** (inline): Impact scan → draft lightweight spec → present combined Change Set + Spec gate → on approval, record the NodeIDs in the WorkGroup file and create the pre-implementation commit.
 - **Light Phase 2A**: Resume a compatible builder or dispatch `Agent(subagent_type="knowzcode:builder", description="Light Phase 2A implementation", prompt=<compact capsule>)`. Builder self-verifies against VERIFY criteria — no separate audit.
 - **Light Phase 2B** (opt-in): Spawn smoke-tester if user requested `--smoke-test`. 3-iteration cap. Skip if not requested.
-- **Light Phase 3** (inline): Update spec to As-Built, update tracker `[WIP]` → `[VERIFIED]`, write log entry, dispatch one classified writer persistence, verify explicit staged paths, and create the final commit.
+- **Light Phase 3** (inline): Update spec to As-Built, record any changed or dropped `VERIFY:` lines, write one immutable ARC-completion journal shard, dispatch one classified writer persistence, verify explicit staged paths, and create the final commit.
 
 **DONE** — Lightweight workflow: bounded knowledge context + one builder lineage. Skipped: analyst, architect, reviewer, closer.
 
@@ -398,12 +398,11 @@ When `frontend-designer` is active alongside `smoke-tester`: smoke-tester owns a
 Follow the abandonment protocol from `knowzcode_loop.md` Section 12:
 
 1. **Preserve user state and unwind only proven workflow-owned changes** — inspect the pre-WorkGroup checkpoint, `git status --short`, and explicit owned paths. Never run a blanket revert, reset, checkout, clean, or stash. Restore a path only when the workflow created its current delta, the preexisting state is known, and doing so cannot overwrite unrelated user work; otherwise preserve the delta, record it in the abandonment report, and ask the user how to handle it.
-2. **Update tracker** — set all affected NodeIDs back to their pre-WorkGroup status
-3. **Log abandonment** — create a log entry with type `WorkGroup-Abandoned` including the reason and phase at abandonment
-4. **Close WorkGroup file** — mark the WorkGroup as `Abandoned` with timestamp and reason
-5. **Preserve learnings** — if any useful patterns were discovered, capture them before closing
-6. **Worker teardown** — gracefully release active teammates or named workers after checkpoint/capture; runtime-managed team cleanup requires no delete step
-7. **Parallel mode**: If cancelled mid-Stage-2, stop writers, preserve their explicit path/checkpoint evidence, unwind only safely attributable workflow-owned changes under step 1, and mark the WorkGroup abandoned
+2. **Write the abandonment shard** — create one immutable `workgroup-abandoned` journal shard with the reason, the phase at abandonment, and each affected NodeID's state. This terminal shard closes the WorkGroup; the frozen tracker and log archives stay untouched
+3. **Close WorkGroup file** — mark the WorkGroup as `Abandoned` with timestamp and reason
+4. **Preserve learnings** — if any useful patterns were discovered, capture them before closing
+5. **Worker teardown** — gracefully release active teammates or named workers after checkpoint/capture; runtime-managed team cleanup requires no delete step
+6. **Parallel mode**: If cancelled mid-Stage-2, stop writers, preserve their explicit path/checkpoint evidence, unwind only safely attributable workflow-owned changes under step 1, and mark the WorkGroup abandoned
 
 The WorkGroup file remains in `knowzcode/workgroups/` for reference. It can be resumed later with `/knowzcode:work` referencing the same goal.
 

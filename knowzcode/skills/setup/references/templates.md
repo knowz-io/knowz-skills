@@ -173,7 +173,7 @@ required frontmatter, and how in-flight WorkGroups are derived.
 ```mermaid
 graph TD
     %% Populated on first /knowzcode:work or when you explicitly ask for an architecture sketch.
-    %% Convention: NodeID = TYPE_Name (e.g., UI_LoginPage, API_Auth, DB_Users, SVC_DataAggregator, EXT_StripeAPI)
+    %% Convention: NodeID = domain-area PascalCase (e.g., Authentication, Checkout); LIB_/CONFIG_/UC_ prefixes only for isolated utilities, config, and cross-domain flows
     %% Shape legend:
     %%   ((User))        — actor/external agent
     %%   [/UI Page/]     — UI component
