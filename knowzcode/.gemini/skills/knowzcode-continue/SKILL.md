@@ -18,7 +18,7 @@ Check `knowzcode/handoffs/*.md` for a requested or latest local handoff, then de
 - None active: suggest `/knowzcode:work`
 
 ### Step 2: Determine Current Phase
-Read the WorkGroup file at `knowzcode/workgroups/{WorkGroupID}.md`. If a handoff was loaded, use its Goal, Current State, Next Step, References, and Durable Learning Candidates as the freshest local state.
+Read the WorkGroup file at `knowzcode/workgroups/{WorkGroupID}.md`. If a handoff was loaded, use its Goal, Current State, Next Step, References, and Durable Learning Candidates as the freshest local state. Measured state beats the handoff: re-run `git branch --show-current`, `git rev-parse --short HEAD`, and `git status --short`, report any mismatch with the handoff's Branch, Commit, and Dirty Files, and trust the live result.
 Check the Phase History table to determine current state.
 
 ### Step 3: Resume

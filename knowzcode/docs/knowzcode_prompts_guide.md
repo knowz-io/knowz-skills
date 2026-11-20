@@ -33,7 +33,7 @@ These are the prompts for managing the project's lifecycle.
 | :--- | :--- | :--- |
 | **Quality** | `knowzcode/prompts/Spec_Verification_Checkpoint.md`| Before Loop 2A, to verify specs for large (10+ node) Change Sets. |
 | **Quick Fix** | `knowzcode/prompts/Execute_Micro_Fix.md` | For tiny, localized fixes (< 50 lines) that don't require the full loop. |
-| **Tech Debt**| `knowzcode/prompts/Refactor_Node.md` | To execute a `REFACTOR_` task from the tracker and improve code quality. |
+| **Tech Debt**| `knowzcode/prompts/Refactor_Node.md` | To execute a `REFACTOR_` task from a spec's `Debt & Gaps` section and improve code quality. |
 | **Investigation** | `knowzcode/prompts/Investigate_Codebase.md` | To research a codebase question with parallel agents. |
 | **Migration** | `knowzcode/prompts/Migrate_Knowledge.md` | To import external knowledge into KnowzCode spec format. |
 

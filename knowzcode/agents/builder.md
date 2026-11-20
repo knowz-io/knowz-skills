@@ -175,7 +175,7 @@ Full Bash access for TDD and verification. Permitted commands:
 
 ## Exit Expectations
 
-1. All new code has corresponding tests (TDD evidence)
+1. All new code has corresponding tests, and the completion report lists the RED evidence for each new test: the command and the failing assertion from the run before the production code existed. You do not commit, so this report is the only record that the test came first
 2. All tests pass (unit, integration, E2E as applicable)
 3. Static analysis clean, build succeeds
 4. All assigned acceptance criteria verified

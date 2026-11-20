@@ -50,6 +50,20 @@ List `knowzcode/handoffs/*.md` metadata before choosing a resume target; read on
 
 Handoffs are local operational state. Do not search Knowz vaults for workflow handoffs.
 
+### Step 0.5: Measure Live State
+
+A handoff is a snapshot; the repository is the truth. When a handoff was selected, re-run the three commands regroup recorded and compare them with the handoff's `**Branch:**`, `**Commit:**`, and `## Dirty Files`:
+
+```bash
+git branch --show-current
+git rev-parse --short HEAD
+git status --short
+```
+
+- If all three match, continue silently.
+- If any differ, report each mismatch in one line (`Branch: handoff {x} → live {y}`) before resuming, and trust the live result. Re-check any handoff claim that depends on the stale value — file references, line numbers, "clean tree", "no code changed" — against the working tree before acting on it.
+- Never switch branches, reset, stash, or discard changes to make the repository match the handoff.
+
 ### Step 1: Find Active WorkGroup
 
 Derive active WorkGroups from the journal tree and local session files — do not rely on `knowzcode_tracker.md` `[WIP]` rows; the tracker is a frozen archive.
@@ -81,7 +95,7 @@ If a handoff was selected in Step 0, also parse:
 - `## References`
 - `## Durable Learning Candidates`
 
-Use the handoff as the freshest local state. Do not run `cmd:` references automatically; treat them as suggested commands only.
+Use the handoff as the freshest record of intent; where it disagrees with the live git state measured in Step 0.5, the live state wins. Do not run `cmd:` references automatically; treat them as suggested commands only.
 
 ### Step 2.5: Relay Detection
 

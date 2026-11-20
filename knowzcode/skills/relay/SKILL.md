@@ -67,7 +67,7 @@ Invoke `/knowzcode:work` with the user's goal and other flags untouched. If `$AR
 
 The setup probe above is not execution authorization. `/knowzcode:work` runs a fresh live authentication probe at the Tier 3 relay preflight immediately before launching the target leg because authentication can expire.
 
-If there is no goal in `$ARGUMENTS` and no obvious prior context (recent plan, `knowzcode/planning/*.md`, or active `[WIP]` WorkGroup), ask: “What should the external implementation agent build?”
+If there is no goal in `$ARGUMENTS` and no obvious prior context (recent plan, `knowzcode/planning/*.md`, or in-flight WorkGroup), ask: “What should the external implementation agent build?”
 
 ## When NOT to Trigger
 

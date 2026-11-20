@@ -210,7 +210,8 @@ Use these prompts when `SPECIALISTS_ENABLED` identifies a distinct evidence need
 > **Coordination Mode**: {coordination_mode}
 > {coordination_task_clause}
 > **Goal**: {goal}
-> **READ-ONLY.** Do NOT modify any files. Bash is for read-only operations only (git log, coverage reports).
+> **READ-ONLY.** Do NOT modify any files. Bash is for read-only operations only (git diff/show, coverage reports) plus the disposable-worktree test-first probe in your agent definition.
+> **Baseline**: Pre-Implementation Commit `{pre_implementation_sha}` (relay checkpoint C0). Builders do not commit, so judge TDD compliance by whether new tests fail at this baseline, not by commit order.
 > **Stage 0 Deliverable**: Establish the test coverage baseline. Glob test files and run coverage if available. Return the baseline with intended-recipient labels to the lead; in coordinated-team mode the lead fans it out with one targeted `SendMessage` per recipient.
 > **Communication**: In coordinated-team mode, use bounded DMs for the listed gate handoffs. In named-agent mode, return the same handoff fields to the lead for routing; do not assume peer messaging.
 > **Enterprise Compliance**: If `knowzcode/enterprise/compliance_manifest.md` exists and `compliance_enabled: true`, check enterprise ARC criteria for test coverage gaps.
@@ -395,7 +396,7 @@ Teammates inherit the lead's effective permissions. Do not depend on plugin-agen
 > **Scope guard**: If this assignment includes more than one NodeID, more than one microtask, missing/ambiguous assigned acceptance criteria, overlapping file ownership, or more than 6 likely touched files, stop before coding and ask the lead to split or clarify it unless the lead explicitly marked the task as a `--broad-builders` exception.
 > **Context discipline**: Read only the assigned spec(s), listed owned files, and targeted sections named above. Do not load every spec, tracker history, or broad architecture file unless a specific blocker requires it.
 > **Context**: Use a supplied vault briefing when present. In coordinated-team mode only, request at most one targeted `"VaultQuery: {question}"`; otherwise return the unresolved question to the lead. Skip broad best-practice queries when scope is clear.
-> **TDD mandatory**: Write failing tests first, then implement, then refactor. Every assigned criterion must have tests or a documented reason why it is covered by an existing test.
+> **TDD mandatory**: Write failing tests first, then implement, then refactor. Every assigned criterion must have tests or a documented reason why it is covered by an existing test. Keep the failing run for each new test and list it as RED evidence in your completion report.
 > **Checkpoint rule**: If you cannot finish the assigned scope cleanly in this dispatch, include a checkpoint in your task summary or handoff with Done, Files changed, Tests run, Remaining work, and Next microtask. Mark the task partial/blocked instead of restarting or expanding scope.
 > **Blocker protocol**: If you hit a blocker, document it as a Blocker Report in your task summary or handoff (see loop.md Section 11 format) and report to the lead immediately instead of guessing. The lead persists it to the WorkGroup file in coordinated-team mode.
 > **Deliverable**: Assigned NodeID/microtask implemented with passing targeted tests and a compact completion summary.

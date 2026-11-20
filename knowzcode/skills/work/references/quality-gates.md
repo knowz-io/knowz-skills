@@ -57,7 +57,7 @@ Approve this Change Set to proceed to specification?
 ```
 
 **Autonomous Mode**: If `AUTONOMOUS_MODE = true`, present gate info for transparency, log `[AUTO-APPROVED] Gate #1`, and proceed immediately.
-If `AUTONOMOUS_MODE = false`: If rejected — re-run analyst with user feedback. If approved — update tracker, proceed.
+If `AUTONOMOUS_MODE = false`: If rejected — re-run analyst with user feedback. If approved — record the approved NodeIDs in the WorkGroup file, proceed.
 
 ### Lead Responsibility: Progress Capture (Gate #1) — MUST
 
@@ -166,7 +166,9 @@ How would you like to proceed?
 - If safety checks pass and gaps found → log `[AUTO-APPROVED] Gate #3 — proceeding to gap loop`, auto-proceed to gap loop.
 - If safety checks pass and no gaps → log `[AUTO-APPROVED] Gate #3`, auto-proceed to Phase 3.
 
-If `AUTONOMOUS_MODE = false`: User decides — proceed / fix gaps / modify specs / cancel.
+- **Safety check**: If closing the gate would drop, weaken, or substitute a `VERIFY:` criterion → **PAUSE** autonomous mode for this gate. Present the old and proposed wording and record the user's decision in the WorkGroup file. A VERIFY criterion is never dropped, weakened, or substituted to pass without a recorded user decision giving the old and new wording.
+
+If `AUTONOMOUS_MODE = false`: User decides — proceed / fix gaps / modify specs / cancel. A "modify specs" decision that changes a `VERIFY:` line is recorded in the WorkGroup file with the old and new wording so the closer can carry it into the ARC-completion shard.
 
 ---
 
@@ -243,6 +245,7 @@ Before reporting "Workflow Complete", verify:
 - [ ] No writes made to `knowzcode_log.md` or `knowzcode_tracker.md` (both frozen archives)
 - [ ] MCP progress capture attempted (or every failed logical mutation confirmed exactly once in `knowz-pending.md` with its distinct idempotency key and announced to the user)
 - [ ] Specs updated to As-Built / FINAL status
+- [ ] Changed, dropped, or added `VERIFY:` lines recorded in the ARC-completion shard with old and new wording and the user decision
 - [ ] As-built specs, components, diagrams, integration contracts, corrections/deprecations, and enterprise guideline provenance captured or explicitly skipped with reason
 - [ ] Smoke test approach captured (if smoke testing ran): launch method, endpoints tested, test method, project-specific quirks
 

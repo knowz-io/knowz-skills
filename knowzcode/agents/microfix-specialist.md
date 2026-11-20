@@ -123,19 +123,22 @@ wgid: [WorkGroupID or ungrouped]
 type: microfix
 timestamp: [ISO-8601 UTC, e.g. 2026-09-12T19:00:00Z]
 agent: microfix-specialist
-nodeids: [NodeID(s) or target file]
+nodeids: [affected NodeID(s); the target file only when no spec covers it]
 knowz_sync: pending
 summary: [one-line outcome]
 ---
 
 - **User Request:** [summary]
 - **Action Taken:** [description of fix]
+- **Spec Impact:** [NodeID and the `VERIFY:` line this fix restores or touches, quoted verbatim | None — no spec covers this file]
 - **Verification:**
   - Tests Run: [list of test files/suites]
   - Test Result: PASS ([N] tests passed)
   - Static Analysis: CLEAN
   - Iterations Required: [count]
 ```
+
+To fill **Spec Impact**, grep `knowzcode/specs/` for the target file or component and quote the matching `VERIFY:` line. A micro-fix restores behavior a criterion already describes; if the fix needs a `VERIFY:` line changed, stop and redirect to `/knowzcode:work`.
 
 Shards are immutable. A follow-up correction is a new shard referencing this filename.
 

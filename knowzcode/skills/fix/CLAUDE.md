@@ -10,7 +10,7 @@ Agents are invoked with the current `Agent()` tool (`Task` is the older compatib
 
 | Agent | Role |
 |-------|------|
-| `knowzcode:microfix-specialist` | Scope validation, implementation, verification loop, log entry, commit |
+| `knowzcode:microfix-specialist` | Scope validation, implementation, verification loop, `microfix` journal shard, commit |
 
 ## Workflow Phases
 
@@ -18,7 +18,7 @@ Agents are invoked with the current `Agent()` tool (`Task` is the older compatib
 2. **Profile resolution** — parse `--profile` flag or read `knowzcode/knowzcode_orchestration.md`; detect advisor host-capability constraints
 3. **Delegate to knowzcode:microfix-specialist** — single `Agent()` call with target, summary, and resolved model/advisor-guidance
 4. **Verification loop (inside agent)** — run tests, fix failures, re-run until all pass; then run linter
-5. **Record and commit** — write one immutable `microfix` shard under `knowzcode/journal/YYYY-MM/<wgid-or-ungrouped>/`; commit with `fix:` prefix. Never prepend `knowzcode_log.md` or write to `knowzcode_tracker.md` (frozen archives).
+5. **Record and commit** — write one immutable `microfix` shard under `knowzcode/journal/YYYY-MM/<wgid-or-ungrouped>/` naming the affected NodeID and `VERIFY:` line; commit with `fix:` prefix. Never prepend `knowzcode_log.md` or write to `knowzcode_tracker.md` (frozen archives).
 
 ## Scope Redirect
 

@@ -14,7 +14,7 @@ This is a **READ-ONLY** quality gate to ensure all specifications for the given 
 
 **CRITICAL RULE: You MUST NOT modify any files during this check. This is a verification step, not a correction step.**
 
-**Reference:** Your actions are governed by `knowzcode_loop.md`, executing the quality check defined in **Step 3.5**.
+**Reference:** Your actions are governed by `knowzcode_loop.md`, executing the spec quality check for **Section 3.2** before the Spec Approval gate.
 
 ---
 
@@ -27,8 +27,8 @@ This is a **READ-ONLY** quality gate to ensure all specifications for the given 
     *   For **each** `NodeID` in the scope, read its corresponding `specs/[NodeID].md` file.
     *   Verify the following for each file:
         *   **Existence:** Does the spec file actually exist?
-        *   **Completeness:** Are all 4 sections filled out? (Rules & Decisions, Interfaces, Verification Criteria, Debt & Gaps). Legacy 7-section format also accepted.
-        *   **Clarity:** Are the `VERIFY:` statements (or legacy `ARC_XXX_01:` criteria) specific, testable, and unambiguous? Minimum 2 VERIFY: statements per spec.
+        *   **Completeness:** Are all 4 sections filled out? (Rules & Decisions, Interfaces, Verification Criteria, Debt & Gaps). An untouched legacy numbered-section spec is still accepted for reading; any spec drafted or modified in this Change Set must use the 4-section format.
+        *   **Clarity:** Are the `VERIFY:` statements (or `ARC_XXX_01:` criteria in an untouched legacy spec) specific, testable, and unambiguous? Minimum 2 VERIFY: statements per spec.
         *   **Consistency:** Do the dependencies listed in Interfaces align with the Change Set?
 
 3.  **Synthesize Findings & Report:**

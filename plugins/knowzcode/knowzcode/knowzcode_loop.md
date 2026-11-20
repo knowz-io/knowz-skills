@@ -166,7 +166,9 @@ Known limitations and future work.
 
 > **KnowledgeId** is optional and managed automatically by vault sync. Do not set manually. When present, vault captures update the existing cloud item instead of creating duplicates. If the cloud item is deleted, the field is automatically removed.
 
-**Backward compatibility:** Old numbered-section specs remain valid until naturally touched. When finalizing, rewrite in the new format.
+**Proving test (optional):** At finalization a `VERIFY:` line may name the test that proves it by appending ` [test: <path>::<test name>]`, for example `- VERIFY: when email exists, returns 409 [test: tests/users.test.ts::rejects duplicate email]`. The suffix is added in Phase 3, not drafted in Phase 1B, and the 4-section format is unchanged. Leave it off a criterion that has no automated test; never invent a test reference.
+
+**Backward compatibility (read-only):** Old numbered-section specs and their `ARC_XXX` criteria remain readable and auditable until naturally touched. Never author a new spec or a new criterion in that format; when finalizing a touched spec, rewrite it in the 4-section format with `VERIFY:` lines.
 
 #### Quality Gate: Spec Approval
 Present drafted specs to the user. **PAUSE and await user approval.** Log "SpecApproved" events. In autonomous mode, auto-approve and proceed immediately (see Section 5).
@@ -186,6 +188,7 @@ FOR each feature/criterion in the spec:
     1. Write a failing test that defines expected behavior
     2. Run test → Confirm it FAILS
        - If test passes without code, the test is wrong — fix it
+       - Keep the failing run (command + failing assertion) as RED evidence
 
     # GREEN Phase
     3. Write MINIMAL code to make the test pass
@@ -219,6 +222,8 @@ independent audit or consolidated gate to meet an efficiency budget.
 
 For microtask implementation, "complete" means the assigned acceptance criteria are met, not every criterion in the parent NodeID. The lead is responsible for tracking criteria coverage across microtasks and must not mark the parent NodeID complete until all required `VERIFY:` criteria and cross-microtask integration criteria are covered.
 
+**RED evidence:** Implementers do not commit, so git history cannot show that a test came first. The completion report lists, for each new test, the failing run kept in the RED step. The test-first check is that the new tests fail against the pre-implementation tree — the Pre-Implementation Commit from §3.2 (relay checkpoint C0). A new test that passes there proves nothing and is reported as a gap.
+
 **Maximum iterations**: 10. If exceeded, pause and report blocker.
 
 #### Quality Gate: Implementation Complete
@@ -240,7 +245,7 @@ An independent, READ-ONLY audit verifying what percentage of specifications were
 **Outcomes** (user decides):
 - Return to Phase 2A to complete missing requirements
 - Accept current implementation and proceed to finalization
-- Modify specs to match implementation
+- Modify specs to match implementation — any dropped, weakened, or substituted `VERIFY:` line needs the recorded user decision described in §3.5 Step 7
 - Cancel the WorkGroup
 
 #### Quality Gate: Audit Approval
@@ -254,6 +259,10 @@ Once implementation is verified and approved, execute finalization:
 
 **Step 7: Finalize Specifications**
 Update each `knowzcode/specs/[NodeID].md` to match the verified "as-built" implementation. Always use the 4-section format.
+
+Before overwriting a spec, compare its approved `VERIFY:` lines with the as-built lines. The approved lines are the ones in the Pre-Implementation Commit (§3.2); if the spec was not edited after approval, that is the text on disk before finalization. Record every changed, dropped, or added criterion in the Step 9 shard with the old and new wording verbatim. A VERIFY criterion is never dropped, weakened, or substituted to pass without a recorded user decision giving the old and new wording. If such a change has no recorded decision, stop and ask — in autonomous mode too (see Section 5).
+
+Where a criterion is proven by an automated test, optionally append the `[test: <path>::<test name>]` suffix from §3.2.
 
 **Step 8: Architecture Check**
 Review `knowzcode/knowzcode_architecture.md` against the Change Set.
@@ -279,6 +288,7 @@ Successfully implemented and verified the Change Set for [goal].
 - **Architectural Learnings:** [discoveries]
 - **Unforeseen Ripple Effects:** [affected nodes outside this WorkGroup, or None]
 - **Specification Finalization:** All specs updated to "as-built" state.
+- **Verification Criteria Delta:** [None, or one line per changed/dropped/added `VERIFY:` — NodeID, old wording → new wording, and the user decision that authorized it]
 - **Architecture Check Outcome:** [outcome]
 ```
 
@@ -301,7 +311,7 @@ Report completion, mention any `REFACTOR_` tasks created. WorkGroup is closed.
 
 For single-file, no-ripple-effect changes (results in a single `fix:` commit):
 
-1. Implement the small change
+1. Implement the small change. If the fix needs a `VERIFY:` line changed, it is not a micro-fix — stop and use the full loop
 2. Quick focused verification
 3. Write a `microfix` shard at `knowzcode/journal/YYYY-MM/<WorkGroupID>/YYYYMMDDTHHMMSSZ-microfix-<shortid>.md`, using `ungrouped` in place of `<WorkGroupID>` when no WorkGroup is active. Never prepend to `knowzcode/knowzcode_log.md`.
 ```markdown
@@ -310,13 +320,14 @@ wgid: [WorkGroupID or ungrouped]
 type: microfix
 timestamp: [ISO-8601 UTC]
 agent: microfix-specialist
-nodeids: [NodeID(s) or target file]
+nodeids: [affected NodeID(s); the target file only when no spec covers it]
 knowz_sync: pending
 summary: [one-line outcome]
 ---
 
 - **User Request:** [description]
 - **Action Taken:** [change made]
+- **Spec Impact:** [NodeID and the `VERIFY:` line this fix restores or touches, quoted verbatim | None — no spec covers this file]
 - **Verification:** [method/outcome]
 ```
 4. Commit with `fix: [description]` (include the new shard in the staged path list)
@@ -345,6 +356,7 @@ The lead should interpret the **spirit** of the user's instruction, not just exa
 * >3 failures on the same phase
 * Architecture discrepancies too complex to fix autonomously
 * >3 gap-fix iterations per builder scope without resolution
+* A `VERIFY:` criterion would be dropped, weakened, or substituted. A VERIFY criterion is never dropped, weakened, or substituted to pass without a recorded user decision giving the old and new wording.
 
 Autonomous mode is per-WorkGroup and does not carry over.
 
@@ -713,7 +725,7 @@ When the verification loop reaches the maximum iteration count (10 for implement
 - **Attempts Made:** [summary of fix attempts]
 
 ### Recommended Recovery Options
-1. **Modify spec**: Relax or adjust the criterion that cannot be met
+1. **Modify spec**: Relax or adjust the criterion that cannot be met (recorded with old and new wording per Section 5)
 2. **Change approach**: Use a different implementation strategy
 3. **Split WorkGroup**: Extract the blocked NodeID into a separate WorkGroup
 4. **Accept partial**: Proceed with documented gap (debt item)

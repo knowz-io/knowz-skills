@@ -24,130 +24,33 @@ These NodeIDs aren't just labels - they live in a visual map (Mermaid diagram) t
 
 ```mermaid
 graph TD
-    %% --- Legend ---
-    subgraph Legend
-        direction TB
-        L_IDConv[NodeID Convention: TYPE_DescriptiveName]
-        L_UI[/UI Component/] --- L_UIDesc(User Interface)
-        L_API{{API Endpoint}} --- L_APIDesc(REST API Routes)
-        L_SVC[[Service Layer]] --- L_SvcDesc(Business Logic)
-        L_DB[(Database)] --- L_DBDesc(Data Operations)
-        L_Decision{Decision} --- L_DecDesc(Conditional Flow)
-        L_State[["State Manager"]] --- L_StateDesc(Client State)
-        L_External{{External API}} --- L_ExtDesc(3rd Party Service)
-    end
-
-    %% --- Entry Flow ---
-    APP_Start((User Opens App)):::./knowzcode/specs/APP_Start.md --> AUTH_Check{User Logged In?}:::./knowzcode/specs/AUTH_Check.md
-    
-    %% --- Authentication Subgraph ---
-    subgraph "Authentication System"
-        AUTH_Check -->|No| UI_LoginPage[/Login Page/]:::./knowzcode/specs/UI_LoginPage.md
-        UI_LoginPage --> UI_LoginForm[/Login Form/]:::./knowzcode/specs/UI_LoginForm.md
-        UI_LoginForm -->|Submit| API_Login{{POST /api/auth/login}}:::./knowzcode/specs/API_Login.md
-        
-        API_Login --> SVC_AuthValidator[[Auth Validator Service]]:::./knowzcode/specs/SVC_AuthValidator.md
-        SVC_AuthValidator --> DB_Users[(Users Database)]:::./knowzcode/specs/DB_Users.md
-        
-        DB_Users --> LoginResult{Valid Credentials?}:::./knowzcode/specs/LoginResult.md
-        LoginResult -->|No| UI_LoginError[/Show Login Error/]:::./knowzcode/specs/UI_LoginError.md
-        LoginResult -->|Yes| SVC_TokenGenerator[[Token Generator]]:::./knowzcode/specs/SVC_TokenGenerator.md
-        
-        UI_LoginError --> UI_LoginForm
-        SVC_TokenGenerator --> API_Login
-        API_Login -->|Success| STATE_UserSession[["Store User Session"]]:::./knowzcode/specs/STATE_UserSession.md
-    end
-    
-    %% --- Main Application ---
-    AUTH_Check -->|Yes| UI_Dashboard[/Dashboard/]:::./knowzcode/specs/UI_Dashboard.md
-    STATE_UserSession --> UI_Dashboard
-    
-    subgraph "E-Commerce Flow"
-        UI_Dashboard --> UI_ProductGrid[/Product Grid/]:::./knowzcode/specs/UI_ProductGrid.md
-        UI_ProductGrid --> UI_ProductCard[/Product Card/]:::./knowzcode/specs/UI_ProductCard.md
-        
-        UI_ProductCard -->|View Details| UI_ProductModal[/Product Details Modal/]:::./knowzcode/specs/UI_ProductModal.md
-        UI_ProductCard -->|Quick Add| STATE_CartManager[["Cart State Manager"]]:::./knowzcode/specs/STATE_CartManager.md
-        
-        UI_ProductModal -->|Add to Cart| STATE_CartManager
-        STATE_CartManager -->|Update| UI_CartIcon[/Cart Icon Badge/]:::./knowzcode/specs/UI_CartIcon.md
-        
-        UI_CartIcon -->|Click| UI_CartDrawer[/Shopping Cart Drawer/]:::./knowzcode/specs/UI_CartDrawer.md
-        UI_CartDrawer -->|Checkout| UI_CheckoutFlow[/Checkout Page/]:::./knowzcode/specs/UI_CheckoutFlow.md
-    end
-    
-    subgraph "Checkout Processing"
-        UI_CheckoutFlow --> API_CreateOrder{{POST /api/orders}}:::./knowzcode/specs/API_CreateOrder.md
-        API_CreateOrder --> SVC_OrderProcessor[[Order Processor]]:::./knowzcode/specs/SVC_OrderProcessor.md
-        
-        SVC_OrderProcessor --> SVC_InventoryCheck[[Inventory Service]]:::./knowzcode/specs/SVC_InventoryCheck.md
-        SVC_InventoryCheck --> DB_Inventory[(Inventory DB)]:::./knowzcode/specs/DB_Inventory.md
-        
-        DB_Inventory --> StockCheck{Items In Stock?}:::./knowzcode/specs/StockCheck.md
-        StockCheck -->|No| UI_StockError[/Out of Stock Error/]:::./knowzcode/specs/UI_StockError.md
-        StockCheck -->|Yes| SVC_PaymentGateway[[Payment Service]]:::./knowzcode/specs/SVC_PaymentGateway.md
-        
-        SVC_PaymentGateway --> EXT_Stripe{{Stripe API}}:::./knowzcode/specs/EXT_Stripe.md
-        EXT_Stripe --> PaymentResult{Payment Success?}:::./knowzcode/specs/PaymentResult.md
-        
-        PaymentResult -->|No| UI_PaymentError[/Payment Failed/]:::./knowzcode/specs/UI_PaymentError.md
-        PaymentResult -->|Yes| DB_Orders[(Orders Database)]:::./knowzcode/specs/DB_Orders.md
-        
-        DB_Orders --> SVC_EmailService[[Email Service]]:::./knowzcode/specs/SVC_EmailService.md
-        SVC_EmailService --> EXT_SendGrid{{SendGrid API}}:::./knowzcode/specs/EXT_SendGrid.md
-        
-        DB_Orders --> UI_OrderSuccess[/Order Confirmation/]:::./knowzcode/specs/UI_OrderSuccess.md
-    end
-    
-    %% --- Error Handling Flow ---
-    subgraph "Error Management"
-        API_Login -->|Error| UI_ErrorToast[/Error Toast Notification/]:::./knowzcode/specs/UI_ErrorToast.md
-        API_CreateOrder -->|Error| UI_ErrorToast
-        EXT_Stripe -->|Error| UI_ErrorToast
-        EXT_SendGrid -->|Error| SVC_ErrorLogger[[Error Logger]]:::./knowzcode/specs/SVC_ErrorLogger.md
-        SVC_ErrorLogger --> DB_ErrorLogs[(Error Logs)]:::./knowzcode/specs/DB_ErrorLogs.md
-    end
-    
-    %% --- Search Feature ---
-    subgraph "Product Search"
-        UI_Dashboard --> UI_SearchBar[/Search Bar/]:::./knowzcode/specs/UI_SearchBar.md
-        UI_SearchBar -->|Type| SVC_SearchDebounce[[Debounce Service]]:::./knowzcode/specs/SVC_SearchDebounce.md
-        SVC_SearchDebounce -->|300ms| API_Search{{GET /api/search}}:::./knowzcode/specs/API_Search.md
-        API_Search --> SVC_SearchEngine[[Search Engine]]:::./knowzcode/specs/SVC_SearchEngine.md
-        SVC_SearchEngine --> DB_Products[(Products DB)]:::./knowzcode/specs/DB_Products.md
-        DB_Products --> UI_SearchResults[/Search Results Dropdown/]:::./knowzcode/specs/UI_SearchResults.md
-        UI_SearchResults -->|Select| UI_ProductModal
-    end
-    
-    %% --- Visual Highlighting for Change Impact ---
-    style SVC_PaymentGateway fill:#ff9999,stroke:#ff0000,stroke-width:3px
-    style API_CreateOrder fill:#ffcccc
-    style UI_CheckoutFlow fill:#ffcccc
-    style EXT_Stripe fill:#ffcccc
-    
-    %% --- Classification ---
-    classDef critical fill:#ff6b6b,color:#fff
-    classDef complex fill:#4ecdc4,color:#fff
-    classDef standard fill:#45b7d1,color:#fff
-    
-    class AUTH_Check,SVC_PaymentGateway,DB_Orders critical
-    class STATE_CartManager,SVC_OrderProcessor,SVC_SearchEngine complex
-    class UI_ProductCard,UI_SearchBar,API_Search standard
+    User((User)) --> Navigation[/Navigation/]
+    Navigation --> Authentication[Authentication]
+    Navigation --> Catalog[Catalog]
+    Catalog --> Search[Search]
+    Catalog --> Checkout[Checkout]
+    Checkout --> Payments_Stripe{{Payments_Stripe}}
+    Checkout --> Notifications[Notifications]
+    Authentication --> Users[(Users data)]
+    Checkout --> Orders[(Orders data)]
+    Checkout -.uses.-> LIB_DateFormat[LIB_DateFormat]
 ```
 
-The AI uses this visual memory to understand that changing `API_AuthCheck` will affect both the login form above it and the validator below it.
+Each box is one domain-area NodeID with one spec at `knowzcode/specs/[NodeID].md`. The login form, auth endpoint, and token service all live inside `Authentication` rather than getting separate IDs.
+
+The AI uses this visual memory to understand that changing `Authentication` will affect `Navigation` above it and the user data below it.
 
 **How this helps:**
 
 Traditional AI: "Here's a login function" → Next session: "What login function?"
 
-KnowzCode AI: "I see `UI_LoginForm` connects to `API_AuthCheck` which validates through `SVC_TokenValidator`" → Always remembers the entire system
+KnowzCode AI: "I see `Navigation` depends on `Authentication`, which owns the login form, the auth endpoint, and token validation" → Always remembers the entire system
 
 ### 3. Blueprints for Every Building Block (Specifications)
 
 Each NodeID has its own detailed blueprint file in the `knowzcode/specs/` folder:
-- `UI_LoginForm` → `knowzcode/specs/UI_LoginForm.md`
-- `API_AuthCheck` → `knowzcode/specs/API_AuthCheck.md`
+- `Authentication` → `knowzcode/specs/Authentication.md`
+- `Checkout` → `knowzcode/specs/Checkout.md`
 
 These specs are lean decision records containing:
 - **Rules & Decisions**: Key architectural decisions, business rules, and constraints
@@ -162,8 +65,8 @@ Here's how it all works together:
 1. **You say**: "Fix the login timeout issue"
 
 2. **AI looks at the architecture**: 
-   - Finds `API_AuthCheck` in the visual map
-   - Sees it connects to `UI_LoginForm`, `SVC_TokenValidator`, and `DB_Users`
+   - Finds `Authentication` in the visual map
+   - Sees it connects to `Navigation` and the user data store
 
 3. **AI reads the relevant specs**:
    - Instead of searching through hundreds of files
@@ -209,29 +112,6 @@ projects that used it before the journal:
 | **Classification** | Risk level (Standard/Complex/Critical) |
 | **Notes/Issues** | Important warnings or blockers |
 
-#### The Hidden Intelligence
-
-**See What Changes Together:**
-```
-| Status | WorkGroupID | NodeID | Label |
-|:---|:---|:---|:---|
-| 🟡 | feat-20250107-143022 | UI_LoginForm | Login Form |
-| 🟡 | feat-20250107-143022 | API_AuthCheck | Auth Endpoint |
-| 🟡 | feat-20250107-143022 | SVC_TokenValidator | Token Service |
-```
-All three are being built as one coordinated change!
-
-**Know Your Risk Levels:**
-- 🟢 **Standard**: Regular features
-- 🟡 **Complex**: Needs extra attention  
-- 🔴 **Critical**: Security, payments, or core stability
-
-**Track Real Progress:**
-- See overall completion percentage
-- Know what's blocking what
-- Identify technical debt (REFACTOR_ tasks)
-- One-click access to any component's details
-
 ### 6. Your Project's Flight Recorder (knowzcode/journal/)
 
 Think of this as your project's **permanent memory** - a detailed history of
@@ -269,9 +149,9 @@ Every significant action creates a timestamped shard:
 - "Why does this code look weird?" 
 - AI: "I don't know, I didn't write it"
 
-**With KnowzCode's Log:**
+**With KnowzCode's journal:**
 - "Why does this code look weird?"
-- AI: "I can see from the log that on Jan 15, we had to work around a third-party API limitation"
+- AI: "I can see from the journal that on Jan 15, we had to work around a third-party API limitation"
 
 #### Real Example Entry
 
@@ -283,16 +163,17 @@ wgid: kc-feat-user-auth-20250107-143022
 type: arc-completion
 timestamp: 2025-01-07T14:30:22Z
 agent: closer
-nodeids: [UI_LoginForm, API_AuthCheck, SVC_TokenValidator]
+nodeids: [Authentication]
 knowz_sync: pending
 summary: User authentication shipped and verified
 ---
 
 Successfully implemented and verified the Change Set for user authentication.
-- **ARC Verification Summary:** All security criteria met, 15 tests passing
+- **Verification Summary:** All `VERIFY:` criteria met, 15 tests passing
 - **Architectural Learnings:** Discovered need for rate limiting
-- **Unforeseen Ripple Effects:** UI_Dashboard needs update for new auth state
-- **Technical Debt Created:** REFACTOR_API_AuthCheck (optimize token generation)
+- **Unforeseen Ripple Effects:** Navigation needs update for new auth state
+- **Verification Criteria Delta:** None
+- **Technical Debt Created:** REFACTOR_Authentication (optimize token generation)
 ```
 
 The `knowz_sync` field is `pending` until the event is synced to a Knowz vault,
@@ -361,7 +242,7 @@ This is where implementation happens:
    - All UI + API + DB changes together
    - Maintains consistency
 
-3. **Initial ARC Verification** - The AI performs a first pass on the quality gates, checking against the spec's criteria.
+3. **Initial Verification** - The AI checks its work against each `VERIFY:` criterion in the spec, keeping the failing test run that came first as evidence.
 
 **Quality Gate 2: Implementation Audit**
 *Prompt:* `knowzcode/prompts/[LOOP_2B]__Verify_Implementation.md`
@@ -371,7 +252,7 @@ This is where implementation happens:
 
 **Step 3: Document & Commit**
 *Prompt:* `knowzcode/prompts/[LOOP_3]__Finalize_And_Commit.md`
-- The AI updates specs to an "as-built" state, logs the work, updates the tracker, and makes the final git commit.
+- The AI updates specs to an "as-built" state, writes one immutable ARC-completion journal shard, and makes the final git commit.
 **✅ COMPLETE**
 
 #### 💡 Why Each Step Matters
@@ -447,12 +328,9 @@ A Change Set is all the NodeIDs that must be modified together to implement a fe
 **Example Change Set for "Add Password Reset":**
 ```
 Change Set:
-- NEW: UI_PasswordResetForm
-- NEW: API_PasswordReset  
-- NEW: EMAIL_ResetTemplate
-- MODIFY: UI_LoginPage (add "forgot password" link)
-- MODIFY: DB_Users (add reset_token field)
-- MODIFY: SVC_EmailSender (add reset email method)
+- NEW: Authentication_PasswordReset (reset form, reset endpoint, reset email)
+- MODIFY: Authentication (add "forgot password" link, reset_token field)
+- MODIFY: Notifications (add reset email method)
 ```
 
 #### What is a WorkGroupID?
@@ -480,55 +358,55 @@ This creates a "work bubble" where:
 - All completed together
 - Result: Everything works!
 
-### 9. ARC Verification - The Quality Gates That Matter
+### 9. Verification Criteria - The Quality Gates That Matter
 
-ARC (Attentive Review & Compliance) is the verification system that ensures code meets spec before it ships. It's a comprehensive verification system that ensures every piece of code meets professional standards.
+Every spec carries `VERIFY:` criteria: testable statements that must hold before the code ships. An approved criterion is never dropped, weakened, or substituted without a recorded user decision giving the old and new wording.
 
-#### What Makes ARC Different
+#### What Makes This Different
 
 **Traditional AI Coding:**
 - AI: "I wrote the login function, it works!"
 - Reality: Works for happy path, breaks with wrong input, no error handling
 
-**With ARC Verification:**
+**With Verification Criteria:**
 - AI must verify against specific criteria in each spec
 - Not just "does it run?" but "does it handle all scenarios?"
 
-#### The Four Pillars of ARC
+#### Four Kinds of Criteria
 
 1. **Functional Criteria** - Does it do what it's supposed to?
    ```markdown
-   ✓ When user submits valid data, form saves to database
-   ✓ When user is not authenticated, redirect to login
-   ✓ When item is deleted, all references are cleaned up
+   - VERIFY: when user submits valid data, form saves to database
+   - VERIFY: when user is not authenticated, redirect to login
+   - VERIFY: when item is deleted, all references are cleaned up
    ```
 
 2. **Input Validation Criteria** - Does it handle bad input gracefully?
    ```markdown
-   ✓ When email field receives "notanemail", show validation error
-   ✓ When required field is empty, prevent submission
-   ✓ When number field receives text, reject with clear message
+   - VERIFY: when email field receives "notanemail", show validation error
+   - VERIFY: when required field is empty, prevent submission
+   - VERIFY: when number field receives text, reject with clear message
    ```
 
 3. **Error Handling Criteria** - Does it fail gracefully?
    ```markdown
-   ✓ When database is unreachable, return 503 with retry info
-   ✓ When external API times out, use cached data or queue
-   ✓ When file upload fails, clean up partial data
+   - VERIFY: when database is unreachable, return 503 with retry info
+   - VERIFY: when external API times out, use cached data or queue
+   - VERIFY: when file upload fails, clean up partial data
    ```
 
 4. **Quality Criteria** - Is it maintainable and secure?
    ```markdown
-   ✓ All functions have clear documentation
-   ✓ No passwords or secrets in code
-   ✓ Response times under 200ms for common operations
+   - VERIFY: all functions have clear documentation
+   - VERIFY: no passwords or secrets in code
+   - VERIFY: response times under 200ms for common operations
    ```
 
-#### How ARC Works in Practice
+#### How It Works in Practice
 
-During Loop Step 2, when implementing a feature:
+During Phase 2A, when implementing a feature:
 
-1. **AI reads the ARC criteria** from the spec
+1. **AI reads the `VERIFY:` criteria** from the spec
 2. **Builds the feature** with all criteria in mind
 3. **Tests each criterion** systematically
 4. **If any fail** → Fix and re-verify everything
@@ -536,7 +414,7 @@ During Loop Step 2, when implementing a feature:
 
 #### Real Example: Login Endpoint
 
-**Without ARC:**
+**Without criteria:**
 ```javascript
 app.post('/login', (req, res) => {
   const user = db.findUser(req.body.email);
@@ -546,31 +424,31 @@ app.post('/login', (req, res) => {
 });
 ```
 
-**With ARC:**
+**With criteria:**
 ```javascript
 app.post('/login', rateLimiter, async (req, res, next) => {
   try {
-    // ARC: Input validation
+    // VERIFY: Input validation
     const { error } = loginSchema.validate(req.body);
     if (error) return res.status(400).json({ error: error.details });
     
-    // ARC: Functional requirement
+    // VERIFY: Functional requirement
     const user = await db.findUser(req.body.email);
     if (!user) return res.status(401).json({ error: 'Invalid credentials' });
     
-    // ARC: Security requirement
+    // VERIFY: Security requirement
     const validPassword = await bcrypt.compare(req.body.password, user.hashedPassword);
     if (!validPassword) return res.status(401).json({ error: 'Invalid credentials' });
     
-    // ARC: Functional requirement
+    // VERIFY: Functional requirement
     const token = generateToken(user);
     
-    // ARC: Audit requirement
+    // VERIFY: Audit requirement
     await logLoginAttempt(user.id, 'success');
     
     res.json({ token });
   } catch (error) {
-    // ARC: Error handling requirement
+    // VERIFY: Error handling requirement
     await logLoginAttempt(req.body.email, 'error');
     next(error);
   }
@@ -579,7 +457,7 @@ app.post('/login', rateLimiter, async (req, res, next) => {
 
 #### Why This Matters
 
-ARC enforces quality by:
+Verification criteria enforce quality by:
 - Defining "done" explicitly, not subjectively
 - Catching issues before they reach production
 - Ensuring consistent quality across all features
@@ -646,7 +524,7 @@ port_check:
 
 #### Real-World Example
 
-When the Loop says "perform ARC Verification", the AI consults knowzcode/environment_context.md:
+When the Loop says to run verification, the AI consults knowzcode/environment_context.md:
 
 ```yaml
 # For a Node.js project on Replit:
@@ -740,7 +618,7 @@ The `knowzcode/knowzcode_project.md` file is your project's constitution - a com
 **When you say:** "Add a new API endpoint"
 
 **AI checks project file for:**
-- Naming convention: `API_ResourceAction`
+- Naming convention: domain-area NodeIDs such as `Orders`
 - Framework patterns: Express middleware style
 - Auth requirements: All endpoints need auth except public list
 - Error handling: Standard error response format
@@ -758,7 +636,7 @@ As your project evolves:
 
 The AI immediately adapts to all changes!
 
-**Note on Maintenance:** The KnowzCode Loop is designed to keep this document current. Step 10.3 of the main loop (`knowzcode/knowzcode_loop.md`) includes a check to see if a completed Change Set impacts the project's scope, technology, or architecture, prompting an update to this file as part of the finalization process.
+**Note on Maintenance:** The KnowzCode Loop is designed to keep this document current. Section 3.5 Step 10 of the main loop (`knowzcode/knowzcode_loop.md`) includes a check to see if a completed Change Set impacts the project's scope, technology, or architecture, prompting an update to this file as part of the finalization process.
 
 #### Real Example Impact
 
@@ -852,18 +730,16 @@ The AI analyzes EACH idea and produces:
 - **User Impact**: High
 - **Technical Complexity**: Medium
 - **Potential NodeIDs**:
-  - NEW: UI_SocialLoginButtons
-  - NEW: API_OAuthCallback
-  - MODIFY: API_AuthCheck
-  - MODIFY: DB_Users (add oauth_provider field)
+  - NEW: Authentication_OAuth
+  - MODIFY: Authentication (add oauth_provider field)
 - **Dependencies**: None
 
 ### Feature: Dark Mode
 - **User Impact**: Medium
 - **Complexity**: Low
 - **Potential NodeIDs**:
-  - NEW: UI_ThemeToggle
-  - MODIFY: All UI nodes (add theme support)
+  - NEW: Theming
+  - MODIFY: Navigation (add theme toggle)
 - **Dependencies**: None
 
 ## 2. Prioritized Summary
@@ -903,17 +779,16 @@ The planning prompts transform your "wouldn't it be cool if..." ideas into actio
 
 ## 🎭 The Complete KnowzCode System
 
-**NodeIDs** (permanent identity) + **Visual Architecture** (spatial memory) + **Specifications** (detailed blueprints) + **Tracker** (mission control) + **Log** (historical memory) + **The Loop** (systematic process) + **Change Sets** (coordinated updates) + **ARC Verification** (quality gates) + **Environment Context** (local knowledge) + **Project Constitution** (vision & standards) + **Planning Directory** (strategic thinking) = **a structured AI development workflow**
+**NodeIDs** (permanent identity) + **Visual Architecture** (spatial memory) + **Specifications** (detailed blueprints) + **Journal** (mission control and historical memory) + **The Loop** (systematic process) + **Change Sets** (coordinated updates) + **Verification Criteria** (quality gates) + **Environment Context** (local knowledge) + **Project Constitution** (vision & standards) + **Planning Directory** (strategic thinking) = **a structured AI development workflow**
 
 It's like giving the AI:
 - A map of your city (architecture)
 - Street addresses (NodeIDs)  
 - Building blueprints (specs)
-- A control center (tracker)
-- A complete history book (log)
+- A control center and complete history book (journal)
 - Professional development process (the loop)
 - Coordinated construction crews (change sets)
-- Quality inspection standards (ARC)
+- Quality inspection standards (`VERIFY:` criteria)
 - Local building codes and tools (environment context)
 - The city's master plan and building standards (project file)
 - A strategic planning office (planning directory)
@@ -930,7 +805,7 @@ Together, these give the AI complete system context, quality standards, and envi
 6. **No Technical Debt Hiding**: It's tracked and scheduled automatically
 7. **No Repeated Mistakes**: AI learns from logged decisions and issues
 8. **No Chaotic Development**: The Loop ensures systematic, quality-driven building
-9. **No "Works on My Machine"**: ARC Verification ensures professional quality
+9. **No "Works on My Machine"**: Verification criteria ensure professional quality
 10. **No Environment Confusion**: AI knows exactly how to work in YOUR specific setup
 11. **No Inconsistent Code**: Every line follows YOUR project's standards and vision
 12. **No Half-Baked Features**: Planning directory ensures thorough thinking before coding

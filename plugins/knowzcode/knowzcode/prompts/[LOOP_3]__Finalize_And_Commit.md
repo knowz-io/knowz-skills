@@ -18,17 +18,19 @@ The implementation and verification for the specified `WorkGroupID` is complete.
 
 **CRITICAL RULE: The implementation phase is complete. Your work in this phase is strictly limited to updating KnowzCode's own project and specification files (`.md` files) to reflect the finished work. You MUST NOT write or modify any more application source code (e.g., `.js`, `.py`, `.html` files).**
 
-**Reference:** Your actions are governed by `knowzcode_loop.md`, executing the sequence from **Step 7 through Step 10**.
+**Reference:** Your actions are governed by `knowzcode_loop.md`, executing **Section 3.5, Step 7 through Step 12**.
 
 ---
 
 ### Execution Protocol
 
 1.  **Finalize Specifications (Step 7):**
-    *   For **each** `NodeID` in the `WorkGroupID`, update its spec file in `specs/` to the "as-built" state, ensuring it perfectly reflects the verified code.
+    *   For **each** `NodeID` in the `WorkGroupID`, update its spec file in `specs/` to the "as-built" state in the 4-section format, ensuring it perfectly reflects the verified code.
+    *   Before overwriting, compare the approved `VERIFY:` lines (Pre-Implementation Commit) with the as-built lines and list every changed, dropped, or added criterion, old and new wording verbatim, for the Step 9 shard. A VERIFY criterion is never dropped, weakened, or substituted to pass without a recorded user decision giving the old and new wording. If such a change has no recorded decision, stop and ask.
+    *   Optionally append ` [test: <path>::<test name>]` to a `VERIFY:` line its test proves. Never invent a test reference.
 
 2.  **Check Architecture (Step 8):**
-    *   Conduct the Flowchart Consistency Check. If you find a simple discrepancy, fix `knowzcode_architecture.md` directly. If it's complex, document it in the Step 9 shard.
+    *   Review `knowzcode_architecture.md` against the Change Set. If you find a simple discrepancy, fix `knowzcode_architecture.md` directly. If it's complex, document it in the Step 9 shard.
 
 3.  **Write ARC-Completion Shard (Step 9):**
     *   Create one new immutable journal shard at `knowzcode/journal/YYYY-MM/<WorkGroupID>/YYYYMMDDTHHMMSSZ-arc-completion-<shortid>.md` using an environment-sourced UTC timestamp. Required frontmatter: `wgid`, `type: arc-completion`, `timestamp`, `agent`, `nodeids`, `knowz_sync: pending`, `summary` (see `knowzcode_loop.md` section 2.1). The body must include the flowchart check outcome, any unforeseen ripple effects, and project overview updates.
@@ -52,6 +54,7 @@ The implementation and verification for the specified `WorkGroupID` is complete.
 > "Finalization for `WorkGroupID: [ID]` is complete.
 >
 > *   All specifications have been updated to the 'as-built' state.
+> *   **Verification Criteria Delta:** [None | changed/dropped/added `VERIFY:` lines with their recorded decisions]
 > *   The architecture flowchart has been checked and updated.
 > *   A complete `ARC-Completion` shard has been written to `knowzcode/journal/`.
 > *   Completion is recorded by that shard; the frozen `knowzcode_log.md`/`knowzcode_tracker.md` archives were not modified.

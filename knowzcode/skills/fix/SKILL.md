@@ -87,6 +87,7 @@ REPEAT until all checks pass:
 - Write one immutable `microfix` journal shard at `knowzcode/journal/YYYY-MM/<WorkGroupID>/YYYYMMDDTHHMMSSZ-microfix-<shortid>.md`, using `ungrouped` when no WorkGroup is active. Required frontmatter: `wgid`, `type`, `timestamp`, `agent`, `nodeids`, `knowz_sync`, `summary` (see `knowzcode_loop.md` section 2.1).
 - Never prepend to `knowzcode/knowzcode_log.md` and never write rows to `knowzcode/knowzcode_tracker.md` — both are frozen archives.
 - Include verification evidence (which tests passed) in the shard body
+- Name the affected NodeID and quote the `VERIFY:` line the fix restores or touches under **Spec Impact** (`None` when no spec covers the file). If the fix needs a `VERIFY:` line changed, it is not a micro-fix — redirect to `/knowzcode:work`
 - Commit with `fix:` prefix, staging the new shard with the code change
 
 ---

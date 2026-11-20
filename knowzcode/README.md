@@ -140,7 +140,7 @@ while still occupying context. Promotion requires paired cost, latency,
 quality, rework, and security evidence, so KnowzCode does not promise blanket
 token removal.
 
-Formal contract: **[knowzcode/specs/ContextEfficientOrchestration.md](./knowzcode/specs/ContextEfficientOrchestration.md)**.
+Full contract: **[knowzcode/context_efficiency.md](./knowzcode/context_efficiency.md)**.
 
 ## Cross-Agent Relay
 
