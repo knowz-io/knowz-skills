@@ -14,7 +14,7 @@
 **NodeID(s):** Project-Wide
 **Logged By:** knowzcode-cli
 **Details:**
-KnowzCode framework installed via `npx @knowzai/knowzcode`.
+KnowzCode framework initialized.
 - Framework files initialized
 - Ready for first feature
 ---

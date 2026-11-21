@@ -62,7 +62,7 @@ For each plugin being bumped, update all files that contain the version. Use the
 - `{source}/.knowzcode-version` — replace entire contents with NEW
 - `{source}/CHANGELOG.md` — see Step 5 below
 
-**Important**: `bin/knowzcode.mjs` reads its version from `package.json` at runtime and does not need a manual update.
+**Important**: the Gemini extension manifest is built by `scripts/build-gemini-extension.mjs`, which reads its version from `knowzcode/package.json`, and the Cursor manifest carries no version. Neither needs a manual update.
 
 ### 5. Update CHANGELOG.md (if it exists for the plugin)
 

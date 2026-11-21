@@ -6,4 +6,4 @@ Check for existing knowzcode/ directory. If present, ask: Abort, Merge, or Overw
 Create knowzcode/ with template files. Detect project stack.
 Generate platform adapter(s) as needed. Offer MCP configuration.
 Report generated files and suggest /knowzcode:work as next step.
-<ARGS/>"""
+{{args}}"""

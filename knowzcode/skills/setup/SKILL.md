@@ -77,7 +77,7 @@ Use the embedded templates below.
 
 ### 4. Detect project stack and populate environment context
 
-If `npx @knowzai/knowzcode install` ran first, the Stack table in `knowzcode/knowzcode_project.md` may already be populated. Check it — if rows are empty, detect and fill them yourself:
+The Stack table in `knowzcode/knowzcode_project.md` may already be populated (Merge mode). Check it — if rows are empty, detect and fill them yourself:
 
 - Probe for `package.json` (Node/TS), `pyproject.toml` / `requirements.txt` / `Pipfile` (Python), `*.csproj` / `*.sln` / `*.slnx` / `*.fsproj` (.NET), `go.mod` (Go), `Cargo.toml` (Rust), `Gemfile` (Ruby).
 - Write the Stack table rows (Language, Backend Framework, Frontend Framework, ORM/ODM, Testing (Unit), Testing (E2E)) with detected values. Leave a row empty if detection fails — don't write `[Detected]` or similar placeholders.

@@ -1,0 +1,16 @@
+{
+  "name": "knowz-skills",
+  "owner": {
+    "name": "Alex Headscarf"
+  },
+  "metadata": {
+    "description": "Knowz plugin marketplace — structured AI development workflows"
+  },
+  "plugins": [
+    {
+      "name": "knowzcode",
+      "source": "knowzcode",
+      "description": "Structured AI development methodology with TDD, quality gates, and optional enterprise compliance."
+    }
+  ]
+}
