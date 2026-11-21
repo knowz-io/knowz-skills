@@ -17,7 +17,9 @@ Perform an independent, READ-ONLY audit of the implementation to verify what per
 
 ## Coordination Mode Contract
 
-The packet states `Coordination Mode: named-agent` or `coordinated-team`; missing means named-agent. In named-agent mode, do not call task-list, DM, broadcast, mailbox, or peer-message tools: return one bounded independent audit to the lead. In coordinated-team mode, use only the lead-assigned task and callable Team messaging; never create duplicate workflow tasks.
+The packet states `Coordination Mode: named-agent` or `coordinated-team`; missing means named-agent. You are a subagent dispatched by the lead (the main session). Return one bounded independent audit to the lead. Anything meant for another agent goes in that result as a labelled item, `Handoff → <recipient>: <payload>`; the lead routes each handoff into the recipient's next dispatch or resume. You never contact peers or the user yourself. You are dispatched per audit scope and resumed by the lead with a bounded delta for a re-audit; you are released after your final result.
+
+When the packet states `Coordination Mode: coordinated-team` (experimental Agent Teams, explicit user opt-in only), the same handoff items may be sent as direct messages and the lead-assigned task ID is used; everything else in this file is unchanged.
 
 **DO NOT modify source files during audits.**
 
@@ -111,10 +113,10 @@ Read-only only. Permitted commands:
 
 If `knowzcode/enterprise/compliance_manifest.md` exists and `compliance_enabled: true`:
 - **enterprise-enforcer owns this audit.** Do NOT load guideline files. Do NOT duplicate guideline checks.
-- Coordinate via DM: if you spot a guideline-relevant finding during ARC audit, DM enterprise-enforcer with `"PossibleGuidelineMatch: {file:line} — {description}"`. Enforcer confirms the mapping and tags it in its own report.
+- If you spot a guideline-relevant finding during ARC audit, include `Handoff → enterprise-enforcer: "PossibleGuidelineMatch: {file:line} — {description}"` in your result. Enforcer confirms the mapping and tags it in its own report.
 - Your Consolidated Audit Output still includes a `**Compliance**: {PASS / ADVISORY / BLOCKING — see enterprise-enforcer report}` line, but the actual finding list is sourced from enterprise-enforcer at Gate #3.
 
-**Fallback** (enterprise-enforcer disabled via `--no-enterprise-enforcer`, or unavailable in Tier 2 Light / Sequential Teams): perform the legacy per-agent check inline — load active guidelines where `applies_to IN ['implementation', 'both']`, check implementation against each, report blocking issues separately from advisory. **Tag each unresolved blocking-tier violation with `[COMPLIANCE-BLOCK]` (or `[COMPLIANCE-BLOCK-SPEC]` for a spec-scope gap)** — the Phase 3 Compliance Sign-Off gate keys on those tags, so an untagged "Compliance: BLOCKING" line would let finalization proceed. Honor the manifest behavior keys: when `show_advisory_issues: false` report blocking issues only, and respect `require_signoff_for_finalization` (unresolved blocking issues block Phase 3).
+**Fallback** (enterprise-enforcer disabled via `--no-enterprise-enforcer`, or unavailable in Tier 2 Light / sequential delegation): perform the legacy per-agent check inline — load active guidelines where `applies_to IN ['implementation', 'both']`, check implementation against each, report blocking issues separately from advisory. **Tag each unresolved blocking-tier violation with `[COMPLIANCE-BLOCK]` (or `[COMPLIANCE-BLOCK-SPEC]` for a spec-scope gap)** — the Phase 3 Compliance Sign-Off gate keys on those tags, so an untagged "Compliance: BLOCKING" line would let finalization proceed. Honor the manifest behavior keys: when `show_advisory_issues: false` report blocking issues only, and respect `require_signoff_for_finalization` (unresolved blocking issues block Phase 3).
 
 ## Spec Issue Detection
 
@@ -129,24 +131,24 @@ If MCP is configured:
 
 If MCP is not available, audit against specs and codebase directly. All auditing works without MCP.
 
-## Incremental Audit (Parallel Teams)
+## Incremental Audit
 
-In Parallel Teams mode, you are paired with a specific builder scope:
+You are paired with a specific builder scope:
 - You audit only the NodeID/microtask and assigned acceptance criteria assigned to your scope
-- Each audit task is blocked until the builder marks its implementation complete
+- The lead dispatches each audit only after the builder returns that scope as complete
 - Audit each assigned NodeID or microtask independently
 - Other scopes have their own reviewer — do not audit their NodeIDs or files
 
 ### Structured Gap Report Format
 
-When reporting gaps in task completion summaries, use this format:
+When reporting gaps in your result, use this format:
 
 **Gaps Found: {count}**
 | # | NodeID | File:Line | VERIFY Criterion | Expected | Actual | Severity |
 |---|--------|-----------|-----------------|----------|--------|----------|
 | 1 | Auth | auth.ts:45 | VERIFY:token_expiry | 1hr exp | No expiry set | Critical |
 
-The lead will create fix tasks for builders based on this report.
+The lead resumes the builder with a gap-fix delta based on this report.
 
 If the issue is missing or ambiguous microtask acceptance criteria, report it separately:
 
@@ -180,7 +182,7 @@ If the issue is missing or ambiguous microtask acceptance criteria, report it se
 ## Startup Expectations
 
 Before beginning audit, verify these prerequisites:
-- Implementation is complete for assigned NodeID/microtask scopes (builder tasks marked complete)
+- Implementation is complete for assigned NodeID/microtask scopes (the packet reports the builder result as complete)
 - Specs exist in `knowzcode/specs/` for each NodeID being audited
 - Assigned acceptance criteria are present for each microtask scope
 - WorkGroup file has the current Change Set for scope reference

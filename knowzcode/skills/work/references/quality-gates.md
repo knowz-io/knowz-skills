@@ -174,20 +174,16 @@ If `AUTONOMOUS_MODE = false`: User decides — proceed / fix gaps / modify specs
 
 ## Gap Loop
 
-### Parallel or Coordinated Mode (per-scope, resume-first):
+### Per-scope, resume-first:
 
-1. Lead reads each reviewer's structured gap report from its bounded result/task summary.
-2. In coordinated-team mode, the lead creates and assigns the fix task:
-   `gap_fix_task_id := TaskCreate({subject: "Fix gaps: NodeID-X", description: "Fix the bounded audit gaps for NodeID-X and rerun affected checks."})`; then `TaskUpdate({taskId: gap_fix_task_id, addBlockedBy: [audit_task_id], owner: "builder-N"})`.
-3. In coordinated-team mode, the lead sends one DM to the builder with task ID and gap details:
-   `"**New Task**: #{fix-task-id} — Fix gaps: NodeID-X. {file path, VERIFY criterion, expected vs actual}"`
-4. The builder fixes the bounded gaps and re-runs tests. In named-agent mode, the lead resumes the compatible builder with only the gap delta/checkpoint/artifact path and waits for its bounded result; no shared task or peer message is used.
-5. In coordinated-team mode, the lead creates and assigns the re-audit task:
-   `reaudit_task_id := TaskCreate({subject: "Re-audit: NodeID-X", description: "Re-audit only the bounded NodeID-X gap-fix delta."})`; then `TaskUpdate({taskId: reaudit_task_id, addBlockedBy: [gap_fix_task_id], owner: "reviewer-N"})`.
-6. In coordinated-team mode, the lead sends the reviewer the re-audit task. In named-agent mode, it resumes the same independent reviewer with only the audited delta and waits for the bounded result; no task-list or peer message is used.
-7. Each builder-reviewer pair repeats independently until clean — no cross-scope blocking unless dependencies require it
-8. Keep builder/reviewer handles through the bounded gap-loop lease. Resume with a delta; do not replay full specs or raw logs.
-9. **3-iteration cap per scope**: If a scope exceeds 3 gap-fix iterations without resolution, **PAUSE** autonomous mode for that scope (even if `AUTONOMOUS_MODE = true`). Announce: `> **Autonomous Mode Paused** — Scope {N} failed 3 gap-fix iterations. Manual review required.`
+1. Lead reads each reviewer's structured gap report from its bounded result.
+2. The lead resumes the scope's builder by agent ID with only the gap delta: file path, `VERIFY:` criterion, expected vs actual, checkpoint, and artifact path.
+3. The builder fixes the bounded gaps, re-runs the affected tests, and returns its bounded result.
+4. The lead resumes the same independent reviewer with only the fix delta and waits for the bounded re-audit result.
+5. Update the WorkGroup ledger after each round. (In the optional coordinated-team mode the same steps are also rendered as tasks — see the appendix in [parallel-orchestration.md](parallel-orchestration.md).)
+6. Each builder-reviewer pair repeats independently until clean — no cross-scope blocking unless dependencies require it
+7. Keep builder/reviewer handles through the bounded gap-loop lease. Resume with a delta; do not replay full specs or raw logs.
+8. **3-iteration cap per scope**: If a scope exceeds 3 gap-fix iterations without resolution, **PAUSE** autonomous mode for that scope (even if `AUTONOMOUS_MODE = true`). Announce: `> **Autonomous Mode Paused** — Scope {N} failed 3 gap-fix iterations. Manual review required.`
 
 ### Microtask Coverage Rule
 

@@ -1,32 +1,42 @@
 # Parallel Orchestration — Work Skill (Tier 3)
 
-Use these four stages for adaptive parallel delegation and for the optional coordinated-team mode. The same bounded task packets in [spawn-prompts.md](spawn-prompts.md) apply. Classify every unit before dispatch; parallelism alone never justifies Team mode.
+Tier 3 runs on ordinary subagents. The lead (the main session) dispatches each worker with the `Agent` tool, receives one bounded result, and routes any handoff into the next dispatch or resume. Workers never message each other and share no task list. The same bounded task packets in [spawn-prompts.md](spawn-prompts.md) apply.
 
-All `TaskCreate`/`TaskUpdate`/`TaskGet`, task-ID, DM, mailbox, and peer-message examples below are **coordinated-team-only renderings**. In named-agent/adaptive mode, the lead records dependencies locally, dispatches or resumes each worker with a bounded capsule, waits for its result, and routes any necessary delta itself. A named agent never claims/creates shared tasks or messages peers. The dedicated named-agent section remains authoritative when modes differ.
+Three rules hold in every stage:
 
-In every task example, the variable to the left of `:=` captures the task ID returned by `TaskCreate`. `TaskCreate` receives only `subject`, `description`, optional `activeForm`, and optional `metadata`. Set dependencies, ownership, and status only in a subsequent `TaskUpdate({taskId: task_id, ...})`; never pass `addBlockedBy`, `addBlocks`, or `owner` to `TaskCreate`.
+- **The lead owns the ledger.** Dependencies, owners, and status live in the WorkGroup file ([Dependency Ledger](#dependency-ledger)), not in a runtime task list.
+- **Parallel means several `Agent` calls for independent scopes.** Dispatch the ready wave together; results arrive as each worker finishes.
+- **Resume before respawn.** A worker needed again (gap fix, re-audit, an advisor's next stage) is resumed by agent ID with `SendMessage` and a bounded delta. Record the agent ID in the ledger when the first result returns. Start a fresh worker only after a recorded lineage invalidation, and always for an independent reviewer.
+
+Quality gates stay in the main session: the lead presents each gate and waits for the user (or auto-approves in autonomous mode). Never move a gate into a subagent, a forked skill, or a workflow script — none of them can ask the user.
+
+Agent Teams is experimental and is not used unless the user explicitly opts in; see the [appendix](#appendix-coordinated-team-rendering-optional-experimental).
 
 ## Contents
 
-- [Model Overrides](#model-overrides-applies-to-every-spawn-below)
 - [Conditional Roles and Standards](#conditional-roles-and-standards)
+- [Model Overrides](#model-overrides-applies-to-every-spawn-below)
 - [Stage 0: Context-Efficient Discovery](#stage-0-context-efficient-discovery)
 - [Stage 1: Analysis + Specification](#stage-1-analysis--specification)
 - [Stage 2: Parallel Implementation + Incremental Review](#stage-2-parallel-implementation--incremental-review)
 - [Stage 3: Finalization](#stage-3-finalization)
+- [Handoff Routing](#handoff-routing)
+- [File Ownership and Worktree Isolation](#file-ownership-and-worktree-isolation)
 - [WorkGroup File Format (Parallel Mode)](#workgroup-file-format-parallel-mode)
-- [Task Dependency Graph](#task-dependency-graph)
-- [Sequential / Named-Agent Flow](#sequential--named-agent-flow)
+- [Dependency Ledger](#dependency-ledger)
+- [Sequential Flow](#sequential-flow)
+- [Optional: Workflow Fan-Out](#optional-workflow-fan-out)
+- [Appendix: Coordinated-Team Rendering](#appendix-coordinated-team-rendering-optional-experimental)
 
 ---
 
 ## Conditional Roles and Standards
 
-Resolve these only after tier and scope classification. They never enable Agent Teams; use named agents unless selected workers genuinely need task/mailbox coordination.
+Resolve these only after tier and scope classification. They never enable Agent Teams; every role runs as a named subagent.
 
 - `SPECIALISTS_ENABLED` defaults to `default_specialists` or empty. `--specialists[=security,test,project,design]` and explicit natural-language requests add the named evidence role; `--no-specialists` clears security/test/project. Tier 2 skips the panel. Tier 3 sequential runs selected roles one at a time. Every role needs a distinct question and bounded deliverable.
 - `FRONTEND_DESIGNER_ENABLED` resolves in order: `--no-frontend-designer`/config false; explicit flag/config true; explicit design/UX/a11y request; otherwise config `auto` performs a targeted UI-surface glob (`*.tsx`, `*.jsx`, `*.vue`, `*.svelte`, `*.razor`, `*.xaml`, `main.dart`, or relevant HTML/manifest). Tier 2 uses one fresh named designer only for explicit runtime/UI verification. `--no-specialists` does not disable this role.
-- `ENTERPRISE_ENFORCER_ENABLED` resolves in order: explicit opt-out; explicit opt-in (skeleton mode allowed); otherwise an existing manifest with `compliance_enabled: true` and at least one active non-empty local or configured vault/KnowledgeId guideline source. Tier 2 normally uses per-agent checks. Tier 3 uses a fresh named read-only enforcer unless peer coordination independently justifies a teammate.
+- `ENTERPRISE_ENFORCER_ENABLED` resolves in order: explicit opt-out; explicit opt-in (skeleton mode allowed); otherwise an existing manifest with `compliance_enabled: true` and at least one active non-empty local or configured vault/KnowledgeId guideline source. Tier 2 normally uses per-agent checks. Tier 3 uses a named read-only enforcer that the lead resumes at each stage.
 
 When compliance is active, parse and carry `pull_standards_at_start`, `preserve_guideline_provenance`, `show_advisory_issues`, `require_signoff_for_finalization`, `push_audit_results`, `push_completion_records`, and `include_in_audit` with documented defaults. Pull vault standards only when MCP compliance is enabled and a concrete configured source exists; preserve provenance unless disabled, verify retrieved guidance against live code/docs, and pause on blocking conflicts. Configuration may forbid a write but never supplies user authorization for an otherwise read-only operation.
 
@@ -60,68 +70,45 @@ At every spawn whose prompt contains the `{spec_depth_guidance}` token (analyst,
 6. Add security, test, project, frontend, or enterprise specialists only when the requested scope or active controls require their evidence. Each receives a distinct scope and bounded output.
 7. Default fan-out is the analyst plus at most two independently useful read-only workers. Record a reason for every additional worker.
 
-For adaptive delegation, workers return bounded summaries/artifact paths to the lead. For coordinated-team mode, the first eligible teammate spawn forms the runtime-managed team; create and assign task IDs before subsequent teammate dispatch and use mailbox messages only for decision-relevant peer coordination. If teammate spawning is unavailable, continue with equivalent named agents and record `CAPABILITY_FALLBACK`.
-
-The analyst starts immediately and does not wait for optional workers. It may send at most three high-confidence `[PRELIMINARY]` NodeID findings to an already-active architect; otherwise those findings stay in its final result.
+Workers return bounded summaries or artifact paths to the lead. The analyst starts immediately and does not wait for optional workers. If an architect is already active, the lead forwards at most three high-confidence `[PRELIMINARY]` NodeID findings from the analyst's result; otherwise those findings stay in the analyst's final result.
 
 ---
 
 ## Stage 1: Analysis + Specification
 
-1. Analyst completes Change Set (includes dependency map — see `${CLAUDE_PLUGIN_ROOT}/agents/analyst.md`)
-2. Lead reads analyst's task summary
-3. Shut down scanners (scanner-direct, scanner-tests) if they were spawned — no longer needed after analysis
-4. **Specialist Change Set reviews** (if `SPECIALISTS_ENABLED` non-empty): Create review tasks blocked on analysis:
-   - If `security-officer` active: `security_change_task_id := TaskCreate({subject: "Security officer: Change Set review", description: "Review the approved Change Set for security risk and rate each NodeID."})`; then `TaskUpdate({taskId: security_change_task_id, addBlockedBy: [analysis_task_id], owner: "security-officer"})`. DM the returned ID to security-officer.
-   - If `test-advisor` active: `test_strategy_task_id := TaskCreate({subject: "Test advisor: Change Set test strategy", description: "Recommend test types and coverage needs for each Change Set NodeID."})`; then `TaskUpdate({taskId: test_strategy_task_id, addBlockedBy: [analysis_task_id], owner: "test-advisor"})`. DM the returned ID to test-advisor.
-4b. **Group D Change Set reviews** (if Group D officers active):
-   - If `FRONTEND_DESIGNER_ENABLED`: `design_change_task_id := TaskCreate({subject: "Frontend designer: Change Set design review", description: "Rate each NodeID's UI impact and identify design VERIFY needs."})`; then `TaskUpdate({taskId: design_change_task_id, addBlockedBy: [analysis_task_id], owner: "frontend-designer"})`. DM the returned ID to frontend-designer.
-   - If `ENTERPRISE_ENFORCER_ENABLED`: `compliance_map_task_id := TaskCreate({subject: "Enterprise enforcer: Change Set guideline map", description: "Map active guidelines and required ARC criteria to Change Set NodeIDs."})`; then `TaskUpdate({taskId: compliance_map_task_id, addBlockedBy: [analysis_task_id], owner: "enterprise-enforcer"})`. DM the returned ID to enterprise-enforcer.
-4. Lead presents **Quality Gate #1** to user (see [quality-gates.md](quality-gates.md))
-5. User approves (or rejects → re-run analyst with feedback)
-6. Lead sends DM to architect with the approved Change Set
-7. **Spec Drafting** — choose path based on NodeID count and `PARALLEL_SPEC_THRESHOLD`:
+1. Analyst returns the Change Set, including the dependency map (see `${CLAUDE_PLUGIN_ROOT}/agents/analyst.md`). Release scanners; they are not needed after analysis.
+2. **Advisor Change Set reviews** — for each enabled role, dispatch (or resume, if it ran in Stage 0) with the Change Set and collect its report before Gate #1. Dispatch these together:
+   - `security-officer`: rate each NodeID for security risk.
+   - `test-advisor`: recommend test types and coverage needs per NodeID.
+   - `frontend-designer` (if `FRONTEND_DESIGNER_ENABLED`): rate UI impact and list design `VERIFY:` needs.
+   - `enterprise-enforcer` (if `ENTERPRISE_ENFORCER_ENABLED`): map active guidelines and required ARC criteria to NodeIDs.
+3. Lead presents **Quality Gate #1** (see [quality-gates.md](quality-gates.md)). If rejected, resume the analyst with the bounded decision delta when compatible; restart only when scope, spec, checkpoint, or runtime policy changed.
+4. **Spec drafting** — choose by NodeID count and `PARALLEL_SPEC_THRESHOLD`:
 
    **Path A: Standard (fewer than PARALLEL_SPEC_THRESHOLD NodeIDs)**
-   - Lead creates one spec-drafting task per NodeID:
-     - `spec_task_id := TaskCreate({subject: "Spec: NodeID-X", description: "Draft the approved specification and VERIFY criteria for NodeID-X."})`; then `TaskUpdate({taskId: spec_task_id, addBlockedBy: [analysis_task_id], owner: "architect"})`.
-     - DM architect with task IDs: `"**New Tasks**: #{id-1} Spec: NodeID-A, #{id-2} Spec: NodeID-B. Approved Change Set: {summary}"`
-   - Resume a compatible architect only when it was started for a real ambiguity; otherwise dispatch a fresh architect now with the approved Change Set capsule.
-   - If Gate #1 is rejected, resume the analyst with the bounded decision delta when compatible. Invalidate and restart only when scope/spec/checkpoint or runtime policy changed.
+   - Dispatch one architect with the approved Change Set capsule and every advisor handoff addressed to the architect (required `VERIFY:` criteria, design criteria, guideline ARC IDs). Resume an architect that was started for a real Stage 0 ambiguity instead of dispatching a new one.
 
-   **Path B: Parallel Spec Drafting (PARALLEL_SPEC_THRESHOLD or more NodeIDs)**
-   - Lead DMs architect the full approved Change Set and asks for a partition plan (see `${CLAUDE_PLUGIN_ROOT}/agents/architect.md` — Parallel Spec Coordination)
-   - Architect proposes NodeID partitions (1-2 NodeIDs each, max 3 partitions, respecting same-spec and interface constraints)
-   - Lead spawns spec-drafter agents — one per partition:
-     - Spec-drafters use the `architect` agent definition with a scoped spawn prompt
-     - Each drafter gets: its NodeID partition, architect's research findings, cross-NodeID interface constraints, consolidation instructions
-     - `spec_partition_task_id := TaskCreate({subject: "Spec draft: NodeID-A, NodeID-B", description: "Draft the assigned disjoint NodeID specification partition under the approved cross-spec constraints."})`; then `TaskUpdate({taskId: spec_partition_task_id, addBlockedBy: [analysis_task_id], owner: "spec-drafter-1"})`.
-     - Max 3 spec-drafters: `ceil(NodeID_count / 2)`, capped at 3
-   - Spec-drafters draft specs in parallel
-   - After all spec-drafters complete: architect runs consistency review (cross-spec alignment, naming, VERIFY coverage)
-   - Shut down spec-drafters after consistency review
-   - If Gate #1 is rejected, release temporary spec-drafters and resume the analyst/architect only when each lineage remains compatible; otherwise record invalidation and use a fresh capsule.
+   **Path B: Parallel spec drafting (PARALLEL_SPEC_THRESHOLD or more NodeIDs)**
+   - Ask the architect for a partition plan (see `${CLAUDE_PLUGIN_ROOT}/agents/architect.md` — Parallel Spec Coordination): 1-2 NodeIDs each, max 3 partitions, respecting same-spec and interface constraints.
+   - Dispatch one spec-drafter per partition together. Spec-drafters use the `architect` agent definition with a scoped prompt: the NodeID partition, the architect's research findings, cross-NodeID interface constraints, and consolidation instructions. Max 3 spec-drafters: `ceil(NodeID_count / 2)`, capped at 3. Partitions own disjoint spec files.
+   - When all drafts return, resume the architect for the consistency review (cross-spec alignment, naming, `VERIFY:` coverage). Release the spec-drafters.
 
-8. Architect completes specs (Path A) or architect completes consistency review (Path B)
-9. **Test-advisor spec review** (if `test-advisor` in `SPECIALISTS_ENABLED`): After specs drafted, create spec testability review task:
-   - `testability_task_id := TaskCreate({subject: "Test advisor: spec testability review", description: "Review drafted VERIFY criteria for automation and testability."})`; then `TaskUpdate({taskId: testability_task_id, addBlockedBy: [spec_task_id], owner: "test-advisor"})`.
-   - DM test-advisor: `"**New Task**: #{task-id} — Review specs for testability. Check VERIFY criteria are automatable."`
-9b. **Group D spec reviews** (after specs drafted):
-   - If `FRONTEND_DESIGNER_ENABLED`: `design_spec_task_id := TaskCreate({subject: "Frontend designer: spec design review", description: "Verify UI-touching specs cover accessibility, responsive, and state-design criteria."})`; then `TaskUpdate({taskId: design_spec_task_id, addBlockedBy: [spec_task_id], owner: "frontend-designer"})`. DM the returned ID to frontend-designer.
-   - If `ENTERPRISE_ENFORCER_ENABLED`: `compliance_spec_task_id := TaskCreate({subject: "Enterprise enforcer: spec compliance audit", description: "Audit specs for required guideline-derived VERIFY criteria and blocking omissions."})`; then `TaskUpdate({taskId: compliance_spec_task_id, addBlockedBy: [spec_task_id], owner: "enterprise-enforcer"})`. DM the returned ID to enterprise-enforcer.
-10. Lead presents **Quality Gate #2** to user (see [quality-gates.md](quality-gates.md))
-11. User approves (or rejects → architect revises)
-12. Pre-implementation commit: inspect `git status --short` and scoped diffs; stage only the explicit approved spec paths and any new journal shards with `git add -- ...` (`knowzcode/workgroups/` is gitignored; `knowzcode_tracker.md` is a frozen archive). Run `git diff --cached --check` and verify the exact `git diff --cached --name-only` list before committing. Abort if any unrelated path is staged; never stage `knowzcode/` wholesale.
-13. Release the analyst after approval unless a concrete early-implementation question is already pending.
-14. Retain the architect through Stage 2 only when active cross-scope clarification is likely; otherwise release it and resume from lineage if a compatible question arises.
+5. **Advisor spec reviews** — after specs are drafted, resume each enabled role with the spec paths and collect its report before Gate #2:
+   - `test-advisor`: are the `VERIFY:` criteria automatable?
+   - `frontend-designer`: do UI-touching specs cover accessibility, responsive, and state-design criteria?
+   - `enterprise-enforcer`: are guideline-derived `VERIFY:` criteria present; any blocking omissions?
+   Route any required spec change back to the architect as one resume with the consolidated list.
+6. Lead presents **Quality Gate #2** (see [quality-gates.md](quality-gates.md)). If rejected, resume the architect with the decision delta.
+7. Pre-implementation commit: inspect `git status --short` and scoped diffs; stage only the explicit approved spec paths and any new journal shards with `git add -- ...` (`knowzcode/workgroups/` is gitignored; `knowzcode_tracker.md` is a frozen archive). Run `git diff --cached --check` and verify the exact `git diff --cached --name-only` list before committing. Abort if any unrelated path is staged; never stage `knowzcode/` wholesale. Record the commit SHA in the WorkGroup file — it is the baseline new tests must fail against.
+8. Release the analyst. Keep the architect's agent ID in the ledger so a builder's spec question can be answered by resuming it.
 
 ---
 
 ## Stage 2: Parallel Implementation + Incremental Review
 
-1. Lead examines the dependency map from analyst and creates implementation waves:
-   - Topologically sort NodeIDs by dependency. A downstream NodeID is not ready until all upstream NodeIDs it depends on are implemented and audited clean.
-   - Within the current ready wave, identify independent work only when file ownership does not overlap.
+1. Lead builds implementation waves from the analyst's dependency map:
+   - Topologically sort NodeIDs by dependency. A downstream NodeID is not ready until every upstream NodeID it depends on is implemented and audited clean.
+   - Within the current ready wave, treat work as independent only when file ownership does not overlap.
    - If the dependency graph is mostly serialized, run a single builder for the next ready microtask. Do not spawn extra builders just to keep concurrency high.
 
 2. Split oversized NodeIDs into microtasks before spawning builders. Split when any signal is true:
@@ -146,155 +133,107 @@ The analyst starts immediately and does not wait for optional workers. It may se
    - Default `MAX_BUILDERS` is 2. Use more than 3 only when `--broad-builders` was explicitly provided and the tasks are tiny, independent, and disjoint.
    - Default `BUILDER_NODE_LIMIT` is 1. A builder receives at most one NodeID unless `builder_node_limit: 2` or `--builder-node-limit=2` is set and both NodeIDs share one bounded owned-file set.
 
-4. Create builder tasks for the current ready wave and spawn:
-   - `implement_n5a_task_id := TaskCreate({subject: "Implement N5a: service interface + registration", description: "Implement and verify the bounded N5a service-interface and registration microtask."})`; then `TaskUpdate({taskId: implement_n5a_task_id, addBlockedBy: [spec_task_id], owner: "builder-1"})`.
-   - `implement_n7_task_id := TaskCreate({subject: "Implement N7: independent cache invalidation", description: "Implement and verify the bounded N7 cache-invalidation scope."})`; then `TaskUpdate({taskId: implement_n7_task_id, addBlockedBy: [spec_task_id], owner: "builder-2"})`.
-   Each `TaskCreate` above is a **separate builder dispatch** (one NodeID or microtask per prompt) from the ready wave only. Do not create downstream implementation tasks until their dependency audit task IDs exist. After `N5a` audits clean, create the next dependent task: `implement_n6_task_id := TaskCreate({subject: "Implement N6: PreExtractionRequestedConsumer", description: "Implement and verify N6 after the N5a dependency audit passes."})`; then `TaskUpdate({taskId: implement_n6_task_id, addBlockedBy: [audit_n5a_task_id], owner: "builder-1"})`.
-   The same builder slot can be reused for the next ready scope once its prior scope is audited clean — that is how a builder works through a dependency chain without exceeding `BUILDER_NODE_LIMIT` per dispatch.
-   Spawn each builder with its `{task-id}` in the spawn prompt.
-   Each builder gets only: assigned NodeID/microtask, spec path(s), assigned acceptance criteria, owned file list, and relevant prior handoff/checkpoint. Do not pass the full Change Set unless the builder needs it for a stated interface reason.
-   **NO TWO BUILDERS TOUCH THE SAME FILE**
+4. Dispatch the ready wave:
+   - One `Agent` call per builder, sent together, one NodeID or microtask per prompt.
+   - Each builder gets only: assigned NodeID/microtask, spec path(s), assigned acceptance criteria, owned file list, the pre-implementation commit SHA, relevant prior handoff/checkpoint, and any advisor handoff addressed to that scope. Do not pass the full Change Set unless the builder needs it for a stated interface reason.
+   - Record each builder's agent ID, scope, and owned files in the ledger.
+   - Do not dispatch a downstream scope until its upstream scope has audited clean. When it has, resume the same builder with the next ready scope where the lineage is compatible — that is how a builder works through a dependency chain without exceeding `BUILDER_NODE_LIMIT` per dispatch.
+   - **NO TWO BUILDERS TOUCH THE SAME FILE** — see [File Ownership and Worktree Isolation](#file-ownership-and-worktree-isolation).
 
-5. Notify architect of builder spawn:
-   - Lead DMs architect: `"Builders spawned for Stage 2. Introduce yourself to: {builder-1, builder-2, ...}"`
-   - Architect sends brief availability message to each builder (see `${CLAUDE_PLUGIN_ROOT}/agents/architect.md` — Proactive Availability)
+5. A builder that needs a spec clarification returns a `[BUILDER_CHECKPOINT]` with a `Handoff → architect` question. The lead resumes the architect with the question, then resumes the builder with the answer. A builder that changed a shared interface returns a `Handoff → builder` note; the lead includes it in the affected builder's next dispatch or resume.
 
-6. Each builder creates subtasks per NodeID/microtask in the task list:
-   - `"TDD: NodeID-A tests"` → `"TDD: NodeID-A implementation"` → `"TDD: NodeID-A verify"` for one NodeID
-   - For microtasks: `"TDD: NodeID-A / microtask-name tests"` → `"implementation"` → `"verify"`
-   - Builder works through subtasks, marks each complete with summary
+6. As each implementation scope returns, dispatch for that scope, together:
+   - One **fresh independent reviewer** with the assigned spec(s), acceptance criteria, owned file list, and the builder's changed-path list. A reviewer never forks or resumes builder lineage.
+   - `security-officer` (resume) — bounded vulnerability and data-flow review for the scope, if enabled.
+   - `test-advisor` (resume) — test quality and test-first evidence against the pre-implementation commit, if enabled.
+   - `enterprise-enforcer` (resume) — audit the scope against active guideline ARC criteria, if enabled. The reviewer does not duplicate guideline checks.
 
-7. After each implementation scope completes, dispatch one fresh independent reviewer for that scope:
-   - `audit_n5a_task_id := TaskCreate({subject: "Audit N5a: service interface + registration", description: "Independently audit the N5a implementation against its assigned criteria."})`; then `TaskUpdate({taskId: audit_n5a_task_id, addBlockedBy: [implement_n5a_task_id], owner: "reviewer-1"})`.
-   - `audit_n7_task_id := TaskCreate({subject: "Audit N7: independent cache invalidation", description: "Independently audit the N7 implementation against its assigned criteria."})`; then `TaskUpdate({taskId: audit_n7_task_id, addBlockedBy: [implement_n7_task_id], owner: "reviewer-2"})`.
-   Spawn each reviewer with its `{task-id}` + assigned spec(s), assigned acceptance criteria, and owned file list.
-   Each reviewer audits incrementally within its assigned microtask or one-NodeID scope.
-   For a later dependent wave, create the reviewer task only after creating that wave's implementation task.
+7. When every implementation scope in the WorkGroup has returned, dispatch once per WorkGroup (not per scope):
+   - `smoke-tester`, which needs the whole app running.
+   - `frontend-designer` E2E UI audit, after the smoke-tester reports app-ready, if enabled.
+   - `project-advisor` (if enabled) with the bounded implementation summaries; collect its backlog proposals and release it before the gap loop.
 
-8. Create smoke-tester task and spawn (one per WorkGroup, not per builder scope):
-   - `smoke_task_id := TaskCreate({subject: "Smoke test: {wgid}", description: "Run the WorkGroup runtime smoke checks after every implementation scope completes."})`; then `TaskUpdate({taskId: smoke_task_id, addBlockedBy: [all_implement_task_ids], owner: "smoke-tester"})`.
-   Spawn smoke-tester with its `{task-id}` in the spawn prompt. The smoke-tester waits until at least one builder marks implementation complete, then launches the full app for runtime verification.
-   **Note:** Unlike reviewers, only one smoke-tester runs per WorkGroup — it needs the full app running, not individual builder scopes.
+8. **Gap loop** (per scope, in parallel where dependencies allow):
+   a. The reviewer returns a structured gap report.
+   b. The lead resumes the scope's builder with: file path, the assigned acceptance criterion not met, expected vs actual. The builder fixes, re-runs affected tests, and returns.
+   c. The lead resumes the same reviewer with the bounded fix delta for re-audit.
+   d. Each builder-reviewer pair repeats independently until clean; no cross-scope blocking unless the dependency graph requires it. More than 3 gap-fix iterations on one scope pauses autonomous mode.
 
-9. **Specialist implementation reviews** (if `SPECIALISTS_ENABLED` non-empty): Create specialist review tasks alongside reviewer audit tasks, same `addBlockedBy`:
-   - If `security-officer` active — one task per active builder scope (runs parallel to reviewer):
-     `security_scope_task_id := TaskCreate({subject: "Security officer: review scope {N}", description: "Run the bounded vulnerability and data-flow review for implementation scope {N}."})`; then `TaskUpdate({taskId: security_scope_task_id, addBlockedBy: [implement_x_task_id], owner: "security-officer"})`.
-     DM security-officer: `"**New Task**: #{task-id} — Vulnerability scan for scope {N}. NodeIDs/microtasks: {list}."`
-   - If `test-advisor` active — one task per active builder scope:
-     `test_scope_task_id := TaskCreate({subject: "Test advisor: review scope {N} tests", description: "Review test quality and TDD evidence for implementation scope {N}."})`; then `TaskUpdate({taskId: test_scope_task_id, addBlockedBy: [implement_x_task_id], owner: "test-advisor"})`.
-     DM test-advisor: `"**New Task**: #{task-id} — Test quality review for scope {N}. NodeIDs/microtasks: {list}."`
-   - If `project-advisor` active — one observation task (not per-scope):
-     `project_observation_task_id := TaskCreate({subject: "Project advisor: observe implementation", description: "Observe bounded implementation summaries and return backlog proposals before the gap loop."})`; then `TaskUpdate({taskId: project_observation_task_id, owner: "project-advisor"})`.
-     DM project-advisor: `"**New Task**: #{task-id} — Observe builder progress, note patterns and ideas. Deliver backlog proposals before gap loop."`
-   **Gate #3 MUST await the selected security-officer's final report.** Its CRITICAL/HIGH findings retain `[SECURITY-BLOCK]` authority. Test-advisor and project-advisor are informational and may be shown as pending; the lead may proceed without those advisory results.
-   **Project-advisor early shutdown**: After project-advisor delivers backlog proposals, shut it down (before the gap loop begins).
+   **Smoke gap loop**: the lead resumes the builder whose owned scope contains the failing code with expected vs observed, then resumes the smoke-tester with the previous failure list. 3-iteration cap — if exceeded: `> **Autonomous Mode Paused** — Smoke test failed 3 iterations. Manual review required.`
 
-9b. **Group D implementation reviews** (if Group D officers active):
-   - If `ENTERPRISE_ENFORCER_ENABLED` — one task per active builder scope (parallel to reviewer):
-     `compliance_scope_task_id := TaskCreate({subject: "Enterprise enforcer: compliance audit scope {N}", description: "Audit implementation scope {N} against the active guideline ARC criteria."})`; then `TaskUpdate({taskId: compliance_scope_task_id, addBlockedBy: [implement_x_task_id], owner: "enterprise-enforcer"})`.
-     DM enforcer: `"**New Task**: #{task-id} — Compliance audit for scope {N}. NodeIDs/microtasks: {list}. Guideline IDs in scope: {from Stage 0 map}."`
-   - If `FRONTEND_DESIGNER_ENABLED` — one E2E task per WorkGroup (not per scope, like smoke-tester):
-     `design_e2e_task_id := TaskCreate({subject: "Frontend designer: E2E UI audit", description: "Run the spec-driven E2E design audit after implementation and smoke readiness."})`; then `TaskUpdate({taskId: design_e2e_task_id, addBlockedBy: [all_implement_task_ids, smoke_task_id], owner: "frontend-designer"})`.
-     DM frontend-designer: `"**New Task**: #{task-id} — Wait for smoke-tester app-ready signal, then run spec-driven E2E design audit on the running app."`
-   **Gate #3 IS blocked by enterprise-enforcer's blocking-tier findings** (officer authority — analogous to security-officer). frontend-designer is advisor by default; gate is blocked only if `FRONTEND_DESIGNER_BLOCKING_CONFIG = true` (officer mode).
+9. **Gate authority**:
+   - **Gate #3 MUST await the selected security-officer's final report.** Its CRITICAL/HIGH findings retain `[SECURITY-BLOCK]` authority.
+   - **Gate #3 IS blocked by enterprise-enforcer's blocking-tier findings.** If the enforcer is disabled (or Tier 2 Light / sequential), the reviewer checks active guideline requirements inline.
+   - frontend-designer is advisory unless `FRONTEND_DESIGNER_BLOCKING_CONFIG = true`. test-advisor and project-advisor are informational; the lead may present them as `[Pending]` and proceed.
 
-10. Gap flow (per-scope, parallel where dependencies allow — persistent agents, DM messaging):
-   a. Each reviewer marks audit task complete with structured gap report in summary
-   b. Lead creates fix task and pre-assigns:
-      `gap_fix_task_id := TaskCreate({subject: "Fix gaps: NodeID-A", description: "Fix the bounded reviewer gaps for NodeID-A and rerun affected checks."})`; then `TaskUpdate({taskId: gap_fix_task_id, addBlockedBy: [audit_task_id], owner: "builder-N"})`.
-   c. Lead sends DM to builder with task ID and gap details:
-      > **New Task**: #{fix-task-id} — Fix gaps: NodeID-A
-      > **Gaps**: {file path, assigned acceptance criterion not met, expected vs actual}
-      > Fix each gap, re-run affected tests, report completion.
-   d. Builder claims fix task, fixes gaps, re-runs tests, marks fix task complete
-   e. Lead creates re-audit task and pre-assigns:
-      `reaudit_task_id := TaskCreate({subject: "Re-audit: NodeID-A", description: "Re-audit only the bounded NodeID-A gap-fix delta."})`; then `TaskUpdate({taskId: reaudit_task_id, addBlockedBy: [gap_fix_task_id], owner: "reviewer-N"})`.
-   f. Lead sends DM to reviewer: `"**New Task**: #{reaudit-task-id} — Re-audit: NodeID-A. {gap list}"`
-   g. Each builder-reviewer pair repeats independently until clean — no cross-scope blocking unless the dependency graph requires it
-   — All builders and reviewers stay alive through the entire gap loop (no respawning)
-
-   **Smoke test gap flow** (parallel with per-scope reviewer gaps):
-   h. Smoke-tester marks task complete with structured failure report
-   i. Lead creates the smoke fix task: `smoke_fix_task_id := TaskCreate({subject: "Fix smoke gap: {description}", description: "Fix the bounded smoke failure and rerun the affected unit checks."})`; then `TaskUpdate({taskId: smoke_fix_task_id, addBlockedBy: [smoke_task_id], owner: "builder-N"})` (assign to the builder whose owned scope contains the failing code).
-   j. Lead DMs builder: `"**New Task**: #{fix-task-id} — Fix smoke gap: {description}. {expected vs observed}"`
-   k. Builder fixes, re-runs unit tests, marks fix task complete
-   l. Lead creates the re-smoke task: `resmoke_task_id := TaskCreate({subject: "Re-smoke: {wgid}", description: "Re-run the WorkGroup smoke checks against the bounded smoke-fix delta."})`; then `TaskUpdate({taskId: resmoke_task_id, addBlockedBy: [smoke_fix_task_id], owner: "smoke-tester"})`.
-   m. Lead DMs smoke-tester: `"**New Task**: #{resmoke-task-id} — Re-smoke: {wgid}. Previous failures: {list}"`
-   n. 3-iteration cap — if exceeded, pause autonomous mode: `> **Autonomous Mode Paused** — Smoke test failed 3 iterations. Manual review required.`
-
-11. Enterprise compliance:
-   - **If `ENTERPRISE_ENFORCER_ENABLED`**: enterprise-enforcer owns compliance audit per scope (see step 9b above). Reviewer does NOT duplicate guideline checks — it only flags potential matches via DM.
-   - **Fallback** (enterprise-enforcer disabled / Tier 2 Light / Sequential): Lead creates parallel compliance task for each reviewer (scoped to their builder scope); reviewer checks compliance requirements from active guidelines inline.
-
-12. Inter-agent communication during Stage 2:
-   - builder → architect: Spec clarification requests (direct messages)
-   - architect → builder: Design guidance and spec intent responses (direct messages)
-   - builder ↔ builder: Dependency coordination (direct messages — "I changed the User interface, FYI")
-   - builder → reviewer (same scope): Implementation complete notifications (via task system)
-   - reviewer → lead: Gap reports per scope (structured format via task summaries)
-   - lead → builder: Fix tasks (via task creation + DM)
-   - lead → reviewer: Re-audit requests (via task creation + DM)
-   - security-officer → builder-N: Security guidance for sensitive scopes (max 2 DMs per builder)
-   - test-advisor → builder-N: Test improvement feedback (max 2 DMs per builder)
-   - security-officer ↔ test-advisor: Cross-cutting test gaps in security paths (max 2 inter-specialist DMs)
-   - project-advisor → lead: Idea candidates (`"Consider: {idea}"` — lead classifies with `vault-delta`; `skip`/`batch` do not dispatch)
-   - project-advisor → lead: Backlog proposals (before gap loop)
-   - frontend-designer → architect: Design VERIFY criteria proposals (Stage 1)
-   - frontend-designer → builder-N: Design guidance for UI scopes (max 2 DMs per builder)
-   - frontend-designer → smoke-tester: App-readiness coordination
-   - frontend-designer → lead: `[DESIGN-QUESTIONS]` bundles (relayed to user via `AskUserQuestion`); Design Impact + Design Audit reports at gates
-   - enterprise-enforcer → security-officer: SEC-* guideline ID handshake (Stage 0) + cross-reference reconciliation (Stage 2)
-   - enterprise-enforcer → frontend-designer: DSN-* design guideline ID handshake (Stage 0)
-   - enterprise-enforcer → architect: Required VERIFY criteria citing ARC IDs (Stage 1)
-   - enterprise-enforcer → builder-N: Guideline guidance (max 2 DMs per builder)
-   - enterprise-enforcer → test-advisor: ARC criteria handoff for test-coverage verification
-   - enterprise-enforcer → reviewer-N: Scope-coverage handoff so reviewer skips guideline duplication
-   - enterprise-enforcer → closer: Compliance audit summary payload for `compliance_status.md` append (Stage 3)
-
-13. After all NodeIDs implemented + audited across all scopes AND smoke test complete:
+10. After all NodeIDs are implemented and audited across all scopes AND the smoke test is complete:
     - Lead verifies microtask coverage: every required NodeID `VERIFY:` criterion is covered by at least one completed and audited scope, and any cross-microtask integration criterion has been audited after its dependencies landed.
-    - If coverage is incomplete, create the next missing microtask or roll-up audit task before Gate #3. Do not present Gate #3 as clean while criteria remain unassigned.
-    - Lead consolidates audit results from all reviewers
-    - Lead consolidates smoke test results (if smoke-tester was spawned)
-    - Lead consolidates specialist reports. If security-officer was selected, its report MUST be complete and any `[SECURITY-BLOCK]` resolved before Gate #3. Only informational test/project advisor results may remain `[Pending]`.
-    - Lead presents **Quality Gate #3** (see [quality-gates.md](quality-gates.md))
-    - User decides: proceed / fix gaps / modify specs / cancel
+    - If coverage is incomplete, dispatch the next missing microtask or a roll-up audit before Gate #3. Do not present Gate #3 as clean while criteria remain unassigned.
+    - Lead runs the consolidated verification, consolidates reviewer, smoke, and advisor results, and presents **Quality Gate #3** (see [quality-gates.md](quality-gates.md)).
+    - User decides: proceed / fix gaps / modify specs / cancel.
 
-14. Shut down analyst, architect, all builders, all reviewers, and smoke-tester (if spawned)
+11. Release builders, reviewers, the architect, and the smoke-tester. Keep the officer reports for Stage 3.
 
 ---
 
 ## Stage 3: Finalization
 
-> **Shutdown wave ordering** (canonical — referenced by all officer agent files): closer is spawned BEFORE Group C/D officers shut down so officers can hand off final artifacts directly to closer. Order:
-> 1. Shut down `project-advisor` (already done mid-Stage 2)
-> 2. Spawn `closer`
-> 3. (If enterprise-enforcer active) Enforcer DMs closer `"ComplianceSummary: {payload}"`; wait for closer's ack DM
-> 4. Shut down `security-officer`, `test-advisor`, `frontend-designer`, `enterprise-enforcer` (any order)
-> 5. Closer returns one consolidated `FinalCaptureDelta`; lead classifies it with `vault-delta` using `explicit_save: true` and sends one Phase 3 flush to the knowledge-liaison
-> 6. Release `knowledge-liaison` after capture; runtime-managed Team cleanup occurs at session end
-
-The direct officer-to-closer handoff above is coordinated-team-only. In named-agent mode, the lead waits for every required officer result (including security), places those bounded reports in the closer capsule, and receives the closer's `FinalCaptureDelta` and explicit file list directly. No named worker uses mailbox/task APIs.
-
-1. (Project-advisor was shut down mid-Stage 2.)
-2. `finalize_task_id := TaskCreate({subject: "Phase 3: Finalize {wgid}", description: "Apply the delegated finalization-file updates and return FinalCaptureDelta plus explicit changed paths."})`; then `TaskUpdate({taskId: finalize_task_id, addBlockedBy: [last_audit_task_id], owner: "closer"})`.
-   Spawn `closer` with `{task-id}` in spawn prompt. **Spawn closer before shutting down Group C/D officers** so they can DM final artifacts.
-2b. **Enterprise-enforcer handoff** (if `ENTERPRISE_ENFORCER_ENABLED`): once closer is alive and has claimed its task, DM enterprise-enforcer: `"Closer ready at task #{closer-task-id}. Send ComplianceSummary."` Enforcer DMs closer with `"ComplianceSummary: {payload — Compliance Report, ARC coverage, finding table}"`. Closer ACKs and queues the writeback to `compliance_status.md` for inclusion in its final commit.
-2c. **Shut down Group C/D officers**: security-officer, test-advisor, frontend-designer (if active), enterprise-enforcer (if active). Any order — they're all read-only and have delivered their final reports.
-3. Closer tasks (can be parallel subtasks):
+1. Build the closer capsule from results the lead already holds: the WorkGroup file, spec paths, verification summary, every required officer report (security always; enterprise-enforcer's ComplianceSummary when active), recorded `VERIFY:` decisions, and the timestamped MCP health result.
+2. Dispatch `closer`. It:
    - Update all specs to FINAL as-built; record every changed, dropped, or added `VERIFY:` line (old and new wording, user decision) for the shard, and optionally name each criterion's proving test
    - Write the ARC-completion journal shard; do not mutate `knowzcode_tracker.md` (frozen archive)
    - Review architecture docs for discrepancies
    - Schedule REFACTOR tasks for tech debt
-   - **If enterprise-enforcer was active**: append the compliance audit summary received by Team DM or supplied in the named-agent capsule to `knowzcode/enterprise/compliance_status.md` review history
+   - **If enterprise-enforcer was active**: append the compliance audit summary supplied in the closer capsule to `knowzcode/enterprise/compliance_status.md` review history
    - Return the consolidated `FinalCaptureDelta` to the lead; the lead invokes `vault-delta` and, if vaults are configured, supplies the knowledge-liaison one classified Phase 3 flush with a content-bound parent identity/key, an explicit mutation plan, and every known `KnowledgeId`. The liaison derives one distinct deterministic child key per logical mutation and returns a self-contained `WriterRequest`; amend/update without an exact `KnowledgeId` fail explicitly and never become create. The lead dispatches exactly one writer and owns its task state.
    - Return the explicit final file list and suggested commit message; the lead creates the atomic commit
-4. Lead presents completion summary
-5. **Wait for writer Phase 3 capture** (if the lead dispatched a writer from the liaison's `WriterRequest`):
-   - Coordinated-team: check the writer task via `TaskGet({taskId: writer_task_id})` and wait until status is `completed`.
-   - Named-agent: wait for the direct writer result. If it attempted MCP and failed, require `QUEUED_IDEMPOTENCY_KEY`; never append a second queue block.
-   - **Timeout**: If >2 minutes after closer completes and the writer operation still has no bounded result → proceed with shutdown and log `WARNING: Writer Phase 3 capture did not complete for {wgid}. Vault writes may be incomplete; queue confirmation is unknown.`
-6. Release closer after final evidence, then release the knowledge-liaison after capture. In coordinated mode, request graceful teammate shutdown; no separate Team deletion is performed.
+3. Release officers once the closer capsule is built; nothing hands off to the closer directly.
+4. Lead presents the completion summary.
+5. **Wait for the Phase 3 writer** if the lead dispatched one from the liaison's `WriterRequest`: wait for its direct result. If it attempted MCP and failed, require `QUEUED_IDEMPOTENCY_KEY`; never append a second queue block. If more than 2 minutes pass after the closer completes with no bounded writer result, proceed and log `WARNING: Writer Phase 3 capture did not complete for {wgid}. Vault writes may be incomplete; queue confirmation is unknown.`
+6. Release the closer after final evidence, then the knowledge-liaison after capture.
+
+---
+
+## Handoff Routing
+
+Workers address a peer by returning a `Handoff → <recipient>: <payload>` item in their result. The lead delivers it in the recipient's next dispatch or resume and drops it if the recipient is no longer needed. Limits: at most 2 handoff items per builder scope from any one advisor; consolidate.
+
+Lead duties that follow from having no peer channel:
+
+- **Deliver guidance before the run it applies to.** A handoff reaches a builder only at its next dispatch or resume, so collect advisor guidance for a scope (Stage 1 reports) before dispatching that scope's builder.
+- **Pre-fetch what a worker used to ask a peer for.** Put design-system vault context in the frontend-designer's first packet, and the enforcer's `SEC-*` / `DSN-*` guideline excerpts in the security-officer's and frontend-designer's packets. The security-officer does not load guideline files itself.
+- **Hold late handoffs.** The enforcer's `Handoff → closer` ComplianceSummary arrives with its Gate #3 report; keep it for the closer capsule.
+- **Keep the app up for the E2E audit.** The smoke-tester leaves the app running and reports how to reach and stop it; the lead dispatches the frontend-designer E2E audit against it and then has the app stopped (resume the smoke-tester, or stop it directly).
+- **Answer questions with a resume.** A question to a peer costs one resume of each side; batch questions per worker rather than relaying one at a time.
+
+| From | To | Payload | Delivered at |
+|------|----|---------|--------------|
+| analyst | architect | `[PRELIMINARY]` NodeID findings (max 3) | Architect dispatch |
+| security-officer / frontend-designer / enterprise-enforcer | architect | Required `VERIFY:` criteria (threat-model, design, guideline ARC IDs) | Spec drafting or revision |
+| enterprise-enforcer | security-officer / frontend-designer | Active `SEC-*` / `DSN-*` guideline IDs and ARC criteria | Their next stage |
+| enterprise-enforcer | test-advisor | ARC criteria needing test coverage | Scope test review |
+| enterprise-enforcer | reviewer | Scope-coverage note so guideline checks are not duplicated | Scope audit dispatch |
+| security-officer / test-advisor / frontend-designer / enterprise-enforcer | builder | Scope guidance (max 2 items each) | Builder dispatch or gap-fix resume |
+| builder | architect | Spec clarification question | Architect resume; answer returns on builder resume |
+| builder | builder | Shared-interface change notice | Affected builder's next dispatch or resume |
+| reviewer / smoke-tester | builder | Gap or failure report | Gap-fix resume |
+| frontend-designer | lead | `[DESIGN-QUESTIONS]` bundle (relayed to the user via `AskUserQuestion`) | Immediately |
+| project-advisor / any worker | lead | `"Consider: {idea}"` capture candidates (lead classifies with `vault-delta`; `skip`/`batch` do not dispatch) | Immediately |
+| enterprise-enforcer | closer | ComplianceSummary for `compliance_status.md` | Closer capsule |
+
+---
+
+## File Ownership and Worktree Isolation
+
+Default: builders share the working tree and own disjoint file lists. The lead assigns every file in a wave to exactly one builder and serializes any two scopes that need the same file.
+
+Use worktree isolation only when two ready scopes cannot be given disjoint files and serializing them is too slow. Dispatch each such builder with `isolation: "worktree"`. Before doing so:
+
+- Builders do not commit, so a worktree sees only committed state. The pre-implementation commit, and a lead checkpoint commit of every earlier audited wave, must exist first.
+- A worktree branches from the repository's default branch unless the project sets `worktree.baseRef: "head"` (see https://code.claude.com/docs/en/worktrees). Confirm that setting; without it, do not use worktrees for a WorkGroup branch.
+- The lead integrates each returned worktree diff into the working tree, resolves conflicts, and re-runs the affected tests before the scope's audit. A conflict the lead cannot resolve mechanically goes back to the owning builder as a gap.
+
+If any precondition fails, serialize the scopes instead.
 
 ---
 
@@ -319,50 +258,43 @@ Stage 2: Parallel Implementation + Incremental Review
 
 ---
 
-## Task Dependency Graph
+## Dependency Ledger
 
-When creating tasks, model the dependency chain with `addBlockedBy` and pre-assign with `owner`:
+The lead keeps this table in the WorkGroup file and updates it as results return. It replaces any runtime task list.
 
-| Task | Blocked By | Owner |
-|------|-----------|-------|
-| Knowledge liaison: targeted context/vault gap | (only when baseline is insufficient) | knowledge-liaison |
-| Scanner: direct codebase scan | (none) | scanner-direct |
-| Scanner: test coverage scan | (none) | scanner-tests |
-| Phase 1A analysis | (none — knowledge-liaison returns context to the lead; the lead routes scanner findings with one targeted `SendMessage` per recipient) | analyst |
-| Architect pre-load + speculative research | (none — receives [PRELIMINARY] DMs from analyst) | architect |
-| Security officer: initial threat scan | (none — Group C) | security-officer |
-| Test advisor: coverage baseline | (none — Group C) | test-advisor |
-| Project advisor: backlog context | (none — Group C) | project-advisor |
-| Frontend designer: design discovery & questioning | (none — Group D, conditional) | frontend-designer |
-| Enterprise enforcer: load compliance posture | (none — Group D, conditional) | enterprise-enforcer |
-| Security officer: Change Set review | Phase 1A analysis | security-officer |
-| Test advisor: Change Set test strategy | Phase 1A analysis | test-advisor |
-| Frontend designer: Change Set design review | Phase 1A analysis | frontend-designer |
-| Enterprise enforcer: Change Set guideline map | Phase 1A analysis | enterprise-enforcer |
-| Spec: NodeID-X | Phase 1A (gate approval) | architect (Path A) or spec-drafter-N (Path B) |
-| Spec consistency review | All spec drafts complete (Path B only) | architect |
-| Test advisor: spec testability review | Spec: NodeID-X | test-advisor |
-| Frontend designer: spec design review | Spec: NodeID-X | frontend-designer |
-| Enterprise enforcer: spec compliance audit | Spec: NodeID-X | enterprise-enforcer |
-| Implement: NodeID-X or NodeID-X/microtask | Spec: NodeID-X | builder-N |
-| Audit: NodeID-X or NodeID-X/microtask | Implement: NodeID-X or microtask | reviewer-N |
-| Security officer: review scope N | Implement: NodeID-X or microtask | security-officer |
-| Test advisor: review scope N tests | Implement: NodeID-X or microtask | test-advisor |
-| Enterprise enforcer: compliance audit scope N | Implement: NodeID-X or microtask | enterprise-enforcer |
-| Frontend designer: E2E UI audit | All implement tasks complete + Smoke test | frontend-designer |
-| Project advisor: observe implementation | (none) | project-advisor |
-| Fix gaps: NodeID-X round N | Audit: NodeID-X (or re-audit N-1) | builder-N |
-| Re-audit: NodeID-X round N | Fix gaps round N | reviewer-N |
-| Smoke test: {wgid} | All implement tasks complete | smoke-tester |
-| Re-smoke: {wgid} round N | Smoke gap fix round N | smoke-tester |
-| Phase 3 finalization | All audits approved | closer |
-| Reader: vault queries | Liaison returned a self-contained `ReaderRequest`; lead dispatches and owns task state | knowz:reader |
-| Writer: Capture Delta amend/update/flush | `vault-delta` returns a persistence action and liaison returns `WriterRequest`; lead dispatches once | knowz:writer |
-| Writer: Consolidated Phase 3 flush | Phase 3 `explicit_save` classification and liaison `WriterRequest`; lead dispatches once | knowz:writer |
+```markdown
+## Ledger
+| Unit | Waits For | Agent | Agent ID | Status |
+|------|-----------|-------|----------|--------|
+| Phase 1A analysis | — | analyst | … | done |
+| Spec: Authentication | Gate #1 | architect | … | done |
+| Implement: Authentication/token-expiry | Gate #2 | builder-1 | … | in progress |
+| Audit: Authentication/token-expiry | its implement unit | reviewer (fresh) | — | waiting |
+| Security review: scope 1 | its implement unit | security-officer | … | waiting |
+| Smoke test | all implement units | smoke-tester | — | waiting |
+| Phase 3 finalization | Gate #3 | closer | — | waiting |
+```
+
+Ordering rules:
+
+| Unit | Waits for |
+|------|-----------|
+| Advisor Change Set reviews | Phase 1A analysis |
+| Spec: NodeID-X | Gate #1 approval |
+| Spec consistency review (Path B) | All spec drafts |
+| Advisor spec reviews | Spec drafts |
+| Implement: NodeID-X or microtask | Gate #2, and clean audits of every upstream scope |
+| Audit / security / test / compliance review of a scope | That scope's implementation |
+| Fix gaps round N | Audit (or re-audit N-1) |
+| Re-audit round N | Fix gaps round N |
+| Smoke test, E2E UI audit | All implement units (E2E also waits for app-ready) |
+| Phase 3 finalization | Gate #3 approval |
+| `knowz:reader` | A liaison `ReaderRequest`; lead dispatches |
+| `knowz:writer` | `vault-delta` returns `amend`/`update`/`flush` and the liaison returns a `WriterRequest`; lead dispatches once |
 
 ---
 
-## Sequential / Named-Agent Flow
+## Sequential Flow
 
 When using `--sequential`, process one ready scope at a time. A profile does not force a team. Keep a compatible named agent only through its bounded phase or gap-loop lease, and resume it before considering a replacement.
 
@@ -383,3 +315,29 @@ Before dispatching the analyst, use `VAULT_BASELINE`. If a material targeted gap
 For Gate rejection and Stage 2 gap loops, send only the changed decision, failing VERIFY IDs, checkpoint, and artifact path to the compatible analyst, architect, builder, or reviewer. Start a fresh agent only after a recorded lineage invalidation. Preserve the same TDD, gate, compliance, and capture behavior as parallel execution.
 
 Before Gate #3, wait for every required reviewer and for the selected security-officer. Test/project advisory roles may remain pending, but security may not. Before Phase 3, collect all required officer results into the closer capsule. The closer returns `FinalCaptureDelta`, explicit changed paths, verification summary, and a suggested commit message; the lead performs persistence, scoped staging, and the commit.
+
+---
+
+## Optional: Workflow Fan-Out
+
+When the user explicitly asks for a workflow (for example "use a workflow for the build") and a wave has many independent scopes, the lead may run the packaged `/knowzcode:build-review` workflow for Stage 2 steps 4-6 instead of dispatching by hand. It builds each scope and audits it with a fresh reviewer, running scopes concurrently, and returns one result per scope.
+
+- It never replaces a gate. A workflow cannot pause for user input, so Gates #1-#3, `VERIFY:` decisions, and `[DESIGN-QUESTIONS]` stay with the lead before and after the run.
+- It covers one ready wave. The lead still builds waves, assigns disjoint owned files, runs the gap loop by resuming or redispatching, and runs the consolidated verification.
+- Pass the wave as `args` (see the script header for the shape). Record the run ID in the ledger.
+- If workflows are unavailable or disabled on the host, dispatch the wave with `Agent` calls as usual.
+
+---
+
+## Appendix: Coordinated-Team Rendering (optional, experimental)
+
+Agent Teams is experimental in Claude Code and off unless the user enables it (https://code.claude.com/docs/en/agent-teams). KnowzCode uses it only when the user explicitly asks for teammates or Team mode in the current task and at least two active peers need direct messaging that lead routing cannot provide. No profile, tier, or amount of parallel work selects it. Teammates are not restored by `/resume`, cannot use worktree isolation, and cost more.
+
+In that mode the stages above are unchanged, with this rendering:
+
+- Each ledger row is also a runtime task. `task_id := TaskCreate({subject, description})`, then `TaskUpdate({taskId: task_id, addBlockedBy: [...], owner: "<worker>"})`; never pass `addBlockedBy`, `addBlocks`, or `owner` to `TaskCreate`. The task ID goes in the worker's packet, which states `Coordination Mode: coordinated-team`.
+- Do not create downstream implementation tasks until their dependency audit task IDs exist. For a later dependent wave, create the reviewer task only after creating that wave's implementation task.
+- A `Handoff → <recipient>` item may be sent as a direct message instead of returning through the lead. The lead still owns gates, the WorkGroup file, and every dispatch.
+- Dispatch the closer before releasing officers so the enforcer can send its ComplianceSummary directly.
+- Request graceful teammate shutdown after deliverables; there is no team deletion step.
+- If the teammate capability is not callable, continue with ordinary subagents and record `CAPABILITY_FALLBACK`.

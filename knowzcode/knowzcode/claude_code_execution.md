@@ -89,7 +89,24 @@ Retain a warm worker through a likely same-phase fix/re-audit continuation. Rele
 
 ---
 
-## Agent Teams
+## Default: Subagent Delegation
+
+Every KnowzCode workflow runs on ordinary subagents unless the user explicitly opts into Agent Teams. This path needs no experimental feature.
+
+- **Dispatch**: the lead calls `Agent` once per worker. Independent workers in a ready wave are dispatched together and report back as each finishes.
+- **Handoffs**: a worker cannot reach a peer. It returns `Handoff → <recipient>: <payload>` items in its result and the lead delivers them in the recipient's next dispatch or resume.
+- **Continuity**: a worker needed again is resumed by agent ID with `SendMessage` and a bounded delta. Agent IDs live in the WorkGroup ledger; if a handle is gone (session restart, compaction), cold-start from the durable capsule.
+- **State**: dependencies, owners, and status live in the WorkGroup file, not a runtime task list.
+- **Gates**: the lead asks the user in the main session. Subagents, forked skills, and workflow scripts cannot ask the user and never hold a gate.
+- **File conflicts**: builders own disjoint files in the shared tree. `isolation: "worktree"` is a fallback only when ownership cannot be made disjoint; a worktree sees committed state only and branches from the default branch unless `worktree.baseRef: "head"` is set (https://code.claude.com/docs/en/worktrees).
+
+### Optional workflow fan-out
+
+The plugin ships one workflow script, `workflows/build-review.js` (invoked as `/knowzcode:build-review`). Use it only when the user asks for a workflow or passes `--workflow`: it builds each scope of one ready wave and audits it with a fresh reviewer. A workflow run cannot pause for input, so it never contains a gate, a `VERIFY:` decision, or a user question. If workflows are disabled on the host (`disableWorkflows`) or the call is declined, dispatch the wave with `Agent` calls instead and record `CAPABILITY_FALLBACK`. See https://code.claude.com/docs/en/workflows.
+
+---
+
+## Agent Teams (optional, experimental)
 
 Agent Teams is experimental and must be enabled through Claude Code's own opt-in (see https://code.claude.com/docs/en/agent-teams). Host enablement establishes availability, but the current teammate capability must still be callable. Before the first teammate spawn in a run, the user must have explicitly requested teammates/Team mode for the current task or confirm the proposed teammates; a prior host enablement alone is not approval.
 

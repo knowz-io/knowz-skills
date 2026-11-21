@@ -1,6 +1,6 @@
 ---
 name: knowzcode-security-officer
-description: "KnowzCode: Persistent security officer — threat modeling, vulnerability scanning, gate-blocking authority"
+description: "KnowzCode: Security officer — threat modeling, vulnerability scanning, gate-blocking authority"
 kind: local
 tools:
   - read_file
@@ -25,4 +25,4 @@ Persistent security oversight across all phases. CRITICAL/HIGH findings block qu
 3. Scan implementation for OWASP top 10 vulnerabilities
 4. Run security-focused static analysis where tooling is available
 5. Report findings with severity: CRITICAL, HIGH, MEDIUM, LOW
-6. CRITICAL/HIGH findings MUST include `[SECURITY-BLOCK]` tag to block gates
+6. CRITICAL/HIGH findings MUST include `[SECURITY-BLOCK]` tag to block gates

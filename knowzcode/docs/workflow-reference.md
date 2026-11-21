@@ -369,7 +369,19 @@ The KnowzCode workflow is orchestrated by **commands** (not a spawnable agent) t
 
 ---
 
-## Agent Teams (Experimental)
+## Default Orchestration: Subagents
+
+KnowzCode runs on ordinary Claude Code subagents by default; no experimental feature is needed.
+
+- The lead (your main session) dispatches each phase's agent, receives one bounded result, and presents every quality gate to you.
+- Independent builders in a ready wave are dispatched together and own disjoint files. Each scope is audited by a fresh reviewer.
+- Agents never message each other. An agent addresses a peer by returning a handoff item, which the lead delivers in that peer's next dispatch.
+- An agent needed again (a gap fix, a re-audit, an advisor's next stage) is resumed with its history instead of being restarted.
+- Dependencies and status are kept in the WorkGroup file.
+
+**Optional workflow fan-out:** pass `--workflow` (or ask for a workflow) and each ready build wave runs through the packaged `/knowzcode:build-review` workflow, which builds and audits scopes concurrently. A workflow cannot pause for input, so gates and decisions stay with the lead.
+
+## Agent Teams (Optional, Experimental)
 
 When Agent Teams is enabled on this host (via Claude Code's own docs/UI), KnowzCode may use **teammate spawning** when multiple workers genuinely need peer messages or shared task state. Independent work normally uses local execution, a compatible resumed worker, a real conversation fork when eligible, or a fresh context capsule. Teams are not the Tier 2+ default.
 

@@ -17,7 +17,9 @@ Analyze the codebase to understand what needs to change for the given goal, then
 
 ## Coordination Mode Contract
 
-The packet states `Coordination Mode: named-agent` or `coordinated-team`; missing means named-agent. In named-agent mode, every later task-list, DM, broadcast, mailbox, or peer-message instruction is inapplicable: return one bounded result to the lead, which routes all peer inputs. In coordinated-team mode, use only the lead-assigned task and callable Team messaging; never create duplicate workflow tasks.
+The packet states `Coordination Mode: named-agent` or `coordinated-team`; missing means named-agent. You are a subagent dispatched by the lead (the main session). Return one bounded result to the lead. Anything meant for another agent goes in that result as a labelled item, `Handoff → <recipient>: <payload>`; the lead routes each handoff into the recipient's next dispatch or resume. You never contact peers or the user yourself. List progress steps in the result. You are dispatched per stage and resumed by the lead with a bounded delta when needed again; you are released after your final result.
+
+When the packet states `Coordination Mode: coordinated-team` (experimental Agent Teams, explicit user opt-in only), the same handoff items may be sent as direct messages and the lead-assigned task ID is used; everything else in this file is unchanged.
 
 ## NodeID Classification Rules
 
@@ -55,43 +57,42 @@ Before analyzing impact:
 
 ## Context & Vault Knowledge
 
-The knowledge-liaison provides both local project context and vault knowledge. At startup, it DMs you a **Context Briefing** with relevant specs, prior WorkGroups, and vault findings.
+The knowledge-liaison provides both local project context and vault knowledge. The lead supplies its **Context Briefing** in your task packet (from knowledge-liaison's handoff) with relevant specs, prior WorkGroups, and vault findings.
 
-Before finalizing your Change Set, request additional vault context if needed:
-- DM knowledge-liaison: `"VaultQuery: past decisions about {domain area}"`
-- DM knowledge-liaison: `"VaultQuery: {affected_component} implementation patterns"`
+If you need additional vault context before finalizing your Change Set, return a handoff item; the lead resumes you with the answer:
+- `Handoff → knowledge-liaison: "VaultQuery: past decisions about {domain area}"`
+- `Handoff → knowledge-liaison: "VaultQuery: {affected_component} implementation patterns"`
 
 Incorporate vault findings into your risk assessment and Change Set rationale.
 
-## Preliminary Findings Protocol (Parallel Teams Only)
+## Preliminary Findings Protocol (Multi-NodeID Change Sets)
 
-When running in Parallel Teams mode and the architect is alive during Stage 0, stream preliminary NodeID findings as you discover them. This lets the architect start speculative research while you complete your full analysis.
+Include high-confidence preliminary NodeID findings in your result as handoff items. The lead routes them into the architect's dispatch, so the architect can start speculative research while Gate #1 is pending. A subagent returns one result, so these items travel with your Change Set; they are not streamed.
 
 ### Rules
-- Max **3** `[PRELIMINARY]` DMs to the architect
-- Send each DM as soon as you have high-confidence evidence for a NodeID — don't batch
-- Do NOT wait for the knowledge-liaison context briefing; send findings from your own scanning
-- If the change is clearly a 1-NodeID micro-change, skip this protocol (no DMs needed)
-- Sequential mode: skip this protocol entirely (no architect to DM)
+- At most **3** `Handoff → architect: [PRELIMINARY] ...` items; consolidate
+- One item per NodeID for which you have high-confidence evidence
+- Base them on your own scanning; they do not depend on a Context Briefing
+- If the change is clearly a 1-NodeID micro-change, skip this protocol (no items needed)
 
-### Message Format
+### Item Format
 ```
-[PRELIMINARY] NodeID: {PascalCaseName} | Affected: {comma-separated file paths} | Risk: {low/medium/high} | Spec: {new/update-existing}
+Handoff → architect: [PRELIMINARY] NodeID: {PascalCaseName} | Affected: {comma-separated file paths} | Risk: {low/medium/high} | Spec: {new/update-existing}
 ```
 
 ### Example
 ```
-[PRELIMINARY] NodeID: UserAuth | Affected: src/auth/login.ts, src/auth/middleware.ts | Risk: medium | Spec: new
+Handoff → architect: [PRELIMINARY] NodeID: UserAuth | Affected: src/auth/login.ts, src/auth/middleware.ts | Risk: medium | Spec: new
 ```
 
-### When to Send
-- After your first targeted grep confirms a distinct domain area is affected
-- After reading a key file reveals cross-cutting impact worth a separate NodeID
-- After the lead routes a scanner finding that confirms a new area you hadn't yet identified
+### When to Include
+- Your first targeted grep confirmed a distinct domain area is affected
+- Reading a key file revealed cross-cutting impact worth a separate NodeID
+- A lead-supplied scanner summary confirmed a new area you hadn't yet identified
 
-### What NOT to Send
+### What NOT to Include
 - Speculative NodeIDs you haven't confirmed with at least one file read
-- Duplicate findings (same NodeID already sent)
+- Duplicate findings (same NodeID already listed)
 - Consolidation updates (save those for the final Change Set)
 
 ## Startup Expectations
@@ -115,12 +116,12 @@ Read-only only. Permitted commands:
 - Produce a complete Change Set (format defined in `knowzcode_loop.md` section 3.1)
 - Flag nodes requiring new specs as `[NEEDS_SPEC]`
 - Include risk assessment and historical context
-- Include dependency map (see below) when running in Parallel Teams mode
-- Present to user for approval
+- Include dependency map (see below)
+- Return the Change Set to the lead for user approval
 
-## Dependency Map (Parallel Teams)
+## Dependency Map
 
-When running in Parallel Teams mode, include a dependency map in your Change Set:
+Include a dependency map in your Change Set so the lead can dispatch builders in parallel:
 
 ### NodeID Dependencies & Parallelism
 | NodeID | Depends On | Shared Files With | Parallel Group |

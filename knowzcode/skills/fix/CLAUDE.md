@@ -32,7 +32,7 @@ If ANY scope criterion fails, stop immediately and suggest `/knowzcode:work`. Do
 | `profile:` in `knowzcode/knowzcode_orchestration.md` | Config fallback |
 | Default: `frontier` | Lowest |
 
-Advisor profile: routes `microfix-specialist` to Sonnet with advisor-tool guidance block. Advisor falls back to `teams` if the advisor tool is unavailable on this host (for example experimental betas disabled, or host routed off the direct Anthropic API).
+Advisor profile: routes `microfix-specialist` to Sonnet with advisor-tool guidance block. Advisor falls back to `standard` if the advisor tool is unavailable on this host (for example experimental betas disabled, or host routed off the direct Anthropic API).
 
 Frontier profile: keeps the micro-fix on Opus (execution work). `--fable-execution` runs it on Fable for a high-value job, with graceful downgrade to Opus if Fable is unavailable.
 

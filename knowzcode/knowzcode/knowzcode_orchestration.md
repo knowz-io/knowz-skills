@@ -67,7 +67,8 @@ mcp_agents_enabled: true
 #          Fable is unavailable (no error).
 #          REQUIRES (for Fable): direct Anthropic API or Claude Platform on AWS.
 #
-# teams:   All agents use their frontmatter model assignments (mostly Opus).
+# standard: All agents use their frontmatter model assignments (mostly Opus).
+#          (`teams` is accepted as a deprecated alias.)
 #          Works on any Claude Code version, any API provider. No Fable or
 #          advisor dependency — set this to opt OUT of frontier's Fable cost.
 #
@@ -79,8 +80,8 @@ mcp_agents_enabled: true
 #          Uses the normal adaptive delegation router; it never forces Agent Teams.
 #          REQUIRES: Claude Code v2.1.100+, direct Anthropic API access.
 #
-# classic: Forces named-agent delegation mode. No Agent Teams, no advisor.
-#          Use when Agent Teams is unavailable or you want deterministic
+# classic: Forces plain subagent delegation with no conversation
+#          inheritance and no advisor. Use when you want deterministic
 #          single-threaded execution.
 profile: frontier
 
@@ -242,7 +243,7 @@ The enterprise-enforcer agent (v0.16.0+) auto-activates when `knowzcode/enterpri
 | builder_node_limit | `builder_node_limit:` | `--builder-node-limit=N` |
 | default_specialists | `default_specialists:` | `--specialists`, `--no-specialists` |
 | mcp_agents_enabled | `mcp_agents_enabled:` | `--no-mcp` |
-| profile | `profile:` | `--profile={advisor\|teams\|classic\|frontier}` |
+| profile | `profile:` | `--profile={advisor\|standard\|classic\|frontier}` |
 | execute_on_fable | `execute_on_fable:` | `--fable-execution` |
 | context_efficiency | `context_efficiency:` block | provider/runtime capability and rollout policy |
 | relay | `relay:` | `--relay=none\|auto\|other\|claude\|codex` or unambiguous natural language |
