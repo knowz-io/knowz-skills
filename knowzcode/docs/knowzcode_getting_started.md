@@ -49,19 +49,26 @@ cd your-project/
 /knowzcode:setup
 ```
 
-### Script Install (Any Platform)
+### Other Hosts
+
+Each host installs KnowzCode with its own plugin system. No separate installer is needed.
 
 ```bash
-npx @knowzai/knowzcode
+# OpenAI Codex
+codex plugin marketplace add knowz-io/knowz-skills
+codex plugin add knowzcode@knowz-skills
+
+# GitHub Copilot CLI
+copilot plugin marketplace add knowz-io/knowz-skills
+copilot plugin install knowzcode@knowz-skills
+
+# Gemini CLI
+gemini extensions install https://github.com/knowz-io/knowz-skills --ref gemini-knowzcode --auto-update
 ```
 
-This auto-detects your AI platforms and walks you through setup interactively. Commands available as `/work`, `/plan`, `/fix` (without `kc:` prefix). For the `/knowzcode:` prefix, also run: `/plugin install knowzcode@knowz-skills`.
+**Cursor:** open **Customize**, choose **From GitHub Repository**, enter `knowz-io/knowz-skills`, and install **knowzcode**.
 
-```bash
-npx @knowzai/knowzcode install --platforms claude,cursor   # Specific platforms
-npx @knowzai/knowzcode install --platforms all             # All 6 platforms
-npx @knowzai/knowzcode detect                              # See what's detected
-```
+After installing, ask the agent to "set up KnowzCode in this project" (`/knowzcode:setup` in Claude Code and Gemini CLI; Codex, Copilot CLI and Cursor list the same skill unprefixed as `setup`). Setup also offers adapter files for hosts without a plugin system (Windsurf, Copilot in VS Code).
 
 ### Alternative: Download ZIP
 
@@ -147,9 +154,9 @@ Mix prompts and conversation:
 NOW install KnowzCode into your project:
 
 ```bash
-# Recommended: use npx
+# Recommended: install the plugin for your host (see Installation), then
 cd your-project/
-npx @knowzai/knowzcode install
+/knowzcode:setup
 
 # Or extract the ZIP if you downloaded it
 unzip knowzcode.starter.zip -d your-project/
@@ -440,7 +447,7 @@ When stuck, check these in order:
 
 1. Prepare your three foundational documents
 2. Build your initial prototype
-3. Install KnowzCode: `npx @knowzai/knowzcode` or `/knowzcode:setup` (Claude Code) or copy the `knowzcode/` directory
+3. Install KnowzCode: install the plugin for your host and run `/knowzcode:setup`, or copy the `knowzcode/` directory
 4. Start systematic development with `/knowzcode:work "your first goal"`!
 
 Remember: The first project might feel slow as you learn the workflow, but each subsequent project becomes faster and more natural. KnowzCode's value increases as projects grow in complexity.

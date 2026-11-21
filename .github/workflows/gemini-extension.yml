@@ -1,0 +1,37 @@
+name: Publish Gemini extension
+
+# Gemini CLI installs an extension from the root of a git ref. This publishes the
+# built KnowzCode extension as the root of the `gemini-knowzcode` branch.
+on:
+  push:
+    tags:
+      - 'knowzcode/v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency: gemini-extension
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Build extension
+        run: node scripts/build-gemini-extension.mjs --out "$RUNNER_TEMP/gemini-knowzcode"
+      - name: Publish to gemini-knowzcode branch
+        run: |
+          cd "$RUNNER_TEMP/gemini-knowzcode"
+          version=$(node -p "require('./gemini-extension.json').version")
+          git init -q -b gemini-knowzcode
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "KnowzCode Gemini extension v${version} (${GITHUB_SHA})"
+          git push --force "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" gemini-knowzcode
+        env:
+          GITHUB_TOKEN: ${{ github.token }}

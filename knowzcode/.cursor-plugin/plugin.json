@@ -1,0 +1,14 @@
+{
+  "name": "knowzcode",
+  "description": "KnowzCode - structured AI development methodology with TDD, quality gates, and optional enterprise compliance",
+  "author": {
+    "name": "Alex Headscarf"
+  },
+  "homepage": "https://github.com/knowz-io/knowz-skills/tree/main/knowzcode",
+  "repository": "https://github.com/knowz-io/knowz-skills",
+  "license": "MIT",
+  "logo": "assets/icon.png",
+  "keywords": ["tdd", "development-methodology", "quality-gates", "agents", "code-review"],
+  "skills": "skills",
+  "agents": "agents"
+}

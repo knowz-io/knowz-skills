@@ -395,6 +395,6 @@ Current Claude Code forms the team when the first teammate is spawned and manage
 
 **Enabling Agent Teams:**
 - Prefer Claude Code's own enablement path — see https://code.claude.com/docs/en/agent-teams
-- `npx @knowzai/knowzcode install --agent-teams` points at that same Claude Code opt-in; KnowzCode does not write host settings for you
+- KnowzCode does not write host settings for you
 
 For full details on team conventions and communication patterns, see `knowzcode/claude_code_execution.md`.

@@ -50,6 +50,16 @@ One knowledge base. Every AI tool in your workflow.
 /knowzcode:setup                         # initialize in your project
 ```
 
+KnowzCode also installs natively on other hosts:
+
+```bash
+codex plugin marketplace add knowz-io/knowz-skills && codex plugin add knowzcode@knowz-skills        # OpenAI Codex
+copilot plugin marketplace add knowz-io/knowz-skills && copilot plugin install knowzcode@knowz-skills  # GitHub Copilot CLI
+gemini extensions install https://github.com/knowz-io/knowz-skills --ref gemini-knowzcode             # Gemini CLI
+```
+
+Cursor: **Customize → From GitHub Repository →** `knowz-io/knowz-skills`. See the [KnowzCode README](./knowzcode/#quick-start) for details.
+
 ## Knowz — Knowledge Management
 
 Search, save, and query your knowledge base without leaving your editor. Knowz auto-detects when a conversation is relevant and surfaces the right context — or offers to capture new insights — without being asked.

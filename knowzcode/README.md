@@ -24,15 +24,22 @@ KnowzCode brings discipline to AI-assisted development: impact analysis before d
 # Claude Code (recommended)
 /plugin marketplace add knowz-io/knowz-skills
 /plugin install knowzcode@knowz-skills
-cd your-project/
-/knowzcode:setup
+
+# OpenAI Codex
+codex plugin marketplace add knowz-io/knowz-skills
+codex plugin add knowzcode@knowz-skills
+
+# GitHub Copilot CLI
+copilot plugin marketplace add knowz-io/knowz-skills
+copilot plugin install knowzcode@knowz-skills
+
+# Gemini CLI
+gemini extensions install https://github.com/knowz-io/knowz-skills --ref gemini-knowzcode --auto-update
 ```
 
-```bash
-# Any of the 6 supported platforms
-npx @knowzai/knowzcode                                     # interactive setup
-npx @knowzai/knowzcode install --platforms claude,gemini   # or pick platforms
-```
+**Cursor:** open **Customize**, choose **From GitHub Repository**, enter `knowz-io/knowz-skills`, and install **knowzcode**.
+
+Then initialize the project once, from whichever host you installed. Ask the agent to "set up KnowzCode in this project", or invoke the setup skill by name: `/knowzcode:setup` in Claude Code and Gemini CLI. Codex, Copilot CLI and Cursor list plugin skills without the prefix, so the same skill appears there as `setup`.
 
 Then start working:
 
@@ -169,11 +176,12 @@ Full guide: **[docs/enterprise-compliance.md](./docs/enterprise-compliance.md)**
 | Platform | Install | Status |
 |----------|---------|--------|
 | Claude Code | `/plugin install knowzcode@knowz-skills` | Full |
-| OpenAI Codex | `npx @knowzai/knowzcode install --platforms codex` | Full |
-| Gemini CLI | `npx @knowzai/knowzcode install --platforms gemini` | Full |
-| GitHub Copilot | `npx @knowzai/knowzcode install --platforms copilot` | Experimental |
-| Cursor | `npx @knowzai/knowzcode install --platforms cursor` | Experimental |
-| Windsurf | `npx @knowzai/knowzcode install --platforms windsurf` | Experimental |
+| OpenAI Codex | `codex plugin add knowzcode@knowz-skills` | Full |
+| Gemini CLI | `gemini extensions install https://github.com/knowz-io/knowz-skills --ref gemini-knowzcode` | Full |
+| GitHub Copilot CLI | `copilot plugin install knowzcode@knowz-skills` | Skills only |
+| GitHub Copilot (VS Code) | `/knowzcode:setup` from any host above → Copilot adapter | Experimental |
+| Cursor | Customize → From GitHub Repository → `knowz-io/knowz-skills` | Experimental |
+| Windsurf | `/knowzcode:setup` from any host above → Windsurf adapter | Experimental |
 
 ## Connected to Knowz
 

@@ -946,7 +946,7 @@ Use the embedded templates below.
 
 ### 4. Detect project stack and populate environment context
 
-If `npx @knowzai/knowzcode install` ran first, the Stack table in `knowzcode/knowzcode_project.md` may already be populated. Check it — if rows are empty, detect and fill them yourself:
+The Stack table in `knowzcode/knowzcode_project.md` may already be populated (Merge mode). Check it — if rows are empty, detect and fill them yourself:
 
 - Probe for `package.json` (Node/TS), `pyproject.toml` / `requirements.txt` / `Pipfile` (Python), `*.csproj` / `*.sln` / `*.slnx` / `*.fsproj` (.NET), `go.mod` (Go), `Cargo.toml` (Rust), `Gemfile` (Ruby).
 - Write the Stack table rows (Language, Backend Framework, Frontend Framework, ORM/ODM, Testing (Unit), Testing (E2E)) with detected values. Leave a row empty if detection fails — don't write `[Detected]` or similar placeholders.
@@ -2460,7 +2460,7 @@ Gemini CLI (2026) supports native custom commands via TOML files in `.gemini/com
 # .gemini/commands/knowzcode/work.toml
 description = "Start a new KnowzCode development workflow"
 prompt = """Read .gemini/skills/knowzcode-work/SKILL.md for full instructions.
-Start a structured KnowzCode development workflow for: <ARGS/>
+Start a structured KnowzCode development workflow for: {{args}}
 Classify tier (Micro/Light/Full), create WorkGroup, run Phase 1A Impact Analysis.
 Read knowzcode/knowzcode_loop.md for methodology, knowzcode/knowzcode_project.md for context.
 STOP at each quality gate for user approval."""
@@ -2470,7 +2470,7 @@ STOP at each quality gate for user approval."""
 # .gemini/commands/knowzcode/explore.toml
 description = "Research before implementing"
 prompt = """Read .gemini/skills/knowzcode-explore/SKILL.md for full instructions.
-Investigate the codebase for: <ARGS/>
+Investigate the codebase for: {{args}}
 Explore files, check specs, review architecture, scan workgroup history.
 Present findings with current state, patterns, options, and recommended approach.
 Say 'implement' to transition to /knowzcode:work."""
@@ -2480,7 +2480,7 @@ Say 'implement' to transition to /knowzcode:work."""
 # .gemini/commands/knowzcode/fix.toml
 description = "Quick targeted fix (micro-fix workflow)"
 prompt = """Read .gemini/skills/knowzcode-fix/SKILL.md for full instructions.
-Apply a targeted fix for: <ARGS/>
+Apply a targeted fix for: {{args}}
 Scope guard: single file, <50 lines, no architectural impact. If larger, suggest /knowzcode:work.
 Run tests, create a microfix shard under knowzcode/journal/, commit with fix: prefix."""
 ```
@@ -2489,7 +2489,7 @@ Run tests, create a microfix shard under knowzcode/journal/, commit with fix: pr
 # .gemini/commands/knowzcode/audit.toml
 description = "Run quality audit against specs"
 prompt = """Read .gemini/skills/knowzcode-audit/SKILL.md for full instructions.
-Perform a READ-ONLY audit for: <ARGS/>
+Perform a READ-ONLY audit for: {{args}}
 Audit types: spec (VERIFY coverage), architecture (doc vs code), security (OWASP), integration (API contracts).
 Compare implementation against specs in knowzcode/specs/. Do NOT modify source files.
 Report completion percentage, gaps, and security concerns."""
@@ -2499,7 +2499,7 @@ Report completion percentage, gaps, and security concerns."""
 # .gemini/commands/knowzcode/learn.toml
 description = "Capture a learning to KnowzCode vault"
 prompt = """Read .gemini/skills/knowzcode-learn/SKILL.md for full instructions.
-Capture the following learning: <ARGS/>
+Capture the following learning: {{args}}
 Route to the appropriate vault per knowz-vaults.md (project root) routing rules.
 Find vault by description: patterns/workarounds/technical, decisions/conventions/ecosystem, or finalizations/completions.
 The referenced skill must run `vault-delta`; if MCP is unavailable, queue only its classified persistence action once."""
@@ -2521,7 +2521,7 @@ prompt = """Read .gemini/skills/knowzcode-regroup/SKILL.md for full instructions
 Create a local handoff in knowzcode/handoffs/.
 Use active WorkGroup state derived from knowzcode/journal/*/* and knowzcode/workgroups/.
 Do not save the handoff itself to Knowz. Only list durable learning candidates for later capture.
-<ARGS/>"""
+{{args}}"""
 ```
 
 ```toml
@@ -2544,7 +2544,7 @@ Check for existing knowzcode/ directory. If present, ask: Abort, Merge, or Overw
 Create knowzcode/ with template files. Detect project stack.
 Generate platform adapter(s) as needed. Offer MCP configuration.
 Report generated files and suggest /knowzcode:work as next step.
-<ARGS/>"""
+{{args}}"""
 ```
 
 ```toml
@@ -2555,7 +2555,7 @@ Configure the KnowzCode MCP server for Gemini CLI.
 Connect via Knowz Claude plugin OAuth / marketplace (`claude plugin install knowz` then `/knowz setup`).
 Connect only via Knowz Claude plugin OAuth / marketplace. Do not scrape project config files.
 Verify presence-only: gemini mcp list. If the user has no account yet, suggest /knowz register.
-<ARGS/>"""
+{{args}}"""
 ```
 
 ```toml
@@ -2567,7 +2567,7 @@ If mcp_config.md already says Connected, offer reconnect via /knowz setup.
 Registration API: https://api.knowz.io/api/v1/users/register
 Prompt for name, email, and password. Call the API, then complete sign-in through Claude OAuth / marketplace (`claude plugin install knowz` then `/knowz setup`).
 Connect only via Knowz Claude plugin OAuth / marketplace. Do not scrape project config files.
-<ARGS/>"""
+{{args}}"""
 ```
 
 ```toml
@@ -2575,7 +2575,7 @@ Connect only via Knowz Claude plugin OAuth / marketplace. Do not scrape project 
 description = "Investigate production telemetry"
 prompt = """Read .gemini/skills/knowzcode-telemetry/SKILL.md for full instructions.
 Investigate production telemetry to diagnose errors and trace issues.
-Parse query for environment, timeframe, error context: <ARGS/>
+Parse query for environment, timeframe, error context: {{args}}
 Read knowzcode/knowzcode_telemetry.md for configured sources.
 Query Sentry/App Insights via MCP tools. Correlate findings across sources.
 Present timeline, root cause analysis, and recommended fixes.
@@ -2591,7 +2591,7 @@ Detect available telemetry MCP tools (Sentry, App Insights).
 For each source: verify connectivity, test auth, detect projects.
 Write config to knowzcode/knowzcode_telemetry.md.
 Run a test query to verify end-to-end connectivity.
-<ARGS/>"""
+{{args}}"""
 ```
 
 Gemini also supports extensions (`gemini-extension.json`) for tool integration and `@file.md` imports for including methodology files directly in prompts.

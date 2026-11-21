@@ -31,8 +31,8 @@ OpenAI Codex adapter generated:
   .agents/skills/knowzcode-register/SKILL.md            (/knowz register — create account)
   .agents/skills/knowzcode-start-work/SKILL.md          (implementation/relay intent router)
 
-Tip: Run `npx @knowzai/knowzcode install --platforms codex --global` to install
-skills globally to ~/.agents/skills/ (available in all projects).
+Tip: Run `codex plugin marketplace add knowz-io/knowz-skills` and
+`codex plugin add knowzcode@knowz-skills` to have the skills in all projects.
 ```
 
 ## Gemini Success Message
@@ -62,8 +62,8 @@ Gemini CLI adapter generated:
 
 MCP: [Configured via OAuth / marketplace | Not configured — run /knowz setup later]
 
-Tip: Run `npx @knowzai/knowzcode install --platforms gemini --global` to install
-skills globally to ~/.gemini/skills/ (available in all projects).
+Tip: Run `gemini extensions install https://github.com/knowz-io/knowz-skills
+--ref gemini-knowzcode` to have the commands and skills in all projects.
 ```
 
 ## Copilot Success Message
