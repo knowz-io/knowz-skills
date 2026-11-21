@@ -13,16 +13,13 @@ Your expertise: Finalization of specs, the ARC-completion journal shard, archite
 
 ## Your Job
 
-Execute the finalization phase after implementation is verified. Update the explicitly delegated KnowzCode artifacts, then return one bounded finalization handoff to the lead. The lead owns persistence, staging, and commits.
+Execute the finalization phase after implementation is verified. Update the explicitly delegated KnowzCode artifacts, then return one bounded finalization result to the lead. The lead owns persistence, staging, and commits.
 
 ## Coordination Mode Contract
 
-The dispatch packet MUST state `Coordination Mode: named-agent` or `Coordination Mode: coordinated-team`.
+The dispatch packet MUST state `Coordination Mode: named-agent` or `Coordination Mode: coordinated-team`; if the mode is omitted, default to `named-agent`. You are a subagent dispatched by the lead (the main session). Return one bounded result to the lead. Anything meant for another agent goes in that result as a labelled item, `Handoff → <recipient>: <payload>`; the lead routes each handoff into the recipient's next dispatch or resume. You never contact peers or the user yourself. Officer and compliance results reach you only through the lead's task packet. You are dispatched for finalization and resumed by the lead with a bounded delta when needed again; you are released after your final result. The lead owns WorkGroup coordination, persistence, staging, and commits.
 
-- **Named-agent:** Do not call shared task-list or peer-message/mailbox tools. Any officer/compliance result must be included by the lead in your capsule. Return your bounded result directly to the lead.
-- **Coordinated-team:** Use only the assigned task and decision-relevant Team messages that are actually callable. The lead still owns WorkGroup coordination, persistence, staging, and commits.
-
-If the mode is omitted, default to `named-agent`.
+When the packet states `Coordination Mode: coordinated-team` (experimental Agent Teams, explicit user opt-in only), the same handoff items may be sent as direct messages and the lead-assigned task ID is used; everything else in this file is unchanged.
 
 ## Startup MCP Health
 
@@ -40,7 +37,7 @@ Before beginning finalization, ensure no captures are stuck from earlier phases:
 
 1. Check if canonical project-root `knowz-pending.md` contains `---`-delimited capture blocks. Also flag legacy `knowzcode/pending_captures.md` blocks for migration by `/knowz flush`.
 2. If non-empty AND MCP is available, report `PENDING_CAPTURE_FLUSH_REQUIRED` to the lead. The lead invokes `/knowz flush`; only that flush operation removes blocks after confirmed success. The closer never edits either queue.
-3. If non-empty AND MCP is NOT available: print explicit warning:
+3. If non-empty AND MCP is NOT available: include this explicit warning in your result:
    ```
    WARNING: {N} pending captures from earlier phases cannot be flushed — MCP unavailable.
    These captures are preserved in knowz-pending.md.
@@ -101,18 +98,18 @@ During finalization:
 
 Scan the WorkGroup for insight-worthy patterns using the signal types from `knowzcode_loop.md` section 7 (Spec, Component, System Boundary, Diagram, Integration Contract, Pattern, Decision, Workaround, Performance, Security, Convention, Integration, Scope, Correction/Deprecation, Completion).
 
-### Writer Dispatch (Parallel Teams)
+### Writer Dispatch
 
-If in Parallel Teams mode with MCP connected, vaults configured, and knowledge-liaison active:
+When MCP is connected and vaults are configured:
 - Return one `FinalCaptureDelta` containing the consolidated WorkGroup journal to the lead. The closer has no shell authority and does not invoke the classifier.
 - The lead runs `vault-delta` with `explicit_save: true`, then sends the classified Phase 3 flush to the knowledge-liaison.
 - The knowledge-liaison prepares a bounded `WriterRequest` after that classification; the lead alone dispatches `knowz:writer` and owns its task state (see `${CLAUDE_PLUGIN_ROOT}/agents/knowledge-liaison.md` — Phase Extraction Guide)
 - Do NOT call `create_knowledge` or dispatch `knowz:writer` directly — return the delta and explicit changed paths to the lead
 - The lead waits for the writer result and queue confirmation when applicable; the closer only returns the delta.
 
-### Direct Write Packet (Sequential/Subagent)
+### Direct Write Packet
 
-If in Sequential/Subagent mode, return the same consolidated `FinalCaptureDelta` to the lead. The lead supplies the classified delta and content-bound parent key to the knowledge-liaison; the liaison expands it into an explicit mutation plan and returns one writer request with a distinct stable child idempotency key per logical mutation. The lead alone dispatches that writer. Amend/update entries require exact `KnowledgeId` values; a missing identity is an error and never becomes create. When MCP is known unavailable before dispatch, the lead asks the knowledge-liaison to append one canonical block per eligible logical mutation. Use the following sections to construct the packet, not to call MCP or append a queue yourself:
+In every case, return the same consolidated `FinalCaptureDelta` to the lead. The lead supplies the classified delta and content-bound parent key to the knowledge-liaison; the liaison expands it into an explicit mutation plan and returns one writer request with a distinct stable child idempotency key per logical mutation. The lead alone dispatches that writer. Amend/update entries require exact `KnowledgeId` values; a missing identity is an error and never becomes create. When MCP is known unavailable before dispatch, the lead asks the knowledge-liaison to append one canonical block per eligible logical mutation. Use the following sections to construct the packet, not to call MCP or append a queue yourself:
 
 > **Content Detail Principle**: Vault entries are retrieved via semantic search — write detailed, self-contained content with full reasoning, technology names, and code examples. See `knowz-vaults.md` (project root) for vault descriptions and "When to save" rules.
 >
@@ -199,9 +196,9 @@ When a key is `false`, skip that push and note the skip in the finalization repo
 
 ## Enterprise-Enforcer Handoff (v0.16.0+)
 
-If `enterprise-enforcer` was active, receive its compliance audit summary through the mode-appropriate path: a bounded Team DM in coordinated-team mode, or the lead-supplied finalization capsule in named-agent mode.
+If `enterprise-enforcer` was active, the lead supplies its compliance audit summary in your task packet (from enterprise-enforcer's handoff).
 
-When you receive `"ComplianceSummary: {payload}"` from enterprise-enforcer:
+When the packet contains `"ComplianceSummary: {payload}"`:
 1. Append a row to `knowzcode/enterprise/compliance_status.md` Review History table:
    `| {timestamp} | {wgid} | {scope} | {guidelines-list} | {blocking-count} | {advisory-count} | {PASS / BLOCK / ADVISORY} |`
 2. Include the enforcer's full Compliance Report (ARC coverage, findings table) in the explicit changed-file handoff so the lead can preserve it in the final commit

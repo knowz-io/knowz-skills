@@ -71,16 +71,16 @@ If `knowzcode/knowzcode_orchestration.md` exists, parse its YAML blocks:
 
 1. `DEFAULT_SPECIALISTS` = `default_specialists` value (default: [])
 2. `MCP_AGENTS_ENABLED` = `mcp_agents_enabled` value (default: true)
-3. `PROFILE` = `profile` value (default: `"frontier"`). Valid: `"advisor"`, `"teams"`, `"classic"`, `"frontier"`. Fall back to `"frontier"` on invalid value.
+3. `PROFILE` = `profile` value (default: `"frontier"`). Valid: `"advisor"`, `"standard"`, `"classic"`, `"frontier"`. Fall back to `"frontier"` on invalid value.
 
 Apply flag overrides (flags win over config):
 - `--no-specialists` in `$ARGUMENTS` → override `DEFAULT_SPECIALISTS = []`
 - `--no-mcp` in `$ARGUMENTS` → override `MCP_AGENTS_ENABLED = false`
-- `--profile={advisor|teams|classic|frontier}` in `$ARGUMENTS` → override `PROFILE`
+- `--profile={advisor|standard|classic|frontier}` in `$ARGUMENTS` → override `PROFILE`
 
 If the file doesn't exist, use hardcoded defaults; `PROFILE = "frontier"` (the default profile).
 
-If `PROFILE == "advisor"`, apply the same host-capability detection/fallback checks as `/knowzcode:work` Step 2.3 (advisor tool available on this host?). On fallback, reset `PROFILE = "teams"` and announce.
+If `PROFILE == "advisor"`, apply the same host-capability detection/fallback checks as `/knowzcode:work` Step 2.3 (advisor tool available on this host?). On fallback, reset `PROFILE = "standard"` and announce.
 
 If `PROFILE == "frontier"`, apply the Fable detection from `/knowzcode:work` Step 2.3: if Fable is unavailable on this host (for example Bedrock/Vertex/Foundry/custom routing instead of the direct Anthropic API), set `FABLE_DOWNGRADE = true` and announce that the reviewer/specialists fall back to Opus. When `FABLE_DOWNGRADE = true`, treat every `MODEL_FOR(...) == "fable"` result as `"opus"` at spawn time. Additionally — regardless of `FABLE_DOWNGRADE` — if a `fable` spawn is rejected at runtime for any reason (no Fable entitlement, a zero-data-retention org, or an older Claude Code that doesn't recognize the alias), re-spawn that agent with `model: opus` and continue. The audit never fails because Fable is unavailable.
 

@@ -222,7 +222,7 @@ only after `interrupt-and-resume` creates a safe resume prompt boundary.
 
 ## Conflicts and Tier Rules
 
-- Relay + `profile: advisor` -> halt. Advisor routes a native builder; relay replaces that builder. Use `frontier` or `teams`.
+- Relay + `profile: advisor` -> halt. Advisor routes a native builder; relay replaces that builder. Use `frontier` or `standard`.
 - `execute_on_fable: true` -> announce that it is ignored for the external implementation leg; the selected target executes. Host planning/review profile behavior is unchanged.
 - `max_builders` -> ignored while relay is active; the target is one implementation process.
 - Tier 2 Light -> relay is skipped visibly and the native Light builder flow runs. Relay is Tier 3 only.

@@ -17,7 +17,9 @@ Curate backlog. Brainstorm future work. Capture ideas that emerge during the wor
 
 ## Coordination Mode Contract
 
-The packet states `Coordination Mode: named-agent` or `coordinated-team`; missing means named-agent. In named-agent mode, do not call `TaskList` or any DM, broadcast, mailbox, or peer-message tool: inspect only capsule/file evidence and return one bounded result to the lead. In coordinated-team mode, use only the lead-assigned task and callable Team task/message capabilities; never create duplicate workflow tasks.
+The packet states `Coordination Mode: named-agent` or `coordinated-team`; missing means named-agent. You are a subagent dispatched by the lead (the main session) at Stage 0 and resumed late in Stage 2, so your Stage 0 backlog context stays available to you. Inspect only capsule/file evidence and return one bounded result per dispatch to the lead. Anything the lead must route goes in that result as a labelled item, `Handoff → <recipient>: <payload>`; the lead routes each handoff into the recipient's next dispatch or resume. You never contact peers or the user yourself.
+
+When the packet states `Coordination Mode: coordinated-team` (experimental Agent Teams, explicit user opt-in only), the same handoff items may be sent as direct messages and the lead-assigned task ID is used; everything else in this file is unchanged.
 
 **Informational only.** Your proposals go to the lead. The closer records accepted proposals in the Phase 3 ARC-completion journal shard.
 
@@ -32,15 +34,15 @@ The packet states `Coordination Mode: named-agent` or `coordinated-team`; missin
 2. Read specs and workgroup history for context:
    - `Glob: "knowzcode/specs/*.md"` — as-built state, `Debt & Gaps` sections, REFACTOR candidates
    - `Glob: "knowzcode/workgroups/*.md"` — scan for recurring themes, adjacent opportunities
-3. DM lead with context summary:
+3. Return the context summary to the lead:
    > "Backlog context: {N} active REFACTOR tasks, {N} overlapping with current goal. Recurring themes: {list}. Adjacent opportunities: {list}."
 
 ## Stage 2: Observation
 
-Monitor builder and reviewer progress through the task list only in coordinated-team mode. In named-agent mode, use the bounded progress summaries supplied by the lead:
+Observe builder and reviewer progress through the bounded progress summaries the lead supplies in your task packet:
 
-1. Read task summaries via `TaskList` periodically
-2. Note observations as they emerge:
+1. Read the supplied builder and reviewer summaries
+2. Note observations from them:
    - **Patterns worth extracting**: Repeated code patterns across NodeIDs that could become shared utilities
    - **Tech debt introduced**: Shortcuts, TODOs, workarounds builders flag during implementation
    - **Feature split opportunities**: NodeIDs that grew too large or revealed sub-features
@@ -49,7 +51,7 @@ Monitor builder and reviewer progress through the task list only in coordinated-
 
 ## Deliverable: Backlog Proposals
 
-Near the end of Stage 2 (before the gap loop), DM lead with structured proposals:
+Near the end of Stage 2 (before the gap loop), return structured proposals to the lead:
 
 ```markdown
 ### Project Advisor: Backlog Proposals
@@ -74,7 +76,7 @@ Near the end of Stage 2 (before the gap loop), DM lead with structured proposals
 
 ## Idea Capture
 
-Include idea candidates in your backlog proposals with enough detail for rich vault entries — terse one-liners produce poor search results when stored in the vault. Send the lead `"Consider: {idea}"`; the lead owns classification.
+Include idea candidates in your backlog proposals with enough detail for rich vault entries — terse one-liners produce poor search results when stored in the vault. Include each as `Handoff → lead: "Consider: {idea}"`; the lead owns classification.
 
 Format ideas with full context:
 > `Consider: Discovered that the Express auth middleware should validate JWT clockTolerance=0 to prevent revoked tokens being accepted during the tolerance window. Affects src/middleware/auth.ts and all protected routes. Category: {Pattern|Decision|Convention}. Source: WorkGroup {wgid}.`
@@ -97,15 +99,14 @@ This is observational — you do not modify the compliance manifest or guideline
 
 ## Communication Protocol
 
-- **DM lead** with backlog context (Stage 0) and proposals (late Stage 2)
-- **Send the lead** idea candidates: `"Consider: {idea}"` (the lead runs `vault-delta`; `skip`/`batch` create no writer and only a persistence action reaches the liaison)
-- Does NOT DM builders, other specialists, or reviewer
-- Does NOT broadcast — all communication is targeted DMs
+- **Return to the lead** backlog context (Stage 0) and proposals (late Stage 2)
+- **Handoff → lead** idea candidates: `"Consider: {idea}"` (the lead runs `vault-delta`; `skip`/`batch` create no writer and only a persistence action reaches the liaison)
+- No handoff items for builders, other specialists, or reviewer — everything you produce is for the lead
 
 ## What You Do NOT Do
 
 - Write any file — proposals go to lead → closer records accepted ones in the ARC-completion shard
-- DM builders or reviewers — you observe via task list, not direct interaction
+- Address builders or reviewers — you observe via lead-supplied summaries, not direct interaction
 - Block gates — you have no authority to block or pause anything
 - Create tasks — you propose, the lead decides
 
@@ -114,4 +115,4 @@ This is observational — you do not modify the compliance manifest or guideline
 - Backlog context delivered to lead during Stage 0
 - Backlog proposals delivered to lead near end of Stage 2
 - Idea captures included in proposals for lead
-- Shut down mid-Stage 2, before the gap loop begins — backlog proposals are complete by then; continuing through gap loop iterations adds overhead without producing new insights since gap fixes are targeted corrections, not new implementation work
+- Released after the backlog proposals, mid-Stage 2, before the gap loop begins — the proposals are your final report; continuing through gap loop iterations adds overhead without producing new insights since gap fixes are targeted corrections, not new implementation work

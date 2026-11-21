@@ -2,12 +2,12 @@
 
 KnowzCode on Claude Code supports four explicit model profiles. **`frontier` is the existing default** (Fable plans/specs/reviews, Opus builds). Context-affinity routing is configured separately under `context_efficiency`, so topology/cache experiments never silently change a user's model profile.
 
-The choice is yours and asked exactly once: `/knowzcode:setup` asks during setup, and if no `profile:` is configured, the first `/knowzcode:work` asks and saves your answer to `knowzcode/knowzcode_orchestration.md` — no run ever re-asks. Set `profile: teams` (or `--profile=teams`) any time to opt out of frontier's Fable cost.
+The choice is yours and asked exactly once: `/knowzcode:setup` asks during setup, and if no `profile:` is configured, the first `/knowzcode:work` asks and saves your answer to `knowzcode/knowzcode_orchestration.md` — no run ever re-asks. Set `profile: standard` (or `--profile=teams`) any time to opt out of frontier's Fable cost.
 
 | Profile | When to Use | Mode | Requires |
 |---------|-------------|------|----------|
 | `frontier` (default) | Fable plans/specs/reviews every change; Opus executes. The most capable planning, at higher cost; auto-falls back to Opus if Fable is unavailable. | Parallel / Sequential / Subagent (your choice) | Direct Anthropic API (or Claude Platform on AWS) for Fable |
-| `teams` | Opt OUT of frontier's Fable cost — all agents use their frontmatter defaults (mostly Opus). No external dependencies. | Parallel / Sequential / Subagent (your choice) | Any Claude Code version, any provider |
+| `standard` | Opt OUT of frontier's Fable cost — all agents use their frontmatter defaults (mostly Opus). No external dependencies. | Parallel / Sequential / Subagent (your choice) | Any Claude Code version, any provider |
 | `advisor` | Cost-sensitive work where Sonnet + advisor-tool is acceptable quality. ~12% cheaper on coding tasks (per Anthropic benchmarks). | Adaptive / Sequential / Coordinated (your choice) | Claude Code v2.1.100+, direct Anthropic API |
 | `classic` | You want deterministic execution without conversation inheritance or teammate coordination. | Local / Resume / Fresh named agents | — |
 
@@ -29,7 +29,7 @@ For the rare job where the implementation itself needs frontier reasoning, add `
 
 Claude Code's advisor tool lets a Sonnet-based agent consult Opus mid-generation within a single API call. Under `advisor` profile, the agents listed below switch to Sonnet and get an advisor-guidance block in their spawn prompt:
 
-| Agent | `advisor` | `teams` | `classic` |
+| Agent | `advisor` | `standard` | `classic` |
 |-------|-----------|---------|-----------|
 | architect, analyst, security-officer, enterprise-enforcer | opus | opus | opus |
 | builder, reviewer, closer, smoke-tester, microfix-specialist, frontend-designer | **sonnet** | opus | opus |
@@ -43,7 +43,7 @@ Strategic agents (architect, analyst, security-officer, enterprise-enforcer) sta
 In `knowzcode/knowzcode_orchestration.md`:
 
 ```yaml
-profile: frontier    # default; or: teams, advisor, classic
+profile: frontier    # default; or: standard, advisor, classic
 ```
 
 The portable efficiency objective is independent:
@@ -63,19 +63,19 @@ Or override per-invocation:
 ```bash
 /knowzcode:work "build X" --profile=advisor
 /knowzcode:work "build critical auth flow" --profile=frontier
-/knowzcode:audit --profile=teams
+/knowzcode:audit --profile=standard
 ```
 
 ## Graceful fallback
 
-When `profile: advisor` is set but the advisor tool is unavailable on this host (for example experimental betas disabled, or the host is routed through Bedrock/Vertex/custom endpoints rather than the direct Anthropic API), `/work` and `/audit` automatically fall back to `teams` with a clear message. Your workflow proceeds — you just don't get the cost savings.
+When `profile: advisor` is set but the advisor tool is unavailable on this host (for example experimental betas disabled, or the host is routed through Bedrock/Vertex/custom endpoints rather than the direct Anthropic API), `/work` and `/audit` automatically fall back to `standard` with a clear message. Your workflow proceeds — you just don't get the cost savings.
 
 Similarly, `profile: frontier` requires Fable, which runs on the direct Anthropic API (or Claude Platform on AWS) and needs 30-day data retention. If Fable is unavailable on this host (for example Bedrock/Vertex/Foundry routing), the planning/review agents fall back to Opus with a clear message and the run proceeds as an all-Opus flow.
 
 ## Conflicts
 
-Profiles select model/tool policy, not coordination topology. `--profile=advisor` is valid with `--sequential` and `--subagent`; it never enables or requires Agent Teams. The historically named `teams` profile likewise does not enable Teams. Agent Teams requires separate explicit configuration and is selected at runtime only for genuine peer coordination.
+Profiles select model/tool policy, not coordination topology. `--profile=advisor` is valid with `--sequential` and `--subagent`; it never enables or requires Agent Teams. `teams` is still accepted as a deprecated alias for `standard`; neither enables Agent Teams. Agent Teams requires separate explicit configuration and is selected at runtime only for genuine peer coordination.
 
 ## Roll back
 
-Delete the `profile:` line from `knowzcode/knowzcode_orchestration.md` (or omit `--profile` on the CLI) to use the default (`frontier`). To restore the pre-0.19 all-Opus behavior, set `profile: teams`. No migration needed.
+Delete the `profile:` line from `knowzcode/knowzcode_orchestration.md` (or omit `--profile` on the CLI) to use the default (`frontier`). To restore the pre-0.19 all-Opus behavior, set `profile: standard`. No migration needed.

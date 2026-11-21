@@ -8,7 +8,7 @@ Detailed phase instructions for Tier 2 (Light) execution. The lead reads this fi
 
 - [Dispatch Setup](#dispatch-setup)
 - [Light Phase 1: Impact Scan + Spec](#light-phase-1-impact-scan--spec)
-- [Light Phase 2A: Implementation](#light-phase-2a-implementation-builder-teammate)
+- [Light Phase 2A: Implementation](#light-phase-2a-implementation)
 - [Light Phase 2B: Smoke Testing (Opt-in)](#light-phase-2b-smoke-testing-opt-in)
 - [Light Phase 3: Finalization](#light-phase-3-inline--lead-coordinates-knowledge-liaison-captures)
 

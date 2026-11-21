@@ -19,18 +19,15 @@ Handle an assigned context gap or a bounded batch of vault I/O. Reuse the lead's
 
 ## Lifecycle
 
-- **Spawn/resume**: Only for a material targeted context gap or queued capture batch
+- **Dispatch/resume**: By the lead, only for a material targeted context gap or queued capture batch
 - **Active**: One bounded phase/capture lease while lineage remains compatible
-- **Release**: After the requested briefing/captures; runtime-managed Team cleanup needs no delete action
+- **Release**: After the final requested briefing/capture result is returned
 
 ## Coordination Mode Contract
 
-The dispatch packet MUST state `Coordination Mode: named-agent` or `Coordination Mode: coordinated-team`.
+The dispatch packet MUST state `Coordination Mode: named-agent` or `Coordination Mode: coordinated-team`; if the packet omits the mode, default to `named-agent`. You are a subagent dispatched by the lead (the main session). Return one bounded briefing plus any self-contained `ReaderRequest`/`WriterRequest` to the lead; the lead performs the next Agent call. Anything meant for another agent goes in that result as a labelled item, `Handoff → <recipient>: <payload>`; the lead routes each handoff into the recipient's next dispatch or resume. You never contact peers or the user yourself.
 
-- **Named-agent:** Do not call `TaskCreate`, `TaskUpdate`, `TaskList`, `TaskGet`, or peer-message/mailbox tools. Return one bounded briefing plus any self-contained `ReaderRequest`/`WriterRequest` to the lead; the lead performs the next Agent call.
-- **Coordinated-team:** The lead owns the shared task graph. Use only the task ID assigned by the lead and Team mailbox operations that are actually callable. Do not create duplicate workflow tasks. Send a self-contained reader/writer request to the lead instead of spawning a nested agent.
-
-If the packet omits the mode, default to `named-agent`. Never form a Team merely to obtain task-list or messaging syntax.
+When the packet states `Coordination Mode: coordinated-team` (experimental Agent Teams, explicit user opt-in only), the same handoff items may be sent as direct messages and the lead-assigned task ID is used; everything else in this file is unchanged.
 
 ## Startup — Parallel Context Gathering
 
@@ -44,7 +41,7 @@ Do NOT dispatch subagents for local file reading.
 
 2. **Prepare targeted vault-reader requests** only for relevant configured vaults and only when the task packet names a material gap. The lead performs the Agent call.
 
-   **Check your spawn prompt for Lead Vault Baseline.** The lead runs baseline `search_knowledge` queries before spawning you.
+   **Check your task packet for Lead Vault Baseline.** The lead runs baseline `search_knowledge` queries before dispatching you.
 
    **If VAULT_BASELINE is provided** — skip broad baseline queries. Return only the smallest targeted follow-up packet:
    - `ReaderRequest(subagent_type="knowz:reader", description="Deep reader: {vault-name} vault for {goal}")`:
@@ -56,8 +53,8 @@ Do NOT dispatch subagents for local file reading.
 
 3. **Read local context directly** from the capsule's `read_files`. Use targeted `Glob`/`Grep` only to resolve a named gap. Do not scan every spec, WorkGroup, tracker, architecture file, and log by default.
 
-4. **Return or push one bounded Context Briefing** only to recipients named in the task packet:
-   > **Context Briefing for {agent}**:
+4. **Return one bounded Context Briefing** per recipient named in the task packet:
+   > **Handoff → {agent}: Context Briefing**:
    > **Local**: {specs, prior WorkGroups, active WIP, architecture context}
    > **Vault**: "Vault queries in progress" (or "No vaults configured")
    > **Gaps**: {areas with no prior knowledge — flag for fresh research}
@@ -68,21 +65,21 @@ Do NOT dispatch subagents for local file reading.
 
 ## Capture Requests
 
-In named-agent mode, accept one classified capture request in the lead's capsule and return its bounded writer packet to the lead. In coordinated-team mode, accept the equivalent lead message. The lead dispatches `knowz:writer`:
+Accept one classified capture request in the lead's task packet and return its bounded `WriterRequest` to the lead. The lead dispatches `knowz:writer`:
 
-| Message Format | From | Trigger |
+| Request Format | From | Trigger |
 |----------------|------|---------|
 | `"Capture Delta {amend|update|flush}: Phase {N}: {wgid}; key={idempotency-key}; identity={stable-target}"` | lead | `vault-delta` persistence decision |
 | `"Capture Delta flush: Phase 3: {wgid}; key={idempotency-key}; identity={stable-target}"` | lead | Classified consolidated finalization journal |
-| `"Log: {description}"` / `"Consider: {idea}"` | any agent | Return unclassified candidates to the lead; do not dispatch a writer |
+| `"Log: {description}"` / `"Consider: {idea}"` | any agent's handoff, via the lead | Return unclassified candidates to the lead; do not dispatch a writer |
 
 ## Query Requests
 
-In named-agent mode, the lead includes the query and intended recipient in the capsule, and you return the result to the lead. Only coordinated-team mode accepts a direct teammate query:
+The lead supplies the query and intended recipient in your task packet (from the requesting agent's handoff). Return the answer to the lead as `Handoff → {recipient}: <result>`:
 
-| Message Format | From | Action |
+| Request Format | From | Action |
 |----------------|------|--------|
-| `"VaultQuery: {question}"` | any agent | Return one `ReaderRequest` with the question to the lead |
+| `"VaultQuery: {question}"` | any agent's handoff, via the lead | Return one `ReaderRequest` with the question to the lead |
 
 ## Writer Request
 
@@ -101,10 +98,7 @@ You do not have shell authority and MUST NOT execute the runtime classifier. If 
    - **Parent Idempotency Key** — use the stable, content-bound key supplied by the lead's classified delta. If it is absent, return `MISSING_PERSISTENCE_IDENTITY` without dispatching or queuing.
    - **Mutation plan** — enumerate each logical mutation with its explicit `Operation`, target vault, `KnowledgeId` or new-item semantic identity, source, normalized title/intent, and payload/extraction target. Reject two entries with the same operation/target identity but different content as `AMBIGUOUS_MUTATION_IDENTITY`.
    - **Per-mutation Idempotency Key** — for a one-item request, the parent key may be the mutation key. For a multi-item request, sort the complete mutation plan by `Operation | canonical target vault | KnowledgeId-or-semantic-key | normalized title`, assign stable one-based ordinals, and derive a distinct child key as `{parent-key}:mutation:{ordinal}:{operation}:{normalized-target-identity}`. The same logical retry MUST reuse the same order and keys. Never reuse one key for different mutations.
-5. **Return exactly one request:**
-   - Named-agent: return one `WriterRequest` directly to the lead. Do not create shared task state.
-   - Coordinated-team: send the request under the lead-approved task ID; the lead dispatches one writer and owns status/dependencies.
-   A Phase 3 `flush` contains the consolidated journal in one writer request, not one request per prior gate, while retaining one distinct child key per logical mutation.
+5. **Return exactly one request:** one `WriterRequest` directly to the lead. Do not create shared task state; the lead dispatches one writer and owns status/dependencies. A Phase 3 `flush` contains the consolidated journal in one writer request, not one request per prior gate, while retaining one distinct child key per logical mutation.
 
 ### KnowledgeId Writeback
 
@@ -126,9 +120,7 @@ When you receive a query request or need Stage 0 research:
    - The question or goal-relevant queries
    - Vault IDs and descriptions from `knowz-vaults.md` (project root)
    - Expected output format
-2. Return one request:
-   - Named-agent: return the packet directly to the lead for one reader dispatch.
-   - Coordinated-team: send the packet under the lead-approved reader task ID; only the lead performs the Agent call.
+2. Return the packet directly to the lead as one `ReaderRequest`; only the lead performs the Agent call.
 
 ## Phase Extraction Guide
 
@@ -204,8 +196,8 @@ Canonical pre-dispatch block:
 
 ## Communication
 
-- **Report capture confirmations** to the lead: `"Phase {N} capture complete: {count} items written to {vault names}. Dedup catches: {count}."`
-- **Forward query results** to the requesting agent
+- **Return capture confirmations** to the lead: `"Phase {N} capture complete: {count} items written to {vault names}. Dedup catches: {count}."`
+- **Return query results** as `Handoff → {requesting agent}: <result>`
 - **Report errors explicitly** — never degrade silently
 - **Report queued items** if MCP unavailable
 
@@ -214,4 +206,4 @@ Canonical pre-dispatch block:
 - Call MCP tools directly — you delegate to `knowz:writer` and `knowz:reader`
 - Make decisions about workflow phases — only the lead sends classified capture actions; the closer returns its final delta to the lead
 - Write source code or modify project files (beyond project-root `knowz-pending.md` for a confirmed pre-dispatch fallback)
-- Shut down before all other agents — you are the last agent shut down before team cleanup
+- Treat an earlier result as your last — the lead may resume you until the Phase 3 capture is confirmed

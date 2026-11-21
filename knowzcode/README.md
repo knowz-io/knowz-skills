@@ -111,12 +111,12 @@ On Claude Code, four profiles trade cost, quality, and parallelism. You're asked
 | Profile | One-liner |
 |---------|-----------|
 | `frontier` (default) | Fable plans, specs, and reviews; Opus builds. The most capable planning, auto-falls back to Opus if Fable is unavailable |
-| `teams` | All agents on their defaults (mostly Opus). No external dependencies — the opt-out from frontier's Fable cost |
+| `standard` | All agents on their defaults (mostly Opus). No external dependencies — the opt-out from frontier's Fable cost |
 | `advisor` | Sonnet builders consulting Opus mid-generation. ~12% cheaper where that quality is acceptable |
 | `classic` | Deterministic single-threaded subagent execution |
 
 ```bash
-/knowzcode:work "build X" --profile=teams    # per-run override
+/knowzcode:work "build X" --profile=standard    # per-run override
 ```
 
 Full details — agent-by-agent model routing, fallback behavior, conflicts, rollback: **[docs/execution-profiles.md](./docs/execution-profiles.md)**.

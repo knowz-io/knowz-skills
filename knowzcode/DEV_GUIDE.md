@@ -34,7 +34,7 @@ For product overview, see [README.md](README.md). For detailed docs, see `docs/`
 │   ├── reviewer.md              # Phase 2B — completeness audit
 │   ├── smoke-tester.md          # Phase 2B — runtime smoke testing
 │   ├── closer.md                # Phase 3 — finalization
-│   ├── knowledge-liaison.md     # Persistent — context & vault coordinator via knowz:reader/writer
+│   ├── knowledge-liaison.md     # On demand — context & vault coordinator via knowz:reader/writer
 │   ├── microfix-specialist.md   # Utility — single-file fixes
 │   ├── knowledge-migrator.md    # Utility — vault migration
 │   ├── update-coordinator.md    # Utility — plugin update coordination
@@ -64,14 +64,16 @@ For product overview, see [README.md](README.md). For detailed docs, see `docs/`
 - **Source-of-truth rule:** source skills under `knowzcode/skills/` are canonical. Packaged Codex skills under `plugins/knowzcode/skills/` and templates in both `platform_adapters.md` files must stay behaviorally aligned; platform-specific frontmatter may differ.
 - Run `node scripts/sync-codex-relay-surfaces.mjs` from the repository root after changing packaged Codex skill surfaces or canonical framework/contracts; it refreshes generated-adapter blocks and byte-coupled plugin mirrors. CI/read-only checks use `--check`.
 - **`agents/`** contains agent definitions — each `.md` file defines one specialized agent
+- **`workflows/`** contains optional workflow scripts (`build-review.js` → `/knowzcode:build-review`). They are fan-out helpers only; quality gates never move into a workflow because a run cannot ask the user
+- **Orchestration default:** ordinary subagents with lead-routed handoffs. Agent Teams is experimental and stays an explicit opt-in appendix; never make a default path depend on it
 - **`knowzcode/platform_adapters.md`** holds the adapter templates for all 6 platforms (Claude Code, Gemini, Codex, Cursor, Copilot, Windsurf)
 - **`knowzcode/prompts/`** holds phase prompt templates used by commands and agents
 - **`knowzcode/knowzcode_loop.md`** is the core methodology — must stay platform-neutral (no Task tool, no subagent references, no Claude Code-specific syntax)
 - **Enterprise compliance** is gated by the `enterprise-enforcer` agent via `/knowzcode:work` or `/knowzcode:audit compliance`. The agent loads active guidelines, injects verification criteria, and blocks Gate 3 on violations. For CI/CD pipelines, run the audit and gate on the result. See [docs/enterprise-compliance.md](docs/enterprise-compliance.md).
 
-## Claude Workers and Agent Teams
+## Claude Workers
 
-**If you were spawned as a teammate:**
+**If you were spawned as a subagent or teammate:**
 1. Your referenced agent definition body, tools, and model are already applied; do not reread that definition unless the prompt identifies a version mismatch.
 2. Read only the assigned capsule/spec criteria, owned files, and conditional references.
 3. Follow the output policy: bounded result for a tiny read-only check; durable handoff for material/resumable work; artifact path for raw logs.

@@ -65,18 +65,19 @@ Steps 5, 5.5, and 6 later consume this preflight result; they do not repeat broa
 
 ## Step 1.5: Pre-flight Profile Parse
 
-Runs BEFORE Step 2 so profile-related flag conflicts halt without side effects (no orphan teams).
+Runs BEFORE Step 2 so profile-related flag conflicts halt without side effects (no orphan workers).
 
 1. Parse `--profile=<value>` from `$ARGUMENTS`:
-   - Present and value is `advisor`, `teams`, `classic`, or `frontier` → `PROFILE_PREFLIGHT = <value>`
-   - Present but value is none of the four → halt with: `**Error:** --profile value "{value}" is invalid. Use advisor, teams, classic, or frontier.`
+   - Present and value is `advisor`, `standard`, `classic`, or `frontier` → `PROFILE_PREFLIGHT = <value>`
+   - Present but value is none of the four → halt with: `**Error:** --profile value "{value}" is invalid. Use advisor, standard, classic, or frontier.`
+   - Value `teams` → treat as `standard` (deprecated alias) and continue
    - Absent → continue to config fallback
 2. If flag absent, read `knowzcode/knowzcode_orchestration.md` with a targeted grep for `^profile:\s*(\S+)`:
-   - Value is `advisor`, `teams`, `classic`, or `frontier` → `PROFILE_PREFLIGHT = <value>` (a persisted choice — never re-ask)
+   - Value is `advisor`, `standard`, `classic`, or `frontier` → `PROFILE_PREFLIGHT = <value>` (a persisted choice — never re-ask)
    - Invalid value → log warning, `PROFILE_PREFLIGHT = "frontier"`
    - File absent or line absent → **one-time profile choice** (ask once, persist forever):
      - If autonomous intent is present (the `--autonomous`/`--auto` flags or the natural-language signals from Step 2.5, checked against `$ARGUMENTS` and the user's preceding message): do NOT prompt. `PROFILE_PREFLIGHT = "frontier"`, log `[AUTO-DEFAULT] profile: frontier — set profile: in knowzcode_orchestration.md to change`, and do not write the config (the user hasn't chosen).
-     - Otherwise, ask once via AskUserQuestion: **"Execution profile for this project?"** — **Frontier (Recommended)**: Fable plans/specs/reviews, Opus executes; most capable planning, premium cost, auto-falls back to Opus if Fable is unavailable. **Teams**: all agents on standard models (mostly Opus); standard cost, no Fable dependency.
+     - Otherwise, ask once via AskUserQuestion: **"Execution profile for this project?"** — **Frontier (Recommended)**: Fable plans/specs/reviews, Opus executes; most capable planning, premium cost, auto-falls back to Opus if Fable is unavailable. **Standard**: all agents on default models (mostly Opus); standard cost, no Fable dependency.
      - Set `PROFILE_PREFLIGHT` to the answer and **persist it** so no future run asks: update the `profile:` line in `knowzcode/knowzcode_orchestration.md` (or append an `## Execution Profile` block with the line if the file exists without one; create the file with a minimal header + the line if absent).
      - This prompt is `/knowzcode:work`-only — `/knowzcode:audit`, `/knowzcode:explore`, and `/knowzcode:fix` never ask; they read the persisted value or use the `frontier` default silently.
 3. Profile selection controls model/advisor behavior, not coordination mode. `--sequential` and `--subagent` remain valid with every profile; a profile never forces Agent Teams.
@@ -113,11 +114,11 @@ Team eligibility additionally requires explicit Agent Teams opt-in, the current 
 
 Announce one workflow mode before phase work:
 
-- `**Execution Mode: Adaptive Delegation** — local/resume/fork/capsule routing per task`
+- `**Execution Mode: Adaptive Delegation** — subagents; local/resume/fork/capsule routing per task`
 - `**Execution Mode: Sequential Delegation** — bounded named agents, resume-first gap loops`
-- `**Execution Mode: Coordinated Team** — peer messaging/task graph required; smallest viable roster`
+- `**Execution Mode: Coordinated Team** — experimental Agent Teams, explicit user opt-in only; smallest viable roster`
 
-In Team mode the lead coordinates and remains the sole WorkGroup writer. Request graceful teammate shutdown after deliverables; runtime cleanup is automatic at session end. In named-agent modes, use the dispatch parameters in the phase references. All paths preserve the same phases, quality gates, captures, and safety exceptions.
+Subagent delegation is the default and the only mode that needs no experimental feature: the lead dispatches workers with `Agent`, keeps the dependency ledger in the WorkGroup file, routes handoffs itself, and resumes a worker by agent ID when it is needed again. Team mode follows the appendix in [references/parallel-orchestration.md](references/parallel-orchestration.md); the lead still coordinates and remains the sole WorkGroup writer. All paths preserve the same phases, quality gates, captures, and safety exceptions.
 
 ## Step 2.3: Resolve Execution Profile
 
@@ -242,7 +243,7 @@ Create `knowzcode/workgroups/{WorkGroupID}.md`:
 | 1A | In Progress | {timestamp} |
 ```
 
-Use task lists to plan and track work throughout. Add new tasks as discoveries or needs emerge during each phase.
+Track planned work in the WorkGroup file throughout, including the dependency ledger for delegated units. Add entries as discoveries or needs emerge during each phase.
 
 ## Step 5: Confirm Input Classification
 
@@ -313,9 +314,10 @@ Read [references/light-workflow.md](references/light-workflow.md) for complete p
 The standard 5-phase workflow. Used when complexity warrants full analysis, specification, audit, and finalization.
 
 Tier 3 uses the per-task routing selected in Step 2:
-- **Adaptive Delegation** (default) — local/resume/inheritance/fresh named-agent routing with bounded parallelism
+- **Adaptive Delegation** (default) — subagents with local/resume/inheritance/fresh routing, bounded parallelism, and lead-routed handoffs
 - **Sequential Delegation** (`--sequential`) — one ready scope at a time, with resume-first phase and gap loops
-- **Coordinated Team** — optional only when active peers need mailbox/task-list coordination
+- **Coordinated Team** — experimental and optional; only on explicit user opt-in when active peers need direct messaging
+- **Workflow fan-out** (`--workflow`, or when the user asks for a workflow) — optional: run one ready Stage 2 wave through the packaged `/knowzcode:build-review` workflow; gates stay with the lead
 
 **Smoke testing**: Tier 3 recommends smoke testing at Phase 2B. At Gate #2, note to the user that smoke testing will run alongside the reviewer. The user can decline. If not declined, the smoke-tester is spawned at Stage 2 alongside reviewers (see [parallel-orchestration.md](references/parallel-orchestration.md)).
 
@@ -432,7 +434,8 @@ These flags override corresponding config defaults in `knowzcode/knowzcode_orche
 | `--no-parallel-specs` | Force Path A spec drafting regardless of NodeID count |
 | `--sequential` | Force one ready scope at a time; preserve compatible named-agent lineage |
 | `--subagent` | Disable Team mode and conversation inheritance; use local/resume/fresh named agents |
-| `--profile={advisor\|teams\|classic\|frontier}` | Select execution profile — see `references/profile-models.md` |
+| `--workflow` | Run each ready Stage 2 wave through the `/knowzcode:build-review` workflow (build + fresh audit per scope). Gates, gap loops, and consolidated verification stay with the lead |
+| `--profile={advisor\|standard\|classic\|frontier}` | Select execution profile — see `references/profile-models.md` |
 | `--fable-execution` | (frontier only) Also route execution agents to Fable for high-value jobs |
 | `--relay=none\|auto\|other\|claude\|codex` | Disable relay, select the opposite provider, or name the implementation target explicitly. Flag > unambiguous natural language > config; Tier 3 only; incompatible with `advisor` |
 | `--relay-model=` | Model override for the resolved relay target (target-specific config/default otherwise) |

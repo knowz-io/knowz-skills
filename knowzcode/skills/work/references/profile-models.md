@@ -2,7 +2,7 @@
 
 **Purpose:** Single source of truth for profile → agent-model mappings. Load only when a workflow will dispatch a profiled agent or must resolve a profile fallback.
 
-Profile resolution order: CLI flag `--profile={advisor|teams|classic|frontier}` wins over `profile:` in `knowzcode/knowzcode_orchestration.md`. If neither is set, default is `frontier`.
+Profile resolution order: CLI flag `--profile={advisor|standard|classic|frontier}` wins over `profile:` in `knowzcode/knowzcode_orchestration.md`. If neither is set, default is `frontier`.
 
 ---
 
@@ -11,7 +11,7 @@ Profile resolution order: CLI flag `--profile={advisor|teams|classic|frontier}` 
 | Profile | Purpose | Execution Mode | Advisor Required |
 |---------|---------|----------------|------------------|
 | `advisor` | Cost-optimized via advisor tool; near-Opus quality at Sonnet prices | Any adaptive/sequential/coordinated mode | Yes |
-| `teams` | Use frontmatter model assignments (mostly Opus). The historical name selects model policy, not Team mode. | Any | No |
+| `standard` | Use frontmatter model assignments (mostly Opus). Selects model policy only. `teams` is accepted as a deprecated alias for `standard`. | Any | No |
 | `classic` | Disable conversation inheritance and Team mode; allow compatible named-agent resume | Local/resume/fresh named agents | No |
 | `frontier` (default) | Frontier-grade planning: **Fable** for planning/analysis/spec/review, **Opus** for execution. Higher cost; auto-falls back to Opus if Fable is unavailable. | Any | No |
 
@@ -19,7 +19,7 @@ Profile resolution order: CLI flag `--profile={advisor|teams|classic|frontier}` 
 
 ## Profile → Agent-Model Mapping
 
-| Agent | `advisor` | `teams` | `classic` | `frontier` | Rationale |
+| Agent | `advisor` | `standard` | `classic` | `frontier` | Rationale |
 |-------|-----------|---------|-----------|------------|-----------|
 | architect | opus | opus | opus | **fable** | Specification drafting — deepest reasoning; Fable produces the per-change spec |
 | analyst | opus | opus | opus | **fable** | Impact analysis / Change Set — strategic reasoning |
@@ -37,7 +37,7 @@ Profile resolution order: CLI flag `--profile={advisor|teams|classic|frontier}` 
 | update-coordinator | opus | opus | opus | opus | Utility — framework update merges |
 | knowledge-liaison | sonnet | sonnet | sonnet | sonnet | Retrieval/IO — model choice adds nothing to vault reads |
 
-**Bold cells** indicate a spawn-time override away from the agent's frontmatter default (shown in the `teams` column).
+**Bold cells** indicate a spawn-time override away from the agent's frontmatter default (shown in the `standard` column).
 
 **High-value escape hatch (`frontier` only):** when `execute_on_fable` is set (via the `--fable-execution` flag or `execute_on_fable: true` in `knowzcode_orchestration.md`), the execution agents (builder, closer, smoke-tester, frontend-designer, microfix-specialist, knowledge-migrator, update-coordinator) also resolve to `fable`. Off by default — use it only for the rare job where the implementation itself needs frontier-level reasoning. knowledge-liaison stays on Sonnet even then.
 
@@ -63,7 +63,7 @@ MODEL_FOR(agent_name, profile, execute_on_fable=false):
       RETURN "fable"        # high-value escape hatch (--fable-execution / execute_on_fable: true)
     RETURN "opus"           # default: execution on Opus
 
-  RETURN null               # teams / classic → agent frontmatter default
+  RETURN null               # standard / classic → agent frontmatter default
 ```
 
 `execute_on_fable` defaults to `false`; callers that don't pass it (e.g. `/knowzcode:audit`, `/knowzcode:fix`) get the default, and it only affects the `frontier` profile.
@@ -86,7 +86,7 @@ Two placeholder blocks are resolved at spawn time based on the active profile (s
 ## Profile -> Execution Mode Constraints
 
 - `advisor` -> no coordination constraint. Advisor availability affects model/tool guidance only.
-- `teams` -> no coordination constraint. Despite its legacy name, it does not force Agent Teams.
+- `standard` -> no coordination constraint.
 - `classic` -> disables Team mode and conversation inheritance; local, compatible resume, and fresh named agents remain available.
 - `frontier` -> no coordination constraint. Model routing is orthogonal to orchestration mode.
 
@@ -94,7 +94,7 @@ Agent Teams is a separate explicit runtime opt-in. No profile enables, recommend
 
 ## Advisor Requirements & Graceful Fallback
 
-For `advisor`, fall back to `teams` model policy when the advisor tool is unavailable on this host (for example experimental betas disabled, or the host is routed through Bedrock/Vertex/Foundry/custom endpoints rather than the direct Anthropic API). Announce the host-capability reason without probing by making a paid API call. This fallback changes model/tool policy only; it never changes the selected coordination mode.
+For `advisor`, fall back to `standard` model policy when the advisor tool is unavailable on this host (for example experimental betas disabled, or the host is routed through Bedrock/Vertex/Foundry/custom endpoints rather than the direct Anthropic API). Announce the host-capability reason without probing by making a paid API call. This fallback changes model/tool policy only; it never changes the selected coordination mode.
 
 ---
 

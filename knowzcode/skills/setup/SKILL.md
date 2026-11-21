@@ -121,7 +121,7 @@ If the user declines Gate C entirely, leave the file on disk but replace each `[
 
 > **Execution profile for this project?**
 > - **Frontier (Recommended)** — Fable plans, specs, and reviews every change; Opus executes. The most capable planning, at premium cost. Falls back to Opus automatically if Fable is unavailable.
-> - **Teams** — all agents on their standard models (mostly Opus). Standard cost, no Fable dependency.
+> - **Standard** — all agents on their default models (mostly Opus). Standard cost, no Fable dependency.
 
 Write the answer as the `profile:` value in the generated `knowzcode_orchestration.md` (Step 6c). (On non-Claude-Code platforms the setting is informational-only — see the Codex note in the template — but persist it anyway for cross-platform parity.)
 

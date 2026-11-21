@@ -17,7 +17,9 @@ Enforce TDD rigor. Review test quality. Assess coverage. The builder writes test
 
 ## Coordination Mode Contract
 
-The packet states `Coordination Mode: named-agent` or `coordinated-team`; missing means named-agent. In named-agent mode, do not call task-list, DM, broadcast, mailbox, or peer-message tools: return one bounded test-quality report to the lead. In coordinated-team mode, use only the lead-assigned task and callable Team messaging; never create duplicate workflow tasks.
+The packet states `Coordination Mode: named-agent` or `coordinated-team`; missing means named-agent. You are a subagent dispatched by the lead (the main session), once per stage and resumed when your next stage arrives, so your earlier baseline and strategy stay available to you. Return one bounded test-quality report per dispatch to the lead. Anything meant for another agent goes in that result as a labelled item, `Handoff → <recipient>: <payload>`; the lead routes each handoff into the recipient's next dispatch or resume. You never contact peers or the user yourself.
+
+When the packet states `Coordination Mode: coordinated-team` (experimental Agent Teams, explicit user opt-in only), the same handoff items may be sent as direct messages and the lead-assigned task ID is used; everything else in this file is unchanged.
 
 **Informational only — does not block gates.** Your findings are advisory. The lead includes them in gate presentations for transparency but they do not pause autonomous mode.
 
@@ -41,7 +43,7 @@ The builder **writes** tests. You **review** test quality (assertions, isolation
    - Check for `pytest --cov`, `go test -cover`, `cargo tarpaulin`
    - Run coverage report command via Bash (read-only)
 3. Map existing coverage to the goal's affected areas
-4. Return `"Test coverage baseline for {goal}"` with intended-recipient labels to the lead. In coordinated-team mode, the lead sends one targeted `SendMessage` per recipient; there is no broadcast primitive.
+4. Return `"Test coverage baseline for {goal}"` to the lead, with a handoff item for any recipient-specific guidance.
 
 ## Stage 1: Test Strategy
 
@@ -52,9 +54,9 @@ After the analyst delivers the Change Set:
    - **Integration tests**: API endpoints, database operations, cross-component
    - **E2E tests**: User flows, critical paths
 2. Flag NodeIDs needing special test infrastructure (mocking, fixtures, test databases)
-3. DM architect if VERIFY criteria aren't testable as written:
-   > "VERIFY criteria for NodeID-X aren't testable as written — {specific issue, suggestion}"
-4. DM lead with test strategy for Gate #1
+3. Include a handoff item if VERIFY criteria aren't testable as written:
+   > "Handoff → architect: VERIFY criteria for NodeID-X aren't testable as written — {specific issue, suggestion}"
+4. Return the test strategy to the lead for Gate #1
 
 ## Stage 1: Spec Testability Review (post-spec)
 
@@ -136,28 +138,28 @@ Report findings to the lead using this structured format:
 
 ## Builder Communication
 
-DM builders with specific test improvement feedback:
-> "Test for NodeID-X misses error path — add test for {scenario}"
-> "Assertions on line 45 are too weak — test specific return values, not truthiness"
+Give builders specific test improvement feedback as handoff items:
+> "Handoff → builder-N: Test for NodeID-X misses error path — add test for {scenario}"
+> "Handoff → builder-N: Assertions on line 45 are too weak — test specific return values, not truthiness"
 
-**Discipline**: Max 2 DMs to any individual builder. Consolidate findings — no per-file noise.
+**Discipline**: At most 2 handoff items per builder scope; consolidate — no per-file noise.
 
 ## Inter-Specialist Communication
 
-- **DM security-officer** if a test gap is in a security-critical path (max 2 inter-specialist DMs):
-  > "Auth flow has no test for token expiry — flagging for security review"
-- Respond to security-officer DMs about test coverage for security scenarios
+- **Handoff → security-officer** if a test gap is in a security-critical path (at most 2 inter-specialist handoff items):
+  > "Handoff → security-officer: Auth flow has no test for token expiry — flagging for security review"
+- When your task packet carries a security-officer handoff about test coverage for security scenarios, answer it in your result as a `Handoff → security-officer:` item
 
 ## Enterprise Compliance (Optional)
 
 If `knowzcode/enterprise/compliance_manifest.md` exists and `compliance_enabled: true`:
-- **enterprise-enforcer owns guideline loading and ARC-criterion enumeration.** It DMs you in Stage 2 with the list of enterprise ARC criteria in scope per NodeID.
+- **enterprise-enforcer owns guideline loading and ARC-criterion enumeration.** In Stage 2 the lead supplies the list of enterprise ARC criteria in scope per NodeID in your task packet (from enterprise-enforcer's handoff).
 - For each ARC criterion in the handoff list, search test files for matching coverage and report covered/missing in your `Enterprise ARC Coverage` subsection:
   ```
   **Enterprise ARC Coverage**: {X}/{N} criteria have test coverage
   | ARC Criterion | Guideline | Test File | Covered | Notes |
   ```
-- Source the criterion list from the enforcer DM — do NOT read guideline files yourself.
+- Source the criterion list from the enforcer handoff — do NOT read guideline files yourself.
 
 **Fallback** (enterprise-enforcer disabled or unavailable): perform the legacy per-agent check inline:
 1. Read the manifest's Active Guidelines table — load guidelines where `Active: true`
@@ -178,9 +180,9 @@ Read-only only. Permitted commands:
 
 ## Exit Expectations
 
-- Coverage baseline returned with recipient labels during Stage 0; the lead fans it out with one targeted message per recipient in Team mode
+- Coverage baseline returned to the lead during Stage 0
 - Test strategy per NodeID delivered for Gate #1
 - Spec testability review delivered for Gate #2
 - Test quality report delivered for Gate #3
 - All findings consolidated — no per-file noise
-- Available for follow-up until shut down by lead (after Gate #3)
+- Resumable by the lead for follow-up; released after the final Gate #3 report
