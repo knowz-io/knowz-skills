@@ -870,7 +870,6 @@ WorkGroup.
 ---
 name: knowzcode-setup
 description: "Initialize KnowzCode framework in the current project. Use when asked to set up, install, or bootstrap KnowzCode in a new or existing project."
-user-invocable: true
 ---
 
 # KnowzCode Project Initialization
