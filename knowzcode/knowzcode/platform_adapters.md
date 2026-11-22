@@ -971,7 +971,7 @@ Ask three questions:
 2. "Core problem this solves (1–2 sentences)?"
 3. "Architecture style? (e.g., monolith, microservices, CLI + MCP, static site)"
 
-Write the answers into the `## Goal` and `## Architecture` sections, replacing the `[concise project objective — 1-2 sentences]`, `[specific user problem this solves — 1-2 sentences]`, and `[e.g., Monolithic, Microservices, Serverless]` placeholders. Do not touch the Stack table — that was handled in Step 4. Where a section of the copied `knowzcode_project.md` still holds an `[e.g., …]` or other bracketed placeholder that no answer filled, replace it with `Not configured during init — edit this file or re-run /knowzcode:setup to fill.`
+Write the answers into the `## Goal` and `## Architecture` sections, replacing the `[concise project objective — 1-2 sentences]`, `[specific user problem this solves — 1-2 sentences]`, and `[e.g., Monolithic, Microservices, Serverless]` placeholders. Do not touch the Stack table — that was handled in Step 4. Where a section of the copied `knowzcode_project.md` still holds an `[e.g., …]` or other bracketed placeholder that no answer filled: if step 4 detected the value (for example the test framework or linter already shown in the Stack table), write that detected value so the file does not contradict itself; otherwise replace it with `Not configured during init — edit this file or re-run /knowzcode:setup to fill.`
 
 **Gate B — Architecture stub:**
 
@@ -990,7 +990,7 @@ Rewrite `user_preferences.md` so the filled copy contains only real answers. Spe
 - **Strip the `*Examples:*` blocks from the filled copy** — they're helpful in the template but noise once the file holds real content.
 - Set the `Last Updated` line to the current ISO timestamp.
 
-If the user declines Gate C entirely, leave the file on disk and: set the `Last Updated` line to the current ISO timestamp; replace each section's `[User-provided …]` / `[Any project-specific …]` placeholder with `Not configured during init — edit this file or re-run /knowzcode:setup to fill.`; and replace the five numbered priority-rank lines with that same sentence once, not five times.
+If the user declines Gate C entirely, leave the file on disk and: set the `Last Updated` line to the current ISO timestamp; change the `**Source:**` line to `Not configured during init`; replace each section's `[User-provided …]` / `[Any project-specific …]` placeholder with `Not configured during init — edit this file or re-run /knowzcode:setup to fill.`; and replace the five numbered priority-rank lines with that same sentence once, not five times.
 
 ### 6. Configure orchestration defaults
 

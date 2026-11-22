@@ -101,7 +101,7 @@ After builder completes successfully:
    - For `skip`, make no MCP or pending-queue write. For `batch` (defensive fallback), retain it and reclassify at the explicit final boundary. For `amend`, `update`, or `flush`, send the exact classified action, content-bound parent identity/key, explicit mutation plan, and known `KnowledgeId` values to a compatible knowledge-liaison or dispatch one writer directly. Each logical mutation receives a distinct deterministic child key. Missing amend/update identity returns `MISSING_AMEND_IDENTITY` or `MISSING_UPDATE_IDENTITY` and never falls through to create. Wait for the bounded result (max 2 minutes), then release the lineage.
 5. **Vault Write Checklist (MUST — do not skip, do not defer)**:
    You MUST attempt every item. Check each off or report failure to the user.
-   - [ ] WorkGroup file exists in `knowzcode/workgroups/{wgid}.md`
+   - [ ] WorkGroup file `knowzcode/workgroups/{wgid}.md` exists and its `**Status**` is set to `Closed` (an `Active` status makes `/knowzcode:continue` treat the WorkGroup as still open)
    - [ ] ARC-completion journal shard written with required frontmatter
    - [ ] No writes made to `knowzcode_log.md` or `knowzcode_tracker.md`
    - [ ] Classified persistence handled exactly once when `FINAL_CAPTURE_ACTION` is `amend`, `update`, or `flush`:

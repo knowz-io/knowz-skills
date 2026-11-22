@@ -43,7 +43,7 @@ If missing: inform user to run `/knowzcode:setup` first. STOP.
 
 ## Step 1: Generate WorkGroup ID
 
-**Format**: `kc-{type}-{slug}-YYYYMMDD-HHMMSS`
+**Format**: `kc-{type}-{slug}-YYYYMMDD-HHMMSS` (timestamp in UTC)
 
 - `{type}`: feat, fix, refactor, or issue
 - `{slug}`: 2-4 word kebab-case from goal (remove common words: build, add, create, implement, the, a, with, for)
