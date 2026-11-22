@@ -8,7 +8,7 @@
 * **Change Set-Driven Development**: Work is performed on a "Change Set" — a group of NodeIDs (new capabilities) and affected files. This ensures system-wide consistency.
 * **Spec-Driven Development**: `knowzcode/specs/[NodeID].md` files define what to build. They are drafted, approved, implemented against, then finalized to "as-built" state.
 * **Mandatory TDD**: Every feature must follow Red-Green-Refactor. No production code without a failing test first.
-* **Quality Gates**: You MUST pause at defined checkpoints for user approval. Never skip phases.
+* **Quality Gates**: You MUST pause at defined checkpoints for user approval. Never skip a phase that the selected tier defines. The Full tier runs all five phases with an independent audit; the Light tier is a defined shorter path (combined Change Set and spec gate, one builder that self-verifies against the spec's `VERIFY:` criteria, then finalization) and the micro-fix path is shorter still. Choosing a tier is not skipping phases; dropping a step within the chosen tier is.
 * **Integrated Version Control**: Strategic commits mark phase transitions.
 * **Proactive Debt Management**: Technical debt is formally tracked, not ignored.
 
@@ -221,7 +221,9 @@ WHILE verification not complete:
 waves, run the repository's full test suite, static analysis, build, packaging,
 and install smoke checks that exist. Repeat this consolidated gate after any
 production or integration change made during an audit/fix round. Never skip the
-independent audit or consolidated gate to meet an efficiency budget.
+independent audit or consolidated gate to meet an efficiency budget. (This applies
+wherever the selected tier defines an independent audit: the Full tier. The Light tier's
+builder self-verification is that tier's defined check, not a skipped audit.)
 
 For microtask implementation, "complete" means the assigned acceptance criteria are met, not every criterion in the parent NodeID. The lead is responsible for tracking criteria coverage across microtasks and must not mark the parent NodeID complete until all required `VERIFY:` criteria and cross-microtask integration criteria are covered.
 
