@@ -1626,6 +1626,8 @@ WorkGroup, ask what the relay should build.
 ```markdown
 # Cross-Agent Relay — Execution Reference
 
+> **Paths:** relative file paths in this document are relative to this file's own directory.
+
 **Purpose:** Single source of truth for provider-neutral implementation relay. The current host owns planning, specifications, user gates, review, checkpoints, and finalization. The resolved external target owns Phase 2A implementation and bounded review-fix rounds. The relay replaces only Phase 2A plus the builder gap loop; all other KnowzCode phases and safety gates remain native to the host.
 
 Claude Code and Codex are the supported hosts in this version. Gemini is not a relay host. The Claude package fixes `RELAY_HOST = claude`; the Codex package fixes `RELAY_HOST = codex`. Prompt text never changes the host.
@@ -2277,7 +2279,7 @@ record expected cache invalidation before an explicit escalation.
 
 The host chooses its native monitor without changing the provider command:
 
-- **Claude host:** delegate one target leg to `${CLAUDE_PLUGIN_ROOT}/agents/relay-runner.md` only as a teammate when coordinated Team mode is already independently justified, explicitly approved, and live Team messaging is callable. In adaptive, sequential, or named-agent mode, the lead follows the same in-turn protocol directly; never dispatch relay-runner as an ordinary named agent because its progress and time-decision exchange cannot wait for a final result.
+- **Claude host:** delegate one target leg to the `knowzcode:relay-runner` agent (`../../../agents/relay-runner.md` in the Claude plugin) only as a teammate when coordinated Team mode is already independently justified, explicitly approved, and live Team messaging is callable. In adaptive, sequential, or named-agent mode, the lead follows the same in-turn protocol directly; never dispatch relay-runner as an ordinary named agent because its progress and time-decision exchange cannot wait for a final result.
 - **Codex host:** the coordinator owns a unified exec session and polls it in-turn. Do not simulate Claude Agent Teams or install a `plugins/knowzcode/agents` runner. A bounded Codex worker may monitor only when it can retain the same live exec session until completion.
 
 The spawn prompt supplies `TARGET`, `TRANSPORT`, complete `COMMAND` or Codex `TOOL_ARGS`, `SESSION_ID_COMMAND`, `COMPLETION_COMMAND`, `RESULT_SUBTYPE_COMMAND`, and, for exec, the provider-built `PROGRESS_COMMAND` plus `PROGRESS_INTERVAL_SECONDS`, target-qualified paths, round, already-clamped timeout, and optional complete `RESUME_COMMAND`. For exec, the runner launches, records PID, captures Session ID on the first poll, relays filtered progress, and never ends while the exit marker is absent. For Codex MCP it makes the blocking tool call. Claude MCP is never selected.
@@ -2376,12 +2378,12 @@ When the WorkGroup has `## Relay`, read the referenced `state.md` before ordinar
 
 ## Related
 
-- `${CLAUDE_PLUGIN_ROOT}/skills/relay/SKILL.md` — setup-aware resolution and redirect.
-- `${CLAUDE_PLUGIN_ROOT}/skills/work/SKILL.md` — Step 1.6 parse and Tier 3 relay branch.
-- `${CLAUDE_PLUGIN_ROOT}/agents/relay-runner.md` — one-leg monitor contract.
-- `${CLAUDE_PLUGIN_ROOT}/skills/continue/SKILL.md` — schema-aware resume.
+- `../../relay/SKILL.md` — setup-aware resolution and redirect.
+- `../SKILL.md` — Step 1.6 parse and Tier 3 relay branch.
+- `../../../agents/relay-runner.md` (Claude plugin only) — one-leg monitor contract.
+- `../../continue/SKILL.md` — schema-aware resume.
 - `knowzcode/knowzcode/knowzcode_orchestration.md` — target-specific configuration.
-- `${CLAUDE_PLUGIN_ROOT}/skills/work/references/quality-gates.md` — unchanged Gate #3 review/gap mechanics.
+- `quality-gates.md` — unchanged Gate #3 review/gap mechanics.
 ```
 
 #### .agents/skills/knowzcode-start-work/SKILL.md

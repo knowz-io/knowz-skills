@@ -4,7 +4,7 @@ Targeted micro-fix workflow for single-file changes under 50 lines. Delegates to
 
 ## Dispatch Pattern
 
-Agents are invoked with the current `Agent()` tool (`Task` is the older compatibility alias). `fix` uses one named subagent exclusively—Agent Teams overhead is not justified for micro-fixes. The `subagent_type` is `"knowzcode:microfix-specialist"`; the agent reads `${CLAUDE_PLUGIN_ROOT}/agents/microfix-specialist.md` for its role definition.
+Agents are invoked with the current `Agent()` tool (`Task` is the older compatibility alias). `fix` uses one named subagent exclusively—Agent Teams overhead is not justified for micro-fixes. The `subagent_type` is `"knowzcode:microfix-specialist"`; Claude loads its role definition (`../../agents/microfix-specialist.md`) automatically.
 
 ## Agent Used
 

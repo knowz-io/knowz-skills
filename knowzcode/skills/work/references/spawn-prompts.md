@@ -1,5 +1,7 @@
 # Agent Spawn Prompts — Work Skill
 
+> **Paths:** relative file paths in this document are relative to this file's own directory.
+
 These are the task packets the lead (the main session) sends to its subagents. Claude automatically loads a referenced agent definition; never ask a named agent to reread its own definition. Include only the assigned scope and the fields needed below.
 
 **Default result contract:** every template is written for `Coordination Mode: named-agent`. The agent returns ONE bounded result to the lead. Anything meant for another agent is a labelled item in that result, `Handoff → <recipient>: <payload>`; the lead routes each item into the recipient's next dispatch or resume. Inputs from other agents arrive in the packet, placed there by the lead. An agent needed again (gap fix, re-audit, later phase) is resumed by the lead with a bounded delta and keeps its history.
@@ -61,7 +63,7 @@ rather than silently switching.
 
 > **Why conditional:** The advisor tool is only available to agents running on Sonnet under the `advisor` profile. Adding the guidance to Opus-based or non-advisor spawns would mislead the agent about a tool it cannot use.
 
-See `${CLAUDE_PLUGIN_ROOT}/skills/work/references/profile-models.md` for the full `MODEL_FOR()` resolution rule.
+See `profile-models.md` for the full `MODEL_FOR()` resolution rule.
 
 ---
 
@@ -98,7 +100,7 @@ A change with no verification criterion, or a bundled "misc" change, is an incom
 
 > **Why conditional:** the extra spec depth is the whole point of the `frontier` profile (Fable plans, Opus executes a fully-specified change). Injecting it under other profiles would over-inflate specs for agents that also do the building.
 
-See `${CLAUDE_PLUGIN_ROOT}/skills/work/references/profile-models.md` for the `{spec_depth_guidance}` resolution rule.
+See `profile-models.md` for the `{spec_depth_guidance}` resolution rule.
 
 ---
 
@@ -256,7 +258,7 @@ Use these prompts when `FRONTEND_DESIGNER_ENABLED` or `ENTERPRISE_ENFORCER_ENABL
 > **Authority**: Advisor by default — HIGH findings use `[DESIGN-CONCERN]` (do NOT pause autonomous mode). If Blocking Mode is true, HIGH findings use `[DESIGN-CONCERN-BLOCK]` and pause autonomous mode at Gate #3.
 > **Coordination with smoke-tester**: At Stage 2B, the lead dispatches or resumes you with smoke-tester's `app-ready` handoff; run spec-driven E2E on the same running app. The lead resumes smoke-tester for teardown only after your result returns.
 > **Coordination with enterprise-enforcer**: If active, the lead supplies the active design guideline IDs (`DSN-*`) in your packet (from enterprise-enforcer's handoff); cross-reference in your Design Audit Report.
-> **Communication**: Return gate reports to the lead (Design Impact Report at #1, design VERIFY criteria as `Handoff → architect` at #2, Design Audit Report at #3). Return items for architect, builders, smoke-tester, knowledge-liaison as `Handoff → <recipient>` items, with the payloads listed in `${CLAUDE_PLUGIN_ROOT}/agents/frontend-designer.md` Communication Protocol.
+> **Communication**: Return gate reports to the lead (Design Impact Report at #1, design VERIFY criteria as `Handoff → architect` at #2, Design Audit Report at #3). Return items for architect, builders, smoke-tester, knowledge-liaison as `Handoff → <recipient>` items, with the payloads listed in `../../../agents/frontend-designer.md` Communication Protocol.
 > {advisor_guidance}
 
 ### Enterprise Enforcer
@@ -322,7 +324,7 @@ Normally dispatch the architect after Gate #1 with the approved Change Set. Pre-
 > {coordination_task_clause}
 > **Context**: Incorporate a lead-supplied Context Briefing when present. For a remaining gap, return at most one `Handoff → knowledge-liaison: "VaultQuery: {question}"` item; the lead resumes you with the answer.
 > **Preliminary NodeIDs**: {analyst `[PRELIMINARY]` handoff items, or "none"}
-> **Stage 0 Role**: Pre-load architecture context, then perform speculative research on the `[PRELIMINARY]` NodeID items above (see Speculative Research Protocol in `${CLAUDE_PLUGIN_ROOT}/agents/architect.md`). READ-ONLY research — do NOT write specs yet. Return a bounded research summary.
+> **Stage 0 Role**: Pre-load architecture context, then perform speculative research on the `[PRELIMINARY]` NodeID items above (see Speculative Research Protocol in `../../../agents/architect.md`). READ-ONLY research — do NOT write specs yet. Return a bounded research summary.
 > **Lifecycle**: The lead resumes this lineage only while the ambiguity/spec phase remains compatible, and releases it when no concrete consultation remains.
 
 After Gate #1, the lead resumes the architect with the approved Change Set as a bounded delta. For spec-drafting prompts, see Phase 1B below.
@@ -478,7 +480,7 @@ Dispatched agents run under the lead's session permissions. Do not depend on plu
 > **Result contract**: Update the WorkGroup file only when explicitly delegated. Return the bounded result directly to the lead; if blocked, include the exact blocker.
 > **Vault writes**: Return one consolidated `FinalCaptureDelta` with stable identity evidence, known `KnowledgeId` values, and a proposed content-bound parent idempotency key. Do not reuse that parent key across logical mutations: the lead/liaison resolves the ordered mutation plan and distinct deterministic child keys. Do not call MCP and do not append a queue; the lead owns the classified persistence path.
 > **MCP Status**: {MCP_ACTIVE} — Vaults configured: {VAULTS_CONFIGURED}. Vault config: `knowz-vaults.md` (project root).
-> **Enterprise Compliance**: `ComplianceSummary: {payload from enterprise-enforcer's handoff, or "none"}`. When a payload is present, append it to `knowzcode/enterprise/compliance_status.md` Review History (see `${CLAUDE_PLUGIN_ROOT}/agents/closer.md` Enterprise-Enforcer Handoff section). Do not dispatch or contact an enforcer yourself.
+> **Enterprise Compliance**: `ComplianceSummary: {payload from enterprise-enforcer's handoff, or "none"}`. When a payload is present, append it to `knowzcode/enterprise/compliance_status.md` Review History (see `../../../agents/closer.md` Enterprise-Enforcer Handoff section). Do not dispatch or contact an enforcer yourself.
 > **Deliverable**: Apply only delegated finalization-file edits, then return one `FinalCaptureDelta`, explicit changed-file list, verification summary, and suggested commit message. The lead performs persistence, scoped staging, and the commit.
 > {advisor_guidance}
 

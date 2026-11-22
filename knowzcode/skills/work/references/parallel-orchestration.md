@@ -1,5 +1,7 @@
 # Parallel Orchestration — Work Skill (Tier 3)
 
+> **Paths:** relative file paths in this document are relative to this file's own directory.
+
 Tier 3 runs on ordinary subagents. The lead (the main session) dispatches each worker with the `Agent` tool, receives one bounded result, and routes any handoff into the next dispatch or resume. Workers never message each other and share no task list. The same bounded task packets in [spawn-prompts.md](spawn-prompts.md) apply.
 
 Three rules hold in every stage:
@@ -76,7 +78,7 @@ Workers return bounded summaries or artifact paths to the lead. The analyst star
 
 ## Stage 1: Analysis + Specification
 
-1. Analyst returns the Change Set, including the dependency map (see `${CLAUDE_PLUGIN_ROOT}/agents/analyst.md`). Release scanners; they are not needed after analysis.
+1. Analyst returns the Change Set, including the dependency map (see `../../../agents/analyst.md`). Release scanners; they are not needed after analysis.
 2. **Advisor Change Set reviews** — for each enabled role, dispatch (or resume, if it ran in Stage 0) with the Change Set and collect its report before Gate #1. Dispatch these together:
    - `security-officer`: rate each NodeID for security risk.
    - `test-advisor`: recommend test types and coverage needs per NodeID.
@@ -89,7 +91,7 @@ Workers return bounded summaries or artifact paths to the lead. The analyst star
    - Dispatch one architect with the approved Change Set capsule and every advisor handoff addressed to the architect (required `VERIFY:` criteria, design criteria, guideline ARC IDs). Resume an architect that was started for a real Stage 0 ambiguity instead of dispatching a new one.
 
    **Path B: Parallel spec drafting (PARALLEL_SPEC_THRESHOLD or more NodeIDs)**
-   - Ask the architect for a partition plan (see `${CLAUDE_PLUGIN_ROOT}/agents/architect.md` — Parallel Spec Coordination): 1-2 NodeIDs each, max 3 partitions, respecting same-spec and interface constraints.
+   - Ask the architect for a partition plan (see `../../../agents/architect.md` — Parallel Spec Coordination): 1-2 NodeIDs each, max 3 partitions, respecting same-spec and interface constraints.
    - Dispatch one spec-drafter per partition together. Spec-drafters use the `architect` agent definition with a scoped prompt: the NodeID partition, the architect's research findings, cross-NodeID interface constraints, and consolidation instructions. Max 3 spec-drafters: `ceil(NodeID_count / 2)`, capped at 3. Partitions own disjoint spec files.
    - When all drafts return, resume the architect for the consistency review (cross-spec alignment, naming, `VERIFY:` coverage). Release the spec-drafters.
 
@@ -302,7 +304,7 @@ When using `--sequential`, process one ready scope at a time. A profile does not
 
 Use `MCP_ACTIVE`, `VAULTS_CONFIGURED`, and `VAULT_BASELINE` from Step 3.6 in `work/SKILL.md`. The lead has already completed the MCP probe, vault creation, and baseline vault queries before reaching this point. Do NOT re-run the MCP probe or baseline queries here.
 
-Pass the lead's timestamped MCP health result to the closer. The closer probes only when that result is absent, expired, or explicitly invalidated (see `${CLAUDE_PLUGIN_ROOT}/agents/closer.md`).
+Pass the lead's timestamped MCP health result to the closer. The closer probes only when that result is absent, expired, or explicitly invalidated (see `../../../agents/closer.md`).
 
 ### Pre-Phase: Targeted Context and Knowledge
 

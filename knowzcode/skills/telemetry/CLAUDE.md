@@ -4,7 +4,7 @@ Telemetry investigation workflow for diagnosing production errors from Sentry an
 
 ## Dispatch Pattern
 
-Agents are invoked with the current `Agent()` tool (`Task` is the older compatibility alias). `telemetry` delegates to the `knowzcode:reviewer` agent once using `subagent_type`, and that agent reads `${CLAUDE_PLUGIN_ROOT}/agents/reviewer.md` for its role definition and uses CLI tools (`sentry-cli`, `az monitor`) to query telemetry sources.
+Agents are invoked with the current `Agent()` tool (`Task` is the older compatibility alias). `telemetry` delegates to the `knowzcode:reviewer` agent once using `subagent_type`, whose role definition (`../../agents/reviewer.md`) Claude loads automatically; it uses CLI tools (`sentry-cli`, `az monitor`) to query telemetry sources.
 
 ## Agent Used
 
