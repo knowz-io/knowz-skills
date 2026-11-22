@@ -208,7 +208,7 @@ When generating adapters, inject detected project info to make them project-spec
 
 **Step 7c-codex: Generate Codex skill files**
 
-When Codex is selected, generate skill files in addition to `AGENTS.md`:
+When Codex is selected, generate `AGENTS.md`. **If the KnowzCode Codex plugin is installed** (`codex plugin list` shows `knowzcode` as installed), stop there: the plugin already provides every KnowzCode skill in all projects, and project-local copies would duplicate them. Otherwise, or when the user explicitly asks for a project that works without the plugin, also generate the skill files:
 
 ```
 1. Create .agents/skills/ directory
