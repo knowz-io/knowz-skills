@@ -48,7 +48,7 @@ Inline — the lead coordinates. A knowledge-liaison is used only as step 2 belo
 Approve Change Set and spec to proceed to implementation?
 ```
 
-6. **Gate decision**: If `AUTONOMOUS_MODE = true`, log `[AUTO-APPROVED] Light mode gate`. If `AUTONOMOUS_MODE = false` and the user rejects, adjust based on feedback and re-present. Once approved, in either mode, before implementation:
+6. **Gate decision**: If `AUTONOMOUS_MODE = true`, log `[AUTO-APPROVED] Light mode gate`. If `AUTONOMOUS_MODE = false` and the user rejects, adjust based on feedback and re-present. Once approved, in either mode, before implementation: The Light gate carries no gate-time vault capture, so no `vault-delta` call is needed here; the single classification happens in Light Phase 3.
    - Record the WorkGroup and its NodeIDs in `knowzcode/workgroups/{wgid}.md`. Do not write `[WIP]` rows to `knowzcode_tracker.md` — it is a frozen archive.
    - Pre-implementation commit: inspect `git status --short` and scoped diffs, then run `git add -- {approved-spec-paths} {any-new-journal-shards}`. Verify `git diff --cached --check` and `git diff --cached --name-only`; abort on any unapproved path before `git commit -m "KnowzCode: Light spec approved for {wgid}"`.
 
@@ -96,8 +96,8 @@ After builder completes successfully:
    ```
 3. **Architecture**: if the change added, renamed, or removed a NodeID, update `knowzcode/knowzcode_architecture.md` to match (see `knowzcode_loop.md` section 3.5).
 4. **Knowledge capture**:
-   - When `MCP_AGENTS_ENABLED = false` (for example `--no-mcp`), skip the rest of this step: make no MCP or pending-queue write, dispatch no writer, and say so in the report.
    - Classify the consolidated delta with `vault-delta` and `explicit_save: true`; store `FINAL_CAPTURE_ACTION` and its stable identity/reason.
+   - When `MCP_AGENTS_ENABLED = false` (for example `--no-mcp`), still run that classification (it is read-only) and record the returned action in the WorkGroup file, then stop: make no MCP or pending-queue write, dispatch no writer, and say so in the report. The remaining bullets and the persistence items of the checklist do not apply.
    - For `skip`, make no MCP or pending-queue write. For `batch` (defensive fallback), retain it and reclassify at the explicit final boundary. For `amend`, `update`, or `flush`, send the exact classified action, content-bound parent identity/key, explicit mutation plan, and known `KnowledgeId` values to a compatible knowledge-liaison or dispatch one writer directly. Each logical mutation receives a distinct deterministic child key. Missing amend/update identity returns `MISSING_AMEND_IDENTITY` or `MISSING_UPDATE_IDENTITY` and never falls through to create. Wait for the bounded result (max 2 minutes), then release the lineage.
 5. **Vault Write Checklist (MUST — do not skip, do not defer)**:
    You MUST attempt every item. Check each off or report failure to the user.
