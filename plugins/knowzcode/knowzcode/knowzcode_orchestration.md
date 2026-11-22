@@ -94,7 +94,7 @@ profile: frontier
 execute_on_fable: false
 ```
 
-See `knowzcode/skills/work/references/profile-models.md` for the full profile → agent-model mapping.
+See `references/profile-models.md` in the work skill of the installed KnowzCode plugin for the full profile → agent-model mapping.
 
 > **Codex note:** profile-based per-agent model routing (frontier's Fable/Opus split, advisor's Sonnet routing, and `execute_on_fable`) is a **Claude Code** capability. The Codex skills run their native coordinator/subagent flow and do not switch models per agent, so on Codex `profile:` and `execute_on_fable:` are informational only — kept for cross-platform config parity — and do not change behavior. (Claude Code honors them in full.)
 

@@ -10,7 +10,7 @@ You are the **KnowzCode Initialization Agent**. Set up the KnowzCode framework i
 
 ## Enterprise Configuration
 
-> **Note:** This section is about **white-label brand** only. The separate **enterprise compliance** feature (custom guidelines enforced at quality gates) is set up in step 10 and documented in `${CLAUDE_PLUGIN_ROOT}/docs/enterprise-compliance.md`.
+> **Note:** This section is about **white-label brand** only. The separate **enterprise compliance** feature (custom guidelines enforced at quality gates) is set up in step 10 and documented in `${CLAUDE_PLUGIN_ROOT}/docs/enterprise-compliance.md` (`../../docs/enterprise-compliance.md` from this skill's directory).
 
 Before using brand names in this skill, check for an `enterprise.json` file in the plugin root directory (the directory containing `.claude-plugin/plugin.json`). Read it once at the start of initialization.
 
@@ -59,21 +59,31 @@ knowzcode/
 ├── knowzcode_orchestration.md
 ├── platform_adapters.md
 ├── environment_context.md
-├── user_preferences.md (if configured)
+├── user_preferences.md
 ├── .gitignore
 ├── journal/                  (immutable work shards — tracked in git)
 │   └── README.md
 ├── specs/
 ├── workgroups/               (local session state — gitignored)
 ├── prompts/
+├── contracts/, context_efficiency.md, context_efficiency_runtime.mjs,
+│   relay_execution.md, *_execution.md, automation_manifest.md, telemetry_config.md
+│                             (framework support files — copied as shipped)
 └── enterprise/ (optional)
 ```
 
 `journal/` is where all work events are recorded, one immutable shard per event at `journal/YYYY-MM/<WorkGroupID>/YYYYMMDDTHHMMSSZ-<type>-<shortid>.md`. `knowzcode_log.md` and `knowzcode_tracker.md` are created as archive stubs that point at `journal/`; nothing ever writes to them.
 
-### 3. Copy template files
+### 3. Copy the framework files
 
-Use the embedded templates below.
+The plugin ships the complete framework in its own `knowzcode/` directory: `${CLAUDE_PLUGIN_ROOT}/knowzcode/` (`../../knowzcode/` from this skill's directory). That directory is the source of truth. Copy its contents into the project's `knowzcode/` with a recursive file copy (for example `cp -R`). Never retype or regenerate file contents that can be copied.
+
+- Honor the step 1 choice: **Merge** copies only files the project lacks; **Overwrite** replaces framework files but never `specs/`, `journal/`, `workgroups/`, or `handoffs/` content the project already has.
+- Do not copy `enterprise/` (step 10 scaffolds it on opt-in), `.npmignore`, or `gitignore.template`. The shipped `.gitignore` is copied like any other file.
+- The copy must include the support files the workflows read at run time: `context_efficiency.md`, `context_efficiency_runtime.mjs`, `contracts/`, `relay_execution.md`, and the `*_execution.md` guides.
+- Then create the two files the framework directory does not ship, from [references/templates.md](references/templates.md): `journal/README.md` and `environment_context.md`. Create empty `workgroups/` and `journal/` directories if missing.
+- For any file that exists both in the framework directory and in `references/templates.md`, the shipped framework file wins.
+- If the framework directory cannot be read, fall back to `references/templates.md` and report which framework files are missing.
 
 ### 4. Detect project stack and populate environment context
 
@@ -81,7 +91,7 @@ The Stack table in `knowzcode/knowzcode_project.md` may already be populated (Me
 
 - Probe for `package.json` (Node/TS), `pyproject.toml` / `requirements.txt` / `Pipfile` (Python), `*.csproj` / `*.sln` / `*.slnx` / `*.fsproj` (.NET), `go.mod` (Go), `Cargo.toml` (Rust), `Gemfile` (Ruby).
 - Write the Stack table rows (Language, Backend Framework, Frontend Framework, ORM/ODM, Testing (Unit), Testing (E2E)) with detected values. Leave a row empty if detection fails — don't write `[Detected]` or similar placeholders.
-- Populate `environment_context.md` sections the user will actually use (Platform, Language, Package Manager, Test Runner, Build command). The template is large; only fill what you can verify, and remove `[bracketed placeholders]` from filled sections.
+- Populate `environment_context.md` sections the user will actually use (Platform, Language, Package Manager, Test Runner, Build command). Only fill what you can verify, and remove `[bracketed placeholders]` from filled sections.
 
 ### 5. Personalize project context (three gates)
 
@@ -94,7 +104,7 @@ Ask three questions:
 2. "Core problem this solves (1–2 sentences)?"
 3. "Architecture style? (e.g., monolith, microservices, CLI + MCP, static site)"
 
-Write the answers into the `## Goal` and `## Architecture` sections, replacing the `[concise project objective — 1-2 sentences]`, `[specific user problem this solves — 1-2 sentences]`, and `[e.g., Monolithic, Microservices, Serverless]` placeholders. Do not touch the Stack table — that was handled in Step 4.
+Write the answers into the `## Goal` and `## Architecture` sections, replacing the `[concise project objective — 1-2 sentences]`, `[specific user problem this solves — 1-2 sentences]`, and `[e.g., Monolithic, Microservices, Serverless]` placeholders. Do not touch the Stack table — that was handled in Step 4. Where a section of the copied `knowzcode_project.md` still holds an `[e.g., …]` or other bracketed placeholder that no answer filled, replace it with `Not configured during init — edit this file or re-run /knowzcode:setup to fill.`
 
 **Gate B — Architecture stub:**
 
@@ -131,7 +141,7 @@ Write the answer as the `profile:` value in the generated `knowzcode_orchestrati
 - Codex skill/plugin → `RELAY_HOST=codex`, candidate target `claude`
 - Gemini or any other host → relay unsupported for this version; keep native Phase 2A, set `relay: none`, report `[RELAY-DETECT] host={host} target=none status=native-only`, and skip the rest of this step
 
-For Claude or Codex, run the candidate target's readiness probe from `${CLAUDE_PLUGIN_ROOT}/skills/work/references/relay-execution.md`:
+For Claude or Codex, run the candidate target's readiness probe from `${CLAUDE_PLUGIN_ROOT}/skills/work/references/relay-execution.md` (`../work/references/relay-execution.md` from this skill's directory):
 
 - Codex target: `command -v codex` → `codex --version` → `codex login status`
 - Claude target: `command -v claude` → `claude --version` → `claude auth status --json`; parse the exit code and only `.loggedIn` plus non-identifying method/provider fields. Never print or persist the raw JSON, email, organization ID, or organization name.
@@ -154,14 +164,15 @@ If yes: prompt for:
 
 If no: generate with all defaults.
 
-**6c.** Generate `knowzcode/knowzcode_orchestration.md` from the template (always — it's part of the standard file set), with `profile:` set to the Step 6a answer and `relay:` set per Step 6a2. Preserve the complete provider-specific relay block: shared transport/round/timeout settings, Codex target settings (including documented v0.20 legacy-key fallback), and Claude target settings with `dontAsk` plus the strict sandbox/allowlist safety invariant. Never substitute Codex model or sandbox defaults into the Claude adapter.
+**6c.** Edit the `knowzcode/knowzcode_orchestration.md` copied in step 3 (always — it's part of the standard file set), with `profile:` set to the Step 6a answer and `relay:` set per Step 6a2. Preserve the complete provider-specific relay block: shared transport/round/timeout settings, Codex target settings (including documented v0.20 legacy-key fallback), and Claude target settings with `dontAsk` plus the strict sandbox/allowlist safety invariant. Never substitute Codex model or sandbox defaults into the Claude adapter.
 
 ### 7. Create .gitignore
 
-Protect environment-specific files from git:
+Step 3 copies the shipped `knowzcode/.gitignore`. If it is missing (some packaging strips dotfiles), write it from the shipped `gitignore.template`. It keeps environment-specific and session files out of git while leaving `journal/` tracked:
 ```
 environment_context.md
 workgroups/
+handoffs/
 *.local.md
 .scratch/
 ```
@@ -170,7 +181,7 @@ workgroups/
 
 Check which AI platforms are present and offer to generate adapter files.
 
-**Step 7a: Detect platforms**
+**Step 8a: Detect platforms**
 ```
 CHECK for existing files:
   - CLAUDE.md → offer to append KnowzCode section
@@ -181,7 +192,7 @@ CHECK for existing files:
   - .windsurf/rules/ or .windsurfrules (deprecated) → offer Windsurf adapter (.windsurf/rules/knowzcode.md)
 ```
 
-**Step 7b: Present options**
+**Step 8b: Present options**
 ```
 PRESENT to user:
   "Which AI platform adapters would you like to generate?"
@@ -191,7 +202,7 @@ PRESENT to user:
   - Skip (just use knowzcode/ directly)
 ```
 
-**Step 7c: Generate project-specific adapters**
+**Step 8c: Generate project-specific adapters**
 
 When generating adapters, inject detected project info to make them project-specific:
 
@@ -206,7 +217,7 @@ When generating adapters, inject detected project info to make them project-spec
 
 3. For Codex: note that `AGENTS.override.md` can be used for user-local overrides
 
-**Step 7c-codex: Generate Codex skill files**
+**Step 8c-codex: Generate Codex skill files**
 
 When Codex is selected, generate `AGENTS.md`. **If the KnowzCode Codex plugin is installed** (`codex plugin list` shows `knowzcode` as installed), stop there: the plugin already provides every KnowzCode skill in all projects, and project-local copies would duplicate them. Otherwise, or when the user explicitly asks for a project that works without the plugin, also generate the skill files:
 
@@ -236,7 +247,7 @@ When Codex is selected, generate `AGENTS.md`. **If the KnowzCode Codex plugin is
 
 **Codex success message:** See [references/success-messages.md](references/success-messages.md#codex-success-message).
 
-**Step 7c-gemini-mcp: Offer MCP configuration for Gemini CLI**
+**Step 8c-gemini-mcp: Offer MCP configuration for Gemini CLI**
 
 After generating GEMINI.md + commands + skills + subagents, offer cloud/MCP connection through Claude OAuth / marketplace (`claude plugin install knowz` then `/knowz setup`).
 
@@ -248,7 +259,7 @@ Ask:
 - If **"Yes, use OAuth / marketplace"**: Connect only via Knowz Claude plugin OAuth / marketplace (`claude plugin install knowz` then `/knowz setup`). Do not scrape project config files. Verify with `list_vaults` when available, and update `knowzcode/mcp_config.md` with connection status only.
 - If **"No"**: Skip; mention `/knowz setup` (OAuth / marketplace) for later.
 
-**Step 7c-gemini: Generate Gemini TOML commands, skills, and subagents**
+**Step 8c-gemini: Generate Gemini TOML commands, skills, and subagents**
 
 When Gemini is selected, generate TOML command files, skill files, and subagent definitions in addition to `GEMINI.md`:
 
@@ -286,7 +297,7 @@ Gemini remains native-only for relay in this version. Do not generate `knowzcode
 5. Replace "vX.Y.Z" with current KnowzCode version
 ```
 
-**Step 7c-gemini-agents: Generate Gemini subagent files (experimental, opt-in)**
+**Step 8c-gemini-agents: Generate Gemini subagent files (experimental, opt-in)**
 
 Ask user: "Would you like to generate Gemini subagent definitions? (experimental — requires `experimental.enableAgents: true` in Gemini settings.json)"
 
@@ -310,7 +321,7 @@ If yes:
 
 **Gemini success message:** See [references/success-messages.md](references/success-messages.md#gemini-success-message).
 
-**Step 7d: Validate generated adapters**
+**Step 8d: Validate generated adapters**
 
 After generation, verify each adapter:
 - References correct `knowzcode/` file paths
@@ -320,7 +331,7 @@ After generation, verify each adapter:
 
 Adapter templates are in `knowzcode/platform_adapters.md`. Copy the relevant sections into the appropriate files.
 
-**Step 7e: Copilot-specific generation**
+**Step 8e: Copilot-specific generation**
 
 When Copilot is selected, generate the full prompt file suite in addition to the instructions file:
 
@@ -374,14 +385,14 @@ This works correctly — no action needed. Enable via Claude Code's own docs/UI.
 > This is the **compliance guidelines** feature — custom rules (security, API, code-quality, design) enforced at the quality gates. It is distinct from the white-label `enterprise.json` covered in the "Enterprise Configuration" section above.
 
 - Ask: "Would you like to set up enterprise compliance? It lets your org enforce its own guidelines at the quality gates. (optional)"
-- If yes, scaffold `knowzcode/enterprise/` by copying the enterprise skeleton that ships in the KnowzCode framework files (the `enterprise/` directory alongside the other `knowzcode/` templates in the installed plugin; the `npx @knowzai/knowzcode install` path copies it automatically). It includes:
+- If yes, scaffold `knowzcode/enterprise/` by copying the enterprise skeleton that ships in the KnowzCode framework files (the `enterprise/` directory alongside the other `knowzcode/` templates in the installed plugin). It includes:
   - `compliance_manifest.md` — the control file (Active Guidelines table + config keys)
   - `compliance_status.md` — audit history
   - `guidelines/security.md` (real rules), `guidelines/code-quality.md` + `guidelines/design.md` (starter templates), and `guidelines/custom/`
   - `templates/guideline-template.md`
 - Then tell the user how to turn it on: author or edit a guideline, register it in the manifest's **Active Guidelines** table with `Active: true`, set `compliance_enabled: true`, and run `/knowzcode:audit compliance` to verify. Guidelines are **blocking** (stop the workflow) or **advisory** (reported only).
 - Compliance is **disabled by default** (`compliance_enabled: false`) — nothing runs until the user opts in.
-- Point the user at `${CLAUDE_PLUGIN_ROOT}/docs/enterprise-compliance.md` for the full guide.
+- Point the user at `${CLAUDE_PLUGIN_ROOT}/docs/enterprise-compliance.md` (`../../docs/enterprise-compliance.md` from this skill's directory) for the full guide.
 
 ### 11. Optional: Configure MCP
 
@@ -411,7 +422,7 @@ Created:
 
 Platform adapters: [list generated adapters or "None (skip)"]
 
-Agent Teams: [Enabled by explicit request (.claude/settings.local.json) | Unchanged (default; adaptive named-agent routing)]
+Agent Teams: [Requested — enable it in Claude Code's own settings (setup writes no host settings) | Unchanged (default; adaptive named-agent routing)]
 
 Cross-agent relay: [Enabled portably (`relay: other`, {host} → {target}) | Target ready but not enabled | Target unavailable — {remediation} | Native-only on this platform]
 
@@ -425,7 +436,7 @@ Next steps:
 
 ## Template Files
 
-**Templates**: Read [references/templates.md](references/templates.md) for the full template content to generate.
+**Templates**: [references/templates.md](references/templates.md) holds the two generated files (`journal/README.md`, `environment_context.md`) and fallback copies of the personalised files. Step 3 copies everything else from the plugin's framework directory, which wins wherever both exist.
 
 Templates included: `knowzcode_project.md`, `knowzcode_tracker.md` (archive stub), `knowzcode_log.md` (archive stub), `journal/README.md`, `knowzcode_architecture.md`, `environment_context.md`, `knowzcode_orchestration.md`.
 

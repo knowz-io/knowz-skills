@@ -118,4 +118,4 @@ Model identifiers use the bare aliases `fable` and `opus` (never pinned versions
 - `spawn-prompts.md` — `{advisor_guidance}` and `{spec_depth_guidance}` placeholder rules
 - `parallel-orchestration.md` — spawn-time model-override application
 - `../../audit/SKILL.md` — audit-side profile handling
-- `knowzcode/knowzcode/knowzcode_orchestration.md` — `profile:` and `execute_on_fable:` config
+- `knowzcode/knowzcode_orchestration.md` in the project (not a path relative to this file) — `profile:` and `execute_on_fable:` config

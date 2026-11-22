@@ -102,7 +102,7 @@ Use the handoff as the freshest record of intent; where it disagrees with the li
 If the WorkGroup file contains a `## Relay` section, read both:
 
 - `knowzcode/workgroups/{wgid}-relay/state.md` — authoritative state
-- `${CLAUDE_PLUGIN_ROOT}/skills/work/references/relay-execution.md` — provider-neutral state machine and target adapters
+- `${CLAUDE_PLUGIN_ROOT}/skills/work/references/relay-execution.md` (`../work/references/relay-execution.md` from this skill's directory) — provider-neutral state machine and target adapters
 
 Resume the recorded relay instead of entering native Phase 2A. Do not infer a new target from the current prompt or current project configuration: the state file's host/target pair is fixed for the WorkGroup.
 

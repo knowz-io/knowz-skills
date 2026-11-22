@@ -48,8 +48,7 @@ Inline — lead coordinates, knowledge-liaison active.
 Approve Change Set and spec to proceed to implementation?
 ```
 
-6. **Autonomous Mode**: If `AUTONOMOUS_MODE = true`, log `[AUTO-APPROVED] Light mode gate` and proceed directly to implementation.
-   If `AUTONOMOUS_MODE = false`: If rejected — adjust based on feedback and re-present. If approved:
+6. **Gate decision**: If `AUTONOMOUS_MODE = true`, log `[AUTO-APPROVED] Light mode gate`. If `AUTONOMOUS_MODE = false` and the user rejects, adjust based on feedback and re-present. Once approved, in either mode, before implementation:
    - Record the WorkGroup and its NodeIDs in `knowzcode/workgroups/{wgid}.md`. Do not write `[WIP]` rows to `knowzcode_tracker.md` — it is a frozen archive.
    - Pre-implementation commit: inspect `git status --short` and scoped diffs, then run `git add -- {approved-spec-paths} {any-new-journal-shards}`. Verify `git diff --cached --check` and `git diff --cached --name-only`; abort on any unapproved path before `git commit -m "KnowzCode: Light spec approved for {wgid}"`.
 
@@ -95,6 +94,7 @@ After builder completes successfully:
 
    - **Verification Criteria Delta:** {None, or old wording → new wording with the user decision}
    ```
+3. **Architecture**: if the change added, renamed, or removed a NodeID, update `knowzcode/knowzcode_architecture.md` to match (see `knowzcode_loop.md` section 3.5).
 4. **Knowledge capture**:
    - Classify the consolidated delta with `vault-delta` and `explicit_save: true`; store `FINAL_CAPTURE_ACTION` and its stable identity/reason.
    - For `skip`, make no MCP or pending-queue write. For `batch` (defensive fallback), retain it and reclassify at the explicit final boundary. For `amend`, `update`, or `flush`, send the exact classified action, content-bound parent identity/key, explicit mutation plan, and known `KnowledgeId` values to a compatible knowledge-liaison or dispatch one writer directly. Each logical mutation receives a distinct deterministic child key. Missing amend/update identity returns `MISSING_AMEND_IDENTITY` or `MISSING_UPDATE_IDENTITY` and never falls through to create. Wait for the bounded result (max 2 minutes), then release the lineage.
@@ -108,10 +108,10 @@ After builder completes successfully:
      - **For `amend`/`update`**: give the writer the exact `KnowledgeId`, operation, and stable mutation key for the targeted mutation. A missing ID is an explicit error; never create a duplicate or replacement implicitly.
      - **For `flush`**: give one writer the consolidated journal, complete ordered mutation plan, content-bound parent key, and distinct child key for every exact create/amend/update identity.
      - **After create**: write the returned ID back as `**KnowledgeId:**` in the WorkGroup file.
-   - [ ] If MCP is unavailable for a required persistence action before writer dispatch: have the knowledge-liaison queue each eligible logical mutation exactly once in project-root `knowz-pending.md` using its distinct stable child key; never queue an amend/update missing its exact `KnowledgeId`. If a writer already started, require confirmation for every expected mutation key and do not append again. Announce: `**Vault capture skipped — MCP unavailable. Consolidated delta queue status: {confirmed mutation keys | confirmation required}. Run /knowz flush when confirmed.**`
+   - [ ] If MCP is unavailable for a required persistence action (not applicable when `MCP_AGENTS_ENABLED = false`, e.g. `--no-mcp`: then make no vault or pending-queue write and say so in the report) before writer dispatch: have the knowledge-liaison queue each eligible logical mutation exactly once in project-root `knowz-pending.md` using its distinct stable child key; never queue an amend/update missing its exact `KnowledgeId`. If a writer already started, require confirmation for every expected mutation key and do not append again. Announce: `**Vault capture skipped — MCP unavailable. Consolidated delta queue status: {confirmed mutation keys | confirmation required}. Run /knowz flush when confirmed.**`
 
    Do NOT silently skip. "Light mode" means fewer agents — not fewer artifacts.
-6. Final commit: inspect `git status --short` and `git diff -- {explicit-approved-paths}`; stage only the resolved active WorkGroup, tracker, approved specs, and approved implementation files with `git add -- {explicit-approved-paths}`. Verify `git diff --cached --check` and the exact `git diff --cached --name-only` list before `git commit -m "feat: {goal} (WorkGroup {wgid})"`. Never stage a directory wholesale.
+6. Final commit: inspect `git status --short` and `git diff -- {explicit-approved-paths}`; stage only the approved specs, the new journal shard, an updated `knowzcode_architecture.md` if any, and approved implementation files (the WorkGroup file is gitignored and the tracker is a frozen archive) with `git add -- {explicit-approved-paths}`. Verify `git diff --cached --check` and the exact `git diff --cached --name-only` list before `git commit -m "feat: {goal} (WorkGroup {wgid})"`. Never stage a directory wholesale.
 7. Report completion.
 
 **DONE** — Lightweight workflow: bounded knowledge context + one builder lineage. Skipped: analyst, architect, reviewer, closer, scanners, and default specialist fan-out.

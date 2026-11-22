@@ -1,23 +1,18 @@
-# KnowzCode - Status Map
+# KnowzCode Status Map — Archive
 
-**Purpose:** This document tracks the development status of all implementable components (NodeIDs) defined in `knowzcode_architecture.md`.
+**Status:** Frozen archive. Not written to.
 
----
-**Progress: 0%**
----
+NodeID status and WorkGroup assignments are no longer tracked in this file.
+Current state is derived from:
 
-| Status | WorkGroupID | Node ID | Label | Dependencies | Logical Grouping | Spec Link | Classification | Notes / Issues |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| | | | | | | | | |
+- `knowzcode/journal/` — immutable shards, one per work event. A WorkGroup is
+  in flight while its folder has no `arc-completion` or `workgroup-abandoned`
+  shard.
+- `knowzcode/specs/[NodeID].md` — as-built NodeID state.
+- `knowzcode/workgroups/<WorkGroupID>.md` — local session state (gitignored).
 
----
-### Status Legend:
+See `knowzcode/journal/README.md` for the shard contract.
 
-*   ⚪️ **`[TODO]`**: Task is defined and ready to be picked up if dependencies are met.
-*   📝 **`[NEEDS_SPEC]`**: Node has been identified but requires a detailed specification.
-*   ◆ **`[WIP]`**: Work In Progress. The KnowzCode AI Agent is currently working on this node.
-*   🟢 **`[VERIFIED]`**: Node has been implemented and verified.
-*   ❗ **`[ISSUE]`**: A significant issue or blocker has been identified.
+## Archived Entries
 
----
-*(This table will be populated as you define your architecture and NodeIDs.)*
+*None — this project started on the journal.*

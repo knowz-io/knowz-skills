@@ -1,6 +1,6 @@
 # KnowzCode Init — Template Files
 
-These templates are generated during `/knowzcode:setup` Step 3. Create each file in the `knowzcode/` directory.
+The plugin's framework directory is the source of truth (setup step 3). From this file, always generate `journal/README.md` and `environment_context.md`, which the framework directory does not ship. The other sections are fallbacks for when the framework directory cannot be read; they may omit newer settings such as the `profile:` key in `knowzcode_orchestration.md`.
 
 ## Contents
 

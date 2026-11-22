@@ -108,7 +108,7 @@ REPEAT until all checks pass:
 
 | Flag | Effect |
 |------|--------|
-| `--profile={advisor\|standard\|classic\|frontier}` | Select execution profile — see `${CLAUDE_PLUGIN_ROOT}/skills/work/references/profile-models.md` |
+| `--profile={advisor\|standard\|classic\|frontier}` | Select execution profile — see `${CLAUDE_PLUGIN_ROOT}/skills/work/references/profile-models.md` (`../work/references/profile-models.md` from this skill's directory) |
 | `--fable-execution` | (frontier only) Run the micro-fix on Fable for a high-value job |
 
 The `advisor` profile routes the micro-fix through Sonnet with advisor-tool guidance (per spec). `standard`, `classic`, and `frontier` use the agent's frontmatter default (Opus) with no guidance injection — the micro-fix is execution work, so `frontier` keeps it on Opus by default. Add `--fable-execution` under `frontier` to run a high-value micro-fix on Fable.
@@ -125,7 +125,7 @@ Before the `Agent()` dispatch, resolve `PROFILE`:
    - Otherwise proceed with `advisor`.
 5. **Frontier execution**: default `EXECUTE_ON_FABLE = false` (so it is always bound for the `MODEL_FOR` call below). Only when `PROFILE == "frontier"`: set `EXECUTE_ON_FABLE = true` if `$ARGUMENTS` contains `--fable-execution`, else read `execute_on_fable:` from `knowzcode/knowzcode_orchestration.md` (default `false`). If `EXECUTE_ON_FABLE == true` AND Fable is unavailable on this host (for example Bedrock/Vertex/Foundry/custom routing) → downgrade `EXECUTE_ON_FABLE = false` and announce.
 
-See `${CLAUDE_PLUGIN_ROOT}/skills/work/references/profile-models.md` for `MODEL_FOR()` semantics. For `/knowzcode:fix`: `MODEL_FOR("microfix-specialist", "advisor") == "sonnet"`; under `frontier`, `MODEL_FOR("microfix-specialist", "frontier", EXECUTE_ON_FABLE)` returns `"opus"` by default or `"fable"` when `--fable-execution` is set; `standard`/`classic` return null.
+See `${CLAUDE_PLUGIN_ROOT}/skills/work/references/profile-models.md` (`../work/references/profile-models.md` from this skill's directory) for `MODEL_FOR()` semantics. For `/knowzcode:fix`: `MODEL_FOR("microfix-specialist", "advisor") == "sonnet"`; under `frontier`, `MODEL_FOR("microfix-specialist", "frontier", EXECUTE_ON_FABLE)` returns `"opus"` by default or `"fable"` when `--fable-execution` is set; `standard`/`classic` return null.
 
 ## Execution
 
@@ -134,12 +134,12 @@ Delegate to the **knowzcode:microfix-specialist** agent via `Agent()` (`Task` is
 Resolve two spawn-time values from `PROFILE`:
 
 - `MODEL_OVERRIDE` = `MODEL_FOR("microfix-specialist", PROFILE, EXECUTE_ON_FABLE)` — a model alias (`"sonnet"` under advisor; `"opus"` or `"fable"` under frontier) or null (standard/classic). Include `model: <MODEL_OVERRIDE>` in `Agent()` parameters when non-null; omit entirely otherwise.
-- `ADVISOR_GUIDANCE` = the Advisor Guidance block from `${CLAUDE_PLUGIN_ROOT}/skills/work/references/spawn-prompts.md` if `PROFILE == "advisor"` AND `MODEL_OVERRIDE == "sonnet"`; otherwise empty string.
+- `ADVISOR_GUIDANCE` = the Advisor Guidance block from `${CLAUDE_PLUGIN_ROOT}/skills/work/references/spawn-prompts.md` (`../work/references/spawn-prompts.md` from this skill's directory) if `PROFILE == "advisor"` AND `MODEL_OVERRIDE == "sonnet"`; otherwise empty string.
 
 `Agent()` parameters:
 - `subagent_type`: `"knowzcode:microfix-specialist"`
 - `model`: `<MODEL_OVERRIDE>` (e.g. `"sonnet"` under advisor, `"opus"` or `"fable"` under frontier) — included ONLY when `MODEL_OVERRIDE` is non-null; OMIT the parameter otherwise (agent frontmatter default applies)
-- `prompt`: Task-specific context only (role definition is auto-loaded from `${CLAUDE_PLUGIN_ROOT}/agents/microfix-specialist.md`):
+- `prompt`: Task-specific context only (role definition is auto-loaded from `${CLAUDE_PLUGIN_ROOT}/agents/microfix-specialist.md` (`../../agents/microfix-specialist.md` from this skill's directory)):
   > **Target**: {target file or NodeID}
   > **Fix summary**: {summary}
   > Validate scope, implement the minimal fix, run the verification loop, log the outcome, and commit.

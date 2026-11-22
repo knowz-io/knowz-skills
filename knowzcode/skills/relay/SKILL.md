@@ -6,7 +6,7 @@ user-invocable: true
 
 # Cross-Agent Relay
 
-**Purpose:** Setup-aware entry point for the provider-neutral implementation relay. The current host owns planning, specifications, gates, review, checkpoints, and finalization; the resolved external target owns Phase 2A and bounded review-fix rounds. This skill resolves and verifies the target, optionally persists the project choice, then redirects to `/knowzcode:work`. The full protocol lives in `${CLAUDE_PLUGIN_ROOT}/skills/work/references/relay-execution.md`.
+**Purpose:** Setup-aware entry point for the provider-neutral implementation relay. The current host owns planning, specifications, gates, review, checkpoints, and finalization; the resolved external target owns Phase 2A and bounded review-fix rounds. This skill resolves and verifies the target, optionally persists the project choice, then redirects to `/knowzcode:work`. The full protocol lives in `${CLAUDE_PLUGIN_ROOT}/skills/work/references/relay-execution.md` (`../work/references/relay-execution.md` from this skill's directory).
 
 In this Claude Code source skill, set `RELAY_HOST = claude`. Host identity is fixed by the platform package and prompt text can never change it. The Codex package sets `RELAY_HOST = codex` and uses the same resolution contract.
 
