@@ -119,7 +119,7 @@ Every durable knowledge candidate — decisions, patterns, gotchas, workarounds,
 
 If MCP is not connected, normal batches remain in the WorkGroup journal and one required classified action is queued at its durability boundary. Never let insights die in the conversation.
 
-**Vault content detail**: Vault entries are retrieved via semantic search, not read directly like local files. Write detailed, self-contained entries with full reasoning, specific technology names, code examples, and file paths. Terse entries produce poor search results. See `knowz-vaults.md` (project root) Content Detail Principle.
+**Vault content detail**: Vault entries are retrieved via semantic search, not read directly like local files. Write detailed, self-contained entries with full reasoning, specific technology names, code examples, and file paths. Terse entries produce poor search results. See the Content Detail Principle in `knowzcode/knowzcode_loop.md` (and `knowz-vaults.md` in the project root, when the Knowz plugin has created it).
 
 ### Knowledge Liaison Dispatch
 When in Agent Teams mode, vault writes are handled by the knowledge-liaison — do NOT call `create_knowledge` directly. Classify every candidate with `vault-delta` before persistence:
@@ -153,7 +153,7 @@ Use the matching KnowzCode skill for feature work; do not preload every framewor
 
 ### Before Starting
 1. Classify the request as Micro, Light, or Full and record the concrete goal.
-2. Select an explicitly named active WorkGroup or compact context capsule. If none is named, inspect only the tracker slice needed to select active work, then resolve reusable specs/`VERIFY:` criteria and the current phase.
+2. Select an explicitly named active WorkGroup or compact context capsule. If none is named, inspect only the journal folders (`knowzcode/journal/*/*/`, excluding `ungrouped`) and WorkGroup files needed to select active work, then resolve reusable specs/`VERIFY:` criteria and the current phase.
 3. Read only the assigned criteria and relevant source paths. Read `knowzcode/knowzcode_project.md` or `knowzcode/knowzcode_architecture.md` only to answer a concrete unresolved planning question.
 4. Read `knowzcode/codex_execution.md` only when delegation, inheritance, warm-worker reuse, or a conditional handoff is eligible. Read relay guidance only after relay resolves non-`none`; read enterprise guidance only when its master switch or an explicit source activates it.
 5. Do not query vaults, spawn or form workers, launch relay, or write WorkGroup state before classification and spec reuse are resolved. Reuse MCP health within its configured TTL and query only for a named unresolved question.
@@ -212,7 +212,7 @@ Every durable candidate — decisions, patterns, gotchas, workarounds — **must
 `skip` and `batch` perform no MCP or pending-queue write. Persist only the returned `amend`, `update`, or consolidated `flush`, always passing the configured `vaultId`.
 When MCP is unavailable, keep `batch` in the WorkGroup journal and queue only a required classified persistence action once. Never let insights die in the conversation.
 Use `/knowz save "insight"` as an explicit-save candidate; it still passes through the classifier.
-Vault entries are retrieved via semantic search — write detailed, self-contained content. See `knowz-vaults.md` (project root) Content Detail Principle.
+Vault entries are retrieved via semantic search — write detailed, self-contained content. See the Content Detail Principle in `knowzcode/knowzcode_loop.md` (and `knowz-vaults.md` in the project root, when the Knowz plugin has created it).
 
 ## Quick Fix (Micro-Fix)
 For single-file, <50 line, no-ripple-effect changes:
@@ -2658,7 +2658,7 @@ Read these files before starting any feature work (use @import syntax for direct
 - Follow quality gates strictly — STOP at each gate for user approval
 - TDD is mandatory for all feature work
 - Propose Change Sets before implementing
-- Update specs and tracker after implementation
+- Update specs and write the completion journal shard after implementation
 - Record completions as immutable shards under `knowzcode/journal/`; never prepend `knowzcode/knowzcode_log.md` (frozen archive)
 - Target <20 specs — consolidate when domains overlap >50%
 
@@ -2667,7 +2667,7 @@ Every durable candidate — decisions, patterns, gotchas, workarounds — **must
 `skip` and `batch` perform no MCP or pending-queue write. Persist only the returned `amend`, `update`, or consolidated `flush`, always passing the configured `vaultId`.
 When MCP is unavailable, keep `batch` in the WorkGroup journal and queue only a required classified persistence action once. Never let insights die in the conversation.
 Use `/knowz save "insight"` as an explicit-save candidate; it still passes through the classifier.
-Vault entries are retrieved via semantic search — write detailed, self-contained content. See `knowz-vaults.md` (project root) Content Detail Principle.
+Vault entries are retrieved via semantic search — write detailed, self-contained content. See the Content Detail Principle in `knowzcode/knowzcode_loop.md` (and `knowz-vaults.md` in the project root, when the Knowz plugin has created it).
 
 ## MCP Server Configuration (Gemini CLI)
 Connect via Knowz Claude plugin OAuth / marketplace (`claude plugin install knowz` then `/knowz setup`).
@@ -3700,7 +3700,7 @@ Every durable candidate — decisions, patterns, gotchas, workarounds — **must
 `skip` and `batch` perform no MCP or pending-queue write. Persist only the returned `amend`, `update`, or consolidated `flush`, always passing the configured `vaultId`.
 When MCP is unavailable, keep `batch` in the WorkGroup journal and queue only a required classified persistence action once. Never let insights die in the conversation.
 Use `/knowz save "insight"` as an explicit-save candidate; it still passes through the classifier.
-Vault entries are retrieved via semantic search — write detailed, self-contained content. See `knowz-vaults.md` (project root) Content Detail Principle.
+Vault entries are retrieved via semantic search — write detailed, self-contained content. See the Content Detail Principle in `knowzcode/knowzcode_loop.md` (and `knowz-vaults.md` in the project root, when the Knowz plugin has created it).
 
 ## MCP Configuration
 MCP status is tracked in `knowzcode/mcp_config.md` and vaults in `knowz-vaults.md` (project root).
@@ -3804,7 +3804,7 @@ Every durable candidate — decisions, patterns, gotchas, workarounds — **must
 `skip` and `batch` perform no MCP or pending-queue write. Persist only the returned `amend`, `update`, or consolidated `flush`, always passing the configured `vaultId`.
 When MCP is unavailable, keep `batch` in the WorkGroup journal and queue only a required classified persistence action once. Never let insights die in the conversation.
 Use `/knowz save "insight"` as an explicit-save candidate; it still passes through the classifier.
-Vault entries are retrieved via semantic search — write detailed, self-contained content. See `knowz-vaults.md` (project root) Content Detail Principle.
+Vault entries are retrieved via semantic search — write detailed, self-contained content. See the Content Detail Principle in `knowzcode/knowzcode_loop.md` (and `knowz-vaults.md` in the project root, when the Knowz plugin has created it).
 
 ## Copilot Coding Agent
 
@@ -4363,7 +4363,7 @@ Every durable candidate — decisions, patterns, gotchas, workarounds — **must
 `skip` and `batch` perform no MCP or pending-queue write. Persist only the returned `amend`, `update`, or consolidated `flush`, always passing the configured `vaultId`.
 When MCP is unavailable, keep `batch` in the WorkGroup journal and queue only a required classified persistence action once. Never let insights die in the conversation.
 Use `/knowz save "insight"` as an explicit-save candidate; it still passes through the classifier.
-Vault entries are retrieved via semantic search — write detailed, self-contained content. See `knowz-vaults.md` (project root) Content Detail Principle.
+Vault entries are retrieved via semantic search — write detailed, self-contained content. See the Content Detail Principle in `knowzcode/knowzcode_loop.md` (and `knowz-vaults.md` in the project root, when the Knowz plugin has created it).
 
 ## MCP Configuration
 MCP status is tracked in `knowzcode/mcp_config.md` and vaults in `knowz-vaults.md` (project root).
