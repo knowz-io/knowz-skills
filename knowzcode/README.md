@@ -34,7 +34,7 @@ copilot plugin marketplace add knowz-io/knowz-skills
 copilot plugin install knowzcode@knowz-skills
 
 # Gemini CLI
-gemini extensions install https://github.com/knowz-io/knowz-skills --ref gemini-knowzcode --auto-update
+gemini extensions install https://github.com/knowz-io/knowz-skills --auto-update
 ```
 
 **Cursor:** open **Customize**, choose **From GitHub Repository**, enter `knowz-io/knowz-skills`, and install **knowzcode**.
@@ -177,7 +177,7 @@ Full guide: **[docs/enterprise-compliance.md](./docs/enterprise-compliance.md)**
 |----------|---------|--------|
 | Claude Code | `/plugin install knowzcode@knowz-skills` | Full |
 | OpenAI Codex | `codex plugin add knowzcode@knowz-skills` | Full |
-| Gemini CLI | `gemini extensions install https://github.com/knowz-io/knowz-skills --ref gemini-knowzcode` | Full |
+| Gemini CLI | `gemini extensions install https://github.com/knowz-io/knowz-skills` | Full |
 | GitHub Copilot CLI | `copilot plugin install knowzcode@knowz-skills` | Skills only |
 | GitHub Copilot (VS Code) | `/knowzcode:setup` from any host above → Copilot adapter | Experimental |
 | Cursor | Customize → From GitHub Repository → `knowz-io/knowz-skills` | Experimental |

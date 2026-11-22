@@ -18,9 +18,13 @@ There is no standalone installer. Each host installs from this repository with i
 | Codex | `.agents/plugins/marketplace.json` → `plugins/knowzcode/` | `codex plugin add knowzcode@knowz-skills` |
 | Copilot CLI | `.claude-plugin/marketplace.json` → `knowzcode/` (skills only; agents need `*.agent.md`) | `copilot plugin install knowzcode@knowz-skills` |
 | Cursor | `.cursor-plugin/marketplace.json` → `knowzcode/.cursor-plugin/plugin.json` | Customize → From GitHub Repository |
-| Gemini CLI | `gemini-knowzcode` branch, built from `knowzcode/.gemini/` | `gemini extensions install <repo url> --ref gemini-knowzcode` |
+| Gemini CLI | Latest GitHub Release asset `knowzcode.tar.gz`, built from `knowzcode/.gemini/` | `gemini extensions install <repo url>` |
 
-Gemini requires `gemini-extension.json` at the root of a git ref, so `scripts/build-gemini-extension.mjs` assembles the extension and `.github/workflows/gemini-extension.yml` publishes it as the `gemini-knowzcode` branch on every `knowzcode/v*` tag. Build locally with `node scripts/build-gemini-extension.mjs` (output in `dist/`, gitignored) and test with `gemini extensions install ./dist/gemini-knowzcode`.
+Gemini requires `gemini-extension.json` at the root of what it installs, and its git-clone path (`--ref <branch>`) fails in Gemini CLI 0.70–0.71, so the extension ships as a release archive. `scripts/build-gemini-extension.mjs` assembles it and `.github/workflows/gemini-extension.yml` attaches it to the GitHub Release for every `knowzcode/v*` tag, marked Latest.
+
+Gemini resolves an install without `--ref` to the repository's **Latest** release and uses its single asset. Keep exactly one asset on that release, and never mark a release without the KnowzCode archive (for example a Knowz-only release) as Latest.
+
+Build locally with `node scripts/build-gemini-extension.mjs` (output in `dist/`, gitignored) and test with `gemini extensions install ./dist/gemini-knowzcode`.
 
 ## Repository Structure
 

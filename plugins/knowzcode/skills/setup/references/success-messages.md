@@ -62,8 +62,8 @@ Gemini CLI adapter generated:
 
 MCP: [Configured via OAuth / marketplace | Not configured — run /knowz setup later]
 
-Tip: Run `gemini extensions install https://github.com/knowz-io/knowz-skills
---ref gemini-knowzcode` to have the commands and skills in all projects.
+Tip: Run `gemini extensions install
+https://github.com/knowz-io/knowz-skills` to have the commands and skills in all projects.
 ```
 
 ## Copilot Success Message

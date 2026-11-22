@@ -63,7 +63,7 @@ copilot plugin marketplace add knowz-io/knowz-skills
 copilot plugin install knowzcode@knowz-skills
 
 # Gemini CLI
-gemini extensions install https://github.com/knowz-io/knowz-skills --ref gemini-knowzcode --auto-update
+gemini extensions install https://github.com/knowz-io/knowz-skills --auto-update
 ```
 
 **Cursor:** open **Customize**, choose **From GitHub Repository**, enter `knowz-io/knowz-skills`, and install **knowzcode**.

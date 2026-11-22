@@ -4,9 +4,8 @@
 //
 //   node scripts/build-gemini-extension.mjs [--out <dir>]
 //
-// Gemini installs an extension from the root of a git ref, so the output is
-// published as the root of the `gemini-knowzcode` branch (see
-// .github/workflows/gemini-extension.yml).
+// Gemini installs an extension from a release archive with the manifest at its
+// root; .github/workflows/gemini-extension.yml publishes the output that way.
 import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
