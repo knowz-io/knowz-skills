@@ -38,7 +38,7 @@ Frontier profile: keeps the micro-fix on Opus (execution work). `--fable-executi
 
 ## Constraints
 
-- **Subagent delegation only** — no `TeamCreate`, no Agent Teams
+- **Subagent delegation only** — no Agent Teams
 - Never attempt multi-file or >50 LOC fixes — redirect to `/knowzcode:work`
 - Do NOT trigger when user is asking how to fix something (question) rather than requesting a fix (action)
 - Dispatch uses the current `Agent()` tool (`Task` is an older compatibility alias), inherits the session permission policy, and never passes a permission `mode` or requests `bypassPermissions`

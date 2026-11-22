@@ -307,6 +307,6 @@ If sources conflict, surface the conflict at the next gate. Blocking-tier confli
 | builder | worker with explicit criteria and owned files |
 | reviewer | coordinator or fresh reviewer-owned read-only explorer lineage |
 | knowledge-liaison | coordinator using direct Knowz MCP, optionally one bounded resumed capture worker |
-| closer | coordinator, optionally one bounded worker for authorized docs/log updates |
+| closer | coordinator, optionally one bounded worker for authorized docs/journal-shard updates |
 
 The goal is outcome and safety parity, not identical provider mechanics. Preserve KnowzCode rigor while using the capabilities the active Codex runtime actually exposes.

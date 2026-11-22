@@ -196,9 +196,9 @@ When implementation uses microtasks, Gate #3 cannot be marked clean until the le
 ### Smoke Test Gap Loop
 
 If the smoke-tester reports failures:
-1. Lead creates smoke fix tasks assigned to the builder owning the failing code
-2. Builder fixes, re-runs unit tests, marks fix task complete
-3. Lead creates re-smoke task for smoke-tester
+1. Lead resumes the builder owning the failing code with the smoke failure list
+2. Builder fixes, re-runs unit tests, returns its fix result
+3. Lead resumes the smoke-tester to re-run
 4. Smoke-tester re-runs against the running app
 5. **3-iteration cap**: If smoke test exceeds 3 iterations, pause autonomous mode: `> **Autonomous Mode Paused** — Smoke test failed 3 iterations. Manual review required.`
 

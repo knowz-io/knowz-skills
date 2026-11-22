@@ -153,7 +153,7 @@ When generating a spec, follow this exact structure:
 # {NodeID}: {Human-Readable Name}
 
 **Updated:** {timestamp}
-**Status:** Migrated
+**Status:** Draft
 **KnowledgeId:**
 **Migrated From:** {source_path} ({source_format} format)
 

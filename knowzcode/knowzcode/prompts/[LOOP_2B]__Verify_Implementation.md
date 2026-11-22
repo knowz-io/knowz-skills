@@ -3,13 +3,13 @@
 **WorkGroupID for Audit:**
 [Orchestrator: Re-state the `WorkGroupID` that has completed Loop 2A and requires an implementation audit.]
 
-> **Automation Path:** Trigger `/knowzcode-step phase=2B workgroup_id=<ID>` or `/knowzcode-audit audit=implementation workgroup_id=<ID>` to run the `reviewer` subagent in read-only mode. It utilizes `spec-quality-check` and `journal-scan` skills to compute the completion percentage.
+> **Automation Path:** `/knowzcode:work` runs this phase with the `reviewer` agent in read-only mode; `/knowzcode:audit` runs the same checks outside a WorkGroup.
 
 **Remember:**
-- Flag any spec discrepancies you uncover and update the relevant files in `knowzcode/specs/`.
-- Add follow-up todos to `knowzcode/workgroups/<WorkGroupID>.md` (each entry prefixed `KnowzCode:`) so unresolved work is obvious.
+- Flag any spec discrepancies you uncover in your report so the lead can update the relevant files in `knowzcode/specs/`.
+- List follow-up todos in your report (each entry prefixed `KnowzCode:`) for the lead to record in `knowzcode/workgroups/<WorkGroupID>.md`, so unresolved work is obvious.
 
-**WorkGroupID:** `[wip-timestamp-to-audit]`
+**WorkGroupID:** `[WorkGroupID]`
 
 ---
 
@@ -30,7 +30,7 @@ This is a **READ-ONLY** quality gate to audit the completeness of the implementa
 3.  **Map Built Features:** Briefly map what was built (e.g., components, functions, features, tests).
 
 #### Phase 1: Specification-to-Code Audit
-1.  **Load Specs:** For each `NodeID` in your scope, load its approved specification from `specs/`.
+1.  **Load Specs:** For each `NodeID` in your scope, load its approved specification from `knowzcode/specs/`.
 2.  **Verify Spec-to-Code:** For each spec, systematically verify that every requirement, function, and error handling case listed in the spec has been implemented in the code.
 3.  **Verify Named Tests:** Where a `VERIFY:` line carries a ` [test: <path>::<test name>]` suffix, confirm the named test exists, exercises that criterion, and passes. A missing or unrelated named test is a gap.
 4.  **Verify Code-to-Spec:** Check for any "orphan" code—features or functions that were implemented but are not described in any specification.

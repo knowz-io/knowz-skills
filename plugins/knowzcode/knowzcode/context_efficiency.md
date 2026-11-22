@@ -117,7 +117,7 @@ Avoid repeating normative blocks across prompts. A canonical file owns the rule;
 - Run the narrowest deterministic test inside a Red-Green-Refactor loop and affected-package checks at microtask completion.
 - Run the consolidated full suite, static analysis, build, packaging, and install smoke checks before Gate 3 and again after production changes in an audit/fix round.
 - Cache MCP health for `mcp_health_ttl_minutes`. Retry at a phase boundary after failure; do not repeat identical baseline calls from every worker.
-- Maintain a local knowledge delta. Skip empty or exact semantic-content duplicates. A stable `semantic_key` with changed content resolves to amend; changed content for the same supersession target resolves to update. Never discard changed knowledge as a duplicate. Batch unrelated normal phase writes through one resumed writer or gate/finalization call.
+- Maintain a local knowledge delta. Skip empty or exact semantic-content duplicates. A stable `semantic_key` with changed content resolves to amend; changed content for the same supersession target resolves to update. Never discard changed knowledge as a duplicate. Batch unrelated normal phase writes through one writer dispatch at the gate or finalization boundary.
 
 ## 7. Telemetry and rollout
 

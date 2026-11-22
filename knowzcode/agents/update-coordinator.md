@@ -120,7 +120,7 @@ For each command file:
 2. Read source file
 3. If data file (tracker/log/project):
    - NEVER replace
-   - Only update structure if needed (add new columns/sections)
+   - Only update structure of `knowzcode_project.md` if needed (add new sections); the tracker and log archives are never modified
    - Preserve all existing data
 4. If template file (loop/manifest):
    - Check for custom sections
@@ -357,7 +357,7 @@ After successful update:
 
 ```markdown
 1. Update version markers:
-   - Create/update knowzcode/VERSION.txt
+   - Create/update knowzcode/.knowzcode-version
    - Ensure knowzcode/journal/ exists (create with README if missing)
 
 2. Generate update report:

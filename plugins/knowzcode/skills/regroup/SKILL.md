@@ -10,7 +10,7 @@ description: "Create a local KnowzCode handoff before clearing context. Use when
 
 ## Source Of Truth
 
-The canonical source skill is `knowzcode/skills/regroup/SKILL.md`. Keep these surfaces behaviorally aligned when editing regroup:
+The paths below are in the KnowzCode source repository and matter only to maintainers; they do not exist in an installed plugin or a user project. The canonical source skill is `knowzcode/skills/regroup/SKILL.md`. Keep these surfaces behaviorally aligned when editing regroup:
 
 - `knowzcode/skills/regroup/SKILL.md`
 - `plugins/knowzcode/skills/regroup/SKILL.md`
@@ -23,7 +23,7 @@ Platform-specific frontmatter may differ, but the workflow contract and handoff 
 
 - KnowzCode owns workflow state: active WorkGroup, phase, branch, dirty files, blockers, next steps, autonomy mode, and resume instructions.
 - Knowz owns durable knowledge: decisions, patterns, workarounds, conventions, architecture findings, audit findings, and completion records.
-- Do not write the handoff itself to Knowz. If durable learnings are discovered, list them as extraction candidates or route them through the normal KnowzCode knowledge-liaison / `/knowz save` path.
+- Do not write the handoff itself to Knowz. If durable learnings are discovered, list them as extraction candidates or route them through the coordinator's `vault-delta` capture or the Knowz plugin's `knowz-save` skill.
 
 ## Instructions
 
@@ -40,7 +40,7 @@ Verify this is a KnowzCode project:
 Find the WorkGroup this handoff belongs to:
 
 1. If the user supplied a WorkGroup ID or path, use it.
-2. Else derive active WorkGroups from `knowzcode/journal/*/*/` (folders with no `arc-completion` or `workgroup-abandoned` shard), cross-checked against `knowzcode/workgroups/*.md`. Do not read `knowzcode_tracker.md` — it is a frozen archive.
+2. Else derive active WorkGroups from `knowzcode/journal/*/*/` (excluding the `ungrouped` folder, which holds standalone events) (folders with no `arc-completion` or `workgroup-abandoned` shard), cross-checked against `knowzcode/workgroups/*.md`. Do not read `knowzcode_tracker.md` — it is a frozen archive.
 3. If one active WorkGroup exists, use it.
 4. If multiple active WorkGroups exist, choose the one clearly referenced by the current session; otherwise ask the user to choose.
 5. If none exist, create a standalone handoff with `WorkGroupID: none` and point the user toward `/knowzcode:work` after resume.
@@ -151,8 +151,8 @@ For `## Durable Learning Candidates`:
 
 - Include only durable learnings that should survive outside this local workflow.
 - Prefer categories already used by KnowzCode capture: Decision, Pattern, Workaround, Performance, Security, Convention, Integration, Scope, Audit, Completion.
-- If the current workflow has a knowledge-liaison or writer capture path active, route candidates through that path as `Consider: {candidate}`.
-- If no capture path is active, leave candidates in the handoff for Phase 3 capture or explicit `/knowz save`.
+- If the current workflow has the coordinator's `vault-delta` capture active, route candidates through it as `Consider: {candidate}`.
+- If no capture path is active, leave candidates in the handoff for Phase 3 capture or explicit the Knowz plugin's `knowz-save` skill.
 - If MCP is unavailable, do not block regroup. The local handoff is the primary artifact.
 
 ### Step 7: Report
@@ -174,4 +174,4 @@ Then provide the `Fresh Context Prompt` from the file for copy/paste.
 
 - `/knowzcode:continue` - Load the latest handoff or active WorkGroup and resume
 - `/knowzcode:work` - Start a WorkGroup if there is no active workflow
-- `/knowz save` - Capture durable learnings, not workflow handoffs
+- the Knowz plugin's `knowz-save` skill - Capture durable learnings, not workflow handoffs

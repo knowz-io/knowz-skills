@@ -160,7 +160,7 @@ When merging specs:
    <!-- [MIGRATED] New content from migration below -->
    ```
 4. **Update timestamp** in spec header
-5. **Add migration note** to Tech Debt section
+5. **Add migration note** to Debt & Gaps section
 
 ---
 

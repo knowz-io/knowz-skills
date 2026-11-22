@@ -1,6 +1,6 @@
 # Authorized Audit Execution
 
-Load this reference only after the user explicitly authorizes runtime writes for an audit. That authorization permits normally permission-gated agent, Team/task-state, or test execution only; it does not authorize any report, artifact, log, WorkGroup/tracker/settings, or vault persistence.
+Load this reference only after the user explicitly authorizes runtime writes for an audit. That authorization permits normally permission-gated agent, Team/task-state, or test execution only; it does not authorize any report, artifact, log, WorkGroup/settings, or vault persistence.
 
 ## Common reviewer packet
 
@@ -42,4 +42,4 @@ Create and pre-assign one task per selected disjoint slice, include the task ID 
 
 ## Authorized tests
 
-Before each test command, state that it may write caches, coverage, snapshots, or generated output and confirm it falls within the explicit runtime-write authorization. Run the narrowest relevant command with normal permission checks. Do not redirect output or persist an artifact unless separately authorized. A test command never grants permission to edit source, settings, reports, logs, WorkGroups, trackers, or vaults.
+Before each test command, state that it may write caches, coverage, snapshots, or generated output and confirm it falls within the explicit runtime-write authorization. Run the narrowest relevant command with normal permission checks. Do not redirect output or persist an artifact unless separately authorized. A test command never grants permission to edit source, settings, reports, logs, WorkGroups, or vaults.

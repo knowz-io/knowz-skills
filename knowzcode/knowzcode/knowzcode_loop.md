@@ -14,7 +14,7 @@
 
 ## 2. Core Files Reference
 
-* **`knowzcode/knowzcode_project.md`**: Read-only project context.
+* **`knowzcode/knowzcode_project.md`**: Project context; edited only at finalization, when the Change Set changed something it records (goal or scope, stack, architecture, standards, testing, or security priorities).
 * **`knowzcode/knowzcode_architecture.md`**: Architecture docs. Update for simple consistency changes.
 * **`knowzcode/journal/`**: Append-only record of work events. One immutable shard per event. **This is where you write.**
 * **`knowzcode/knowzcode_tracker.md`**: Frozen archive. Read-only historical NodeID statuses. **Never write to it.**
@@ -32,7 +32,7 @@ knowzcode/journal/YYYY-MM/<WorkGroupID>/YYYYMMDDTHHMMSSZ-<type>-<shortid>.md
 ```
 
 * `YYYY-MM` — UTC year and month of the event timestamp.
-* `<WorkGroupID>` — the active `kc-{type}-{slug}-YYYYMMDD-HHMMSS` id, or `ungrouped` for a micro-fix with no WorkGroup.
+* `<WorkGroupID>` — the active `kc-{type}-{slug}-YYYYMMDD-HHMMSS` id, or `ungrouped` for an event with no active WorkGroup (a micro-fix, a standalone audit, a knowledge migration).
 * `YYYYMMDDTHHMMSSZ` — UTC timestamp, so filenames sort chronologically.
 * `<type>` — kebab-case event type: `arc-completion`, `microfix`, `refactor-completion`, `audit`, `telemetry`, `start-work`, `knowledge-migration`, `init`, `workgroup-abandoned`.
 * `<shortid>` — 4–8 lowercase hex/alphanumeric characters for uniqueness.
@@ -64,6 +64,7 @@ The body after the frontmatter holds the prose that used to go in the log entry:
 ```bash
 # open WorkGroups: journal WG folders with no terminal shard
 for wg in knowzcode/journal/*/*/; do
+  case "$wg" in */ungrouped/) continue;; esac
   ls "$wg" | grep -qE -- '-(arc-completion|workgroup-abandoned)-' || echo "IN FLIGHT: $wg"
 done
 
@@ -121,7 +122,7 @@ NodeIDs must be **domain concepts**, not tasks.
 #### Quality Gate: Change Set Approval
 Present the proposed Change Set to the user. **PAUSE and await user approval.** Do NOT proceed to Phase 1B until the user explicitly approves. In autonomous mode, auto-approve and proceed immediately (see Section 5).
 
-Upon approval, generate a unique WorkGroupID and create the WorkGroup session file `knowzcode/workgroups/<WorkGroupID>.md` listing the Change Set NodeIDs. Optionally write a `start-work` journal shard recording the approved scope. Do **not** write `[WIP]` rows to `knowzcode_tracker.md` — it is a frozen archive. In-flight state is derived from the journal and the session file.
+The WorkGroupID and its session file `knowzcode/workgroups/<WorkGroupID>.md` are created when the work session starts (generate them now if they do not exist yet). Upon approval, record the Change Set NodeIDs in that file. Optionally write a `start-work` journal shard recording the approved scope. Do **not** write `[WIP]` rows to `knowzcode_tracker.md` — it is a frozen archive. In-flight state is derived from the journal and the session file.
 
 **WorkGroupID Format**: `kc-{type}-{slug}-YYYYMMDD-HHMMSS`
 - Valid types: `feat`, `fix`, `refactor`, `issue`
@@ -388,7 +389,7 @@ Vault routing is driven by `knowz-vaults.md` — each vault entry has "When to q
 
 ### Knowz Vault Agents (Multi-Agent Platforms)
 
-On platforms with multi-agent orchestration (e.g., Claude Code Agent Teams), **`knowz:reader`** has read-only access to MCP vaults, and **`knowz:writer`** has full read/write access to MCP vaults. Both have read/write access to local knowzcode files:
+On platforms with multi-agent orchestration (e.g., Claude Code subagents), **`knowz:reader`** has read-only access to MCP vaults, and **`knowz:writer`** has full read/write access to MCP vaults. Both have read/write access to local knowzcode files:
 
 - **`knowz:reader`** is dispatched only for a bounded Stage 0 gap — queries vaults for business context, conventions, and past decisions, then returns one bounded result to the lead. The lead routes findings to analyst and architect directly; in Team mode it uses one targeted `SendMessage` per recipient because no broadcast primitive exists.
 - **`knowz:writer`** is dispatched only after `vault-delta` returns `amend`, `update`, or `flush`. It receives the explicit mutation plan, content-bound parent identity/key, one distinct deterministic child key per logical mutation, exact `KnowledgeId` values for amend/update, phase, WorkGroup ID, and consolidated content; normal `skip`/`batch` gates create no writer.
@@ -462,7 +463,7 @@ Agents should watch for these during any phase and submit candidates to the lead
 | API quirk | Undocumented behavior, version differences |
 | Stale vault guidance | Retrieved knowledge contradicted by live code/tests/docs |
 
-When detected, capture immediately — do not defer to finalization. Sessions can end unexpectedly.
+When detected, hand the candidate to the lead immediately — do not hold it until finalization. Sessions can end unexpectedly.
 
 ### Architecture Documentation Depth
 
@@ -533,7 +534,7 @@ If MCP is available but no `knowz:writer`, resolve vault IDs from `knowz-vaults.
 - After Phase 2A: Capture implementation patterns and workarounds discovered during TDD cycles — include specific file paths, code examples, and the problem each pattern solves
 - After Phase 2B: return an Audit candidate containing the audited scope, score, findings with file/line evidence, security severity, and gap-resolution rationale; the lead classifies and routes it
 - After Phase 2B (enterprise): If `mcp_compliance_enabled: true`, an enterprise vault is configured, and `push_audit_results: true` (default), classify the audit delta and persist only `amend`, `update`, or `flush`; retain `batch` for final consolidation
-- After Phase 3: Capture architectural learnings and consolidation decisions (handled by closer agent)
+- After Phase 3: Capture architectural learnings and consolidation decisions (the lead classifies the closer's consolidated delta and dispatches the write)
 
 ### Capture Protocol
 
@@ -599,7 +600,7 @@ When a single AI handles all phases sequentially:
 
 ### Parallel Execution (Multi-Agent Platforms)
 
-On platforms supporting concurrent agents (Claude Code Agent Teams, future multi-agent runtimes):
+On platforms supporting concurrent agents (Claude Code subagents, Codex workers, future multi-agent runtimes):
 
 #### Parallelism Boundaries
 - **Between phases**: Phase 1A must produce Change Set before 1B drafts specs (scope must be approved first)

@@ -2,7 +2,7 @@
 
 **Primary Goal:** [Orchestrator: Re-state the confirmed feature or task, e.g., "Implement a user logout button and its backend logic."]
 
-> **Automation Path:** Run `/knowzcode-step phase=1A` to engage the `analyst` subagent with the `load-core-context`, `journal-scan`, and `generate-workgroup-id` skills preloaded. Review the summary in `knowzcode/automation_manifest.md` if you need a refresher on available helpers.
+> **Automation Path:** `/knowzcode:work` runs this phase with the `analyst` agent. See `knowzcode/automation_manifest.md` for the available skills and agents.
 
 **Remember:**
 - Inspect existing specs in `knowzcode/specs/` for every impacted NodeID and note gaps.
@@ -15,13 +15,13 @@ You have been given a `PrimaryGoal`. Your sole objective for this step is to per
 
 **CRITICAL RULE: Your work in this phase is strictly limited to updating KnowzCode's own project and specification files (`.md` files). You MUST NOT write or modify any application source code (e.g., `.js`, `.py`, `.html` files).**
 
-**Reference:** Your actions are governed by `knowzcode_loop.md`, specifically **Steps 1.2 and 1.3**.
+**Reference:** Your actions are governed by `knowzcode_loop.md`, specifically **Section 3.1**.
 
 ---
 
 ### Step 1: Analyze System-Wide Impact (Ref: `knowzcode_loop.md` - Section 3.1)
 
-*   Thoroughly analyze the `PrimaryGoal` in the context of the entire project, including `knowzcode_architecture.md`, all files in the `specs/` directory, and in-flight WorkGroups derived from `knowzcode/journal/*/*/` (folders with no `arc-completion` or `workgroup-abandoned` shard).
+*   Thoroughly analyze the `PrimaryGoal` in the context of the entire project, including `knowzcode_architecture.md`, all files in the `knowzcode/specs/` directory, and in-flight WorkGroups derived from `knowzcode/journal/*/*/` (folders with no `arc-completion` or `workgroup-abandoned` shard).
 *   Your analysis **MUST** identify the complete Change Set, which includes:
     1.  All **new `NodeID`s** that must be created.
     2.  All **existing `NodeID`s** that will be impacted or require modification. This includes nodes with an existing as-built spec whose specifications or code will need to be updated to support the new feature.
@@ -41,7 +41,7 @@ You have been given a `PrimaryGoal`. Your sole objective for this step is to per
 >     *   `Authentication` (spec: As-Built): Will be modified to add a method for invalidating a user's session.
 >     *   `Navigation` (spec: As-Built): The spec and code will be updated to include the logout button.
 > 
-> Please review and confirm this complete Change Set. Your confirmation via the `[LOOP 1B]` prompt will authorize me to open the WorkGroup for these nodes and proceed."
+> Please review and confirm this complete Change Set. Your confirmation via the `[LOOP 1B]` prompt will authorize me to record these nodes in the WorkGroup and proceed."
 
 ### Step 3: Pause for Confirmation
 

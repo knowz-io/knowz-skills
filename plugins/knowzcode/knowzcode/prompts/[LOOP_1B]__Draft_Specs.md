@@ -3,7 +3,7 @@
 **Confirmed Change Set:**
 [Orchestrator: Copy and paste the *exact* Change Set that the agent proposed and you are approving. This serves as the official, unambiguous authorization.]
 
-> **Automation Path:** Invoke `/knowzcode-step phase=1B workgroup_id=<ID>` to delegate to the `architect` subagent. This automatically applies the `spec-template` and `spec-quality-check` skills before presenting draft specs.
+> **Automation Path:** `/knowzcode:work` runs this phase with the `architect` agent, which drafts specs in the 4-section format before presenting them.
 
 **Remember:**
 - Update each affected spec in `knowzcode/specs/` using the lean 4-section template (Rules & Decisions, Interfaces, Verification Criteria, Debt & Gaps).
@@ -19,27 +19,27 @@
 ---
 
 ## Your Mission
-The Change Set has been confirmed. Your first action is to **open the WorkGroup session file** to reflect the start of this work. Then, proceed to draft or refine all required specifications directly in their respective files.
+The Change Set has been confirmed. Your first action is to **record the approved Change Set in the existing WorkGroup session file**. Then, proceed to draft or refine all required specifications directly in their respective files.
 
 **CRITICAL RULE: Your work in this phase is strictly limited to updating KnowzCode's own project and specification files (`.md` files). You MUST NOT write or modify any application source code (e.g., `.js`, `.py`, `.html` files).**
 
-**Reference:** Your actions are governed by `knowzcode_loop.md`, executing **Section 3.1 (WorkGroup creation after Change Set approval)** and **Section 3.2 (Specification)**.
+**Reference:** Your actions are governed by `knowzcode_loop.md`, executing **Section 3.1 (Change Set approval)** and **Section 3.2 (Specification)**.
 
 ---
 
-### Step 1: Establish Work Group (Ref: `knowzcode_loop.md` - Section 3.1)
+### Step 1: Record the Change Set in the WorkGroup (Ref: `knowzcode_loop.md` - Section 3.1)
 
-*   Generate a single, unique `WorkGroupID` for this session (format `kc-{type}-{slug}-YYYYMMDD-HHMMSS`).
-*   Create `knowzcode/workgroups/<WorkGroupID>.md` listing every node in the confirmed Change Set. This is local session state (gitignored).
+*   Use the `WorkGroupID` generated at session start (format `kc-{type}-{slug}-YYYYMMDD-HHMMSS`); do not generate a new one.
+*   Record every node in the confirmed Change Set in the existing `knowzcode/workgroups/<WorkGroupID>.md`, creating the file only if it is missing. This is local session state (gitignored).
 *   Do **not** write `[WIP]` rows to `knowzcode_tracker.md` — it is a frozen archive. The WorkGroup counts as in flight until its `knowzcode/journal/YYYY-MM/<WorkGroupID>/` folder gains an `arc-completion` or `workgroup-abandoned` shard.
-*   This action formally begins the work session and reserves the nodes for this task.
+*   This action reserves the nodes for this task.
 
 ### Step 2: Draft and Refine Specifications (Ref: `knowzcode_loop.md` - Section 3.2)
 
 *   Now that the WorkGroup is open, read the project, architecture, and affected spec files to gather all necessary information for the entire Change Set.
 *   Proceed to specification drafting in the 4-section format with `VERIFY:` lines (never the old numbered-section or `ARC_XXX` format):
-    *   For each **new** node in the Change Set, **create and write** its complete specification to a new file at `specs/[NodeID].md`.
-    *   For each **existing** node in the Change Set, **read, modify, and save** its specification file at `specs/[NodeID].md`.
+    *   For each **new** node in the Change Set, **create and write** its complete specification to a new file at `knowzcode/specs/[NodeID].md`.
+    *   For each **existing** node in the Change Set, **read, modify, and save** its specification file at `knowzcode/specs/[NodeID].md`.
 
 ### Step 3: Report Readiness for Review (Ref: `knowzcode_loop.md` - Section 3.2, Spec Approval gate)
 
@@ -49,14 +49,14 @@ The Change Set has been confirmed. Your first action is to **open the WorkGroup 
 **Example Response Format:**
 > "Authorization received. The WorkGroup session file for `WorkGroupID: [ID]` is open and all Change Set nodes are reserved for it.
 >
-> The specification drafting and refinement phase is also complete. The following files are now ready for your review in the `specs/` directory:
+> The specification drafting and refinement phase is also complete. The following files are now ready for your review in the `knowzcode/specs/` directory:
 >
 > *   **New Specs Created:**
->     *   `specs/[NodeID_A].md`
->     *   `specs/[NodeID_B].md`
+>     *   `knowzcode/specs/[NodeID_A].md`
+>     *   `knowzcode/specs/[NodeID_B].md`
 > *   **Existing Specs Modified:**
->     *   `specs/[NodeID_C].md`
->     *   `specs/[NodeID_D].md`
+>     *   `knowzcode/specs/[NodeID_C].md`
+>     *   `knowzcode/specs/[NodeID_D].md`
 >
 > Please review these files at your convenience. Based on a Change Set size of [Number] nodes, I recommend we proceed to [Spec Verification Checkpoint | LOOP 2A]. Your approval via the next prompt will authorize the next step."
 

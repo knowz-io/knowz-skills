@@ -3,13 +3,13 @@
 **WorkGroupID for Implementation:**
 [Orchestrator: Re-state the `WorkGroupID` that you have reviewed and are now approving for implementation. This confirms all associated specs are approved.]
 
-> **Automation Path (Claude Code):** Use `/knowzcode-step phase=2A workgroup_id=<ID>` to activate the `builder` subagent. The command enforces the `environment-guard` skill and records progress in the WorkGroup session file once the loop instructions are complete. On Codex, use the `/knowzcode:work` skill's inline Phase 2A flow and follow `knowzcode/codex_execution.md` for native delegation.
+> **Automation Path:** `/knowzcode:work` runs this phase with the `builder` agent and records progress in the WorkGroup session file. Hosts without named agents run the same phase inline.
 
 **Remember:**
 - Cross-check code updates against the latest specs and refresh them if implementation diverges.
 - Record in-progress work and emerging tasks in `knowzcode/workgroups/<WorkGroupID>.md`, keeping every todo prefixed with `KnowzCode:`.
 
-**WorkGroupID:** `[wip-timestamp-to-implement]`
+**WorkGroupID:** `[WorkGroupID]`
 
 ---
 
@@ -28,14 +28,14 @@ Your task is to autonomously execute the planning, committing, implementation, a
 
 1.  **Plan & Commit:**
     *   Develop a **dependency-wave** implementation plan from the analyst's dependency map. Default to **one NodeID or one named microtask per implementation pass**, each with its own assigned acceptance criteria (`VERIFY:` subset or micro-acceptance criteria). Only treat the whole Change Set as a single pass when it is tiny, single-layer, and shares one bounded owned-file set.
-    *   Split oversized NodeIDs into microtasks before coding when they cross layers (DI + service + consumer + UI), touch more than ~5 files, contain sequential subtasks, or previously timed out. The split signals and microtask conventions are defined in `knowzcode/skills/work/references/parallel-orchestration.md`.
+    *   Split oversized NodeIDs into microtasks before coding when they cross layers (DI + service + consumer + UI), touch more than ~5 files, contain sequential subtasks, or previously timed out. The split signals and microtask conventions are defined in the work skill's `references/parallel-orchestration.md` in the installed plugin.
     *   **CRITICAL CHECKPOINT:** After developing your plan, evaluate its complexity. If the plan is exceptionally complex or high-risk, you **MUST PAUSE** now and present the plan for Orchestrator review (Section 5 of the loop). If the plan is straightforward, proceed.
     *   Perform the **Pre-Implementation Commit** as per Section 3.2 and note its SHA in the WorkGroup file — it is the baseline new tests must fail against.
 
 2.  **Implement (Red-Green-Refactor):**
     *   Write each failing test first and keep its failing run (command + failing assertion) as RED evidence for the success report. You do not commit during implementation, so that evidence is the record that the test came first.
     *   Execute the plan **wave-by-wave**: complete and verify each NodeID/microtask against its assigned acceptance criteria before starting the next dependent one. Do not pre-load or modify code outside the current scope's owned files.
-    *   If a wave cannot finish cleanly in this dispatch, persist a `[BUILDER_CHECKPOINT]` block (format in `knowzcode/agents/builder.md`) describing Done / Files changed / Tests run / Remaining / Next microtask, and stop instead of restarting or expanding scope.
+    *   If a wave cannot finish cleanly in this dispatch, persist a `[BUILDER_CHECKPOINT]` block (format defined by the `builder` agent in the installed plugin) describing Done / Files changed / Tests run / Remaining / Next microtask, and stop instead of restarting or expanding scope.
 
 3.  **Verify:**
     *   Verify each completed scope against **its assigned acceptance criteria only** — for a microtask, do not fail unrelated parent NodeID criteria. Follow the iterative "fix and re-verify" cycle detailed in `knowzcode_loop.md`.

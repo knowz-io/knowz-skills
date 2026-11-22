@@ -1,22 +1,28 @@
 # KnowzCode Automation Manifest
 
-This manifest describes the resources that support the KnowzCode workflow.
+This manifest describes the resources that support the KnowzCode workflow. Skills and agents ship in the installed KnowzCode plugin; hosts without named agents run the same phases inline.
 
-## Commands
+## Skills
 
-| Command | Purpose |
+Each skill is invoked by name. Claude Code and Gemini CLI use the `/knowzcode:<name>` form; other hosts list the same skills without the prefix.
+
+| Skill | Purpose |
 | --- | --- |
-| `/knowzcode:work` | Start feature workflow with TDD, quality gates, and structured phases |
-| `/knowzcode:explore` | Research and investigate using parallel agents before implementing |
-| `/knowzcode:audit` | Run quality audits (spec, architecture, security, integration) |
-| `/knowzcode:fix` | Execute targeted micro-fix workflow |
-| `/knowzcode:setup` | Initialize KnowzCode in current project + generate platform adapters |
-| `/knowzcode:telemetry` | Investigate production telemetry |
-| `/knowzcode:telemetry-setup` | Configure telemetry sources |
-| `/knowz setup` | Configure MCP server connection (knowz plugin) |
-| `/knowz save` | Capture learning to vault (knowz plugin) |
-| `/knowz register` | Register and configure MCP (knowz plugin) |
-| `/knowzcode:status` | Check MCP and vault status |
+| `work` | Feature workflow with TDD, quality gates, and structured phases |
+| `explore` | Research and planning before implementing |
+| `audit` | Read-only quality audits (spec, architecture, security, integration, compliance) |
+| `fix` | Targeted single-file micro-fix |
+| `setup` | Initialize KnowzCode in a project and generate platform adapters |
+| `status` | Framework health, agent availability, MCP and vault summary |
+| `continue` | Resume an active WorkGroup or the latest handoff |
+| `regroup` | Write a local handoff before clearing context |
+| `relay` | Delegate implementation to the other supported coding agent |
+| `telemetry` | Investigate production telemetry |
+| `telemetry-setup` | Configure telemetry sources |
+| `start-work` | Detect implementation intent and route to `work` |
+| `regroup-trigger` | Detect pause or hand-off intent and offer `regroup` |
+
+Vault commands (`/knowz setup`, `/knowz save`, `/knowz register`) come from the separate Knowz plugin.
 
 ## Agents
 
@@ -26,28 +32,18 @@ This manifest describes the resources that support the KnowzCode workflow.
 | `architect` | 1B | Specification drafting and architecture review |
 | `builder` | 2A | TDD implementation and verification loops |
 | `reviewer` | 2B | Quality audit, security review, compliance |
-| `closer` | 3 | Finalization — specs, tracker, log, architecture |
+| `smoke-tester` | 2B | Runtime smoke testing |
+| `closer` | 3 | Finalization — specs, journal shard, architecture, learning capture |
+| `knowledge-liaison` | 0–3 | On-demand context and vault capture |
+| `security-officer` | 0–3 | Threat modeling and vulnerability scanning (opt-in) |
+| `test-advisor` | 0–3 | TDD enforcement and test quality (opt-in) |
+| `project-advisor` | 0–2 | Backlog curation and idea capture (opt-in) |
+| `frontend-designer` | 0–3 | Design questions, mockups, and UI verification (UI projects) |
+| `enterprise-enforcer` | 0–3 | Compliance guideline mapping and gate blocking (when compliance is enabled) |
 | `microfix-specialist` | - | Scope-gated quick fixes |
+| `relay-runner` | 2A | Monitors one external-agent relay leg |
 | `knowledge-migrator` | - | External knowledge import |
 | `update-coordinator` | - | Framework self-update |
-
-## Skills
-
-| Skill | Purpose |
-| --- | --- |
-| `start-work` | Detect implementation intent and redirect to /knowzcode:work |
-| `continue` | Detect continuation intent and resume active WorkGroup |
-| `load-core-context` | Load project overview, architecture, tracker into memory |
-| `generate-workgroup-id` | Produce WorkGroupID timestamps |
-| `journal-shard-writer` | Create one immutable journal shard per work event |
-| `spec-template` | Seed specs with 4-section template |
-| `spec-quality-check` | Verify spec completeness |
-| `journal-shard-frontmatter` | Structure required shard frontmatter |
-| `architecture-diff` | Highlight differences between specs and architecture docs |
-| `environment-guard` | Confirm environment context is complete |
-| `journal-scan` | Derive in-flight WorkGroups and recent history from the journal tree |
-| `alias-resolver` | Convert natural language to canonical KnowzCode values |
-| `spec-validator` | Validate individual spec quality |
 
 ## State Files
 

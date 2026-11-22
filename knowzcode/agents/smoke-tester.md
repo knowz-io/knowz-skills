@@ -49,8 +49,9 @@ When the packet states `Coordination Mode: coordinated-team` (experimental Agent
    IF spec declares smoke directives:
        → Use declared directives directly
    ELIF project has UI AND feature touches UI:
-       → Chrome extension (preferred, via mcp__claude-in-chrome__* tools)
-       → Playwright (fallback, if project has Playwright config)
+       → Browser tools only if the session exposes them to this agent
+       → Otherwise HTTP/CLI checks; state in the report that UI verification was not performed
+         (a frontend-designer, when active, owns browser E2E)
    ELIF project is API-only OR feature is backend-only:
        → HTTP endpoint testing (curl/fetch)
    ELSE:

@@ -2,7 +2,7 @@
 
 **Purpose:** Defines the execution model for GitHub Copilot users. Copilot operates as a single-agent, sequential platform — users manually transition between phases using prompt files.
 
-Agents on other platforms should ignore this file — see `knowzcode/platform_adapters.md` for platform-specific instructions, or `knowzcode/claude_code_execution.md` for Claude Code Agent Teams.
+Agents on other platforms should ignore this file — see `knowzcode/platform_adapters.md` for platform-specific instructions, or `knowzcode/claude_code_execution.md` for Claude Code execution.
 
 ---
 

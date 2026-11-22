@@ -69,8 +69,8 @@ Runs BEFORE Step 2 so profile-related flag conflicts halt without side effects (
 
 1. Parse `--profile=<value>` from `$ARGUMENTS`:
    - Present and value is `advisor`, `standard`, `classic`, or `frontier` → `PROFILE_PREFLIGHT = <value>`
-   - Present but value is none of the four → halt with: `**Error:** --profile value "{value}" is invalid. Use advisor, standard, classic, or frontier.`
    - Value `teams` → treat as `standard` (deprecated alias) and continue
+   - Present but any other value → halt with: `**Error:** --profile value "{value}" is invalid. Use advisor, standard, classic, or frontier.`
    - Absent → continue to config fallback
 2. If flag absent, read `knowzcode/knowzcode_orchestration.md` with a targeted grep for `^profile:\s*(\S+)`:
    - Value is `advisor`, `standard`, `classic`, or `frontier` → `PROFILE_PREFLIGHT = <value>` (a persisted choice — never re-ask)
@@ -83,7 +83,7 @@ Runs BEFORE Step 2 so profile-related flag conflicts halt without side effects (
 3. Profile selection controls model/advisor behavior, not coordination mode. `--sequential` and `--subagent` remain valid with every profile; a profile never forces Agent Teams.
 4. Parse `EXECUTE_ON_FABLE` (affects only `frontier`): `true` if `$ARGUMENTS` contains `--fable-execution`; else read `knowzcode/knowzcode_orchestration.md` with a targeted grep for `^execute_on_fable:\s*(\S+)` (`true`/`false`, default `false`). Pure metadata like the profile parse above — resolving it here (not in Step 2.4) makes it available to the Step 2.3 announcement and downstream-use directive, both of which run before the Step 2.4 config load.
 
-This step is a pure-metadata parse (no spawns or writes). The full orchestration-config load happens later in Step 2.4 and supersedes `PROFILE_PREFLIGHT` by setting `PROFILE` through the same logic. Step 2.3 then runs advisor-specific env detection and final announcement. See `${CLAUDE_PLUGIN_ROOT}/skills/work/references/profile-models.md` (`references/profile-models.md` from this skill's directory) for profile semantics.
+This step is a pure-metadata parse (no spawns or writes). Step 2.3 then runs advisor-specific env detection and the final announcement from `PROFILE_PREFLIGHT`. The orchestration-config load happens after that in Step 2.4 and reads the remaining config; it does not change the profile resolved here. See `${CLAUDE_PLUGIN_ROOT}/skills/work/references/profile-models.md` (`references/profile-models.md` from this skill's directory) for profile semantics.
 
 ## Step 1.6: Cross-Agent Relay Pre-flight Parse
 
@@ -122,7 +122,7 @@ Subagent delegation is the default and the only mode that needs no experimental 
 
 ## Step 2.3: Resolve Execution Profile
 
-Load [references/profile-models.md](references/profile-models.md) only before the first profiled spawn or when a fallback must be resolved. Apply its advisor/Fable availability checks, announce `**Execution Profile: {PROFILE}**` plus any exact fallback reason, and degrade unsupported Fable spawns to Opus without restarting.
+Load [references/profile-models.md](references/profile-models.md) only before the first profiled spawn or when a fallback must be resolved. Apply its advisor/Fable availability checks, set `PROFILE = PROFILE_PREFLIGHT` (Step 1.5; `EXECUTE_ON_FABLE` also comes from Step 1.5), announce `**Execution Profile: {PROFILE}**` plus any exact fallback reason, and degrade unsupported Fable spawns to Opus without restarting.
 
 Every spawn/resume resolves `MODEL_FOR(agent_name, PROFILE, EXECUTE_ON_FABLE)`, keeps model/effort stable within a lineage, and resolves the advisor/spec-depth prompt placeholders from [references/spawn-prompts.md](references/spawn-prompts.md). Profiles select model/tool policy only: no profile enables or requires Agent Teams.
 
@@ -131,7 +131,6 @@ Every spawn/resume resolves `MODEL_FOR(agent_name, PROFILE, EXECUTE_ON_FABLE)`, 
 Read only the YAML keys needed by the selected tier/path. Resolve flags over config over these defaults:
 
 - orchestration: `MAX_BUILDERS=2` (clamp 1-3, or 1-5 only with `--broad-builders`), `BUILDER_NODE_LIMIT=1` (1-2), `DEFAULT_SPECIALISTS=[]`, `MCP_AGENTS_ENABLED=true`, `CODEBASE_SCANNER_ENABLED=true`, `PARALLEL_SPEC_THRESHOLD=3` (2-10), and frontend/enterprise settings documented in [parallel-orchestration.md](references/parallel-orchestration.md);
-- model: `PROFILE=frontier`, `EXECUTE_ON_FABLE=false`; Step 1.5 flags win;
 - overrides: honor `--max-builders`, `--builder-node-limit`, `--broad-builders`, `--no-mcp`, `--no-scanners`, `--no-parallel-specs`, frontend flags, and enterprise-enforcer flags.
 
 Parse the complete `context_efficiency` block and consume it:
@@ -203,7 +202,7 @@ The conditional enterprise contract covers local `enterprise.md`, `guideline_kno
 
 ## Step 3: Load Current-Phase Context
 
-Load only the current phase contract, selected approved spec/VERIFY criteria, relevant tracker rows, and directly implicated project/architecture sections. Do not preload the full loop, completed phase history, or unrelated project/architecture material. Load spawn, gate, relay, and role references immediately before the chosen path needs them; a named agent automatically receives its definition.
+Load only the current phase contract, selected approved spec/VERIFY criteria, relevant journal shards, and directly implicated project/architecture sections. Do not preload the full loop, completed phase history, or unrelated project/architecture material. Load spawn, gate, relay, and role references immediately before the chosen path needs them; a named agent automatically receives its definition.
 
 ## Step 3.5: Pull Team Standards (MCP — Optional)
 
@@ -260,7 +259,7 @@ Confirm the `TIER` selected during the read-only Step 1.4 preflight. Do not repe
 ### Tier 1: Micro → redirect to `/knowzcode:fix`
 - Single file, <50 lines, no ripple effects
 
-### Tier 2: Light (2-phase workflow)
+### Tier 2: Light (streamlined workflow)
 
 > **Note:** Light mode ignores parallel fan-out/specialist settings, but still consumes context-efficiency rollout, lease, TTL, result, telemetry, and safety settings. It remains one builder with no default scouts or specialists.
 
@@ -288,7 +287,7 @@ If `$ARGUMENTS` contains `--tier light`, force Tier 2. If `--tier full`, force T
 
 ---
 
-## Tier 2: Light Workflow (2-phase fast path)
+## Tier 2: Light Workflow (streamlined fast path)
 
 When Tier 2 is selected, execute this streamlined workflow instead of the 5-phase Tier 3 below.
 

@@ -54,7 +54,7 @@ Do NOT trigger if:
 
 When triggered:
 
-1. Check for an active WorkGroup: a `knowzcode/journal/*/*/` folder with no `*-arc-completion-*.md` or `*-workgroup-abandoned-*.md` shard, or an active `knowzcode/workgroups/*.md` session file.
+1. Check for an active WorkGroup: a `knowzcode/journal/*/*/` (excluding the `ungrouped` folder, which holds standalone events) folder with no `*-arc-completion-*.md` or `*-workgroup-abandoned-*.md` shard, or an active `knowzcode/workgroups/*.md` session file.
 2. Extract a concise next-step hint from the user's message when one is present.
 3. Offer exactly once:
    ```text
@@ -68,7 +68,7 @@ When triggered:
 - **Never auto-regroup.** Always ask first.
 - **Never write the handoff directly.** Delegate to `/knowzcode:regroup` so the handoff schema stays canonical.
 - **Never save workflow state to Knowz.** Knowz only receives durable learnings extracted from work.
-- **Never block the main task.** If tracker lookup fails, still offer regroup on explicit clear-context/handoff wording.
+- **Never block the main task.** If the WorkGroup lookup fails, still offer regroup on explicit clear-context/handoff wording.
 - **Offer once per checkpoint.** Do not repeatedly nag in the same pause/handoff moment.
 
 ## Related Skills

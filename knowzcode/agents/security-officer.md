@@ -39,7 +39,7 @@ When the packet states `Coordination Mode: coordinated-team` (experimental Agent
    - **I**nformation Disclosure: Data exposure risks
    - **D**enial of Service: Availability risks
    - **E**levation of Privilege: Authorization risks
-4. If MCP is configured: Read `knowz-vaults.md` (project root), resolve vault whose description matches "ecosystem" (e.g., contains "ecosystem", "decisions", or "conventions"), `search_knowledge({vault_id}, "security patterns for {domain}")`
+4. If MCP is configured: Read `knowz-vaults.md` (project root), resolve vault whose description matches "ecosystem" (e.g., contains "ecosystem", "decisions", or "conventions"), return `Handoff → knowledge-liaison: "VaultQuery: security patterns for {domain}"` to the lead
 5. Return `"Initial threat assessment for {goal}"` to the lead, with a handoff item for any recipient-specific guidance.
 
 ## Stage 1: Change Set Security Review
@@ -140,7 +140,7 @@ If `knowzcode/enterprise/compliance_manifest.md` exists and `compliance_enabled:
 
 **Fallback** (enterprise-enforcer disabled or unavailable): perform the legacy per-agent cross-reference inline — load active security guidelines yourself, cross-reference findings with guideline IDs in your `Enterprise ID` column. Also read any custom guidelines in `knowzcode/enterprise/guidelines/custom/` with security-related categories.
 
-If `mcp_compliance_enabled: true`: query enterprise vault for organization-specific security standards using `search_knowledge({compliance_vault_id}, "security standards for {domain}")` (unchanged — this is an MCP capability, not a guideline-mapping responsibility).
+If `mcp_compliance_enabled: true`: query enterprise vault for organization-specific security standards by returning `Handoff → knowledge-liaison: "VaultQuery: security standards for {domain}"` to the lead (unchanged — this is an MCP capability, not a guideline-mapping responsibility).
 
 **Relationship to Reviewer**: The reviewer performs ARC VERIFY compliance audit. You provide depth via vulnerability detection. Do not duplicate the reviewer's checklist — add depth.
 

@@ -36,8 +36,8 @@ Agent Teams is experimental and is not used unless the user explicitly opts in; 
 
 Resolve these only after tier and scope classification. They never enable Agent Teams; every role runs as a named subagent.
 
-- `SPECIALISTS_ENABLED` defaults to `default_specialists` or empty. `--specialists[=security,test,project,design]` and explicit natural-language requests add the named evidence role; `--no-specialists` clears security/test/project. Tier 2 skips the panel. Tier 3 sequential runs selected roles one at a time. Every role needs a distinct question and bounded deliverable.
-- `FRONTEND_DESIGNER_ENABLED` resolves in order: `--no-frontend-designer`/config false; explicit flag/config true; explicit design/UX/a11y request; otherwise config `auto` performs a targeted UI-surface glob (`*.tsx`, `*.jsx`, `*.vue`, `*.svelte`, `*.razor`, `*.xaml`, `main.dart`, or relevant HTML/manifest). Tier 2 uses one fresh named designer only for explicit runtime/UI verification. `--no-specialists` does not disable this role.
+- `SPECIALISTS_ENABLED` defaults to `default_specialists` or empty. `--specialists[=security,test,project]` and explicit natural-language requests add the named evidence role; `--no-specialists` clears security/test/project. Tier 2 skips the panel. Tier 3 sequential runs selected roles one at a time. Every role needs a distinct question and bounded deliverable.
+- `FRONTEND_DESIGNER_ENABLED` resolves in order: `--no-frontend-designer`/config false; explicit flag/config true; explicit design/UX/a11y request; otherwise config `auto` performs a targeted UI-surface glob (`*.tsx`, `*.jsx`, `*.vue`, `*.svelte`, `*.razor`, `*.xaml`, `main.dart`, or relevant HTML/manifest). Tier 2 (Light) does not spawn the designer; if design review is explicitly requested, the lead recommends `--tier full`. `--no-specialists` does not disable this role.
 - `ENTERPRISE_ENFORCER_ENABLED` resolves in order: explicit opt-out; explicit opt-in (skeleton mode allowed); otherwise an existing manifest with `compliance_enabled: true` and at least one active non-empty local or configured vault/KnowledgeId guideline source. Tier 2 normally uses per-agent checks. Tier 3 uses a named read-only enforcer that the lead resumes at each stage.
 
 When compliance is active, parse and carry `pull_standards_at_start`, `preserve_guideline_provenance`, `show_advisory_issues`, `require_signoff_for_finalization`, `push_audit_results`, `push_completion_records`, and `include_in_audit` with documented defaults. Pull vault standards only when MCP compliance is enabled and a concrete configured source exists; preserve provenance unless disabled, verify retrieved guidance against live code/docs, and pause on blocking conflicts. Configuration may forbid a write but never supplies user authorization for an otherwise read-only operation.
@@ -58,7 +58,7 @@ At every spawn whose prompt contains the `{advisor_guidance}` token (see [spawn-
 
 At every spawn whose prompt contains the `{spec_depth_guidance}` token (analyst, architect, and spec-drafters — see [spawn-prompts.md](spawn-prompts.md#spec_depth_guidance-placeholder)): substitute the Spec-Depth Guidance block when `PROFILE == "frontier"`; otherwise substitute an empty string.
 
-`PROFILE`, `EXECUTE_ON_FABLE`, and `FABLE_DOWNGRADE` are resolved in `/knowzcode:work` Steps 2.3-2.4. They do not change inside a reusable lineage.
+`PROFILE`, `EXECUTE_ON_FABLE`, and `FABLE_DOWNGRADE` are resolved in `/knowzcode:work` Steps 1.5 and 2.3–2.4. They do not change inside a reusable lineage.
 
 ---
 

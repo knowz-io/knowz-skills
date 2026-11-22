@@ -25,8 +25,8 @@ knowzcode/journal/YYYY-MM/<WorkGroupID>/YYYYMMDDTHHMMSSZ-<type>-<shortid>.md
 ```
 
 - `YYYY-MM` — UTC year and month of the event
-- `<WorkGroupID>` — `kc-{type}-{slug}-YYYYMMDD-HHMMSS`, or `ungrouped` for a
-  micro-fix with no WorkGroup
+- `<WorkGroupID>` — `kc-{type}-{slug}-YYYYMMDD-HHMMSS`, or `ungrouped` for an
+  event with no active WorkGroup (micro-fix, standalone audit, migration)
 - `YYYYMMDDTHHMMSSZ` — UTC timestamp, so filenames sort chronologically
 - `<type>` — `arc-completion`, `microfix`, `refactor-completion`, `audit`,
   `telemetry`, `start-work`, `knowledge-migration`, `init`, `workgroup-abandoned`
@@ -64,6 +64,7 @@ knowledge id. Knowz is optional and never a gate — a shard with
 ```bash
 # in-flight WorkGroups: folders with no terminal shard
 for wg in knowzcode/journal/*/*/; do
+  case "$wg" in */ungrouped/) continue;; esac
   ls "$wg" | grep -qE -- '-(arc-completion|workgroup-abandoned)-' || echo "IN FLIGHT: $wg"
 done
 

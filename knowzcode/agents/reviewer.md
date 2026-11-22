@@ -126,8 +126,8 @@ Scan the WorkGroup file for `[SPEC_ISSUE]` tags added during implementation. Val
 
 If MCP is configured:
 - Read `knowz-vaults.md` (project root) to resolve vault IDs by description
-- `ask_question({vault matching "ecosystem" type}, "standards for {domain}", researchMode=true)` — comprehensive standards check
-- `search_knowledge({vault matching "ecosystem" type}, "audit findings for {component_type}")` — past audit comparison
+- Return `Handoff → knowledge-liaison: "VaultQuery: standards for {domain}"` to the lead — comprehensive standards check
+- Return `Handoff → knowledge-liaison: "VaultQuery: audit findings for {component_type}"` to the lead — past audit comparison
 
 If MCP is not available, audit against specs and codebase directly. All auditing works without MCP.
 

@@ -3,7 +3,7 @@
 **Target NodeID:** [The NodeID to be refactored, e.g., `UserSearch`]
 **Refactoring Goal:** [The specific goal, e.g., "Improve performance by optimizing database queries"]
 
-> **Automation Path:** Begin with `/knowzcode-step phase=1A` targeting the `REFACTOR_<NodeID>` item in the node's spec `Debt & Gaps` section to scope the Change Set before executing this prompt.
+> **Automation Path:** Start `/knowzcode:work` on the `REFACTOR_<NodeID>` item in the node's spec `Debt & Gaps` section to scope the Change Set before executing this prompt.
 
 ---
 
@@ -66,11 +66,11 @@ Before proceeding, confirm the following:
         - **Summary of Improvements:** [List of specific improvements made, e.g., "Replaced N+1 query with a single JOIN", "Extracted duplicated logic into a helper function"].
         - **Verification:** Confirmed that all original Verification Criteria for the node still pass, ensuring no functional regressions.
         ```
-    *   This shard is the terminal record for the refactor WorkGroup. Shards are immutable: a later correction is a new shard referencing this filename.
+    *   This shard records the refactor. Then close the WorkGroup: write one `arc-completion` shard in the same journal folder (see `knowzcode_loop.md` section 3.5, Step 9) that names this `refactor-completion` shard, and include it in the final commit. Shards are immutable: a later correction is a new shard referencing this filename.
 3.  **Resolve Debt Item:**
     *   Do **not** mutate `knowzcode/knowzcode_tracker.md`. Remove the resolved `REFACTOR_[TargetNodeID]` item from the `Debt & Gaps` section of `knowzcode/specs/[TargetNodeID].md` and note its resolution in the shard body.
 4.  **Final Commit:**
-    *   Inspect status and scoped diffs; stage only the explicit approved code, spec, and new journal shard paths, verify the cached name list and diff, then commit with a descriptive `refactor:` message (e.g., `refactor(API_UserSearch): Optimize query performance`). Preserve unrelated user state.
+    *   Inspect status and scoped diffs; stage only the explicit approved code, spec, and new journal shard paths, verify the cached name list and diff, then commit with a descriptive `refactor:` message (e.g., `refactor(UserSearch): Optimize query performance`). Preserve unrelated user state.
 
 ### Final Report
 *   Once all steps are complete, provide a concise confirmation report.

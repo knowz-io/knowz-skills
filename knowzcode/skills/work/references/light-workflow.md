@@ -68,7 +68,7 @@ Only if user explicitly requested smoke testing (e.g., `--smoke-test` in `$ARGUM
 
 Dispatch a fresh independent smoke-tester via `Agent(subagent_type="knowzcode:smoke-tester", description="Smoke test", prompt=<bounded task packet>)`. Do not fork or resume the builder lineage.
 
-If smoke test fails: create fix tasks for builder, re-run smoke-tester. 3-iteration cap, then escalate. App lifecycle managed by smoke-tester (see `../../../agents/smoke-tester.md`).
+If smoke test fails: resume the builder with the failure list, then re-run the smoke-tester. 3-iteration cap, then escalate. App lifecycle managed by smoke-tester (see `../../../agents/smoke-tester.md`).
 
 If user did not request smoke testing, skip to Light Phase 3.
 
