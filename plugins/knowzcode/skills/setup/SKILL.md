@@ -38,6 +38,8 @@ KnowzCode is a structured development methodology that provides:
 
 ## Steps to Execute
 
+**Non-interactive or autonomous init.** When the user has said not to ask questions (or the session cannot ask), never prompt. Treat Gates A–C in step 5 as declined, keep the shipped defaults in step 6, and in step 8 generate only the adapter for the host you are running in. Report every default you applied.
+
 ### 1. Check if already initialized
 
 - Look for existing `knowzcode/` directory
@@ -181,7 +183,7 @@ Check which AI platforms are present and offer to generate adapter files.
 **Step 8a: Detect platforms**
 ```
 CHECK for existing files:
-  - CLAUDE.md → offer to append KnowzCode section
+  - CLAUDE.md → offer to append KnowzCode section (when running in Claude Code and no CLAUDE.md exists, create it)
   - AGENTS.md or AGENTS.override.md → offer to generate Codex adapter
   - GEMINI.md or ~/.gemini/GEMINI.md → offer to generate Gemini adapter
   - .cursor/rules/ or .cursorrules (deprecated) → offer Cursor adapter (.cursor/rules/knowzcode.mdc)

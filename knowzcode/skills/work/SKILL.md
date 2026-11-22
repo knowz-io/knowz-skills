@@ -291,7 +291,7 @@ If `$ARGUMENTS` contains `--tier light`, force Tier 2. If `--tier full`, force T
 
 When Tier 2 is selected, execute this streamlined workflow instead of the 5-phase Tier 3 below.
 
-> **Tier 2 still requires**: WorkGroup file (Step 4), the ARC-completion journal shard, and vault capture attempt. "Light" means fewer agents and phases — not fewer artifacts or vault writes.
+> **Tier 2 still requires**: WorkGroup file (Step 4), the ARC-completion journal shard, and a vault capture attempt (with `--no-mcp`, the `vault-delta` classification still runs but nothing is written). "Light" means fewer agents and phases — not fewer artifacts or vault writes.
 
 > **Relay**: not supported in Tier 2. If `RELAY_ACTIVE`, announce `> **Relay: SKIPPED** — Tier 2 Light uses the native builder flow.` and proceed normally.
 
