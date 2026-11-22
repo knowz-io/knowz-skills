@@ -151,7 +151,7 @@ When `CE_ENABLED = true`, the installed read-only runtime is mandatory for every
 
 `node knowzcode/context_efficiency_runtime.mjs dispatch`
 
-Send exactly one JSON object on stdin with `{routing, rollout, lineage?, result_policy?}` and require exactly one `{ok:true,operation:"dispatch",result}` object on stdout. The operation writes no files. Use its selected safe mode/reason and rollout result; do not substitute prose-only routing.
+Send exactly one JSON object on stdin with `{routing, rollout, lineage?, result_policy?}` and require exactly one `{ok:true,operation:"dispatch",result}` object on stdout. The operation writes no files. Use its selected safe mode/reason and rollout result; do not substitute prose-only routing. The fields of each input object are listed under "`dispatch` input reference" in `knowzcode/context_efficiency.md`.
 
 Direct safety calls are also mandatory at the point of use:
 

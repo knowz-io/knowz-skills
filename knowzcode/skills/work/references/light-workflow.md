@@ -24,7 +24,7 @@ Tier 2 does not form a team. Use the lead's `VAULT_BASELINE`; only when a materi
 
 ## Light Phase 1: Impact Scan + Spec
 
-Inline — lead coordinates, knowledge-liaison active.
+Inline — the lead coordinates. A knowledge-liaison is used only as step 2 below allows.
 
 1. Quick impact scan: grep for related files, check existing specs
 2. **Vault context**: Reference `VAULT_BASELINE` from Step 3.6 (already available). If baseline results are relevant to the affected component, factor them into the Change Set. If deeper component-specific queries are needed, call `search_knowledge({vault_id}, "past decisions about {affected_component}")` for targeted follow-up.
@@ -56,7 +56,7 @@ Approve Change Set and spec to proceed to implementation?
 
 ## Light Phase 2A: Implementation
 
-Resume a compatible builder lineage when one owns this exact spec/scope/checkpoint. Otherwise dispatch `Agent(subagent_type="knowzcode:builder", description="Light Phase 2A implementation", prompt=<standard bounded Phase 2A packet>)` using `spawn-prompts.md`. Include only the lightweight spec, assigned VERIFY IDs, owned files, checkpoint, constraints, and a bounded result contract.
+Resume a compatible builder lineage when one owns this exact spec/scope/checkpoint. Otherwise dispatch `Agent(subagent_type="knowzcode:builder", description="Light Phase 2A implementation", prompt=<standard bounded Phase 2A packet>)` using `spawn-prompts.md`. Include only the lightweight spec, assigned VERIFY IDs (`V1`, `V2`, … by position — see `knowzcode_loop.md` section 3.2), owned files, checkpoint, constraints, and a bounded result contract.
 
 The builder self-verifies against spec VERIFY criteria — no separate audit phase.
 
