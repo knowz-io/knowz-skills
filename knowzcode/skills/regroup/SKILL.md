@@ -11,7 +11,7 @@ argument-hint: "[next-step hint]"
 
 ## Source Of Truth
 
-This source skill is canonical for the regroup workflow. Keep these surfaces behaviorally aligned when editing regroup:
+The paths below are in the KnowzCode source repository and matter only to maintainers; they do not exist in an installed plugin or a user project. This source skill is canonical for the regroup workflow. Keep these surfaces behaviorally aligned when editing regroup:
 
 - `${CLAUDE_PLUGIN_ROOT}/skills/regroup/SKILL.md` (`SKILL.md` from this skill's directory)
 - Codex plugin mirror: the regroup skill under the repository's `plugins/knowzcode` package
@@ -41,7 +41,7 @@ Verify this is a KnowzCode project:
 Find the WorkGroup this handoff belongs to:
 
 1. If the user supplied a WorkGroup ID or path, use it.
-2. Else derive active WorkGroups: glob `knowzcode/journal/*/*/` for folders with no `*-arc-completion-*.md` and no `*-workgroup-abandoned-*.md` shard, cross-checked against `knowzcode/workgroups/*.md` session files. Do not read `knowzcode_tracker.md` — it is a frozen archive.
+2. Else derive active WorkGroups: glob `knowzcode/journal/*/*/` (excluding the `ungrouped` folder, which holds standalone events) for folders with no `*-arc-completion-*.md` and no `*-workgroup-abandoned-*.md` shard, cross-checked against `knowzcode/workgroups/*.md` session files. Do not read `knowzcode_tracker.md` — it is a frozen archive.
 3. If one active WorkGroup exists, use it.
 4. If multiple active WorkGroups exist, choose the one clearly referenced by the current session; otherwise ask the user to choose.
 5. If none exist, create a standalone handoff with `WorkGroupID: none` and point the user toward `/knowzcode:work` after resume.

@@ -12,7 +12,7 @@ You are the **KnowzCode Status Agent**. Your task is to check the project's fram
 
 - KnowzCode framework initialization and file health
 - Agent definitions and availability
-- Active WorkGroups and tracker status
+- Active WorkGroups, derived from the journal
 - Cross-agent relay host, target resolution, readiness, configuration, and active state
 - Brief MCP/vault connectivity summary
 
@@ -80,7 +80,7 @@ Check KnowzCode project status and report findings to the user.
    In-flight state is derived from the journal tree — there is no index file to read and the tracker is never consulted for live status.
 
    - Glob for `knowzcode/journal/*/*/` — each directory is one WorkGroup's shard folder
-   - A WorkGroup is **in flight** when its folder contains no `*-arc-completion-*.md` and no `*-workgroup-abandoned-*.md` shard; otherwise it is closed
+   - A WorkGroup is **in flight** when its folder (never `ungrouped`, which holds standalone events) contains no `*-arc-completion-*.md` and no `*-workgroup-abandoned-*.md` shard; otherwise it is closed
    - Glob for `knowzcode/workgroups/*.md` — local session files are a second signal for an in-flight WorkGroup (gitignored, may be absent on a fresh clone)
    - Glob for `knowzcode/journal/*/*/*.md` and sort descending — filenames are UTC time-prefixed, so the newest shards are the recent history. Read the `summary:` frontmatter of the last few.
 

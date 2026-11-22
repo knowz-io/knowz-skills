@@ -3,9 +3,9 @@
 **WorkGroupID for Verification:**
 [Orchestrator: Re-state the `WorkGroupID` that requires specification verification.]
 
-> **Automation Path:** Use `/knowzcode-audit audit=spec workgroup_id=<ID>` to run the `reviewer` subagent against the draft specs before implementation.
+> **Automation Path:** Use `/knowzcode:audit spec` to run the `reviewer` subagent against the draft specs before implementation.
 
-**WorkGroupID:** `[wip-timestamp-to-verify]`
+**WorkGroupID:** `[WorkGroupID]`
 
 ---
 
@@ -24,7 +24,7 @@ This is a **READ-ONLY** quality gate to ensure all specifications for the given 
     *   Using the `WorkGroupID`, identify all `NodeID`s from `knowzcode/workgroups/<WorkGroupID>.md` and the WorkGroup's `knowzcode/journal/YYYY-MM/<WorkGroupID>/` shards that are part of this verification task.
 
 2.  **Systematic Spec Review:**
-    *   For **each** `NodeID` in the scope, read its corresponding `specs/[NodeID].md` file.
+    *   For **each** `NodeID` in the scope, read its corresponding `knowzcode/specs/[NodeID].md` file.
     *   Verify the following for each file:
         *   **Existence:** Does the spec file actually exist?
         *   **Completeness:** Are all 4 sections filled out? (Rules & Decisions, Interfaces, Verification Criteria, Debt & Gaps). An untouched legacy numbered-section spec is still accepted for reading; any spec drafted or modified in this Change Set must use the 4-section format.

@@ -68,7 +68,7 @@ git status --short
 
 Derive active WorkGroups from the journal tree and local session files — do not rely on `knowzcode_tracker.md` `[WIP]` rows; the tracker is a frozen archive.
 
-- Glob `knowzcode/journal/*/*/` — a WorkGroup is active when its folder has no `*-arc-completion-*.md` and no `*-workgroup-abandoned-*.md` shard
+- Glob `knowzcode/journal/*/*/` (excluding the `ungrouped` folder, which holds standalone events) — a WorkGroup is active when its folder has no `*-arc-completion-*.md` and no `*-workgroup-abandoned-*.md` shard
 - Glob `knowzcode/workgroups/*.md` — a local session file marked `Status: Active` confirms the same WorkGroup (gitignored, may be absent)
 - Prefer the WorkGroup named by the selected handoff when one exists
 - Read only the shards in the chosen WorkGroup's folder; do not load closed WorkGroup history
@@ -182,7 +182,7 @@ If resuming mid-Stage-2 (e.g., builder was implementing, reviewer had started au
 
 If the WorkGroup file contains `Current Phase:` (standard format):
 - This is a **sequential-mode WorkGroup**
-- Create tasks only for the **remaining** phases (not completed ones):
+- Plan only the **remaining** phases (record them in the WorkGroup file), not completed ones:
 
 | Detected Phase | Remaining Work |
 |----------------|----------------|
@@ -219,17 +219,3 @@ Then proceed with the appropriate phase using the same agents as `/knowzcode:wor
 
 - `/knowzcode:work` — Start a new WorkGroup (if nothing to continue)
 - `/knowzcode:status` — Check current project state
-
-## Logging
-
-```markdown
----
-**Type:** SkillActivation
-**Timestamp:** [timestamp]
-**Skill:** continue
-**Trigger:** User said "{user_message}"
-**WorkGroup:** {wgid}
-**Phase:** {current phase}
-**Logged By:** AI-Agent
----
-```

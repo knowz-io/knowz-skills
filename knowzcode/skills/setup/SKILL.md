@@ -157,7 +157,6 @@ Report exactly one summary line: `[RELAY-DETECT] host={claude|codex} target={cod
 If yes: prompt for:
 - Max concurrent builders (1-3, default: 2; use more only for tiny independent scopes)
 - Builder NodeID limit per dispatch (1-2, default: 1)
-- Scout mode (full/minimal/none, default: full)
 - Default specialists (checkboxes: security-officer, test-advisor, project-advisor)
 - MCP agents enabled (yes/no, default: yes)
 
@@ -255,7 +254,7 @@ Ask:
 "Would you like to connect Knowz cloud features for Gemini CLI?"
 ```
 
-- If **"Yes, use OAuth / marketplace"**: Connect only via Knowz Claude plugin OAuth / marketplace (`claude plugin install knowz` then `/knowz setup`). Do not scrape project config files. Verify with `list_vaults` when available, and update `knowzcode/mcp_config.md` with connection status only.
+- If **"Yes, use OAuth / marketplace"**: Connect only via Knowz Claude plugin OAuth / marketplace (`claude plugin install knowz` then `/knowz setup`). Do not scrape project config files. Verify with `list_vaults` when available.
 - If **"No"**: Skip; mention `/knowz setup` (OAuth / marketplace) for later.
 
 **Step 8c-gemini: Generate Gemini TOML commands, skills, and subagents**
@@ -266,13 +265,14 @@ Gemini remains native-only for relay in this version. Do not generate `knowzcode
 
 ```
 1. Create .gemini/commands/knowzcode/ directory
-2. Generate 12 TOML files from platform_adapters.md "Native Commands" section:
+2. Generate 13 TOML files from platform_adapters.md "Native Commands" section:
    - .gemini/commands/knowzcode/work.toml
    - .gemini/commands/knowzcode/explore.toml
    - .gemini/commands/knowzcode/fix.toml
    - .gemini/commands/knowzcode/audit.toml
    - .gemini/commands/knowzcode/learn.toml
    - .gemini/commands/knowzcode/status.toml
+   - .gemini/commands/knowzcode/regroup.toml
    - .gemini/commands/knowzcode/continue.toml
    - .gemini/commands/knowzcode/setup.toml
    - .gemini/commands/knowzcode/connect-mcp.toml
@@ -280,12 +280,13 @@ Gemini remains native-only for relay in this version. Do not generate `knowzcode
    - .gemini/commands/knowzcode/telemetry.toml
    - .gemini/commands/knowzcode/telemetry-setup.toml
 3. Create .gemini/skills/ directory
-4. Generate 12 skill files from platform_adapters.md "Gemini Skill Files" section:
+4. Generate 13 skill files from platform_adapters.md "Gemini Skill Files" section:
    - .gemini/skills/knowzcode-work/SKILL.md
    - .gemini/skills/knowzcode-explore/SKILL.md
    - .gemini/skills/knowzcode-fix/SKILL.md
    - .gemini/skills/knowzcode-audit/SKILL.md
    - .gemini/skills/knowzcode-learn/SKILL.md
+   - .gemini/skills/knowzcode-regroup/SKILL.md
    - .gemini/skills/knowzcode-continue/SKILL.md
    - .gemini/skills/knowzcode-setup/SKILL.md
    - .gemini/skills/knowzcode-status/SKILL.md
@@ -303,12 +304,14 @@ Ask user: "Would you like to generate Gemini subagent definitions? (experimental
 If yes:
 ```
 1. Create .gemini/agents/ directory
-2. Generate 11 subagent files from platform_adapters.md "Gemini Subagents" section:
+2. Generate 13 subagent files from platform_adapters.md "Gemini Subagents" section:
    - .gemini/agents/knowzcode-analyst.md
    - .gemini/agents/knowzcode-architect.md
    - .gemini/agents/knowzcode-builder.md
    - .gemini/agents/knowzcode-reviewer.md
    - .gemini/agents/knowzcode-closer.md
+   - .gemini/agents/knowzcode-knowz-reader.md
+   - .gemini/agents/knowzcode-knowz-writer.md
    - .gemini/agents/knowzcode-microfix.md
    - .gemini/agents/knowzcode-knowledge-migrator.md
    - .gemini/agents/knowzcode-update-coordinator.md
@@ -370,7 +373,7 @@ A general confirmation, pressing Enter, selecting a model profile, or using Tier
 
 If the active platform is not Claude Code, ignore `--agent-teams` with a clear not-applicable message and do not write settings.
 
-**Step 9c: Windows note**
+**Windows note**
 
 If the platform is Windows:
 ```

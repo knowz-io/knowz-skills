@@ -50,15 +50,15 @@ These phrases indicate `/knowzcode:audit` intent:
 Default to `RESULT_MODE = ephemeral`, `PERSIST_AUTHORIZED = false`, and `RUNTIME_WRITES_AUTHORIZED = false`. An audit is strictly zero-write unless the user separately authorizes a write class:
 
 - `--persist` or an explicit local-report request authorizes one local report artifact only. Log and vault targets must be named separately.
-- An explicit request to run write-capable tests, launch agents, or use Team/task runtime state sets `RUNTIME_WRITES_AUTHORIZED = true`. This never authorizes a report, artifact, log, WorkGroup/tracker/settings mutation, or vault capture.
+- An explicit request to run write-capable tests, launch agents, or use Team/task runtime state sets `RUNTIME_WRITES_AUTHORIZED = true`. This never authorizes a report, artifact, log, WorkGroup/settings mutation, or vault capture.
 - General audit intent, autonomous mode, an available vault, a prior preference, or persistence authorization does not authorize runtime writes.
 
 In the strict default, use only `Read`, `Glob`, and `Grep`. Do not invoke Bash, tests/builds/formatters, Task/Agent, Agent Teams, task-list operations, hooks that persist output, or scripts that may write caches or generated files. Return one bounded chat report. When runtime writes are explicitly authorized, Bash and agent tools remain normally permission-gated rather than pre-approved; state the exact command/runtime state before use and keep persistence authorization separate.
 
 Classify the requested audit before loading context, then read the minimum relevant slices:
 
-- `spec`: targeted tracker rows and matching specs; project conventions only if needed to score them.
-- `architecture`: architecture plus the implicated modules; tracker/specs only for claimed boundaries.
+- `spec`: targeted journal shards and matching specs; project conventions only if needed to score them.
+- `architecture`: architecture plus the implicated modules; specs/journal shards only for claimed boundaries.
 - `security` or `integration`: affected code/config/tests and applicable specs; load architecture only for a concrete data-flow or boundary question.
 - `compliance`: manifest and active non-empty guideline sources; load project/spec/code slices named by those controls.
 - full audit: build a deterministic file inventory first, then load each slice only when it is evaluated.

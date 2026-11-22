@@ -209,7 +209,6 @@ Before beginning spec drafting, verify these prerequisites:
 
 ### After Specification (Gate #2)
 - All specs use the 4-section format with 2+ `VERIFY:` statements
-- Tracker statuses updated
 - Return specs to the lead for user approval
 
 ### After Implementation (Gate #3 — when resumed for consultation)

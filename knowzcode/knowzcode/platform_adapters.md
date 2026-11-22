@@ -113,7 +113,7 @@ Every durable knowledge candidate — decisions, patterns, gotchas, workarounds,
 - **MCP vaults** (when connected): `knowz-vaults.md` (project root) defines vault IDs, routing rules,
   and write conditions. Always pass `vaultId` when calling `create_knowledge` — omitting it saves
   to the tenant default vault, NOT the project vault.
-- **Local files** (always available): specs, workgroup files, log entries, architecture docs, and
+- **Local files** (always available): specs, workgroup files, journal shards, architecture docs, and
   project-root `knowz-pending.md` (fallback for a classified persistence action when MCP is unavailable).
   Treat `knowzcode/pending_captures.md` only as legacy migration input, never as a second active queue.
 
@@ -259,13 +259,13 @@ when the relay contract below resolves an external target.
    - `knowzcode/journal/` (create it if missing — completion records are written there)
 2. Classify the request and resolve specification reuse **before any enterprise/vault retrieval, relay launch, worker or team delegation, WorkGroup write, or other side effect**:
    - Micro fix -> use `/knowzcode:fix`.
-   - Light change -> streamlined change set, reusable or focused spec, implementation, verification.
+   - Light change -> streamlined change set, reusable or focused spec (same 4-section format and minimums as step 9), implementation, verification.
    - Full change -> Phase 1A, 1B, 2A, 2B, 3.
    - Inspect only the selected active WorkGroup/capsule, the journal folders needed to select one, and goal-relevant spec headings/`VERIFY:` criteria. Record whether an existing specification applies before requesting broader context.
    - Relay is Full-only. For Micro/Light, announce `[RELAY-SKIP]` and use the native path unless the user explicitly expands the scope.
 3. Load context progressively:
    - Start with an explicitly selected active WorkGroup or compact context capsule and the current phase contract.
-   - If no WorkGroup is selected, derive active work from `knowzcode/journal/*/*/` (a folder with no `arc-completion` or `workgroup-abandoned` shard is in flight) cross-checked against `knowzcode/workgroups/*.md`, then read the project/architecture file only for a concrete planning question. Do not read `knowzcode_tracker.md`; it is a frozen archive.
+   - If no WorkGroup is selected, derive active work from `knowzcode/journal/*/*/` (excluding the `ungrouped` folder, which holds standalone events) (a folder with no `arc-completion` or `workgroup-abandoned` shard is in flight) cross-checked against `knowzcode/workgroups/*.md`, then read the project/architecture file only for a concrete planning question. Do not read `knowzcode_tracker.md`; it is a frozen archive.
    - Read only assigned specs, `VERIFY:` criteria, and relevant source paths for the current phase. Do not eagerly load the complete loop, project, journal, architecture, provider, or history set.
    - Read `knowzcode/codex_execution.md` only when native delegation, context inheritance, warm-agent reuse, or conditional handoffs are eligible. Its semantic capability contract is authoritative.
    - Load the relay reference only after relay resolves non-`none`; load detailed enterprise guidance only when the compliance master switch or an explicit guideline source activates it.
@@ -284,7 +284,7 @@ when the relay contract below resolves an external target.
 6. Create or update a WorkGroup file in `knowzcode/workgroups/{wgid}.md`. A new `{wgid}` uses the format `kc-{type}-{slug}-YYYYMMDD-HHMMSS` (`type` is `feat`, `fix`, `refactor`, or `issue`; `slug` is 2-4 kebab-case words from the goal), and the same id names the journal folder `knowzcode/journal/YYYY-MM/{wgid}/`.
 7. **Optional parallel discovery (before Phase 1A).** If the topic spans 2 or more independent subsystems, dispatch 1-3 parallel read-only Codex `explorer` agents per the Spawned-Agent Contract below. Merge their findings into the WorkGroup file before proposing the Change Set. Skip when the scope clearly touches one subsystem.
 8. Phase 1A: propose a Change Set with affected files, NodeIDs, risks, and enterprise guideline mapping. Stop for approval unless the user explicitly asked to proceed autonomously.
-9. Phase 1B: draft or update specs in `knowzcode/specs/` with clear `VERIFY:` criteria, including applicable enterprise guideline criteria with source IDs or KnowledgeIds. Stop for approval.
+9. Phase 1B: draft or update specs in `knowzcode/specs/` in the 4-section format from `knowzcode/knowzcode_loop.md` section 3.2 (Rules & Decisions, Interfaces, Verification Criteria, Debt & Gaps). Every spec, on the Light path too, needs at least 1 Rule, 1 Interface, and 2 `VERIFY:` lines written as list items (`- VERIFY: …`), one observable behaviour per line; never fold several behaviours into one line. Write clear `VERIFY:` criteria, including applicable enterprise guideline criteria with source IDs or KnowledgeIds. Stop for approval.
 10. Phase 2A:
     - With no resolved relay: implement with strict TDD. Keep the failing run for each new test as RED evidence in the completion report; writers do not commit, so the test-first check is that new tests fail against the Gate #2 pre-implementation commit, not commit order. Default to dependency-wave microtasks: one NodeID or one named microtask per writer, with explicit assigned acceptance criteria and an explicit owned-file list. When parallel work is useful, detect the native capabilities callable in the active runtime and map them to the semantic operations `spawn`, `follow up`, `message`, `wait`, `interrupt`, `inspect`, and `release`; current runtime examples can include `spawn_agent`, `followup_task`, `send_message`, `wait_agent`, `interrupt_agent`, and `list_agents`. Prefer a compatible warm-agent follow-up before spawning. Choose `local`, `resume`, `inherit-full`, `inherit-recent`, or `fresh-capsule` per `knowzcode/codex_execution.md`; unavailable modes fall back to a capsule or local work. Give each writer an explicit file or module ownership boundary. Never let two writers edit the same file. Do not dispatch broad bundles such as `N3+N4` unless they are tiny, independent, and share one bounded owned-file set.
     - With `RELAY_TARGET=claude`: follow `references/relay-execution.md`. Claude performs Phase 2A and bounded review-fix legs; Codex owns preflight, state, process polling, checkpoints, review, gates, and finalization. Do not also run native writers against the same files.
@@ -342,7 +342,7 @@ an explicit named target; `auto`, `other`, entry-point default, or configuration
 may emit `[RELAY-FALLBACK]` and use native Phase 2A. Any authentication failure
 always pauses, including autonomous mode.
 
-Before committing to relay, run `CLAUDE_DETECT` from the execution reference.
+Before committing to relay, run `RELAY_DETECT` for the Claude target from the execution reference.
 Do not claim Claude MCP support. Once resolution succeeds, write the host,
 target, selector, source, and readiness outcome to the WorkGroup and preserve
 them through continuation.
@@ -415,7 +415,7 @@ Rollout controls recommendation application and redacted telemetry, not safety v
 
 ## Parallel Explorer Dispatch Contract
 
-When step 3 fires, detect the native capabilities callable in the active runtime and map them to semantic `spawn`, `follow up`, `message`, `wait`, `interrupt`, `inspect`, and `release` operations. Current runtime examples can include `spawn_agent`, `followup_task`, `send_message`, `wait_agent`, `interrupt_agent`, and `list_agents`, but capability detection is authoritative. Prefer a compatible warm explorer follow-up before spawning; otherwise select `inherit-full`, `inherit-recent`, or `fresh-capsule` per the canonical execution guide. Dispatch independent explorers concurrently only when capacity permits. Each explorer must:
+When step 4 fires, detect the native capabilities callable in the active runtime and map them to semantic `spawn`, `follow up`, `message`, `wait`, `interrupt`, `inspect`, and `release` operations. Current runtime examples can include `spawn_agent`, `followup_task`, `send_message`, `wait_agent`, `interrupt_agent`, and `list_agents`, but capability detection is authoritative. Prefer a compatible warm explorer follow-up before spawning; otherwise select `inherit-full`, `inherit-recent`, or `fresh-capsule` per the canonical execution guide. Dispatch independent explorers concurrently only when capacity permits. Each explorer must:
 
 - **Scope boundary**: receive exactly one subsystem boundary (a path glob, a module name, or a domain). No two explorers share files.
 - **Read-only constraint**: receive an explicit instruction not to edit or implement code.
@@ -560,7 +560,7 @@ description: "Create a local KnowzCode handoff before clearing context. Use when
 
 ## Source Of Truth
 
-The canonical source skill is `knowzcode/skills/regroup/SKILL.md`. Keep these surfaces behaviorally aligned when editing regroup:
+The paths below are in the KnowzCode source repository and matter only to maintainers; they do not exist in an installed plugin or a user project. The canonical source skill is `knowzcode/skills/regroup/SKILL.md`. Keep these surfaces behaviorally aligned when editing regroup:
 
 - `knowzcode/skills/regroup/SKILL.md`
 - `plugins/knowzcode/skills/regroup/SKILL.md`
@@ -573,7 +573,7 @@ Platform-specific frontmatter may differ, but the workflow contract and handoff 
 
 - KnowzCode owns workflow state: active WorkGroup, phase, branch, dirty files, blockers, next steps, autonomy mode, and resume instructions.
 - Knowz owns durable knowledge: decisions, patterns, workarounds, conventions, architecture findings, audit findings, and completion records.
-- Do not write the handoff itself to Knowz. If durable learnings are discovered, list them as extraction candidates or route them through the normal KnowzCode knowledge-liaison / `/knowz save` path.
+- Do not write the handoff itself to Knowz. If durable learnings are discovered, list them as extraction candidates or route them through the coordinator's `vault-delta` capture or the Knowz plugin's `knowz-save` skill.
 
 ## Instructions
 
@@ -590,7 +590,7 @@ Verify this is a KnowzCode project:
 Find the WorkGroup this handoff belongs to:
 
 1. If the user supplied a WorkGroup ID or path, use it.
-2. Else derive active WorkGroups from `knowzcode/journal/*/*/` (folders with no `arc-completion` or `workgroup-abandoned` shard), cross-checked against `knowzcode/workgroups/*.md`. Do not read `knowzcode_tracker.md` — it is a frozen archive.
+2. Else derive active WorkGroups from `knowzcode/journal/*/*/` (excluding the `ungrouped` folder, which holds standalone events) (folders with no `arc-completion` or `workgroup-abandoned` shard), cross-checked against `knowzcode/workgroups/*.md`. Do not read `knowzcode_tracker.md` — it is a frozen archive.
 3. If one active WorkGroup exists, use it.
 4. If multiple active WorkGroups exist, choose the one clearly referenced by the current session; otherwise ask the user to choose.
 5. If none exist, create a standalone handoff with `WorkGroupID: none` and point the user toward `/knowzcode:work` after resume.
@@ -701,8 +701,8 @@ For `## Durable Learning Candidates`:
 
 - Include only durable learnings that should survive outside this local workflow.
 - Prefer categories already used by KnowzCode capture: Decision, Pattern, Workaround, Performance, Security, Convention, Integration, Scope, Audit, Completion.
-- If the current workflow has a knowledge-liaison or writer capture path active, route candidates through that path as `Consider: {candidate}`.
-- If no capture path is active, leave candidates in the handoff for Phase 3 capture or explicit `/knowz save`.
+- If the current workflow has the coordinator's `vault-delta` capture active, route candidates through it as `Consider: {candidate}`.
+- If no capture path is active, leave candidates in the handoff for Phase 3 capture or explicit the Knowz plugin's `knowz-save` skill.
 - If MCP is unavailable, do not block regroup. The local handoff is the primary artifact.
 
 ### Step 7: Report
@@ -724,7 +724,7 @@ Then provide the `Fresh Context Prompt` from the file for copy/paste.
 
 - `/knowzcode:continue` - Load the latest handoff or active WorkGroup and resume
 - `/knowzcode:work` - Start a WorkGroup if there is no active workflow
-- `/knowz save` - Capture durable learnings, not workflow handoffs
+- the Knowz plugin's `knowz-save` skill - Capture durable learnings, not workflow handoffs
 ```
 
 #### .agents/skills/knowzcode-regroup-trigger/SKILL.md
@@ -751,7 +751,7 @@ Use this as a lightweight router into `/knowzcode:regroup`. It never writes hand
 2. Do not trigger for normal questions or active implementation requests.
 3. Do not trigger during explicit `/knowzcode:*` or `/knowz` command execution.
 4. Check that `knowzcode/` exists. If not, do nothing.
-5. Detect active WorkGroups from `knowzcode/journal/*/*/` (folders with no `arc-completion` or `workgroup-abandoned` shard) or `knowzcode/workgroups/*.md`, but do not block if the read fails and the user's handoff intent is explicit.
+5. Detect active WorkGroups from `knowzcode/journal/*/*/` (excluding the `ungrouped` folder, which holds standalone events) (folders with no `arc-completion` or `workgroup-abandoned` shard) or `knowzcode/workgroups/*.md`, but do not block if the read fails and the user's handoff intent is explicit.
 6. Offer exactly once:
    ```text
    This looks like a good checkpoint. Want me to run `/knowzcode:regroup` with the current goal and next step so you can resume cleanly after clearing context?
@@ -782,7 +782,7 @@ state on disk and takes precedence over generic phase inference.
    - If no explicit path was supplied, find the newest handoff by filename timestamp.
    - Handoffs are local operational state. Do not search Knowz vaults for workflow handoffs.
    - Measured state beats the handoff: when a handoff was loaded, re-run `git branch --show-current`, `git rev-parse --short HEAD`, and `git status --short`, and compare them with its `**Branch:**`, `**Commit:**`, and `## Dirty Files`. Report each mismatch in one line and trust the live result; re-check handoff claims that depend on a stale value before acting on them. Never switch branches, reset, stash, or discard changes to make the repository match the handoff.
-2. Derive active work from `knowzcode/journal/*/*/` (a folder with no `arc-completion` or `workgroup-abandoned` shard is in flight), cross-checked against `knowzcode/workgroups/*.md`. Do not rely on `knowzcode_tracker.md` `[WIP]` rows; it is a frozen archive.
+2. Derive active work from `knowzcode/journal/*/*/` (excluding the `ungrouped` folder, which holds standalone events) (a folder with no `arc-completion` or `workgroup-abandoned` shard is in flight), cross-checked against `knowzcode/workgroups/*.md`. Do not rely on `knowzcode_tracker.md` `[WIP]` rows; it is a frozen archive.
 3. If multiple active WorkGroups exist, ask the user which one to resume unless the selected handoff clearly names a WorkGroup.
 4. Read the selected WorkGroup file and check for
    `knowzcode/workgroups/{wgid}-relay/state.md` before choosing a generic phase action.
@@ -851,7 +851,7 @@ manual takeover.
 4. If the process ended successfully, advance to `TARGET_DONE` or the next
    host-owned review/finalization state.
 5. If a target implementation/fix process is gone without a successful result,
-   run `CLAUDE_DETECT`. Authentication failure always pauses. With a valid
+   run `RELAY_DETECT` for the Claude target. Authentication failure always pauses. With a valid
    session ID and the same recorded `cwd`, attempt the bounded `--resume` path
    using a self-contained prompt; interrupted-turn recovery is best effort.
 6. If resume is unsafe or exhausted, persist `TARGET_FAILED` and present the
@@ -888,7 +888,7 @@ If the file exists, use its values:
 If the file is absent or a field is missing, use the defaults:
 - brand: `Knowz`
 
-White-label applies to brand naming only. Vault connect via Knowz Claude plugin OAuth / marketplace only (`claude plugin install knowz` then `/knowz setup`). Do not generate MCP config into settings.json from enterprise endpoints.
+White-label applies to brand naming only. Vault connect via Knowz plugin OAuth only (install the Knowz plugin with `codex plugin add knowz@knowz-skills`, then run its setup skill). Do not generate MCP config into settings.json from enterprise endpoints.
 
 ## What KnowzCode Provides
 
@@ -903,7 +903,7 @@ KnowzCode is a structured development methodology that provides:
 - Project is **already initialized** (knowzcode/ directory exists with content) — inform user, offer merge/overwrite
 - User is asking **about KnowzCode features**, not requesting setup → answer directly
 - User wants to **start a feature** → use `/knowzcode:work` (which checks initialization itself)
-- User wants to **connect MCP** → connect through Claude OAuth / marketplace (`claude plugin install knowz` then `/knowz setup`)
+- User wants to **connect MCP** → connect through Knowz plugin OAuth (install the Knowz plugin with `codex plugin add knowz@knowz-skills`, then run its setup skill)
 
 ## Steps to Execute
 
@@ -994,7 +994,7 @@ If the user declines Gate C entirely, leave the file on disk and: set the `Last 
 
 ### 6. Configure orchestration defaults
 
-**6a. Execution profile (ask once — one question).** This is the project's cost/quality choice, asked exactly once here and persisted; no workflow run will ask again. Use AskUserQuestion: In a non-interactive or autonomous init, do not ask: keep the shipped `profile: frontier` and log `[AUTO-DEFAULT] profile: frontier — set profile: in knowzcode_orchestration.md to change`.
+**6a. Execution profile (ask once — one question).** This is the project's cost/quality choice, asked exactly once here and persisted; no workflow run will ask again. Ask the user one question: In a non-interactive or autonomous init, do not ask: keep the shipped `profile: frontier` and log `[AUTO-DEFAULT] profile: frontier — set profile: in knowzcode_orchestration.md to change`.
 
 > **Execution profile for this project?**
 > - **Frontier (Recommended)** — Fable plans, specs, and reviews every change; Opus executes. The most capable planning, at premium cost. Falls back to Opus automatically if Fable is unavailable.
@@ -1025,7 +1025,6 @@ Report exactly one summary line: `[RELAY-DETECT] host={claude|codex} target={cod
 If yes: prompt for:
 - Max concurrent builders (1-3, default: 2; use more only for tiny independent scopes)
 - Builder NodeID limit per dispatch (1-2, default: 1)
-- Scout mode (full/minimal/none, default: full)
 - Default specialists (checkboxes: security-officer, test-advisor, project-advisor)
 - MCP agents enabled (yes/no, default: yes)
 
@@ -1116,15 +1115,15 @@ This skill ships in the KnowzCode Codex plugin, which already provides every Kno
 
 **Step 8c-gemini-mcp: Offer MCP configuration for Gemini CLI**
 
-After generating GEMINI.md + commands + skills + subagents, offer cloud/MCP connection through Claude OAuth / marketplace (`claude plugin install knowz` then `/knowz setup`).
+After generating GEMINI.md + commands + skills + subagents, offer cloud/MCP connection through Knowz plugin OAuth (install the Knowz plugin for that host, then run its setup skill).
 
 Ask:
 ```
 "Would you like to connect Knowz cloud features for Gemini CLI?"
 ```
 
-- If **"Yes, use OAuth / marketplace"**: Connect only via Knowz Claude plugin OAuth / marketplace (`claude plugin install knowz` then `/knowz setup`). Do not scrape project config files. Verify with `list_vaults` when available, and update `knowzcode/mcp_config.md` with connection status only.
-- If **"No"**: Skip; mention `/knowz setup` (OAuth / marketplace) for later.
+- If **"Yes, use OAuth / marketplace"**: Connect only via Knowz plugin OAuth (install the Knowz plugin for that host, then run its setup skill). Do not scrape project config files. Verify with `list_vaults` when available.
+- If **"No"**: Skip; mention the Knowz plugin's setup skill (OAuth) for later.
 
 **Step 8c-gemini: Generate Gemini TOML commands, skills, and subagents**
 
@@ -1134,13 +1133,14 @@ Gemini remains native-only for relay in this version. Do not generate `knowzcode
 
 ```
 1. Create .gemini/commands/knowzcode/ directory
-2. Generate 12 TOML files from platform_adapters.md "Native Commands" section:
+2. Generate 13 TOML files from platform_adapters.md "Native Commands" section:
    - .gemini/commands/knowzcode/work.toml
    - .gemini/commands/knowzcode/explore.toml
    - .gemini/commands/knowzcode/fix.toml
    - .gemini/commands/knowzcode/audit.toml
    - .gemini/commands/knowzcode/learn.toml
    - .gemini/commands/knowzcode/status.toml
+   - .gemini/commands/knowzcode/regroup.toml
    - .gemini/commands/knowzcode/continue.toml
    - .gemini/commands/knowzcode/setup.toml
    - .gemini/commands/knowzcode/connect-mcp.toml
@@ -1148,12 +1148,13 @@ Gemini remains native-only for relay in this version. Do not generate `knowzcode
    - .gemini/commands/knowzcode/telemetry.toml
    - .gemini/commands/knowzcode/telemetry-setup.toml
 3. Create .gemini/skills/ directory
-4. Generate 12 skill files from platform_adapters.md "Gemini Skill Files" section:
+4. Generate 13 skill files from platform_adapters.md "Gemini Skill Files" section:
    - .gemini/skills/knowzcode-work/SKILL.md
    - .gemini/skills/knowzcode-explore/SKILL.md
    - .gemini/skills/knowzcode-fix/SKILL.md
    - .gemini/skills/knowzcode-audit/SKILL.md
    - .gemini/skills/knowzcode-learn/SKILL.md
+   - .gemini/skills/knowzcode-regroup/SKILL.md
    - .gemini/skills/knowzcode-continue/SKILL.md
    - .gemini/skills/knowzcode-setup/SKILL.md
    - .gemini/skills/knowzcode-status/SKILL.md
@@ -1171,12 +1172,14 @@ Ask user: "Would you like to generate Gemini subagent definitions? (experimental
 If yes:
 ```
 1. Create .gemini/agents/ directory
-2. Generate 11 subagent files from platform_adapters.md "Gemini Subagents" section:
+2. Generate 13 subagent files from platform_adapters.md "Gemini Subagents" section:
    - .gemini/agents/knowzcode-analyst.md
    - .gemini/agents/knowzcode-architect.md
    - .gemini/agents/knowzcode-builder.md
    - .gemini/agents/knowzcode-reviewer.md
    - .gemini/agents/knowzcode-closer.md
+   - .gemini/agents/knowzcode-knowz-reader.md
+   - .gemini/agents/knowzcode-knowz-writer.md
    - .gemini/agents/knowzcode-microfix.md
    - .gemini/agents/knowzcode-knowledge-migrator.md
    - .gemini/agents/knowzcode-update-coordinator.md
@@ -1217,8 +1220,8 @@ When Copilot is selected, generate the full prompt file suite in addition to the
    - .github/prompts/knowzcode-explore.prompt.md
    - .github/prompts/knowzcode-continue.prompt.md
 5. Replace "vX.Y.Z" in generated files with the current KnowzCode version
-6. Do not generate `.vscode/mcp.json`. Vault connect via Knowz Claude plugin OAuth / marketplace only
-   (ask user: "Would you like to connect Knowz via Claude OAuth / marketplace?")
+6. Do not generate `.vscode/mcp.json`. Vault connect via Knowz plugin OAuth only (install the Knowz plugin for that host, then run its setup skill)
+   (ask user: "Would you like to connect Knowz via the Knowz plugin OAuth?")
 ```
 
 **Skip Agent Teams enablement for Copilot** — Copilot uses single-agent sequential execution.
@@ -1238,7 +1241,7 @@ A general confirmation, pressing Enter, selecting a model profile, or using Tier
 
 If the active platform is not Claude Code, ignore `--agent-teams` with a clear not-applicable message and do not write settings.
 
-**Step 9c: Windows note**
+**Windows note**
 
 If the platform is Windows:
 ```
@@ -1265,7 +1268,7 @@ This works correctly — no action needed. Enable via Claude Code's own docs/UI.
 
 Inform user about enhanced features:
 ```
-Optional: For knowledge vault features, connect through Claude OAuth / marketplace: `claude plugin install knowz` then `/knowz setup`
+Optional: For knowledge vault features, connect through Knowz plugin OAuth: install the Knowz plugin with `codex plugin add knowz@knowz-skills`, then run its setup skill
 ```
 
 ### 12. Report success
@@ -1312,7 +1315,7 @@ Next steps:
 
 - `/knowzcode:work` — Start first feature after initialization
 - `/knowzcode:explore` — Research the codebase after initialization
-- `/knowz setup` — Connect MCP and vaults via Claude OAuth / marketplace
+- Knowz plugin setup skill (after `codex plugin add knowz@knowz-skills`) — Connect MCP and vaults via OAuth
 - `/knowzcode:status` — Verify setup
 
 ## Error Handling
@@ -1342,7 +1345,7 @@ Report local KnowzCode health without starting or resuming work.
 ## Instructions
 
 1. Check whether `knowzcode/` exists and whether the core files are present.
-2. Derive work state from `knowzcode/journal/*/*/`: a WorkGroup folder with no `*-arc-completion-*.md` and no `*-workgroup-abandoned-*.md` shard is in flight; the rest are closed. Sort `knowzcode/journal/*/*/*.md` descending for recent history — filenames are UTC time-prefixed. Do not read `knowzcode_tracker.md` or `knowzcode_log.md` for live status; both are frozen archives.
+2. Derive work state from `knowzcode/journal/*/*/` (excluding the `ungrouped` folder, which holds standalone events): a WorkGroup folder with no `*-arc-completion-*.md` and no `*-workgroup-abandoned-*.md` shard is in flight; the rest are closed. Sort `knowzcode/journal/*/*/*.md` descending for recent history — filenames are UTC time-prefixed. Do not read `knowzcode_tracker.md` or `knowzcode_log.md` for live status; both are frozen archives.
 3. Cross-check `knowzcode/workgroups/` session files if that directory exists (local, gitignored, may be absent).
 4. Count queued items in the project-root `knowz-pending.md` when present. If legacy `knowzcode/pending_captures.md` exists, report it separately as migration input; do not count it as a second active queue.
 5. If Knowz MCP is available, call `mcp__knowz__list_vaults` with `includeStats: true` and report vault availability. If not, report that Knowz enhancement is unavailable but the local workflow still works.
@@ -1360,7 +1363,7 @@ are `none|auto|other|claude|codex`:
 - `codex` -> same-host stale configuration; warn that ordinary `/work` falls
   back to native Phase 2A and suggest `relay: other`.
 
-For a resolved Claude target, run the read-only `CLAUDE_DETECT` sequence from
+For a resolved Claude target, run the read-only `RELAY_DETECT` sequence for the Claude target from
 `../knowzcode-work/references/relay-execution.md`: executable, version, then
 `claude auth status --json`. Report only:
 
@@ -1594,7 +1597,7 @@ effective external Claude target proceeds to setup detection.
 1. Verify the project is initialized (`knowzcode/knowzcode_loop.md` exists).
    Otherwise suggest `/knowzcode:setup` and stop.
 2. Read `knowzcode/knowzcode_orchestration.md` when present.
-3. Run the `CLAUDE_DETECT` sequence from the execution reference:
+3. Run the `RELAY_DETECT` sequence for the Claude target from the execution reference:
    `command -v claude`, `claude --version`, then
    `claude auth status --json`. Report only readiness, version, and the safe
    auth fields documented there; never echo the full auth payload.
@@ -1678,7 +1681,7 @@ Persist portable opt-in as `relay: other`. Preserve literal `relay: codex` and `
 
 ## RELAY_DETECT — Live Target Readiness
 
-`RELAY_DETECT(RELAY_TARGET)` is read-only. `/knowzcode:relay` and `/knowzcode:status` may call it for setup/health, but execution must call it live again at Tier 3 preflight because authentication can expire. `/knowzcode:work` Step 1.6 performs only the cheap executable-existence check.
+`RELAY_DETECT(RELAY_TARGET)` is read-only. `/knowzcode:relay` and `/knowzcode:status` may call it for setup/health, but execution must call it live again at Tier 3 preflight because authentication can expire. The work skill's relay pre-flight performs only the cheap executable-existence check.
 
 ### Codex target
 
@@ -1779,7 +1782,7 @@ The lead supplies the relay-runner a complete `COMMAND`, provider-specific sessi
 
 1. Launch `COMMAND` as a background task. The wrapper must always write `exit-r{N}`.
 2. Persist the process PID, exact cwd, target-qualified log/error/final paths, and session ID as soon as available.
-3. Poll in bounded foreground loops (about 5-8 minutes each). When still running, immediately issue the next poll without ending the turn.
+3. Poll in bounded foreground loops no longer than `PROGRESS_INTERVAL_SECONDS`. When still running, immediately issue the next poll without ending the turn.
 4. Liveness is process existence plus target JSONL/rollout mtime advancing. Do not treat one quiet reasoning interval as death.
 5. Before the elapsed time checkpoint, open the time-budget dialogue below using its bounded notice window. Never SIGINT solely because the clock elapsed.
 
@@ -2049,7 +2052,7 @@ Run only after the workflow is known to be Tier 3 and Gate #2 has approved the s
 
 1. Run live `RELAY_DETECT(RELAY_TARGET)`. Apply named-vs-automatic fallback rules; authentication always pauses.
 2. Refuse the default branch. Create `kc-relay/{wgid}` from current HEAD or reuse an approved non-default feature branch.
-3. Require a clean tree without mutating unrelated state. The Gate #2 checkpoint stages only the active WorkGroup, new journal shards, approved specs, and other explicit reviewed paths. If any other tracked or untracked change remains, do not commit, stash, revert, clean, or absorb it into the relay checkpoint; stop relay preflight, report the exact paths, and use a separately approved clean worktree or wait for the user to resolve them. Record HEAD as C0 only after the scoped baseline is clean.
+3. Require a clean tree without mutating unrelated state. The Gate #2 checkpoint stages only new journal shards, approved specs, and other explicit reviewed paths. If any other tracked or untracked change remains, do not commit, stash, revert, clean, or absorb it into the relay checkpoint; stop relay preflight, report the exact paths, and use a separately approved clean worktree or wait for the user to resolve them. Record HEAD as C0 only after the scoped baseline is clean.
 4. Record the exact absolute cwd. All initial/resume subprocesses must use it.
 5. Write schema-2 state and the WorkGroup snapshot before launch.
 6. For a Claude target, write:
@@ -2388,11 +2391,11 @@ When the WorkGroup has `## Relay`, read the referenced `state.md` before ordinar
 ## Related
 
 - `../../relay/SKILL.md` — setup-aware resolution and redirect.
-- `../SKILL.md` — Step 1.6 parse and Tier 3 relay branch.
+- `../SKILL.md` — the work skill's relay pre-flight and Tier 3 relay branch.
 - `../../../agents/relay-runner.md` (Claude plugin only) — one-leg monitor contract.
 - `../../continue/SKILL.md` — schema-aware resume.
-- `knowzcode/knowzcode/knowzcode_orchestration.md` — target-specific configuration.
-- `quality-gates.md` — unchanged Gate #3 review/gap mechanics.
+- `knowzcode/knowzcode_orchestration.md` in the project — target-specific configuration.
+- `quality-gates.md` (Claude plugin only) — unchanged Gate #3 review/gap mechanics.
 ```
 
 #### .agents/skills/knowzcode-start-work/SKILL.md
@@ -2434,10 +2437,10 @@ When invoking `/knowzcode:work`, pass a structured payload so the workflow can s
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `goal` | string | yes | One-sentence imperative summary of what to build |
-| `source_path` | string | no | Path to the plan or investigation file the goal came from (e.g. `~/.claude/plans/foo.md`, `knowzcode/planning/investigation-*.md`) |
+| `source_path` | string | no | Path to the plan or investigation file the goal came from (e.g. `~/.claude/plans/foo.md`, `knowzcode/planning/{slug}.md`) |
 | `tier` | `"micro" \| "light" \| "full"` | no | Pre-classified scope hint; `/knowzcode:work` may override |
-| `flags` | string | no | Pass-through flags such as `--autonomous`, `--tier full`, `--specialists=security`, or normalized `--relay=none|auto|other|claude|codex` |
-| `prior_findings_summary` | string | no | 2-3 sentences summarizing key constraints/decisions from the source so `/knowzcode:work` can skip Phase 0 re-reading |
+| `flags` | string | no | Pass-through flag: normalized `--relay=none|auto|other|claude|codex` |
+| `prior_findings_summary` | string | no | 2-3 sentences summarizing key constraints/decisions from the source so `/knowzcode:work` can skip re-discovery |
 
 Always include `goal`. Include `source_path` whenever a plan/investigation was the trigger — the implementer can re-read it instead of relying on chat memory.
 ```

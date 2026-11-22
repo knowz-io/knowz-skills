@@ -88,12 +88,12 @@ Search for context in this priority order:
 2. If found: Extract full plan content as context
 
 #### Priority B: Recent Investigation
-1. Check `knowzcode/planning/*.md` for files < 30 min old
+1. Use the investigation in the conversation context (exploration mode saves no file); a saved plan, if any, is `knowzcode/planning/{slug}.md`
 2. If found: Extract top recommendation and key findings
 3. Handle "option N" phrases by extracting that specific option
 
 #### Priority C: Active WorkGroup
-1. Derive active WorkGroups from `knowzcode/journal/*/*/` — a folder with no `*-arc-completion-*.md` and no `*-workgroup-abandoned-*.md` shard is still in flight. Cross-check `knowzcode/workgroups/*.md` session files when present. Do not read `knowzcode_tracker.md` for live status; it is a frozen archive.
+1. Derive active WorkGroups from `knowzcode/journal/*/*/` (excluding the `ungrouped` folder, which holds standalone events) — a folder with no `*-arc-completion-*.md` and no `*-workgroup-abandoned-*.md` shard is still in flight. Cross-check `knowzcode/workgroups/*.md` session files when present. Do not read `knowzcode_tracker.md` for live status; it is a frozen archive.
 2. If found: Use existing primary goal from the WorkGroup session file or the folder's `start-work` shard
 
 #### Priority D: User's Explicit Statement
@@ -114,7 +114,7 @@ IF no context found:
 Pass full context to /knowzcode:work and let it extract the goal:
 
 ```
-/knowzcode:work --context "{plan_or_investigation_content}"
+/knowzcode:work "{goal} — context: {plan_or_investigation_summary}"
 ```
 
 Before handing off, preserve relay intent in the payload's `flags` field:
@@ -142,7 +142,7 @@ When delegating to `/knowzcode:work`, structure the handoff so the workflow can 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `goal` | string | yes | One-sentence imperative summary of what to build |
-| `source_path` | string | no | Path to the plan or investigation the goal came from (e.g. `~/.claude/plans/foo.md`, `knowzcode/planning/investigation-*.md`) |
+| `source_path` | string | no | Path to the plan or investigation the goal came from (e.g. `~/.claude/plans/foo.md`, `knowzcode/planning/{slug}.md`) |
 | `tier` | `"micro" \| "light" \| "full"` | no | Pre-classified scope hint; `/knowzcode:work` may override |
 | `flags` | string | no | Pass-through orchestration flags such as `--autonomous`, `--tier full`, `--specialists=security`, or normalized `--relay=none|auto|other|claude|codex` |
 | `prior_findings_summary` | string | no | 2-3 sentences summarizing key constraints/decisions from the source so Phase 1A can build on them |
@@ -164,7 +164,7 @@ Skill: Starting KnowzCode workflow based on your plan...
 ```
 User: do option 2
 Skill: Starting implementation of option 2 from investigation...
-       Loading context from: knowzcode/planning/investigation-20250116-143022.md
+       Using the investigation from this conversation
 [Extracts option 2 content, passes to /knowzcode:work]
 [/knowzcode:work interprets: "Option 2: Refactor error handling with centralized middleware"]
 ```
@@ -173,7 +173,7 @@ Skill: Starting implementation of option 2 from investigation...
 ```
 User: implement the findings
 Skill: Starting implementation based on investigation findings...
-       Loading context from: knowzcode/planning/investigation-20250116-143022.md
+       Using the investigation from this conversation
 [Passes top recommendation to /knowzcode:work]
 ```
 
@@ -198,7 +198,7 @@ Skill: Starting KnowzCode workflow...
 
 When user says "do option N" or "implement option N":
 
-1. Read most recent investigation file
+1. Take the options from the conversation context (or a saved plan at `knowzcode/planning/{slug}.md`)
 2. Search for pattern: `Option {N}:` or `**Option {N}**` or `{N})` or `{N}.`
 3. Extract the description following that marker
 4. Pass to /knowzcode:work with full option description
@@ -218,7 +218,7 @@ Extracted: "Refactor to use centralized error handling"
 ## Integration with /knowzcode:work
 
 This skill prepares context for /knowzcode:work, which will then:
-1. Apply Step 4.5 spec detection to check for existing comprehensive specs
+1. Apply `/knowzcode:work` Step 1.4 spec detection to check for existing comprehensive specs
 2. Offer optimization paths (Quick/Validation/Full workflow)
 3. Load investigation context to pre-populate Phase 1A if applicable
 

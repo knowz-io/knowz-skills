@@ -1,6 +1,6 @@
 # Claude Code Execution Model
 
-**Purpose:** Map KnowzCode's portable context-affinity modes to current Claude Code capabilities. This file supplements the platform-neutral agent definitions in `agents/`; load it only when a Claude-specific dispatch decision needs it.
+**Purpose:** Map KnowzCode's portable context-affinity modes to current Claude Code capabilities. This file supplements the platform-neutral agent definitions in the installed plugin's `agents/`; load it only when a Claude-specific dispatch decision needs it.
 
 Agent definitions provide role behavior. Spawn prompts provide only the assigned scope, approved specifications and VERIFY IDs, owned files, checkpoint/lineage data, and a bounded result contract.
 

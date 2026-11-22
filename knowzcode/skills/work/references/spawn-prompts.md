@@ -227,7 +227,7 @@ Use these prompts when `SPECIALISTS_ENABLED` identifies a distinct evidence need
 > {coordination_task_clause}
 > **Goal**: {goal}
 > **READ-ONLY.** Do NOT modify any files.
-> **Stage 0 Deliverable**: Read targeted tracker rows for existing relevant REFACTOR tasks/backlog context and return a bounded lead summary.
+> **Stage 0 Deliverable**: Read spec `Debt & Gaps` sections and recent journal shards for existing relevant REFACTOR tasks/backlog context and return a bounded lead summary.
 > **Lifecycle**: You are released mid-Stage 2 after returning backlog proposals — before the gap loop.
 > **Communication**: Return backlog context and proposals to the lead. The lead owns any authorized writer dispatch; do not address handoffs to builders or other specialists.
 > **Enterprise Compliance**: If `knowzcode/enterprise/compliance_manifest.md` exists, note compliance configuration gaps in backlog proposals.
@@ -238,7 +238,7 @@ Use these prompts when `SPECIALISTS_ENABLED` identifies a distinct evidence need
 
 Use these prompts when `FRONTEND_DESIGNER_ENABLED` or `ENTERPRISE_ENFORCER_ENABLED` is true. Each role runs as a named subagent dispatched, and resumed when needed, by the lead.
 
-**Dispatch**: Tier 3 dispatches these officers as named agents. Sequential mode runs the required officer at the applicable gate. Tier 2 uses per-agent checks unless the user explicitly requests the officer. Preserve blocking compliance and design authority regardless of runtime mode.
+**Dispatch**: Tier 3 dispatches these officers as named agents. Sequential mode runs the required officer at the applicable gate. Tier 2 uses per-agent checks; only the enterprise-enforcer may be dispatched there, on explicit request. The frontend-designer is not spawned in Tier 2 (the lead recommends `--tier full`). Preserve blocking compliance and design authority regardless of runtime mode.
 
 ### Frontend Designer
 

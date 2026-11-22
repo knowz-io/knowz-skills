@@ -43,7 +43,7 @@ Persist portable opt-in as `relay: other`. Preserve literal `relay: codex` and `
 
 ## RELAY_DETECT — Live Target Readiness
 
-`RELAY_DETECT(RELAY_TARGET)` is read-only. `/knowzcode:relay` and `/knowzcode:status` may call it for setup/health, but execution must call it live again at Tier 3 preflight because authentication can expire. `/knowzcode:work` Step 1.6 performs only the cheap executable-existence check.
+`RELAY_DETECT(RELAY_TARGET)` is read-only. `/knowzcode:relay` and `/knowzcode:status` may call it for setup/health, but execution must call it live again at Tier 3 preflight because authentication can expire. The work skill's relay pre-flight performs only the cheap executable-existence check.
 
 ### Codex target
 
@@ -144,7 +144,7 @@ The lead supplies the relay-runner a complete `COMMAND`, provider-specific sessi
 
 1. Launch `COMMAND` as a background task. The wrapper must always write `exit-r{N}`.
 2. Persist the process PID, exact cwd, target-qualified log/error/final paths, and session ID as soon as available.
-3. Poll in bounded foreground loops (about 5-8 minutes each). When still running, immediately issue the next poll without ending the turn.
+3. Poll in bounded foreground loops no longer than `PROGRESS_INTERVAL_SECONDS`. When still running, immediately issue the next poll without ending the turn.
 4. Liveness is process existence plus target JSONL/rollout mtime advancing. Do not treat one quiet reasoning interval as death.
 5. Before the elapsed time checkpoint, open the time-budget dialogue below using its bounded notice window. Never SIGINT solely because the clock elapsed.
 
@@ -414,7 +414,7 @@ Run only after the workflow is known to be Tier 3 and Gate #2 has approved the s
 
 1. Run live `RELAY_DETECT(RELAY_TARGET)`. Apply named-vs-automatic fallback rules; authentication always pauses.
 2. Refuse the default branch. Create `kc-relay/{wgid}` from current HEAD or reuse an approved non-default feature branch.
-3. Require a clean tree without mutating unrelated state. The Gate #2 checkpoint stages only the active WorkGroup, new journal shards, approved specs, and other explicit reviewed paths. If any other tracked or untracked change remains, do not commit, stash, revert, clean, or absorb it into the relay checkpoint; stop relay preflight, report the exact paths, and use a separately approved clean worktree or wait for the user to resolve them. Record HEAD as C0 only after the scoped baseline is clean.
+3. Require a clean tree without mutating unrelated state. The Gate #2 checkpoint stages only new journal shards, approved specs, and other explicit reviewed paths. If any other tracked or untracked change remains, do not commit, stash, revert, clean, or absorb it into the relay checkpoint; stop relay preflight, report the exact paths, and use a separately approved clean worktree or wait for the user to resolve them. Record HEAD as C0 only after the scoped baseline is clean.
 4. Record the exact absolute cwd. All initial/resume subprocesses must use it.
 5. Write schema-2 state and the WorkGroup snapshot before launch.
 6. For a Claude target, write:
@@ -753,8 +753,8 @@ When the WorkGroup has `## Relay`, read the referenced `state.md` before ordinar
 ## Related
 
 - `../../relay/SKILL.md` — setup-aware resolution and redirect.
-- `../SKILL.md` — Step 1.6 parse and Tier 3 relay branch.
+- `../SKILL.md` — the work skill's relay pre-flight and Tier 3 relay branch.
 - `../../../agents/relay-runner.md` (Claude plugin only) — one-leg monitor contract.
 - `../../continue/SKILL.md` — schema-aware resume.
-- `knowzcode/knowzcode/knowzcode_orchestration.md` — target-specific configuration.
-- `quality-gates.md` — unchanged Gate #3 review/gap mechanics.
+- `knowzcode/knowzcode_orchestration.md` in the project — target-specific configuration.
+- `quality-gates.md` (Claude plugin only) — unchanged Gate #3 review/gap mechanics.

@@ -3,13 +3,13 @@
 **WorkGroupID for Finalization:**
 [Orchestrator: Re-state the `WorkGroupID` that has passed implementation and verification, authorizing its finalization and commit.]
 
-> **Automation Path:** Execute `/knowzcode-step phase=3 workgroup_id=<ID>` to hand off to the `closer` subagent. It chains `journal-shard-writer` and `architecture-diff` skills to wrap up the loop.
+> **Automation Path:** `/knowzcode:work` runs this phase with the `closer` agent, which writes the completion journal shard and reconciles the architecture document.
 
 **Remember:**
 - Finalize every spec in `knowzcode/specs/` to reflect the as-built system.
 - Close or add remaining todos in `knowzcode/workgroups/<WorkGroupID>.md`, ensuring all entries keep the `KnowzCode:` prefix.
 
-**WorkGroupID:** `[wip-timestamp-to-finalize]`
+**WorkGroupID:** `[WorkGroupID]`
 
 ---
 
@@ -25,7 +25,7 @@ The implementation and verification for the specified `WorkGroupID` is complete.
 ### Execution Protocol
 
 1.  **Finalize Specifications (Step 7):**
-    *   For **each** `NodeID` in the `WorkGroupID`, update its spec file in `specs/` to the "as-built" state in the 4-section format, ensuring it perfectly reflects the verified code.
+    *   For **each** `NodeID` in the `WorkGroupID`, update its spec file in `knowzcode/specs/` to the "as-built" state in the 4-section format, ensuring it perfectly reflects the verified code.
     *   Before overwriting, compare the approved `VERIFY:` lines (Pre-Implementation Commit) with the as-built lines and list every changed, dropped, or added criterion, old and new wording verbatim, for the Step 9 shard. A VERIFY criterion is never dropped, weakened, or substituted to pass without a recorded user decision giving the old and new wording. If such a change has no recorded decision, stop and ask.
     *   Optionally append ` [test: <path>::<test name>]` to a `VERIFY:` line its test proves. Never invent a test reference.
 
@@ -40,13 +40,15 @@ The implementation and verification for the specified `WorkGroupID` is complete.
     *   **Do not mutate `knowzcode_tracker.md`** — it is a frozen archive. NodeID status is implied by the ARC-completion shard plus the as-built specs.
     *   **Schedule Debt:** Perform the "Technical Debt Scheduling" step. For any nodes with documented debt, record new `REFACTOR_` tasks in the `Debt & Gaps` section of the relevant spec and list them in the shard body.
     *   **Update Project Overview:** Check if this Change Set impacts `knowzcode_project.md`:
-        - New major features → Update "Key Features" section
-        - New libraries/tools → Update "Technology Stack" table
-        - Architecture changes → Update "Architecture Decisions"
-        - Scope expansion → Update "Scope & Key Features"
-    *   **Final Commit:** Inspect `git status --short` and scoped diffs, resolve the explicit approved final file list, stage only those paths with `git add -- {explicit-paths}`, verify `git diff --cached --check` and the exact cached name list, then commit with a descriptive `feat:` message. Never stage unrelated or ambiguous user state.
+        - New major features or scope expansion → Update the "Goal" section
+        - New libraries/tools → Update the "Stack" table
+        - Architecture changes → Update the "Architecture" section
+        - Changed conventions, test strategy, or security posture → Update "Standards", "Testing", or "Security Priorities"
 
-### Final Report
+5.  **Final Commit (Step 11):**
+    *   Inspect `git status --short` and scoped diffs, resolve the explicit approved final file list, stage only those paths with `git add -- {explicit-paths}`, verify `git diff --cached --check` and the exact cached name list, then commit with a descriptive `feat:` message. Never stage unrelated or ambiguous user state.
+
+### Final Report (Step 12)
 
 *   Once all steps above are complete, provide a final confirmation report.
 
@@ -58,7 +60,7 @@ The implementation and verification for the specified `WorkGroupID` is complete.
 > *   The architecture flowchart has been checked and updated.
 > *   A complete `ARC-Completion` shard has been written to `knowzcode/journal/`.
 > *   Completion is recorded by that shard; the frozen `knowzcode_log.md`/`knowzcode_tracker.md` archives were not modified.
-> *   **Project Overview Updates:** [None | Updated sections: Technology Stack, Key Features]
+> *   **Project Overview Updates:** [None | Updated sections: Stack, Goal]
 > *   The final `feat:` commit has been made to version control.
 > *   **New Refactor Tasks Created:** [List any REFACTOR_ nodes created, or 'None'].
 >

@@ -19,7 +19,7 @@ If the file exists, use its values:
 If the file is absent or a field is missing, use the defaults:
 - brand: `Knowz`
 
-White-label applies to brand naming only. Vault connect via Knowz Claude plugin OAuth / marketplace only (`claude plugin install knowz` then `/knowz setup`). Do not generate MCP config into settings.json from enterprise endpoints.
+White-label applies to brand naming only. Vault connect via Knowz plugin OAuth only (install the Knowz plugin with `codex plugin add knowz@knowz-skills`, then run its setup skill). Do not generate MCP config into settings.json from enterprise endpoints.
 
 ## What KnowzCode Provides
 
@@ -34,7 +34,7 @@ KnowzCode is a structured development methodology that provides:
 - Project is **already initialized** (knowzcode/ directory exists with content) — inform user, offer merge/overwrite
 - User is asking **about KnowzCode features**, not requesting setup → answer directly
 - User wants to **start a feature** → use `/knowzcode:work` (which checks initialization itself)
-- User wants to **connect MCP** → connect through Claude OAuth / marketplace (`claude plugin install knowz` then `/knowz setup`)
+- User wants to **connect MCP** → connect through Knowz plugin OAuth (install the Knowz plugin with `codex plugin add knowz@knowz-skills`, then run its setup skill)
 
 ## Steps to Execute
 
@@ -125,7 +125,7 @@ If the user declines Gate C entirely, leave the file on disk and: set the `Last 
 
 ### 6. Configure orchestration defaults
 
-**6a. Execution profile (ask once — one question).** This is the project's cost/quality choice, asked exactly once here and persisted; no workflow run will ask again. Use AskUserQuestion: In a non-interactive or autonomous init, do not ask: keep the shipped `profile: frontier` and log `[AUTO-DEFAULT] profile: frontier — set profile: in knowzcode_orchestration.md to change`.
+**6a. Execution profile (ask once — one question).** This is the project's cost/quality choice, asked exactly once here and persisted; no workflow run will ask again. Ask the user one question: In a non-interactive or autonomous init, do not ask: keep the shipped `profile: frontier` and log `[AUTO-DEFAULT] profile: frontier — set profile: in knowzcode_orchestration.md to change`.
 
 > **Execution profile for this project?**
 > - **Frontier (Recommended)** — Fable plans, specs, and reviews every change; Opus executes. The most capable planning, at premium cost. Falls back to Opus automatically if Fable is unavailable.
@@ -156,7 +156,6 @@ Report exactly one summary line: `[RELAY-DETECT] host={claude|codex} target={cod
 If yes: prompt for:
 - Max concurrent builders (1-3, default: 2; use more only for tiny independent scopes)
 - Builder NodeID limit per dispatch (1-2, default: 1)
-- Scout mode (full/minimal/none, default: full)
 - Default specialists (checkboxes: security-officer, test-advisor, project-advisor)
 - MCP agents enabled (yes/no, default: yes)
 
@@ -247,15 +246,15 @@ This skill ships in the KnowzCode Codex plugin, which already provides every Kno
 
 **Step 8c-gemini-mcp: Offer MCP configuration for Gemini CLI**
 
-After generating GEMINI.md + commands + skills + subagents, offer cloud/MCP connection through Claude OAuth / marketplace (`claude plugin install knowz` then `/knowz setup`).
+After generating GEMINI.md + commands + skills + subagents, offer cloud/MCP connection through Knowz plugin OAuth (install the Knowz plugin for that host, then run its setup skill).
 
 Ask:
 ```
 "Would you like to connect Knowz cloud features for Gemini CLI?"
 ```
 
-- If **"Yes, use OAuth / marketplace"**: Connect only via Knowz Claude plugin OAuth / marketplace (`claude plugin install knowz` then `/knowz setup`). Do not scrape project config files. Verify with `list_vaults` when available, and update `knowzcode/mcp_config.md` with connection status only.
-- If **"No"**: Skip; mention `/knowz setup` (OAuth / marketplace) for later.
+- If **"Yes, use OAuth / marketplace"**: Connect only via Knowz plugin OAuth (install the Knowz plugin for that host, then run its setup skill). Do not scrape project config files. Verify with `list_vaults` when available.
+- If **"No"**: Skip; mention the Knowz plugin's setup skill (OAuth) for later.
 
 **Step 8c-gemini: Generate Gemini TOML commands, skills, and subagents**
 
@@ -265,13 +264,14 @@ Gemini remains native-only for relay in this version. Do not generate `knowzcode
 
 ```
 1. Create .gemini/commands/knowzcode/ directory
-2. Generate 12 TOML files from platform_adapters.md "Native Commands" section:
+2. Generate 13 TOML files from platform_adapters.md "Native Commands" section:
    - .gemini/commands/knowzcode/work.toml
    - .gemini/commands/knowzcode/explore.toml
    - .gemini/commands/knowzcode/fix.toml
    - .gemini/commands/knowzcode/audit.toml
    - .gemini/commands/knowzcode/learn.toml
    - .gemini/commands/knowzcode/status.toml
+   - .gemini/commands/knowzcode/regroup.toml
    - .gemini/commands/knowzcode/continue.toml
    - .gemini/commands/knowzcode/setup.toml
    - .gemini/commands/knowzcode/connect-mcp.toml
@@ -279,12 +279,13 @@ Gemini remains native-only for relay in this version. Do not generate `knowzcode
    - .gemini/commands/knowzcode/telemetry.toml
    - .gemini/commands/knowzcode/telemetry-setup.toml
 3. Create .gemini/skills/ directory
-4. Generate 12 skill files from platform_adapters.md "Gemini Skill Files" section:
+4. Generate 13 skill files from platform_adapters.md "Gemini Skill Files" section:
    - .gemini/skills/knowzcode-work/SKILL.md
    - .gemini/skills/knowzcode-explore/SKILL.md
    - .gemini/skills/knowzcode-fix/SKILL.md
    - .gemini/skills/knowzcode-audit/SKILL.md
    - .gemini/skills/knowzcode-learn/SKILL.md
+   - .gemini/skills/knowzcode-regroup/SKILL.md
    - .gemini/skills/knowzcode-continue/SKILL.md
    - .gemini/skills/knowzcode-setup/SKILL.md
    - .gemini/skills/knowzcode-status/SKILL.md
@@ -302,12 +303,14 @@ Ask user: "Would you like to generate Gemini subagent definitions? (experimental
 If yes:
 ```
 1. Create .gemini/agents/ directory
-2. Generate 11 subagent files from platform_adapters.md "Gemini Subagents" section:
+2. Generate 13 subagent files from platform_adapters.md "Gemini Subagents" section:
    - .gemini/agents/knowzcode-analyst.md
    - .gemini/agents/knowzcode-architect.md
    - .gemini/agents/knowzcode-builder.md
    - .gemini/agents/knowzcode-reviewer.md
    - .gemini/agents/knowzcode-closer.md
+   - .gemini/agents/knowzcode-knowz-reader.md
+   - .gemini/agents/knowzcode-knowz-writer.md
    - .gemini/agents/knowzcode-microfix.md
    - .gemini/agents/knowzcode-knowledge-migrator.md
    - .gemini/agents/knowzcode-update-coordinator.md
@@ -348,8 +351,8 @@ When Copilot is selected, generate the full prompt file suite in addition to the
    - .github/prompts/knowzcode-explore.prompt.md
    - .github/prompts/knowzcode-continue.prompt.md
 5. Replace "vX.Y.Z" in generated files with the current KnowzCode version
-6. Do not generate `.vscode/mcp.json`. Vault connect via Knowz Claude plugin OAuth / marketplace only
-   (ask user: "Would you like to connect Knowz via Claude OAuth / marketplace?")
+6. Do not generate `.vscode/mcp.json`. Vault connect via Knowz plugin OAuth only (install the Knowz plugin for that host, then run its setup skill)
+   (ask user: "Would you like to connect Knowz via the Knowz plugin OAuth?")
 ```
 
 **Skip Agent Teams enablement for Copilot** — Copilot uses single-agent sequential execution.
@@ -369,7 +372,7 @@ A general confirmation, pressing Enter, selecting a model profile, or using Tier
 
 If the active platform is not Claude Code, ignore `--agent-teams` with a clear not-applicable message and do not write settings.
 
-**Step 9c: Windows note**
+**Windows note**
 
 If the platform is Windows:
 ```
@@ -396,7 +399,7 @@ This works correctly — no action needed. Enable via Claude Code's own docs/UI.
 
 Inform user about enhanced features:
 ```
-Optional: For knowledge vault features, connect through Claude OAuth / marketplace: `claude plugin install knowz` then `/knowz setup`
+Optional: For knowledge vault features, connect through Knowz plugin OAuth: install the Knowz plugin with `codex plugin add knowz@knowz-skills`, then run its setup skill
 ```
 
 ### 12. Report success
@@ -443,7 +446,7 @@ Next steps:
 
 - `/knowzcode:work` — Start first feature after initialization
 - `/knowzcode:explore` — Research the codebase after initialization
-- `/knowz setup` — Connect MCP and vaults via Claude OAuth / marketplace
+- Knowz plugin setup skill (after `codex plugin add knowz@knowz-skills`) — Connect MCP and vaults via OAuth
 - `/knowzcode:status` — Verify setup
 
 ## Error Handling

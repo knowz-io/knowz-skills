@@ -19,7 +19,7 @@ OpenAI Codex adapter generated:
   .agents/skills/knowzcode-explore/SKILL.md                (/knowzcode:explore — research)
   .agents/skills/knowzcode-fix/SKILL.md                 (/knowzcode:fix — quick fix)
   .agents/skills/knowzcode-audit/SKILL.md               (/knowzcode:audit — quality audit)
-  .agents/skills/knowzcode-learn/SKILL.md               (/knowz save — capture learning)
+  .agents/skills/knowzcode-learn/SKILL.md               (Knowz save — capture learning)
   .agents/skills/knowzcode-regroup/SKILL.md             (/knowzcode:regroup — local handoff)
   .agents/skills/knowzcode-regroup-trigger/SKILL.md     (pause/handoff intent router)
   .agents/skills/knowzcode-continue/SKILL.md            (/knowzcode:continue — resume workflow)
@@ -27,8 +27,8 @@ OpenAI Codex adapter generated:
   .agents/skills/knowzcode-status/SKILL.md              (/knowzcode:status — check status)
   .agents/skills/knowzcode-telemetry/SKILL.md           (/knowzcode:telemetry — investigate errors)
   .agents/skills/knowzcode-telemetry-setup/SKILL.md     (/knowzcode:telemetry-setup — configure sources)
-  .agents/skills/knowzcode-connect-mcp/SKILL.md         (/knowz setup — configure MCP)
-  .agents/skills/knowzcode-register/SKILL.md            (/knowz register — create account)
+  .agents/skills/knowzcode-connect-mcp/SKILL.md         (Knowz setup — configure MCP)
+  .agents/skills/knowzcode-register/SKILL.md            (Knowz register — create account)
   .agents/skills/knowzcode-start-work/SKILL.md          (implementation/relay intent router)
 
 Tip: Run `codex plugin marketplace add knowz-io/knowz-skills` and
@@ -44,23 +44,31 @@ Gemini CLI adapter generated:
   .gemini/commands/knowzcode/explore.toml                  (/knowzcode:explore — research)
   .gemini/commands/knowzcode/fix.toml                   (/knowzcode:fix — quick fix)
   .gemini/commands/knowzcode/audit.toml                 (/knowzcode:audit — quality audit)
+  .gemini/commands/knowzcode/learn.toml                 (Knowz save — capture learning)
   .gemini/commands/knowzcode/status.toml                (/knowzcode:status — connection status)
+  .gemini/commands/knowzcode/regroup.toml               (/knowzcode:regroup — local handoff)
   .gemini/commands/knowzcode/continue.toml              (/knowzcode:continue — resume workflow)
   .gemini/commands/knowzcode/setup.toml                  (/knowzcode:setup — initialize project)
+  .gemini/commands/knowzcode/connect-mcp.toml           (Knowz setup — configure MCP)
+  .gemini/commands/knowzcode/register.toml              (Knowz register — create account)
   .gemini/commands/knowzcode/telemetry.toml             (/knowzcode:telemetry — investigate errors)
   .gemini/commands/knowzcode/telemetry-setup.toml       (/knowzcode:telemetry-setup — configure sources)
   .gemini/skills/knowzcode-work/SKILL.md                (discoverable skill)
   .gemini/skills/knowzcode-explore/SKILL.md                (discoverable skill)
   .gemini/skills/knowzcode-fix/SKILL.md                 (discoverable skill)
   .gemini/skills/knowzcode-audit/SKILL.md               (discoverable skill)
+  .gemini/skills/knowzcode-learn/SKILL.md               (discoverable skill)
+  .gemini/skills/knowzcode-regroup/SKILL.md             (discoverable skill)
   .gemini/skills/knowzcode-continue/SKILL.md            (discoverable skill)
   .gemini/skills/knowzcode-setup/SKILL.md                (discoverable skill)
   .gemini/skills/knowzcode-status/SKILL.md              (discoverable skill)
+  .gemini/skills/knowzcode-connect-mcp/SKILL.md         (discoverable skill)
+  .gemini/skills/knowzcode-register/SKILL.md            (discoverable skill)
   .gemini/skills/knowzcode-telemetry/SKILL.md           (discoverable skill)
   .gemini/skills/knowzcode-telemetry-setup/SKILL.md     (discoverable skill)
-  .gemini/agents/knowzcode-*.md (14 subagents)          (experimental — if opted in)
+  .gemini/agents/knowzcode-*.md (13 subagents)          (experimental — if opted in)
 
-MCP: [Configured via OAuth / marketplace | Not configured — run /knowz setup later]
+MCP: [Configured via OAuth / marketplace | Not configured — run the Knowz plugin's setup later]
 
 Tip: Run `gemini extensions install
 https://github.com/knowz-io/knowz-skills` to have the commands and skills in all projects.

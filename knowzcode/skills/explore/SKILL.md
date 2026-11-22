@@ -181,7 +181,7 @@ If local work is cheaper or named-agent dispatch is unavailable, the lead perfor
 
 **After** any agent dispatches (or local research) and **before** synthesizing findings, the lead performs project management research directly:
 
-1. Derive in-flight scope conflicts from `knowzcode/journal/*/*/` folders that have no `*-arc-completion-*.md` or `*-workgroup-abandoned-*.md` shard; pick up related refactors from spec `Debt & Gaps` sections.
+1. Derive in-flight scope conflicts from `knowzcode/journal/*/*/` (excluding the `ungrouped` folder, which holds standalone events) folders that have no `*-arc-completion-*.md` or `*-workgroup-abandoned-*.md` shard; pick up related refactors from spec `Debt & Gaps` sections.
 2. Read recent journal shards (newest-first by filename) only when the plan depends on prior similar completion evidence. Fall back to the frozen `knowzcode_log.md`/`knowzcode_tracker.md` archives only for pre-journal history.
 3. Read relevant architecture sections only when the proposed design crosses a documented boundary.
 
@@ -233,7 +233,7 @@ Present findings inline (no file saved):
 - **Estimated scope**: ~{N} lines across {M} files
 - **Recommended tier**: Tier 2 (Light) / Tier 3 (Full)
 
-Tier recommendation follows work.md's classification rules:
+Tier recommendation follows `/knowzcode:work` Step 5.5 classification rules:
 - **Tier 3** if ANY: >3 files, >1 NodeID, architectural impact, security-sensitive, external integrations
 - **Tier 2** if ALL: <=3 files, single NodeID, no arch changes, no security, no external APIs
 
@@ -342,7 +342,7 @@ When triggered:
 > - Key risks: {top risks}
 > - Recommended approach: {selected option or top recommendation}
 
-**Planning mode**: Invoke `/knowzcode:work --context "knowzcode/planning/{slug}.md"` passing the full plan file path. The plan document contains all the context work needs to proceed.
+**Planning mode**: Invoke `/knowzcode:work "Implement the plan in knowzcode/planning/{slug}.md"` passing the full plan file path in the goal text. The plan document contains all the context work needs to proceed.
 
 This context gives work's analyst a head start and ensures correct tier classification.
 

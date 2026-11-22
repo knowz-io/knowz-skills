@@ -142,7 +142,7 @@ The lead supplies the relay-runner a complete `COMMAND`, provider-specific sessi
 
 1. Launch `COMMAND` as a background task. The wrapper must always write `exit-r{N}`.
 2. Persist the process PID, exact cwd, target-qualified log/error/final paths, and session ID as soon as available.
-3. Poll in bounded foreground loops (about 5-8 minutes each). When still running, immediately issue the next poll without ending the turn.
+3. Poll in bounded foreground loops no longer than `PROGRESS_INTERVAL_SECONDS`. When still running, immediately issue the next poll without ending the turn.
 4. Liveness is process existence plus target JSONL/rollout mtime advancing. Do not treat one quiet reasoning interval as death.
 5. Before the elapsed time checkpoint, open the time-budget dialogue below using its bounded notice window. Never SIGINT solely because the clock elapsed.
 
@@ -654,7 +654,7 @@ record the expected cache/lineage invalidation before launch.
 
 The host chooses its native monitor without changing the provider command:
 
-- **Claude host:** delegate one target leg to `agents/relay-runner.md` only as a teammate when coordinated Team mode is already independently justified, explicitly approved, and live Team messaging is callable. In adaptive, sequential, or named-agent mode, the lead follows the same in-turn protocol directly; never dispatch relay-runner as an ordinary named agent because its progress and time-decision exchange cannot wait for a final result.
+- **Claude host:** delegate one target leg to the `knowzcode:relay-runner` agent (shipped in the Claude plugin) only as a teammate when coordinated Team mode is already independently justified, explicitly approved, and live Team messaging is callable. In adaptive, sequential, or named-agent mode, the lead follows the same in-turn protocol directly; never dispatch relay-runner as an ordinary named agent because its progress and time-decision exchange cannot wait for a final result.
 - **Codex host:** the coordinator owns a unified exec session and polls it in-turn. Do not simulate Claude Agent Teams or install a `plugins/knowzcode/agents` runner. A bounded Codex worker may monitor only when it can retain the same live exec session until completion.
 
 The spawn prompt supplies `TARGET`, `TRANSPORT`, complete `COMMAND` or Codex `TOOL_ARGS`, `SESSION_ID_COMMAND`, `COMPLETION_COMMAND`, `RESULT_SUBTYPE_COMMAND`, and, for exec, the provider-built `PROGRESS_COMMAND` plus `PROGRESS_INTERVAL_SECONDS`, target-qualified paths, round, already-clamped timeout, and optional complete `RESUME_COMMAND`. For exec, the runner launches, records PID, captures Session ID on the first poll, relays filtered progress, and never ends while the exit marker is absent. For Codex MCP it makes the blocking tool call. Claude MCP is never selected.
@@ -753,9 +753,9 @@ When the WorkGroup has `## Relay`, read the referenced `state.md` before ordinar
 
 ## Related
 
-- `knowzcode/skills/relay/SKILL.md` — setup-aware resolution and redirect.
-- `knowzcode/skills/work/SKILL.md` — Step 1.6 parse and Tier 3 relay branch.
-- `knowzcode/agents/relay-runner.md` — one-leg monitor contract.
-- `knowzcode/skills/continue/SKILL.md` — schema-aware resume.
-- `knowzcode/knowzcode/knowzcode_orchestration.md` — target-specific configuration.
-- `knowzcode/skills/work/references/quality-gates.md` — unchanged Gate #3 review/gap mechanics.
+- the `relay` skill in the installed plugin — setup-aware resolution and redirect.
+- the `work` skill in the installed plugin — Step 1.6 parse and Tier 3 relay branch.
+- the `relay-runner` agent in the Claude plugin — one-leg monitor contract.
+- the `continue` skill in the installed plugin — schema-aware resume.
+- `knowzcode/knowzcode_orchestration.md` — target-specific configuration.
+- the work skill's `references/quality-gates.md` in the installed plugin — unchanged Gate #3 review/gap mechanics.

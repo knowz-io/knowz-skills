@@ -5,7 +5,7 @@
 
 Remember to log follow-up tasks in `knowzcode/workgroups/<WorkGroupID>.md` with the `KnowzCode:` prefix.
 
-> **Automation Path:** Prefer invoking `/knowzcode-microfix target=<NodeID> summary="..."` to delegate to the `microfix-specialist` subagent while keeping scope under the 50-line threshold.
+> **Automation Path:** Prefer invoking `/knowzcode:fix "<description>"` to delegate to the `microfix-specialist` subagent while keeping scope under the 50-line threshold.
 
 ---
 

@@ -170,13 +170,13 @@ If `knowzcode/enterprise/compliance_manifest.md` exists and `compliance_enabled:
 
 ## Bash Usage
 
-Read-only only. Permitted commands:
-- `git log --oneline -- tests/` — TDD compliance verification
-- `git log --oneline -- {file}` — commit history for test-before-code check
+Read-only against the working tree. Permitted commands:
+- `git diff --name-only {baseline-sha} -- {test-paths}` and `git status --short -- {test-paths}` — tests added or changed since the baseline
+- `git worktree add --detach {tmpdir} {baseline-sha}`, the narrow test command run inside `{tmpdir}`, then `git worktree remove --force {tmpdir}` — disposable baseline probe outside the project when RED evidence is missing
 - Coverage report commands (e.g., `npx jest --coverage --reporter=text`, `pytest --cov --cov-report=term`)
 - `git diff --stat {ref}` — change scope assessment
 
-**NOT permitted**: Running tests that modify state, executing build commands, writing files.
+**NOT permitted**: Running tests that modify state, executing build commands, writing files in the working tree (the disposable baseline worktree probe above is the only write allowed).
 
 ## Exit Expectations
 

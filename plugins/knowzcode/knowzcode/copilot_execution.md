@@ -2,7 +2,7 @@
 
 **Purpose:** Defines the execution model for GitHub Copilot users. Copilot operates as a single-agent, sequential platform — users manually transition between phases using prompt files.
 
-Agents on other platforms should ignore this file — see `knowzcode/platform_adapters.md` for platform-specific instructions, or `knowzcode/claude_code_execution.md` for Claude Code Agent Teams.
+Agents on other platforms should ignore this file — see `knowzcode/platform_adapters.md` for platform-specific instructions, or `knowzcode/claude_code_execution.md` for Claude Code execution.
 
 ---
 
@@ -42,7 +42,7 @@ This is equivalent to the "Sequential Execution Protocol" described in `knowzcod
   → STOP — report gaps, await user decision
 
 #prompt:knowzcode-finalize
-  → Updates specs to as-built, tracker, log, architecture check, commits
+  → Updates specs to as-built, writes the ARC-completion journal shard, architecture check, commits
 ```
 
 ### Shortcut Workflows
@@ -184,7 +184,7 @@ VS Code allows model selection per chat session. For complex features, prefer st
 
 When a user invokes `#prompt:knowzcode-continue`:
 
-1. **Find active WorkGroup**: Read `knowzcode/knowzcode_tracker.md` for `[WIP]` entries
+1. **Find active WorkGroup**: List `knowzcode/journal/*/*/` folders with no `arc-completion` or `workgroup-abandoned` shard and cross-check `knowzcode/workgroups/*.md`
 2. **Determine current phase**: Read the WorkGroup file's Phase History table
 3. **Resume or advance**:
    - If mid-phase (incomplete todos): Resume the current phase
