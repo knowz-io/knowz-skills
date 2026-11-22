@@ -1,6 +1,6 @@
 # Tier 2 Light Workflow — Phase Details
 
-> **Paths:** relative file paths in this document are relative to this file's own directory.
+> **Paths:** paths that start with `../` or name a sibling reference file (for example `profile-models.md`) are relative to this file's own directory. Paths that start with `knowzcode/`, and bare framework file names such as `knowzcode_loop.md` or `knowzcode_orchestration.md`, refer to the project's `knowzcode/` directory.
 
 Detailed phase instructions for Tier 2 (Light) execution. The lead reads this file when a Light workflow is selected in `/knowzcode:work`.
 

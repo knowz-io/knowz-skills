@@ -1,6 +1,6 @@
 # Parallel Orchestration — Work Skill (Tier 3)
 
-> **Paths:** relative file paths in this document are relative to this file's own directory.
+> **Paths:** paths that start with `../` or name a sibling reference file (for example `profile-models.md`) are relative to this file's own directory. Paths that start with `knowzcode/`, and bare framework file names such as `knowzcode_loop.md` or `knowzcode_orchestration.md`, refer to the project's `knowzcode/` directory.
 
 Tier 3 runs on ordinary subagents. The lead (the main session) dispatches each worker with the `Agent` tool, receives one bounded result, and routes any handoff into the next dispatch or resume. Workers never message each other and share no task list. The same bounded task packets in [spawn-prompts.md](spawn-prompts.md) apply.
 
