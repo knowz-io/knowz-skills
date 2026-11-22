@@ -74,7 +74,7 @@ Minimize context rehydration:
 | Business logic | Unit tests + edge cases |
 | External API integration | Unit (mocked) + Integration (real) |
 
-**Test Naming Convention**: `Should_DoSomething_WhenCondition`
+**Test Naming Convention**: follow the project's existing test names and any convention in `knowzcode/user_preferences.md`. Only when neither exists, default to `Should_DoSomething_WhenCondition`.
 
 ## Test Infrastructure
 

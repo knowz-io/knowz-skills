@@ -242,6 +242,8 @@ Create `knowzcode/workgroups/{WorkGroupID}.md`:
 | 1A | In Progress | {timestamp} |
 ```
 
+Write the Primary Goal as the request text with flags removed (for example `--tier light`, `--autonomous`, `--no-mcp`); flags are settings, not part of the goal, and the same cleaned text is used in commit messages.
+
 Track planned work in the WorkGroup file throughout, including the dependency ledger for delegated units. Add entries as discoveries or needs emerge during each phase.
 
 ## Step 5: Confirm Input Classification
