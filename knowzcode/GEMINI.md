@@ -53,7 +53,7 @@ Every durable candidate — decisions, patterns, gotchas, workarounds — **must
 `skip` and `batch` perform no MCP or pending-queue write. Persist only the returned `amend`, `update`, or consolidated `flush`, always passing the configured `vaultId`.
 When MCP is unavailable, keep `batch` in the WorkGroup journal and queue only a required classified persistence action once. Never let insights die in the conversation.
 Use `/knowz save "insight"` as an explicit-save candidate; it still passes through the classifier.
-Vault entries are retrieved via semantic search — write detailed, self-contained content. See `knowz-vaults.md` Content Detail Principle.
+Vault entries are retrieved via semantic search — write detailed, self-contained content. See the Content Detail Principle in `knowzcode/knowzcode_loop.md`.
 
 ### Vault Targeting (MCP Writes)
 **Always pass `vaultId`** when calling `create_knowledge` or `update_knowledge`.

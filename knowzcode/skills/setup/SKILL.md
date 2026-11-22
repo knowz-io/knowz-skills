@@ -392,7 +392,7 @@ This works correctly — no action needed. Enable via Claude Code's own docs/UI.
 - If yes, scaffold `knowzcode/enterprise/` by copying the enterprise skeleton that ships in the KnowzCode framework files (the `enterprise/` directory alongside the other `knowzcode/` templates in the installed plugin). It includes:
   - `compliance_manifest.md` — the control file (Active Guidelines table + config keys)
   - `compliance_status.md` — audit history
-  - `guidelines/security.md` (real rules), `guidelines/code-quality.md` + `guidelines/design.md` (starter templates), and `guidelines/custom/`
+  - `guidelines/security.md` (a short starter pointer to your organization's security standard), `guidelines/code-quality.md` + `guidelines/design.md` (starter templates), and `guidelines/custom/`
   - `templates/guideline-template.md`
 - Then tell the user how to turn it on: author or edit a guideline, register it in the manifest's **Active Guidelines** table with `Active: true`, set `compliance_enabled: true`, and run `/knowzcode:audit compliance` to verify. Guidelines are **blocking** (stop the workflow) or **advisory** (reported only).
 - Compliance is **disabled by default** (`compliance_enabled: false`) — nothing runs until the user opts in.

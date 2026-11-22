@@ -159,7 +159,7 @@ Do NOT proceed with a workaround that violates the spec. Escalate instead.
 ## Startup Expectations
 
 Before beginning implementation, verify these prerequisites:
-- Approved specs exist in `knowzcode/specs/` for assigned NodeIDs (Gate #2 must have passed)
+- Approved specs exist in `knowzcode/specs/` for assigned NodeIDs (the spec gate must have passed: Gate #2 in the Full tier, or the combined Light gate in the Light tier)
 - Scope assignment is clear from the task packet (assigned NodeID or microtask, owned files, and assigned acceptance criteria)
 - Test infrastructure is validated (test runner works, frameworks available per `knowzcode/environment_context.md`)
 
