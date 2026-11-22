@@ -1,6 +1,6 @@
 # Cross-Agent Relay — Execution Reference
 
-> **Paths:** relative file paths in this document are relative to this file's own directory.
+> **Paths:** paths that start with `../` or name a sibling reference file (for example `profile-models.md`) are relative to this file's own directory. Paths that start with `knowzcode/`, and bare framework file names such as `knowzcode_loop.md` or `knowzcode_orchestration.md`, refer to the project's `knowzcode/` directory.
 
 **Purpose:** Single source of truth for provider-neutral implementation relay. The current host owns planning, specifications, user gates, review, checkpoints, and finalization. The resolved external target owns Phase 2A implementation and bounded review-fix rounds. The relay replaces only Phase 2A plus the builder gap loop; all other KnowzCode phases and safety gates remain native to the host.
 
