@@ -1,12 +1,18 @@
 name: Publish Gemini extension
 
-# Gemini CLI installs an extension from the root of a git ref. This publishes the
-# built KnowzCode extension as the root of the `gemini-knowzcode` branch.
+# Gemini CLI installs an extension from a GitHub Release archive that has
+# gemini-extension.json at its root. This builds the KnowzCode extension and
+# attaches it to the release for the pushed knowzcode/v* tag, marked Latest so
+# `gemini extensions install https://github.com/<owner>/<repo>` resolves to it.
 on:
   push:
     tags:
       - 'knowzcode/v*'
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing knowzcode/v* tag to (re)publish'
+        required: true
 
 permissions:
   contents: write
@@ -16,22 +22,29 @@ concurrency: gemini-extension
 jobs:
   publish:
     runs-on: ubuntu-latest
+    env:
+      TAG: ${{ github.event.inputs.tag || github.ref_name }}
+      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: refs/tags/${{ env.TAG }}
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Build extension
-        run: node scripts/build-gemini-extension.mjs --out "$RUNNER_TEMP/gemini-knowzcode"
-      - name: Publish to gemini-knowzcode branch
+      - name: Build extension archive
         run: |
-          cd "$RUNNER_TEMP/gemini-knowzcode"
-          version=$(node -p "require('./gemini-extension.json').version")
-          git init -q -b gemini-knowzcode
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -q -m "KnowzCode Gemini extension v${version} (${GITHUB_SHA})"
-          git push --force "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" gemini-knowzcode
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
+          node scripts/build-gemini-extension.mjs --out "$RUNNER_TEMP/gemini-knowzcode"
+          tar -czf "$RUNNER_TEMP/knowzcode.tar.gz" -C "$RUNNER_TEMP/gemini-knowzcode" .
+      - name: Publish release asset
+        run: |
+          version="${TAG#knowzcode/v}"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$RUNNER_TEMP/knowzcode.tar.gz" --clobber
+            gh release edit "$TAG" --latest
+          else
+            gh release create "$TAG" "$RUNNER_TEMP/knowzcode.tar.gz" \
+              --verify-tag --latest \
+              --title "KnowzCode v${version}" \
+              --notes "KnowzCode v${version}. The attached knowzcode.tar.gz is the Gemini CLI extension; install it with \`gemini extensions install https://github.com/${GITHUB_REPOSITORY}\`."
+          fi
