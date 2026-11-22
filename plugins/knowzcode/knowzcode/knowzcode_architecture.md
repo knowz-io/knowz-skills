@@ -1,6 +1,6 @@
 # KnowzCode — Architectural Flowchart
 
-**Purpose:** Mermaid flowchart defining this project's architecture, components (NodeIDs), and primary interactions. Source of truth for components tracked in `knowzcode_tracker.md`.
+**Purpose:** Mermaid flowchart defining this project's architecture, components (NodeIDs), and primary interactions. Source of truth for the project's components: each NodeID's spec lives in `knowzcode/specs/` and its work history in `knowzcode/journal/`.
 
 ## Diagram
 

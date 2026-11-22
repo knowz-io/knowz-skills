@@ -57,7 +57,7 @@ Check KnowzCode project status and report findings to the user.
 2. **Check Claude Agent and Context Capabilities**
 
    Check for agent definition files:
-   - Glob for `${CLAUDE_PLUGIN_ROOT}/agents/*.md`
+   - Glob for `${CLAUDE_PLUGIN_ROOT}/agents/*.md` (`../../agents/*.md` from this skill's directory)
    - List found agents with their names
 
    Check project/user settings for Agent Teams configuration without invoking a lifecycle API. If `claude --version` is safely available, report the version and whether it meets the documented conversation-fork minimum; treat plugin-authored fork callability as separately `available|unavailable|unknown`. Never claim a cache hit from version or mode.
@@ -115,7 +115,7 @@ Check KnowzCode project status and report findings to the user.
 
 5. **Check Cross-Agent Relay**
 
-   Read the provider-neutral procedures in `${CLAUDE_PLUGIN_ROOT}/skills/work/references/relay-execution.md` and the `relay*` keys in `knowzcode/knowzcode_orchestration.md` if present.
+   Read the provider-neutral procedures in `${CLAUDE_PLUGIN_ROOT}/skills/work/references/relay-execution.md` (`../work/references/relay-execution.md` from this skill's directory) and the `relay*` keys in `knowzcode/knowzcode_orchestration.md` if present.
 
    **Determine host from the active platform package, not installed binaries:**
 

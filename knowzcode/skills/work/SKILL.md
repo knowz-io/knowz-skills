@@ -83,7 +83,7 @@ Runs BEFORE Step 2 so profile-related flag conflicts halt without side effects (
 3. Profile selection controls model/advisor behavior, not coordination mode. `--sequential` and `--subagent` remain valid with every profile; a profile never forces Agent Teams.
 4. Parse `EXECUTE_ON_FABLE` (affects only `frontier`): `true` if `$ARGUMENTS` contains `--fable-execution`; else read `knowzcode/knowzcode_orchestration.md` with a targeted grep for `^execute_on_fable:\s*(\S+)` (`true`/`false`, default `false`). Pure metadata like the profile parse above — resolving it here (not in Step 2.4) makes it available to the Step 2.3 announcement and downstream-use directive, both of which run before the Step 2.4 config load.
 
-This step is a pure-metadata parse (no spawns or writes). The full orchestration-config load happens later in Step 2.4 and supersedes `PROFILE_PREFLIGHT` by setting `PROFILE` through the same logic. Step 2.3 then runs advisor-specific env detection and final announcement. See `${CLAUDE_PLUGIN_ROOT}/skills/work/references/profile-models.md` for profile semantics.
+This step is a pure-metadata parse (no spawns or writes). The full orchestration-config load happens later in Step 2.4 and supersedes `PROFILE_PREFLIGHT` by setting `PROFILE` through the same logic. Step 2.3 then runs advisor-specific env detection and final announcement. See `${CLAUDE_PLUGIN_ROOT}/skills/work/references/profile-models.md` (`references/profile-models.md` from this skill's directory) for profile semantics.
 
 ## Step 1.6: Cross-Agent Relay Pre-flight Parse
 

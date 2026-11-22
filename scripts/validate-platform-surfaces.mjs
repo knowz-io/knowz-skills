@@ -463,6 +463,15 @@ for (const file of claudeResourceSourceFiles) {
       !raw.includes('${CLAUDE_PLUGIN_ROOT}'),
       `\${CLAUDE_PLUGIN_ROOT} is not expanded outside SKILL.md and agent definitions; use a file-relative path: ${file}`
     );
+  }
+  // Hosts other than Claude Code never expand the variable, so SKILL.md pairs each
+  // declaration with a path relative to the skill; every relative path must resolve.
+  if (basename(file) === 'SKILL.md') {
+    for (const match of raw.matchAll(/`\$\{CLAUDE_PLUGIN_ROOT\}\/[^`]+`(?! \(`[^`]+` from this skill's directory\))/g)) {
+      expect(false, `Plugin-root reference needs a relative-path companion for other hosts: ${file}: ${match[0]}`);
+    }
+  }
+  if (!relative(join(ROOT, 'knowzcode', 'skills'), file).startsWith('..')) {
     for (const match of raw.matchAll(/`((?:\.\.\/)+[A-Za-z0-9_./-]+\.md)`/g)) {
       expect(
         existsSync(join(dirname(file), match[1])),
