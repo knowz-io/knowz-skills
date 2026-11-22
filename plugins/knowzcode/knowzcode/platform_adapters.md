@@ -281,7 +281,7 @@ when the relay contract below resolves an external target.
    - Convert active enterprise rules into Change Set mapping, spec `VERIFY:` criteria, implementation guidance, Phase 2B audit checks, and Phase 3 compliance reporting. Do not skip this in Codex just because `enterprise-enforcer` is not available.
    - When `show_advisory_issues` is false, keep blocking-tier findings visible and suppress only advisory-tier rows/counts in gate output.
 5. Resolve relay intent once using **Codex Relay Resolution** below. Record `RELAY_HOST`, `RELAY_TARGET`, and `RELAY_INTENT_SOURCE` in the WorkGroup. Do not re-resolve later.
-6. Create or update a WorkGroup file in `knowzcode/workgroups/{wgid}.md`.
+6. Create or update a WorkGroup file in `knowzcode/workgroups/{wgid}.md`. A new `{wgid}` uses the format `kc-{type}-{slug}-YYYYMMDD-HHMMSS` (`type` is `feat`, `fix`, `refactor`, or `issue`; `slug` is 2-4 kebab-case words from the goal), and the same id names the journal folder `knowzcode/journal/YYYY-MM/{wgid}/`.
 7. **Optional parallel discovery (before Phase 1A).** If the topic spans 2 or more independent subsystems, dispatch 1-3 parallel read-only Codex `explorer` agents per the Spawned-Agent Contract below. Merge their findings into the WorkGroup file before proposing the Change Set. Skip when the scope clearly touches one subsystem.
 8. Phase 1A: propose a Change Set with affected files, NodeIDs, risks, and enterprise guideline mapping. Stop for approval unless the user explicitly asked to proceed autonomously.
 9. Phase 1B: draft or update specs in `knowzcode/specs/` with clear `VERIFY:` criteria, including applicable enterprise guideline criteria with source IDs or KnowledgeIds. Stop for approval.
@@ -366,7 +366,7 @@ When using the active runtime's semantic spawn/follow-up/message/wait/interrupt/
 - **Receive a scope boundary**: a path glob, module name, or owned-file list. No two parallel agents share writable files.
 - **Stay within a small implementation unit**: default one NodeID or one named microtask, ideally <=6 touched files, with explicit assigned acceptance criteria. If the scope is broader or criteria are ambiguous, the agent must checkpoint and ask the coordinator to split or clarify it.
 - **Resolve context mode**: record `local`, `resume`, `inherit-full`, `inherit-recent`, or `fresh-capsule`, the reason code, lineage compatibility, and fallback. Resume a compatible same-role/scope worker before spawning. Never fabricate a team or unavailable capability.
-- **Map Codex context inheritance precisely**: when `fork_turns` is supported, omitting it or passing `"all"` means full parent-history inheritance and also inherits the parent model and reasoning settings; neither form accepts model or reasoning overrides. Use a positive decimal string such as `"3"` for bounded `inherit-recent`, and `"none"` for a cold `fresh-capsule` worker. Choose the smallest sufficient context. Independent reviewers, restricted roles, and safety-sensitive workers must not inherit context unless policy explicitly permits it. If the runtime lacks `fork_turns`, use `fresh-capsule` and record `CAPABILITY_FALLBACK`.
+- **Map Codex context inheritance precisely**: when `fork_turns` is supported, omitting it or passing `"all"` means full parent-history inheritance and also inherits the parent model and reasoning settings; neither form accepts model or reasoning overrides. Use `"none"` for a cold `fresh-capsule` worker. Use a positive decimal string such as `"3"` for bounded `inherit-recent` only where the runtime accepts it; some runtimes accept only `"all"` and `"none"`, and there a bounded request becomes `"none"` with a capsule, recorded as `CAPABILITY_FALLBACK`. Choose the smallest sufficient context. Independent reviewers, restricted roles, and safety-sensitive workers must not inherit context unless policy explicitly permits it. If the runtime lacks `fork_turns`, use `fresh-capsule` and record `CAPABILITY_FALLBACK`.
 - **Load context incrementally**: read the active WorkGroup/capsule, current phase, assigned specs/criteria, owned/read files, and only activated references. Do not reread all specs, framework files, or architecture history inside every delegated turn.
 - **Keep reviewers independent**: the first reviewer uses a fresh reviewer-owned lineage from approved specs, diff, and test evidence, not builder reasoning. A compatible reviewer may resume only for its own bounded re-audit.
 - **Choose `ephemeral`** for a tiny read-only side check. Return a bounded structured result with scope, evidence, conclusion, blockers, and next input; do not write a handoff.
@@ -878,7 +878,7 @@ You are the **KnowzCode Initialization Agent**. Set up the KnowzCode framework i
 
 ## Enterprise Configuration
 
-> **Note:** This section is about **white-label brand** only. The separate **enterprise compliance** feature (custom guidelines enforced at quality gates) is set up in step 10 and documented in `${CLAUDE_PLUGIN_ROOT}/docs/enterprise-compliance.md`.
+> **Note:** This section is about **white-label brand** only. The separate **enterprise compliance** feature (custom guidelines enforced at quality gates) is set up in step 10 and documented in https://github.com/knowz-io/knowz-skills/blob/main/knowzcode/docs/enterprise-compliance.md.
 
 Before using brand names in this skill, check for an `enterprise.json` file in the plugin root directory (the directory containing `.claude-plugin/plugin.json`). Read it once at the start of initialization.
 
@@ -999,7 +999,7 @@ Write the answer as the `profile:` value in the generated `knowzcode_orchestrati
 - Codex skill/plugin → `RELAY_HOST=codex`, candidate target `claude`
 - Gemini or any other host → relay unsupported for this version; keep native Phase 2A, set `relay: none`, report `[RELAY-DETECT] host={host} target=none status=native-only`, and skip the rest of this step
 
-For Claude or Codex, run the candidate target's readiness probe from `${CLAUDE_PLUGIN_ROOT}/skills/work/references/relay-execution.md`:
+For Claude or Codex, run the candidate target's readiness probe from the work skill's `references/relay-execution.md` (`../knowzcode-work/references/relay-execution.md` relative to this skill):
 
 - Codex target: `command -v codex` → `codex --version` → `codex login status`
 - Claude target: `command -v claude` → `claude --version` → `claude auth status --json`; parse the exit code and only `.loggedIn` plus non-identifying method/provider fields. Never print or persist the raw JSON, email, organization ID, or organization name.
@@ -1249,7 +1249,7 @@ This works correctly — no action needed. Enable via Claude Code's own docs/UI.
   - `templates/guideline-template.md`
 - Then tell the user how to turn it on: author or edit a guideline, register it in the manifest's **Active Guidelines** table with `Active: true`, set `compliance_enabled: true`, and run `/knowzcode:audit compliance` to verify. Guidelines are **blocking** (stop the workflow) or **advisory** (reported only).
 - Compliance is **disabled by default** (`compliance_enabled: false`) — nothing runs until the user opts in.
-- Point the user at `${CLAUDE_PLUGIN_ROOT}/docs/enterprise-compliance.md` for the full guide.
+- Point the user at https://github.com/knowz-io/knowz-skills/blob/main/knowzcode/docs/enterprise-compliance.md for the full guide.
 
 ### 11. Optional: Configure MCP
 
