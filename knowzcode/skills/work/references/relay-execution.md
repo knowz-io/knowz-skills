@@ -58,7 +58,7 @@ Persist portable opt-in as `relay: other`. Preserve literal `relay: codex` and `
    nonzero                      -> installed-unauthed
 ```
 
-Announce only: `[RELAY-DETECT] target=codex ready ({version}, authed)`, `installed-unauthed — run: codex login`, `not-installed`, or `broken-install`.
+Announce exactly one summary line, in the same format setup uses: `[RELAY-DETECT] host={claude|codex} target=codex status={ready|installed-unauthed|not-installed|broken-install} version={version|unknown}`. For `installed-unauthed`, add the remediation `run: codex login`.
 
 ### Claude target
 

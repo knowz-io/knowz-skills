@@ -144,3 +144,48 @@ node knowzcode/context_efficiency_runtime.mjs <operation>
 ```
 
 Send exactly one JSON object, capped while reading at one MiB, on stdin. Operations are `route`, `lineage`, `capsule`, `telemetry`, `rollout`, `result-policy`, `vault-delta`, and `dispatch`. The capsule operation accepts `{capsule,max_bytes?,artifact_path?,artifact_roots?}`. `vault-delta` accepts `{input:{delta,previous_deltas?,previous_hashes?,explicit_save?,interruption_sensitive?,severity?}}` and returns `skip`, `amend`, `update`, `batch`, or `flush`; the coordinator performs any authorized persistence after that no-write decision. Success emits one `{ "ok": true, "operation": ..., "result": ... }` object. Validation or privacy failure exits nonzero and emits one redacted `{ "ok": false, "code": ..., "message": ... }` object. The adapter reads stdin and writes stdout only; it never persists state.
+
+### `dispatch` input reference
+
+`dispatch` takes `{routing, rollout, lineage?, result_policy?}` and returns `{routing: {mode, reason_codes}, rollout, lineage, result_policy}`. Every field below is optional unless marked required; omit what does not apply.
+
+| Object | Fields |
+|--------|--------|
+| `routing` | `role`; `sensitivity` (`normal`, `restricted`, `isolated`); `trivial`, `blocking` (booleans); `coupling` (`independent` default, or `tight`); `independent_reviewer`; `is_writer`; `owned_files[]`; `workspace_root`; `active_writers[]` (each `{owned_files[]}`); `nesting_depth` (default 0); `max_nesting_depth` (default 2); `active_inherited_writers` (default 0); `max_active_inherited` (default 2); `capsule_sufficient` |
+| `routing.lineage` | `compatible`, `resumable`, `role`, `owned_files[]` — a candidate worker to resume. Ignored when a top-level `lineage` is supplied, which is evaluated instead |
+| `routing.inheritance` | `affinity` (`high` to request inheritance), `safe`, `within_budget`, `recent_sufficient`, `recent_supported`, `full_supported` |
+| `routing.team` | `coordination_required`, `peers` (integer, 2 or more), `provider_supported`, `safe`, `sensitivity_approved`, `within_budget`, `latency_ratio` (0 to 0.75), `scopes[]` (each `{owned_files[], is_writer?}`) |
+| `rollout` | `rollout` (`off` default, `observe`, `shadow`, `canary`, `on`); `canary_percent` (default 10); `task_corpus_id` (required for `canary`; `anon-` followed by 16–64 hex characters). The runtime fills in the actual and recommended mode itself |
+| `lineage` | `{lineage, current, now?}`, the same shape the `lineage` operation takes. `current.role` and `current.sensitivity` must not contradict `routing` |
+| `result_policy` | `requested_mode` (`ephemeral`, `durable`, `artifact`); `material`, `writer`, `partial`, `resumable`, `crosses_phase`, `large_raw_output`, `write_prohibited` (booleans); `authorize_handoff`, `authorize_artifact`, `authorize_vault_write`, `authorize_settings_write`, `authorize_workgroup_write` |
+
+Minimal request for one builder that owns two files:
+
+```json
+{"routing":{"role":"builder","sensitivity":"normal","is_writer":true,"owned_files":["math.js","math.test.js"]},"rollout":{"rollout":"off"},"result_policy":{"material":true,"writer":true}}
+```
+
+It returns `routing.mode` `fresh-capsule` with `reason_codes` `["INDEPENDENT_CAPSULE"]` and a `durable` result policy.
+
+### `vault-delta` input reference
+
+`delta` and every entry of `previous_deltas` are objects, not strings. A string or an object with no `title`, `content`, or `supersedes` is classified `skip` with reason `EMPTY_DELTA`.
+
+| Field | Meaning |
+|-------|---------|
+| `title` | Short name of the learning or decision |
+| `content` | The text to persist |
+| `category` | Optional grouping, compared when matching supersessions |
+| `semantic_key` | Optional stable identity for "the same fact, reworded". A new delta whose key matches a previous delta is an `amend` |
+| `supersedes` | Optional `KnowledgeId` (or shared supersession id) of the item this replaces; a match is an `update` |
+| `KnowledgeId` | On `previous_deltas` entries: the id of the stored item. Required on any previous entry that an `amend` or `update` resolves to; without it the runtime returns `VAULT_TARGET_REQUIRED` |
+| `source_hash` | Optional; carried through, not part of the identity |
+
+`previous_deltas` holds only deltas that were already persisted, each with its `KnowledgeId`. A delta the runtime classified `batch` at an earlier gate was not persisted: do not list it in `previous_deltas`; submit it again (merged into the consolidated delta) at the final boundary. Listing an unpersisted delta that shares a `semantic_key` fails with `VAULT_TARGET_REQUIRED`.
+
+`previous_hashes` is an optional list of hashes already persisted; a matching delta is a `skip` with reason `SEMANTIC_DUPLICATE`. `explicit_save`, `interruption_sensitive`, or a `severity` of `HIGH`/`CRITICAL` turn a normal `batch` into a `flush`.
+
+```json
+{"input":{"delta":{"title":"Subtract added to math module","content":"math.js exports subtract(a, b); covered by math.test.js."},"explicit_save":true}}
+```
+

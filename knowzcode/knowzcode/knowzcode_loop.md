@@ -164,6 +164,8 @@ Known limitations and future work.
 
 **Minimum valid spec:** 1+ Rules item, 1+ Interface item, 2+ `VERIFY:` statements.
 
+**VERIFY IDs:** `VERIFY:` lines carry no written label. When a capsule, gap report, or dispatch needs to name one, its ID is `V` plus its position in the spec's Verification Criteria section, counted from 1 (`V1`, `V2`, …), prefixed with the NodeID when more than one spec is in play (`LIB_Math#V2`). IDs are positional references for one WorkGroup, not text to add to the spec.
+
 > **KnowledgeId** is optional and managed automatically by vault sync. Do not set manually. When present, vault captures update the existing cloud item instead of creating duplicates. If the cloud item is deleted, the field is automatically removed.
 
 **Proving test (optional):** At finalization a `VERIFY:` line may name the test that proves it by appending ` [test: <path>::<test name>]`, for example `- VERIFY: when email exists, returns 409 [test: tests/users.test.ts::rejects duplicate email]`. The suffix is added in Phase 3, not drafted in Phase 1B, and the 4-section format is unchanged. Leave it off a criterion that has no automated test; never invent a test reference.

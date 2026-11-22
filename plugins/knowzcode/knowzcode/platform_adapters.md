@@ -950,8 +950,7 @@ The plugin ships the complete framework in its own `knowzcode/` directory: `../.
 - Do not copy `enterprise/` (step 10 scaffolds it on opt-in), `.npmignore`, or `gitignore.template`. The shipped `.gitignore` is copied like any other file.
 - The copy must include the support files the workflows read at run time: `context_efficiency.md`, `context_efficiency_runtime.mjs`, `contracts/`, `relay_execution.md`, and the `*_execution.md` guides.
 - Then create the two files the framework directory does not ship, from [references/templates.md](references/templates.md): `journal/README.md` and `environment_context.md`. Create empty `workgroups/` and `journal/` directories if missing.
-- For any file that exists both in the framework directory and in `references/templates.md`, the shipped framework file wins.
-- If the framework directory cannot be read, fall back to `references/templates.md` and report which framework files are missing.
+- If the framework directory cannot be read, stop and report the problem. Do not synthesize framework files from memory.
 
 ### 4. Detect project stack and populate environment context
 
@@ -991,7 +990,7 @@ Rewrite `user_preferences.md` so the filled copy contains only real answers. Spe
 - **Strip the `*Examples:*` blocks from the filled copy** — they're helpful in the template but noise once the file holds real content.
 - Set the `Last Updated` line to the current ISO timestamp.
 
-If the user declines Gate C entirely, leave the file on disk but replace each `[…]` placeholder with `Not configured during init — edit this file or re-run /knowzcode:setup to fill.`
+If the user declines Gate C entirely, leave the file on disk and: set the `Last Updated` line to the current ISO timestamp; replace each section's `[User-provided …]` / `[Any project-specific …]` placeholder with `Not configured during init — edit this file or re-run /knowzcode:setup to fill.`; and replace the five numbered priority-rank lines with that same sentence once, not five times.
 
 ### 6. Configure orchestration defaults
 
@@ -1304,9 +1303,8 @@ Next steps:
 
 ## Template Files
 
-**Templates**: [references/templates.md](references/templates.md) holds the two generated files (`journal/README.md`, `environment_context.md`) and fallback copies of the personalised files. Step 3 copies everything else from the plugin's framework directory, which wins wherever both exist.
+**Generated files**: [references/templates.md](references/templates.md) holds the two files setup generates (`journal/README.md`, `environment_context.md`). Step 3 copies everything else from the plugin's framework directory.
 
-Templates included: `knowzcode_project.md`, `knowzcode_tracker.md` (archive stub), `knowzcode_log.md` (archive stub), `journal/README.md`, `knowzcode_architecture.md`, `environment_context.md`, `knowzcode_orchestration.md`.
 
 ---
 
@@ -1695,7 +1693,7 @@ Persist portable opt-in as `relay: other`. Preserve literal `relay: codex` and `
    nonzero                      -> installed-unauthed
 ```
 
-Announce only: `[RELAY-DETECT] target=codex ready ({version}, authed)`, `installed-unauthed — run: codex login`, `not-installed`, or `broken-install`.
+Announce exactly one summary line, in the same format setup uses: `[RELAY-DETECT] host={claude|codex} target=codex status={ready|installed-unauthed|not-installed|broken-install} version={version|unknown}`. For `installed-unauthed`, add the remediation `run: codex login`.
 
 ### Claude target
 
