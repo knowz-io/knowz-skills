@@ -124,7 +124,7 @@ Present the proposed Change Set to the user. **PAUSE and await user approval.** 
 
 The WorkGroupID and its session file `knowzcode/workgroups/<WorkGroupID>.md` are created when the work session starts (generate them now if they do not exist yet). Upon approval, record the Change Set NodeIDs in that file. Optionally write a `start-work` journal shard recording the approved scope. Do **not** write `[WIP]` rows to `knowzcode_tracker.md` — it is a frozen archive. In-flight state is derived from the journal and the session file.
 
-**WorkGroupID Format**: `kc-{type}-{slug}-YYYYMMDD-HHMMSS`
+**WorkGroupID Format**: `kc-{type}-{slug}-YYYYMMDD-HHMMSS` (the timestamp is UTC, like journal paths and shard timestamps)
 - Valid types: `feat`, `fix`, `refactor`, `issue`
 - Slug: 2-4 word kebab-case descriptor from the goal
 - Example: `kc-feat-user-auth-jwt-20250115-143022`
