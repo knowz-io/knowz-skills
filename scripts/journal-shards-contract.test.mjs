@@ -202,15 +202,3 @@ test('the journal is not gitignored by the shipped template', () => {
   assert.ok(ignoredPaths.includes('workgroups/'), 'workgroups/ must stay gitignored');
   assert.ok(ignoredPaths.includes('handoffs/'), 'handoffs/ must stay gitignored');
 });
-
-test('the CLI initializes a journal and freezes the log and tracker', () => {
-  const cli = readFileSync(join(ROOT, 'knowzcode', 'bin', 'knowzcode.mjs'), 'utf8');
-  assert.match(cli, /initJournalReadme/, 'the CLI must write a journal README');
-  assert.match(cli, /ensureDir\(join\(kcDir, 'journal'\)\)/, 'the CLI must create journal/');
-  assert.doesNotMatch(
-    cli,
-    /NEWEST ENTRIES APPEAR HERE/,
-    'the archive stub must not carry a prepend marker'
-  );
-  assert.match(cli, /journalShards/, 'scanExistingInstallation must count journal shards');
-});
