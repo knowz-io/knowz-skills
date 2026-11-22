@@ -179,13 +179,6 @@ function collectClaudePluginResourceReferences(...roots) {
   return references;
 }
 
-function localizedClaudeResourcePath(resource) {
-  if (resource.startsWith('skills/')) return join('.claude', resource);
-  if (resource.startsWith('agents/')) return join('.claude', resource);
-  if (resource.startsWith('docs/')) return join('knowzcode', resource);
-  return null;
-}
-
 // These helpers run on hardcoded surface paths. Guard the read: if a surface is renamed,
 // moved, or deleted (exactly the drift this validator exists to catch), push a clean error
 // and continue instead of crashing with an uncaught ENOENT before the report/exit path.
@@ -437,10 +430,12 @@ const codexSupportDir = join(ROOT, 'plugins', 'knowzcode', 'knowzcode');
 expect(existsSync(codexSupportDir) && statSync(codexSupportDir).isDirectory(), `Missing KnowzCode support directory: ${codexSupportDir}`);
 expect(!existsSync(join(ROOT, 'plugins', 'knowzcode', 'agents')), 'Codex package should not ship Claude-only agents/ as active support content');
 
-// Claude substitutes CLAUDE_PLUGIN_ROOT in marketplace skill and agent content.
-// The npx installer must localize the same declarations to project-owned paths.
-// Treat each declaration as a required resource and prove the package-side target
-// before exercising the generated local-install target later in this validator.
+// Claude Code expands ${CLAUDE_PLUGIN_ROOT} only in content it injects itself: a
+// skill's SKILL.md body and an agent definition body. Files the model opens from
+// disk later (references/*.md, skill-level CLAUDE.md) arrive unexpanded, and the
+// variable is not in the Bash environment. So the variable is allowed only in
+// SKILL.md and agents/*.md, and every other file names package files by a path
+// relative to itself. Each declaration is a required resource of the package.
 const claudePluginResourceReferences = collectClaudePluginResourceReferences(
   join(ROOT, 'knowzcode', 'skills'),
   join(ROOT, 'knowzcode', 'agents')
@@ -461,6 +456,20 @@ for (const file of claudeResourceSourceFiles) {
       `Nested Claude references must not use a top-level-skill-relative path: ${file}`
     );
   }
+  const expandedByClaude = basename(file) === 'SKILL.md'
+    || relative(join(ROOT, 'knowzcode', 'agents'), file).split(/[\\/]/).length === 1;
+  if (!expandedByClaude) {
+    expect(
+      !raw.includes('${CLAUDE_PLUGIN_ROOT}'),
+      `\${CLAUDE_PLUGIN_ROOT} is not expanded outside SKILL.md and agent definitions; use a file-relative path: ${file}`
+    );
+    for (const match of raw.matchAll(/`((?:\.\.\/)+[A-Za-z0-9_./-]+\.md)`/g)) {
+      expect(
+        existsSync(join(dirname(file), match[1])),
+        `Relative package path does not resolve from ${file}: ${match[1]}`
+      );
+    }
+  }
   if (file !== join(ROOT, 'knowzcode', 'agents', 'update-coordinator.md')) {
     expect(
       !/(?<![A-Za-z0-9_./$}{-])(?:agents\/[A-Za-z0-9_.{}*-]+\.md|skills\/[A-Za-z0-9_./{}*-]+\.md)/.test(raw),
@@ -472,7 +481,6 @@ const requiredClaudeResourceCoverage = [
   'skills/work/references/relay-execution.md',
   'skills/work/references/profile-models.md',
   'skills/work/references/spawn-prompts.md',
-  'agents/relay-runner.md',
   'docs/enterprise-compliance.md',
 ];
 expect(claudePluginResourceReferences.size > 0, 'Claude package must declare its required plugin resources with ${CLAUDE_PLUGIN_ROOT}');
@@ -515,10 +523,29 @@ for (const [resource, sources] of claudePluginResourceReferences) {
       || [...packedKnowzCodeFiles].some((entry) => entry.startsWith(resource)),
     `Declared Claude plugin resource is omitted from npm pack output: ${resource} (${sources.join(', ')})`
   );
+}
+
+// Codex never expands Claude plugin variables, so its package must not use them.
+for (const file of listMarkdownFiles(join(ROOT, 'plugins', 'knowzcode', 'skills'))) {
   expect(
-    localizedClaudeResourcePath(resource) !== null,
-    `Declared Claude plugin resource has no npx-localized destination: ${resource} (${sources.join(', ')})`
+    !readFileSync(file, 'utf8').includes('${CLAUDE_PLUGIN_ROOT}'),
+    `Codex package must not reference \${CLAUDE_PLUGIN_ROOT}: ${file}`
   );
+}
+
+// A skill's Markdown links to its own supporting files must resolve in the
+// package that ships it (a missing references/*.md is otherwise only found at
+// run time, inside the host).
+for (const skillsRoot of [join(ROOT, 'knowzcode', 'skills'), join(ROOT, 'plugins', 'knowzcode', 'skills')]) {
+  for (const file of listMarkdownFiles(skillsRoot)) {
+    const raw = readFileSync(file, 'utf8');
+    for (const match of raw.matchAll(/\]\(((?:\.\.?\/)*[A-Za-z0-9_-][A-Za-z0-9_./-]*\.md)(?:#[^)]*)?\)/g)) {
+      expect(
+        existsSync(join(dirname(file), match[1])),
+        `Skill link does not resolve from ${file}: ${match[1]}`
+      );
+    }
+  }
 }
 
 // Cross-agent relay is supported from Claude Code and Codex. The host keeps

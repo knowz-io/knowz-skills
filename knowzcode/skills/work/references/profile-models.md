@@ -1,5 +1,7 @@
 # Execution Profiles — Model Mappings
 
+> **Paths:** relative file paths in this document are relative to this file's own directory.
+
 **Purpose:** Single source of truth for profile → agent-model mappings. Load only when a workflow will dispatch a profiled agent or must resolve a profile fallback.
 
 Profile resolution order: CLI flag `--profile={advisor|standard|classic|frontier}` wins over `profile:` in `knowzcode/knowzcode_orchestration.md`. If neither is set, default is `frontier`.
@@ -112,8 +114,8 @@ Model identifiers use the bare aliases `fable` and `opus` (never pinned versions
 
 ## Related
 
-- `${CLAUDE_PLUGIN_ROOT}/skills/work/SKILL.md` — Steps 1.5 / 2.3 / 2.4 (profile + `--fable-execution` resolution, detection/fallback) and flag handling
-- `${CLAUDE_PLUGIN_ROOT}/skills/work/references/spawn-prompts.md` — `{advisor_guidance}` and `{spec_depth_guidance}` placeholder rules
-- `${CLAUDE_PLUGIN_ROOT}/skills/work/references/parallel-orchestration.md` — spawn-time model-override application
-- `${CLAUDE_PLUGIN_ROOT}/skills/audit/SKILL.md` — audit-side profile handling
+- `../SKILL.md` — Steps 1.5 / 2.3 / 2.4 (profile + `--fable-execution` resolution, detection/fallback) and flag handling
+- `spawn-prompts.md` — `{advisor_guidance}` and `{spec_depth_guidance}` placeholder rules
+- `parallel-orchestration.md` — spawn-time model-override application
+- `../../audit/SKILL.md` — audit-side profile handling
 - `knowzcode/knowzcode/knowzcode_orchestration.md` — `profile:` and `execute_on_fable:` config

@@ -1,5 +1,7 @@
 # Tier 2 Light Workflow — Phase Details
 
+> **Paths:** relative file paths in this document are relative to this file's own directory.
+
 Detailed phase instructions for Tier 2 (Light) execution. The lead reads this file when a Light workflow is selected in `/knowzcode:work`.
 
 ---
@@ -55,7 +57,7 @@ Approve Change Set and spec to proceed to implementation?
 
 ## Light Phase 2A: Implementation
 
-Resume a compatible builder lineage when one owns this exact spec/scope/checkpoint. Otherwise dispatch `Agent(subagent_type="knowzcode:builder", description="Light Phase 2A implementation", prompt=<standard bounded Phase 2A packet>)` using `${CLAUDE_PLUGIN_ROOT}/skills/work/references/spawn-prompts.md`. Include only the lightweight spec, assigned VERIFY IDs, owned files, checkpoint, constraints, and a bounded result contract.
+Resume a compatible builder lineage when one owns this exact spec/scope/checkpoint. Otherwise dispatch `Agent(subagent_type="knowzcode:builder", description="Light Phase 2A implementation", prompt=<standard bounded Phase 2A packet>)` using `spawn-prompts.md`. Include only the lightweight spec, assigned VERIFY IDs, owned files, checkpoint, constraints, and a bounded result contract.
 
 The builder self-verifies against spec VERIFY criteria — no separate audit phase.
 
@@ -67,7 +69,7 @@ Only if user explicitly requested smoke testing (e.g., `--smoke-test` in `$ARGUM
 
 Dispatch a fresh independent smoke-tester via `Agent(subagent_type="knowzcode:smoke-tester", description="Smoke test", prompt=<bounded task packet>)`. Do not fork or resume the builder lineage.
 
-If smoke test fails: create fix tasks for builder, re-run smoke-tester. 3-iteration cap, then escalate. App lifecycle managed by smoke-tester (see `${CLAUDE_PLUGIN_ROOT}/agents/smoke-tester.md`).
+If smoke test fails: create fix tasks for builder, re-run smoke-tester. 3-iteration cap, then escalate. App lifecycle managed by smoke-tester (see `../../../agents/smoke-tester.md`).
 
 If user did not request smoke testing, skip to Light Phase 3.
 
