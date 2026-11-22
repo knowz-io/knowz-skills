@@ -70,7 +70,7 @@ done
 # recent history, newest first (filenames are time-prefixed)
 ls knowzcode/journal/*/*/*.md | sort -r | head -20
 ```
-A WorkGroup is in flight while its journal folder has no `arc-completion` or `workgroup-abandoned` shard. An active `knowzcode/workgroups/<id>.md` session file is a second, local-only signal for the same thing.
+A WorkGroup is in flight while its journal folder has no `arc-completion` or `workgroup-abandoned` shard. An active `knowzcode/workgroups/<id>.md` session file is a second, local-only signal for the same thing. A journal folder is created by its first shard, so a WorkGroup that has not written one yet is visible only through that local session file. Write a `start-work` shard at Change Set approval whenever another session or teammate needs to see the WorkGroup before it completes.
 Use the shell commands above to inspect journal state without requiring an agent.
 
 ## 3. The Main Operational Loop
@@ -173,7 +173,7 @@ Known limitations and future work.
 **Backward compatibility (read-only):** Old numbered-section specs and their `ARC_XXX` criteria remain readable and auditable until naturally touched. Never author a new spec or a new criterion in that format; when finalizing a touched spec, rewrite it in the 4-section format with `VERIFY:` lines.
 
 #### Quality Gate: Spec Approval
-Present drafted specs to the user. **PAUSE and await user approval.** Log "SpecApproved" events. In autonomous mode, auto-approve and proceed immediately (see Section 5).
+Present drafted specs to the user. **PAUSE and await user approval.** Record the approval (specs approved, timestamp) in the WorkGroup file. In autonomous mode, auto-approve and proceed immediately (see Section 5).
 
 **Pre-Implementation Commit:** After specs are approved, inspect status and scoped diffs, then stage only new journal shards and explicit approved spec paths. Verify `git diff --cached --check` and the exact staged name list before committing. Abort if any unrelated path is staged; never stage the `knowzcode/` directory wholesale.
 

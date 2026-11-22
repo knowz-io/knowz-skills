@@ -125,7 +125,7 @@ If the user declines Gate C entirely, leave the file on disk and: set the `Last 
 
 ### 6. Configure orchestration defaults
 
-**6a. Execution profile (always ask — one question).** This is the project's cost/quality choice, asked exactly once here and persisted; no workflow run will ask again. Use AskUserQuestion:
+**6a. Execution profile (ask once — one question).** This is the project's cost/quality choice, asked exactly once here and persisted; no workflow run will ask again. Use AskUserQuestion: In a non-interactive or autonomous init, do not ask: keep the shipped `profile: frontier` and log `[AUTO-DEFAULT] profile: frontier — set profile: in knowzcode_orchestration.md to change`.
 
 > **Execution profile for this project?**
 > - **Frontier (Recommended)** — Fable plans, specs, and reviews every change; Opus executes. The most capable planning, at premium cost. Falls back to Opus automatically if Fable is unavailable.
