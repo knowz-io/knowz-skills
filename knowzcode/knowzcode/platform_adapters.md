@@ -36,7 +36,7 @@ This project uses KnowzCode for structured TDD development with multi-agent orch
 - `knowzcode/knowzcode_architecture.md` — Architecture documentation
 
 ## Workflow Phases
-Follow the phases in `knowzcode_loop.md` for all feature work:
+Follow the phases in `knowzcode_loop.md`. The Full tier runs all five; the Light tier and the micro-fix path are defined shorter paths (`knowzcode_loop.md` section 1):
 1. **Phase 1A: Impact Analysis** — Identify affected components, propose Change Set. PAUSE for user approval.
 2. **Phase 1B: Specification** — Draft specs for all NodeIDs. PAUSE for user approval. Commit specs.
 3. **Phase 2A: Implementation** — Strict TDD (Red-Green-Refactor). No production code without a failing test.
@@ -45,7 +45,7 @@ Follow the phases in `knowzcode_loop.md` for all feature work:
 5. **Phase 3: Finalization** — Update specs to as-built, write one immutable ARC-completion journal shard, final commit.
 
 ## Quality Gates
-Never skip phases. PAUSE for user approval at each gate:
+Never skip a phase or gate that the selected tier defines. PAUSE for user approval at each gate that tier has (in autonomous mode, gates are presented and auto-approved except for the safety exceptions in `knowzcode_loop.md` section 5):
 - After Change Set proposal (1A)
 - After spec drafts (1B)
 - After implementation (2A — awaiting audit)
@@ -3687,7 +3687,7 @@ Before any feature work, read:
 - Final commit
 
 ## Enforcement
-- Never skip phases or quality gates
+- Never skip a phase or quality gate that the selected tier defines
 - TDD is mandatory — no production code without a failing test
 - Every WorkGroup todo starts with `KnowzCode:` prefix
 - Consolidate specs when domains overlap >50%
