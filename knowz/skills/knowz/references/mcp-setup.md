@@ -4,11 +4,12 @@
 
 1. [Enterprise Configuration](#enterprise-configuration)
 2. [Server Details](#server-details)
-3. [Authentication Methods](#authentication-methods)
-4. [Scope Options](#scope-options)
-5. [Smart Config Discovery](#smart-config-discovery)
-6. [CLI Commands Reference](#cli-commands-reference)
-7. [Error Handling](#error-handling)
+3. [Protocol Compatibility](#protocol-compatibility)
+4. [Authentication Methods](#authentication-methods)
+5. [Scope Options](#scope-options)
+6. [Smart Config Discovery](#smart-config-discovery)
+7. [CLI Commands Reference](#cli-commands-reference)
+8. [Error Handling](#error-handling)
 
 ---
 
@@ -20,11 +21,37 @@ Before using any endpoints below, check for an `enterprise.json` file in the plu
 
 | Property | Value |
 |----------|-------|
-| **Protocol** | HTTP transport with JSON-RPC |
+| **Protocol** | MCP over Streamable HTTP (`--transport http`), revisions `2024-11-05` through `2026-07-28` |
 | **Production endpoint** | `https://mcp.knowz.io/mcp` |
 | **Development endpoint** | `https://mcp.dev.knowz.io/mcp` |
 | **Authentication** | Bearer token or OAuth dynamic discovery |
 | **Project context** | `X-Project-Path` header |
+
+## Protocol Compatibility
+
+The Knowz MCP server speaks every MCP protocol revision a client may use. The client chooses the
+revision; no configuration change is needed when a client upgrades.
+
+| Client speaks | How it connects | What it gets |
+|---------------|-----------------|--------------|
+| `2026-07-28` (stateless, sometimes called "MCP 2.0") | No handshake. Every request carries its protocol version, client capabilities and credentials. `server/discover` is available. | `resultType` on every result; `tools/list` marked cacheable for 5 minutes, scope `private` |
+| `2025-11-25`, `2025-06-18`, `2025-03-26`, `2024-11-05` | `initialize` handshake. The `Mcp-Session-Id` the server returns is optional. | Same tools and results as before |
+| Deprecated HTTP+SSE transport (`/sse`) | Older clients only | Still served; new configs must use `--transport http` on `/mcp` |
+
+Rules that follow from this:
+
+- **Always configure credentials on the server entry** (OAuth, or the `Authorization` header).
+  Under `2026-07-28` there is no session to fall back on: every request authenticates on its own.
+- **Use `--transport http`**, never `sse`. The endpoint is `<base>/mcp`.
+- **A new Knowz tool can take up to 5 minutes to appear** in a `2026-07-28` client, which may reuse a
+  cached tool list for that long. Restarting the client refreshes it at once.
+- **Long-running amends stay tool-based**: call `amend_knowledge_async` and poll
+  `get_amend_request_status`. The server does not offer the optional `io.modelcontextprotocol/tasks`
+  extension, so do not wait for task notifications.
+- **Proxies and gateways in front of the server must forward the MCP headers** unchanged:
+  `MCP-Protocol-Version`, `Mcp-Method`, `Mcp-Name` and `Authorization`. A `2026-07-28` request
+  without matching `Mcp-Method` / `Mcp-Name` headers is rejected.
+- The local, offline `knowz mcp serve` (stdio, from the knowz CLI) supports the same revisions.
 
 ## Authentication Methods
 
@@ -182,6 +209,22 @@ If yes, run `CLAUDECODE= claude mcp remove knowz` first.
 ```
 Cannot configure MCP server — the 'claude' CLI command is not available.
 Please restart Claude Code or report this issue.
+```
+
+### Protocol Version Errors
+
+| Symptom | Meaning | Fix |
+|---------|---------|-----|
+| JSON-RPC error `-32022` (Unsupported protocol version), `data.supported` lists versions | The client asked for a revision this server does not speak | Update the MCP client, or the self-hosted Knowz MCP image if `data.supported` lacks the client's revision |
+| JSON-RPC error `-32020` (header mismatch), HTTP 400 | `Mcp-Method` / `Mcp-Name` headers are missing or do not match the request body | A proxy in between is stripping or rewriting headers; let them through unchanged |
+| JSON-RPC error `-32601` for `initialize` or `ping` | A `2026-07-28` request used a method that revision removed | Client bug: a `2026-07-28` client must not send them. Older clients are unaffected |
+| HTTP 405 on `GET /mcp` | Expected: the server keeps no stream open; `2026-07-28` replaced it with `subscriptions/listen` | None. Clients fall back automatically |
+
+```
+Knowz MCP rejected the protocol version ({code}).
+Supported: {data.supported}
+
+Update your MCP client (or the Knowz MCP image on self-hosted installs), then restart it.
 ```
 
 ### Network/Connection Error
