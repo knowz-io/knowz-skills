@@ -109,6 +109,7 @@ Before any MCP operation, verify the Knowz MCP tools are available:
 3. **If available:** Call `mcp__knowz__list_vaults()` as a connectivity smoke test
    - If it succeeds → MCP is connected, proceed to the action
    - If it fails with **401/unauthorized or OAuth error** → report authentication failure. For OAuth: advise restart so browser login fires on next call, or switch to API key via `/knowz setup <api-key>`. For API key: advise getting a new key at `https://app.knowz.io/settings/api-keys` and reconfiguring.
+   - If it fails with a **protocol error** (JSON-RPC `-32022` unsupported protocol version, `-32020` header mismatch, or `-32601` on `initialize`/`ping`) → read "Protocol Compatibility" and "Protocol Version Errors" in [references/mcp-setup.md](references/mcp-setup.md) and give the matching fix. The server speaks MCP `2024-11-05` through `2026-07-28`, so these point to an outdated client or a proxy that strips MCP headers.
    - If it fails with **other error** → report the error message with troubleshooting: check network connectivity, run `claude mcp list`, consider switching to API key for more resilient connections.
 
 ---
